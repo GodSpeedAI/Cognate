@@ -294,7 +294,8 @@ requirements:
     acceptance: [AC-ART-001-01]
     gate: {cwd: ., run: 'bun test ./packages/artifacts/test/artifacts.test.ts', proof_paths: ['packages/artifacts/test/artifacts.test.ts']}
     dependencies: [CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-CAP-001
     title: 'Two-phase capability matching with recorded selection explanation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.2; 17; 30', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -302,7 +303,8 @@ requirements:
     acceptance: [AC-CAP-001-01]
     gate: {cwd: ., run: 'bun test ./packages/capabilities/test/selection.test.ts', proof_paths: ['packages/capabilities/test/selection.test.ts']}
     dependencies: [CG-EVT-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-CAP-002
     title: 'Adaptive containment property.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.6; 34.2; 40.I', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -310,7 +312,8 @@ requirements:
     acceptance: [AC-CAP-002-01]
     gate: {cwd: ., run: 'bun test ./tests/properties/containment.property.test.ts', proof_paths: ['tests/properties/containment.property.test.ts']}
     dependencies: [CG-CAP-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-SEC-001
     title: 'Erasure leaves tombstones, redacted replay gaps, and invalidated derived views.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -454,7 +457,9 @@ requirements:
     acceptance: [AC-COG-006-01]
     gate: {cwd: ., run: 'bun test ./packages/capabilities/test/feedback.test.ts', proof_paths: ['packages/capabilities/test/feedback.test.ts']}
     dependencies: [CG-CAP-001, CG-COG-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
+    debt: DEBT-008
   - id: CG-RVF-001
     title: 'RVF adapter snapshots, branches, and classifies imports as attached or detached.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '18', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

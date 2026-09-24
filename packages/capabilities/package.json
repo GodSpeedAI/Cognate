@@ -1,0 +1,10 @@
+{
+  "name": "@cognate/capabilities",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Two-phase capability selection: deterministic eligibility, then contained adaptive ranking with durable explanations (spec §8.2, §17, §30).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/events": "workspace:*", "@cognate/kernel-api": "workspace:*", "@cognate/projections": "workspace:*" },
+  "devDependencies": { "@cognate/store-memory": "workspace:*", "@cognate/store-sqlite": "workspace:*" }
+}
