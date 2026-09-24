@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/cognitive-ruvector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RuVector-backed CognitiveIndex (reference cognitive implementation; vector_search only per ADR-0004 / DEBT-007).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/cognitive-api": "workspace:*", "@ruvector/core": "0.1.32" }
+}
