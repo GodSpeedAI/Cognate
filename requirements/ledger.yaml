@@ -417,7 +417,8 @@ requirements:
     acceptance: [AC-COG-001-01]
     gate: {cwd: ., run: 'bun test ./packages/cognitive-memory/test/conformance.test.ts', proof_paths: ['packages/cognitive-memory/test/conformance.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m7-cognition.md
   - id: CG-COG-002
     title: 'Retrieval filters by scope and authorizes each dereference without leaking restricted metadata.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '16; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -425,7 +426,8 @@ requirements:
     acceptance: [AC-COG-002-01]
     gate: {cwd: ., run: 'bun test ./packages/cognitive-api/test/retrieval.test.ts', proof_paths: ['packages/cognitive-api/test/retrieval.test.ts']}
     dependencies: [CG-COG-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m7-cognition.md
   - id: CG-COG-003
     title: 'RuVector adapter passes the cognitive conformance kit.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '15', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -449,7 +451,8 @@ requirements:
     acceptance: [AC-COG-005-01]
     gate: {cwd: ., run: 'bun test ./packages/cognitive-api/test/fallback.test.ts', proof_paths: ['packages/cognitive-api/test/fallback.test.ts']}
     dependencies: [CG-COG-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m7-cognition.md
   - id: CG-COG-006
     title: 'Outcome feedback is a durable fact before it affects ranking.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '15', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
