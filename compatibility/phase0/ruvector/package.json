@@ -1,0 +1,10 @@
+{
+  "name": "phase0-ruvector-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Phase 0 compatibility fixture for RuVector bindings under Bun. Not part of the framework dependency graph.",
+  "type": "module",
+  "dependencies": {
+    "@ruvector/core": "0.1.32"
+  }
+}

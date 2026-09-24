@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package cognate.fixture.v1;
+
+// EchoService is a Phase 0 compatibility fixture exercising unary,
+// server-streaming, and client-streaming RPC shapes over Connect.
+service EchoService {
+  // Unary: single request, single response.
+  rpc Unary(EchoRequest) returns (EchoResponse);
+
+  // ServerStream: single request, ordered multi-message response stream.
+  rpc ServerStream(ServerStreamRequest) returns (stream ServerStreamResponse);
+
+  // ClientStream: multi-message request stream, single response.
+  rpc ClientStream(stream ClientStreamRequest) returns (ClientStreamResponse);
+}
+
+message EchoRequest {
+  string message = 1;
+}
+
+message EchoResponse {
+  string message = 1;
+}
+
+message ServerStreamRequest {
+  string message = 1;
+  int32 count = 2;
+}
+
+message ServerStreamResponse {
+  string message = 1;
+  int32 sequence = 2;
+}
+
+message ClientStreamRequest {
+  string message = 1;
+}
+
+message ClientStreamResponse {
+  string message = 1;
+  int32 count = 2;
+}

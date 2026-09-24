@@ -1,0 +1,10 @@
+{
+  "name": "phase0-sona-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Phase 0 compatibility fixture for SONA (Self-Optimizing Neural Architecture) bindings under Bun. Not part of the framework dependency graph.",
+  "type": "module",
+  "dependencies": {
+    "@ruvector/sona": "0.1.8"
+  }
+}

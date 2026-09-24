@@ -10,6 +10,13 @@
         "typescript": "7.0.2",
       },
     },
+    "packages/events": {
+      "name": "@cognate/events",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/kernel-api": "workspace:*",
+      },
+    },
     "packages/kernel-api": {
       "name": "@cognate/kernel-api",
       "version": "0.0.0",
@@ -22,11 +29,31 @@
         "cordis": "4.0.0-rc.10",
       },
     },
+    "packages/store-memory": {
+      "name": "@cognate/store-memory",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+      },
+    },
+    "packages/store-sqlite": {
+      "name": "@cognate/store-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+      },
+    },
   },
   "packages": {
+    "@cognate/events": ["@cognate/events@workspace:packages/events"],
+
     "@cognate/kernel-api": ["@cognate/kernel-api@workspace:packages/kernel-api"],
 
     "@cognate/kernel-cordis": ["@cognate/kernel-cordis@workspace:packages/kernel-cordis"],
+
+    "@cognate/store-memory": ["@cognate/store-memory@workspace:packages/store-memory"],
+
+    "@cognate/store-sqlite": ["@cognate/store-sqlite@workspace:packages/store-sqlite"],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
