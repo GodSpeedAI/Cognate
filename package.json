@@ -19,6 +19,7 @@
     "@cognate/ag-ui": "workspace:*",
     "@cognate/artifacts": "workspace:*",
     "@cognate/capabilities": "workspace:*",
+    "@cognate/cli": "workspace:*",
     "@cognate/client": "workspace:*",
     "@cognate/cognitive-api": "workspace:*",
     "@cognate/cognitive-memory": "workspace:*",
