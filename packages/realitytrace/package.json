@@ -1,0 +1,10 @@
+{
+  "name": "@cognate/realitytrace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Observation port, committed-outbox delivery, receipts, strict gating, and the SXR CLI adapter (spec §20). RealityTrace stays unchanged.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/events": "workspace:*", "@cognate/kernel-api": "workspace:*" },
+  "devDependencies": { "@cognate/store-memory": "workspace:*", "@cognate/store-sqlite": "workspace:*" }
+}

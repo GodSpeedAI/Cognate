@@ -1,0 +1,88 @@
+// CG-PRV-001 (spec §26): OpenAI-compatible provider over fetch against a local HTTP stub; features as capability attributes.
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { modelContract, ModelProviderError, type ModelDelta } from "@cognate/capabilities";
+import { localProvider } from "@cognate/provider-local";
+import { modelComponent, openAICompatible } from "../src/index.ts";
+
+const SECRET = "sk-test-cognate-9f8e7d";
+let server: ReturnType<typeof Bun.serve>;
+const requests: { auth: string | null; body: Record<string, unknown> }[] = [];
+
+beforeAll(() => {
+  server = Bun.serve({
+    port: 0,
+    async fetch(req) {
+      const body = (await req.json()) as Record<string, unknown>;
+      requests.push({ auth: req.headers.get("authorization"), body });
+      const last = (body.messages as { content: string }[]).at(-1)!.content;
+      if (last === "unauthorized") return Response.json({ error: { message: "bad key" } }, { status: 401 });
+      if (last === "slow") await Bun.sleep(2000);
+      if (body.stream) {
+        const chunks = ["Hel", "lo", "!"].map((t) => `data: ${JSON.stringify({ choices: [{ delta: { content: t } }] })}\n\n`);
+        chunks.push(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\n`, "data: [DONE]\n\n");
+        return new Response(new ReadableStream({ start(c) { for (const ch of chunks) c.enqueue(new TextEncoder().encode(ch)); c.close(); } }), { headers: { "content-type": "text/event-stream" } });
+      }
+      if (body.tools) return Response.json({ model: body.model, choices: [{ finish_reason: "tool_calls", message: { role: "assistant", content: "", tool_calls: [{ id: "call_1", type: "function", function: { name: "lookup", arguments: '{"key":"abc"}' } }] } }], usage: { prompt_tokens: 12, completion_tokens: 3 } });
+      return Response.json({ model: body.model, choices: [{ finish_reason: "stop", message: { role: "assistant", content: `echo: ${last}` } }], usage: { prompt_tokens: 5, completion_tokens: 2 } });
+    },
+  });
+});
+afterAll(() => server.stop(true));
+
+const provider = () => openAICompatible({ id: "stub", baseURL: `${server.url.origin}/v1`, model: "stub-model", apiKey: () => SECRET, features: { tool_use: true, structured_output: true, stream: true, context_limit: 8192 }, timeoutMs: 500 });
+
+describe("OpenAI-compatible provider (§26)", () => {
+  test("generate sends model, messages, auth and parses content and usage", async () => {
+    const response = await provider().generate({ messages: [{ role: "user", content: "hi" }] });
+    expect(response).toEqual({ message: { role: "assistant", content: "echo: hi" }, toolCalls: [], finishReason: "stop", usage: { inputTokens: 5, outputTokens: 2 }, model: "stub-model" });
+    expect(requests.at(-1)).toMatchObject({ auth: `Bearer ${SECRET}`, body: { model: "stub-model", messages: [{ role: "user", content: "hi" }] } });
+  });
+
+  test("tools and structured output are sent in the OpenAI shape and tool calls parsed", async () => {
+    const response = await provider().generate({ messages: [{ role: "user", content: "find" }], tools: [{ name: "lookup", description: "look up", inputSchema: { type: "object" } }], responseFormat: { type: "json", schema: { type: "object" } } });
+    expect(response.toolCalls).toEqual([{ id: "call_1", name: "lookup", arguments: { key: "abc" } }]);
+    expect(response.finishReason).toBe("tool_calls");
+    expect(requests.at(-1)!.body).toMatchObject({ tools: [{ type: "function", function: { name: "lookup", description: "look up", parameters: { type: "object" } } }], response_format: { type: "json_schema" } });
+  });
+
+  test("stream yields ordered text deltas then done", async () => {
+    const deltas: ModelDelta[] = [];
+    for await (const d of provider().stream({ messages: [{ role: "user", content: "hi" }] })) deltas.push(d);
+    expect(deltas.filter((d) => d.type === "text").map((d) => (d as { text: string }).text).join("")).toBe("Hello!");
+    expect(deltas.at(-1)).toMatchObject({ type: "done", response: { message: { content: "Hello!" }, finishReason: "stop" } });
+  });
+
+  test("HTTP errors and timeouts are typed and never echo the credential", async () => {
+    const unauthorized = await provider().generate({ messages: [{ role: "user", content: "unauthorized" }] }).catch((e) => e);
+    expect(unauthorized).toBeInstanceOf(ModelProviderError);
+    expect(unauthorized).toMatchObject({ kind: "unauthorized", status: 401 });
+    expect(JSON.stringify({ ...unauthorized, message: unauthorized.message })).not.toContain(SECRET);
+    const slow = await provider().generate({ messages: [{ role: "user", content: "slow" }] }).catch((e) => e);
+    expect(slow).toMatchObject({ kind: "unavailable" });
+  });
+
+  test("the published capability declares features and never the credential", () => {
+    const contract = modelContract(provider());
+    expect(contract).toMatchObject({ id: "model.generate", version: "1.0.0", attributes: { stream: true, tool_use: true, structured_output: true, multimodal_input: false, context_limit: 8192, provider: "openai-compatible:stub", model: "stub-model" } });
+    expect(JSON.stringify(contract)).not.toContain(SECRET);
+    const component = modelComponent(provider());
+    expect(component.provides).toEqual([contract]);
+    expect(JSON.stringify(component.provides)).not.toContain(SECRET);
+  });
+});
+
+describe("local provider", () => {
+  test("is deterministic, rule-scripted, and streams the same text it generates", async () => {
+    const local = localProvider({ rules: [{ when: "refund", respond: () => ({ message: { role: "assistant", content: "Refund approved pending review." }, toolCalls: [], finishReason: "stop" }) }], chunkSize: 5 });
+    const a = await local.generate({ messages: [{ role: "user", content: "Please refund me" }] });
+    const b = await local.generate({ messages: [{ role: "user", content: "Please refund me" }] });
+    expect(a).toEqual(b);
+    expect(a.message.content).toBe("Refund approved pending review.");
+    const text: string[] = [];
+    for await (const d of local.stream({ messages: [{ role: "user", content: "Please refund me" }] })) if (d.type === "text") text.push(d.text);
+    expect(text.join("")).toBe(a.message.content);
+    expect(text[0]).toHaveLength(5);
+    expect((await local.generate({ messages: [{ role: "user", content: "unmatched" }] })).finishReason).toBe("stop");
+    expect(local.features.generate).toBe(true);
+  });
+});

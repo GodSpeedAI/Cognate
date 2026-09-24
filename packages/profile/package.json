@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/profile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "defineProfile: reusable application compositions that select and configure components without new kernel concepts (spec §29).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/kernel-api": "workspace:*" }
+}

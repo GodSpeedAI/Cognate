@@ -400,7 +400,9 @@ requirements:
     acceptance: [AC-SEM-001-01]
     gate: {cwd: ., run: 'bun test ./packages/domainforge/test/adapter.test.ts', proof_paths: ['packages/domainforge/test/adapter.test.ts']}
     dependencies: [AK-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
+    debt: DEBT-003
   - id: CG-SEM-002
     title: 'Semantic identity is pinned to source revision; renames are new identities; unresolved refs are typed.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '7.1; 13.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -408,7 +410,9 @@ requirements:
     acceptance: [AC-SEM-002-01]
     gate: {cwd: ., run: 'bun test ./packages/domainforge/test/identity.test.ts', proof_paths: ['packages/domainforge/test/identity.test.ts']}
     dependencies: [CG-SEM-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
+    debt: DEBT-002
   - id: CG-RT-001
     title: 'ObservationPort with outbox delivery; receipt is not evidence; failure keeps events committed.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '20', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
