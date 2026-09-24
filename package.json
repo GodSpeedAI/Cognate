@@ -25,6 +25,8 @@
     "@cognate/kernel-api": "workspace:*",
     "@cognate/kernel-cordis": "workspace:*",
     "@cognate/projections": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*",
     "@cognate/store-memory": "workspace:*",
     "@cognate/store-sqlite": "workspace:*",
     "@types/bun": "1.4.2",

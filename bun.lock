@@ -15,6 +15,8 @@
         "@cognate/kernel-api": "workspace:*",
         "@cognate/kernel-cordis": "workspace:*",
         "@cognate/projections": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@cognate/runtime-bun": "workspace:*",
         "@cognate/store-memory": "workspace:*",
         "@cognate/store-sqlite": "workspace:*",
         "@types/bun": "1.4.2",
@@ -117,6 +119,34 @@
         "@cognate/store-sqlite": "workspace:*",
       },
     },
+    "packages/runtime-api": {
+      "name": "@cognate/runtime-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+      },
+    },
+    "packages/runtime-bun": {
+      "name": "@cognate/runtime-bun",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/artifacts": "workspace:*",
+        "@cognate/capabilities": "workspace:*",
+        "@cognate/cognitive-api": "workspace:*",
+        "@cognate/continuations": "workspace:*",
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/kernel-cordis": "workspace:*",
+        "@cognate/projections": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/cognitive-memory": "workspace:*",
+      },
+    },
     "packages/store-memory": {
       "name": "@cognate/store-memory",
       "version": "0.0.0",
@@ -152,6 +182,10 @@
     "@cognate/kernel-cordis": ["@cognate/kernel-cordis@workspace:packages/kernel-cordis"],
 
     "@cognate/projections": ["@cognate/projections@workspace:packages/projections"],
+
+    "@cognate/runtime-api": ["@cognate/runtime-api@workspace:packages/runtime-api"],
+
+    "@cognate/runtime-bun": ["@cognate/runtime-bun@workspace:packages/runtime-bun"],
 
     "@cognate/store-memory": ["@cognate/store-memory@workspace:packages/store-memory"],
 

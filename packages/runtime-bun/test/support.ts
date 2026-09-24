@@ -1,0 +1,17 @@
+import type { Component, Policy } from "@cognate/kernel-api";
+import type { KitSetup } from "@cognate/runtime-api/conformance";
+import type { ActionPolicy } from "../src/index.ts";
+
+export function kitPolicies(setup: KitSetup): { policy: Policy; actions: ActionPolicy; components: Component[] } {
+  return {
+    policy: { authorize: (r) => (r.actor.id === setup.deniedPrincipal ? { allow: false, policyId: "kit", reason: `${r.actor.id} denied` } : { allow: true, policyId: "kit", reason: "allowed" }) },
+    actions: { authorize: ({ caller }) => (caller.actor.id === setup.deniedPrincipal ? { allow: false, reason: `${caller.actor.id} denied` } : { allow: true, reason: "allowed" }) },
+    components: [
+      {
+        id: "lookup-provider",
+        provides: [{ id: "tool.lookup", version: "1.0.0" }],
+        activate: (fiber) => fiber.provide({ id: "tool.lookup", version: "1.0.0" }, (input) => setup.lookup(input as { key: string })),
+      },
+    ],
+  };
+}

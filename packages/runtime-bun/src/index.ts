@@ -1,0 +1,69 @@
+import type { CognitiveIndex, Embedder, IndexDocument } from "@cognate/cognitive-api";
+import type { DurableStore, Json, StoredEvent } from "@cognate/events";
+import type { Component, Kernel, Policy, Principal } from "@cognate/kernel-api";
+import type { Projection } from "@cognate/projections";
+import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-api";
+
+export interface ActionPolicy {
+  /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
+  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
+}
+
+export interface CognitionOptions {
+  readonly index: CognitiveIndex;
+  readonly embedder: Embedder;
+  /** Extract documents to index from committed events; defaults to indexing completed runs. */
+  readonly extract?: (event: StoredEvent) => readonly IndexDocument[];
+  /**
+   * Whether the index survives restart with its data. When false (memory, RuVector adapter), the runtime
+   * rebuilds the cognitive projection on start so the checkpoint never claims entries the index lost.
+   */
+  readonly persistent: boolean;
+}
+
+export interface RuntimeOptions {
+  /** SQLite file path, `":memory:"` for an in-memory SQLite database, or an explicit store. */
+  readonly store: string | { readonly store: DurableStore };
+  /** Kernel invocation policy for capabilities (default-deny if omitted). */
+  readonly policy: Policy;
+  readonly actions: ActionPolicy;
+  readonly agents: readonly AgentDefinition[];
+  /** Capability-providing components mounted in the root scope. */
+  readonly components?: readonly Component[];
+  readonly cognition?: CognitionOptions;
+  /** Projections kept current by the runtime; `public` ones are readable through the service. */
+  readonly projections?: readonly { readonly projection: Projection; readonly public: boolean }[];
+  /** Background work loop interval (run execution, resume delivery, expiry). Default 10 ms. */
+  readonly tickMs?: number;
+  readonly system?: Principal;
+}
+
+export interface CausalChain {
+  readonly correlationId: string;
+  readonly runs: readonly string[];
+  readonly events: readonly { readonly eventId: string; readonly eventType: string; readonly causationId: string | null; readonly componentId?: string; readonly fiberId?: string; readonly semanticRef?: Json }[];
+  readonly invocations: readonly { readonly capability: string; readonly providerId: string; readonly fiberId: string; readonly decision: Json }[];
+  readonly artifacts: readonly string[];
+  readonly observations: readonly string[];
+}
+
+export interface Runtime {
+  readonly service: RuntimeService;
+  readonly kernel: Kernel;
+  readonly store: DurableStore;
+  /** Reconstruct machine-readable causal identity for a correlation id (spec §33, §40.M). */
+  inspect(correlationId: string): Promise<CausalChain>;
+  /** Clear the cognitive index and rebuild it from authoritative events (spec §3.5). */
+  rebuildCognition(): Promise<void>;
+  /** Erase an event payload under retention/privacy policy; derived views and the cognitive index drop it (spec §32). */
+  erase(eventId: string, reason: string, actor: Principal): Promise<void>;
+  /** Wait until background work queued so far has been processed (tests and graceful shutdown). */
+  idle(timeoutMs?: number): Promise<void>;
+  close(): Promise<void>;
+}
+
+export function createRuntime(_options: RuntimeOptions): Promise<Runtime> {
+  throw new Error("runtime-bun: not implemented");
+}
+
+export type { Json };
