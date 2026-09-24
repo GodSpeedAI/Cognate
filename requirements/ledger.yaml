@@ -550,7 +550,8 @@ requirements:
     acceptance: [AC-UI-003-01]
     gate: {cwd: ., run: 'bun test ./tests/architecture/dependencies.test.ts', proof_paths: ['tests/architecture/dependencies.test.ts']}
     dependencies: [CG-UI-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-AGUI-001
     title: 'Outbound AG-UI mapping matrix with durable event ids and per-run cursor.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
