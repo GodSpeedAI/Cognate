@@ -5,6 +5,10 @@
     "": {
       "name": "cognate-workspace",
       "devDependencies": {
+        "@cognate/artifacts": "workspace:*",
+        "@cognate/capabilities": "workspace:*",
+        "@cognate/cognitive-api": "workspace:*",
+        "@cognate/cognitive-memory": "workspace:*",
         "@cognate/continuations": "workspace:*",
         "@cognate/events": "workspace:*",
         "@cognate/kernel-api": "workspace:*",
@@ -15,6 +19,51 @@
         "@types/bun": "1.4.2",
         "fast-check": "4.10.2",
         "typescript": "7.0.2",
+      },
+    },
+    "packages/artifacts": {
+      "name": "@cognate/artifacts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
+      },
+    },
+    "packages/capabilities": {
+      "name": "@cognate/capabilities",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/projections": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
+      },
+    },
+    "packages/cognitive-api": {
+      "name": "@cognate/cognitive-api",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/projections": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/cognitive-memory": "workspace:*",
+        "@cognate/store-memory": "workspace:*",
+      },
+    },
+    "packages/cognitive-memory": {
+      "name": "@cognate/cognitive-memory",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/cognitive-api": "workspace:*",
       },
     },
     "packages/continuations": {
@@ -75,6 +124,14 @@
     },
   },
   "packages": {
+    "@cognate/artifacts": ["@cognate/artifacts@workspace:packages/artifacts"],
+
+    "@cognate/capabilities": ["@cognate/capabilities@workspace:packages/capabilities"],
+
+    "@cognate/cognitive-api": ["@cognate/cognitive-api@workspace:packages/cognitive-api"],
+
+    "@cognate/cognitive-memory": ["@cognate/cognitive-memory@workspace:packages/cognitive-memory"],
+
     "@cognate/continuations": ["@cognate/continuations@workspace:packages/continuations"],
 
     "@cognate/events": ["@cognate/events@workspace:packages/events"],

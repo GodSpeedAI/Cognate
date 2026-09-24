@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/cognitive-memory",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "In-process exact-cosine CognitiveIndex and a deterministic hashing embedder; the fallback implementation for core cognition.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/cognitive-api": "workspace:*" }
+}
