@@ -542,7 +542,8 @@ requirements:
     acceptance: [AC-UI-002-01]
     gate: {cwd: ., run: 'bun test ./packages/ui-astryx/test/surfaces.test.tsx', proof_paths: ['packages/ui-astryx/test/surfaces.test.tsx']}
     dependencies: [AK-010, CG-UI-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-UI-003
     title: 'Astryx and React types never cross into client or react public APIs.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.8; 28; 40.F', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
