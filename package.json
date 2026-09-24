@@ -4,10 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "packageManager": "bun@1.4.0",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*",
+    "profiles/*"
+  ],
   "scripts": {
     "check": "bun scripts/check-substrate.ts",
-    "test": "bun test compatibility/phase0 tests",
+    "test": "bun test ./compatibility/phase0/sqlite.test.ts ./tests ./packages ./profiles",
     "verify": "bun run check && bun run test"
   }
 }

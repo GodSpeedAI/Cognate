@@ -1,14 +1,50 @@
-import { expect, test } from "bun:test";
+import { afterAll, expect, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-test("an unimplemented dependency gate fails explicitly", async () => {
-  const process = Bun.spawn(["just", "gate-ak-002"], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [exit, stderr] = await Promise.all([
-    process.exited,
-    new Response(process.stderr).text(),
-  ]);
-  expect(exit).not.toBe(0);
-  expect(stderr).toContain("AK-002: unmet Phase 0 gate");
+const dir = mkdtempSync(join(tmpdir(), "cognate-gate-"));
+afterAll(() => rmSync(dir, { recursive: true, force: true }));
+const ledger = join(dir, "ledger.yaml");
+writeFileSync(
+  ledger,
+  `requirements:
+  - {id: T-MISSING, title: missing proof, status: candidate, gate: {cwd: ., run: 'true', proof_paths: [does/not/exist.test.ts]}}
+  - {id: T-PASS, title: passing proof, status: implemented, gate: {cwd: ., run: 'true', proof_paths: [package.json]}}
+  - {id: T-FAIL, title: failing proof, status: candidate, gate: {cwd: ., run: 'false', proof_paths: [package.json]}}
+acceptance_contracts:
+  - {requirement: T-MISSING, expected: proof exists}
+`,
+);
+
+async function gate(arg: string) {
+  const proc = Bun.spawn(["bun", "scripts/gate.ts", arg], { stdout: "pipe", stderr: "pipe", env: { ...process.env, COGNATE_LEDGER: ledger } });
+  const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+  return { exit, stdout, stderr };
+}
+
+test("a gate whose proof does not exist fails explicitly instead of skipping", async () => {
+  const { exit, stderr } = await gate("T-MISSING");
+  expect(exit).toBe(1);
+  expect(stderr).toContain("T-MISSING: unmet gate");
+  expect(stderr).toContain("Expected: proof exists");
+});
+
+test("a gate propagates its proof command's exit code", async () => {
+  expect((await gate("T-PASS")).exit).toBe(0);
+  expect((await gate("T-FAIL")).exit).not.toBe(0);
+});
+
+test("--all reports every gate and fails while any is unmet", async () => {
+  const { exit, stdout } = await gate("--all");
+  expect(exit).toBe(1);
+  expect(stdout).toContain("FAIL  T-MISSING");
+  expect(stdout).toContain("PASS  T-PASS");
+  expect(stdout).toContain("1/3 gates pass");
+});
+
+test("an unknown requirement id is rejected", async () => {
+  const { exit, stderr } = await gate("NOPE-1");
+  expect(exit).toBe(2);
+  expect(stderr).toContain("Unknown requirement");
 });
