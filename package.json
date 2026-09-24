@@ -37,6 +37,7 @@
     "@cognate/protocol-connect-bun": "workspace:*",
     "@cognate/provider-local": "workspace:*",
     "@cognate/provider-openai-compatible": "workspace:*",
+    "@cognate/react": "workspace:*",
     "@cognate/realitytrace": "workspace:*",
     "@cognate/runtime-api": "workspace:*",
     "@cognate/runtime-bun": "workspace:*",

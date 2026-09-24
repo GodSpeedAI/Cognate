@@ -3,6 +3,7 @@ import type { DurableStore, Json, StoredEvent } from "@cognate/events";
 import type { Component, Kernel, Policy, Principal } from "@cognate/kernel-api";
 import type { Projection } from "@cognate/projections";
 import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-api";
+import { startRuntime } from "./runtime.ts";
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
@@ -62,8 +63,8 @@ export interface Runtime {
   close(): Promise<void>;
 }
 
-export function createRuntime(_options: RuntimeOptions): Promise<Runtime> {
-  throw new Error("runtime-bun: not implemented");
+export function createRuntime(options: RuntimeOptions): Promise<Runtime> {
+  return startRuntime(options);
 }
 
 export type { Json };
