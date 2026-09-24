@@ -5,9 +5,28 @@
     "": {
       "name": "cognate-workspace",
       "devDependencies": {
+        "@cognate/continuations": "workspace:*",
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/kernel-cordis": "workspace:*",
+        "@cognate/projections": "workspace:*",
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
         "@types/bun": "1.4.2",
         "fast-check": "4.10.2",
         "typescript": "7.0.2",
+      },
+    },
+    "packages/continuations": {
+      "name": "@cognate/continuations",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
       },
     },
     "packages/events": {
@@ -29,6 +48,17 @@
         "cordis": "4.0.0-rc.10",
       },
     },
+    "packages/projections": {
+      "name": "@cognate/projections",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
+      },
+    },
     "packages/store-memory": {
       "name": "@cognate/store-memory",
       "version": "0.0.0",
@@ -45,11 +75,15 @@
     },
   },
   "packages": {
+    "@cognate/continuations": ["@cognate/continuations@workspace:packages/continuations"],
+
     "@cognate/events": ["@cognate/events@workspace:packages/events"],
 
     "@cognate/kernel-api": ["@cognate/kernel-api@workspace:packages/kernel-api"],
 
     "@cognate/kernel-cordis": ["@cognate/kernel-cordis@workspace:packages/kernel-cordis"],
+
+    "@cognate/projections": ["@cognate/projections@workspace:packages/projections"],
 
     "@cognate/store-memory": ["@cognate/store-memory@workspace:packages/store-memory"],
 

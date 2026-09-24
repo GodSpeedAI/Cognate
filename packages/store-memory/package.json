@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/store-memory",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "In-memory DurableStore with the same semantics as the SQLite store (tests, ephemeral runtimes).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/events": "workspace:*" }
+}

@@ -179,7 +179,8 @@ requirements:
     acceptance: [AC-EVT-001-01]
     gate: {cwd: ., run: 'bun test ./packages/events/test/envelope.test.ts', proof_paths: ['packages/events/test/envelope.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-EVT-002
     title: 'Optimistic append with expected stream version and store-assigned sequence.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -211,7 +212,8 @@ requirements:
     acceptance: [AC-EVT-005-01]
     gate: {cwd: ., run: 'bun test ./packages/store-memory/test/conformance.test.ts', proof_paths: ['packages/store-memory/test/conformance.test.ts']}
     dependencies: [CG-EVT-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-EVT-006
     title: 'Process crash before commit leaves nothing visible; after commit permits safe retry.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -273,7 +275,7 @@ requirements:
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '11; 13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'Outbox', invariant: 'Local transactions never claim exactly-once external effects'}
     acceptance: [AC-CMT-002-01]
-    gate: {cwd: ., run: 'bun test ./packages/continuations/test/outbox.test.ts', proof_paths: ['packages/continuations/test/outbox.test.ts']}
+    gate: {cwd: ., run: 'bun test ./packages/events/test/outbox-dispatcher.test.ts', proof_paths: ['packages/events/test/outbox-dispatcher.test.ts']}
     dependencies: [CG-CMT-001]
     status: candidate
   - id: CG-ART-001
