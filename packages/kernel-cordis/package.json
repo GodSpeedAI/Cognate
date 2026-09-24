@@ -1,0 +1,12 @@
+{
+  "name": "@cognate/kernel-cordis",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cordis-backed implementation of @cognate/kernel-api. The only package allowed to import cordis.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@cognate/kernel-api": "workspace:*",
+    "cordis": "4.0.0-rc.10"
+  }
+}

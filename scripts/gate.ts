@@ -44,9 +44,11 @@ async function runGate(requirement: Requirement, quiet: boolean): Promise<{ exit
 }
 
 const arg = process.argv[2];
-if (arg === "--all") {
+if (arg === "--all" || arg === "--implemented") {
+  // --implemented is the regression mode: every requirement claimed implemented must still pass.
+  const selected = arg === "--all" ? ledger.requirements : ledger.requirements.filter((entry) => entry.status === "implemented");
   let failures = 0;
-  for (const requirement of ledger.requirements) {
+  for (const requirement of selected) {
     const { exit, reason } = await runGate(requirement, true);
     const verdict = exit === 0 ? "PASS" : "FAIL";
     if (exit !== 0) failures++;
@@ -57,7 +59,7 @@ if (arg === "--all") {
         : "";
     console.log(`${verdict}  ${requirement.id.padEnd(12)} [${requirement.status}] ${reason}${drift}`);
   }
-  console.log(`${ledger.requirements.length - failures}/${ledger.requirements.length} gates pass`);
+  console.log(`${selected.length - failures}/${selected.length} gates pass`);
   process.exit(failures ? 1 : 0);
 }
 const requirement = ledger.requirements.find((entry) => entry.id === arg);

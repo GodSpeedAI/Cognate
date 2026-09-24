@@ -1,0 +1,12 @@
+{
+  "name": "@cognate/kernel-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-owned kernel contract: contexts, scopes, capabilities, components, fibers, effects. No engine types.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./conformance": "./src/conformance/index.ts"
+  },
+  "peerDependencies": {}
+}

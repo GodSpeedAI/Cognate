@@ -11,6 +11,12 @@
   "scripts": {
     "check": "bun scripts/check-substrate.ts",
     "test": "bun test ./compatibility/phase0/sqlite.test.ts ./tests ./packages ./profiles",
-    "verify": "bun run check && bun run test"
+    "verify": "bun run check && bun run test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "fast-check": "4.10.2",
+    "@types/bun": "1.4.2"
   }
 }
