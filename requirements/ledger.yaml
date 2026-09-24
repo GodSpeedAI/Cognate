@@ -592,7 +592,8 @@ requirements:
     acceptance: [AC-A2A-001-01]
     gate: {cwd: ., run: 'bun test ./packages/a2a/test/a2a.test.ts', proof_paths: ['packages/a2a/test/a2a.test.ts']}
     dependencies: [CG-KRN-006]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-PRV-001
     title: 'Model provider contract with OpenAI-compatible and local providers.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '26', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
