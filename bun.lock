@@ -9,6 +9,7 @@
         "@cognate/ag-ui": "workspace:*",
         "@cognate/artifacts": "workspace:*",
         "@cognate/capabilities": "workspace:*",
+        "@cognate/cli": "workspace:*",
         "@cognate/client": "workspace:*",
         "@cognate/cognitive-api": "workspace:*",
         "@cognate/cognitive-memory": "workspace:*",
@@ -91,6 +92,19 @@
       "devDependencies": {
         "@cognate/store-memory": "workspace:*",
         "@cognate/store-sqlite": "workspace:*",
+      },
+    },
+    "packages/cli": {
+      "name": "@cognate/cli",
+      "version": "0.0.0",
+      "bin": {
+        "cognate": "./src/bin.ts",
+      },
+      "dependencies": {
+        "@cognate/domainforge": "workspace:*",
+        "@cognate/profile": "workspace:*",
+        "@cognate/protocol-connect-bun": "workspace:*",
+        "@cognate/runtime-bun": "workspace:*",
       },
     },
     "packages/client": {
@@ -467,6 +481,8 @@
     "@cognate/artifacts": ["@cognate/artifacts@workspace:packages/artifacts"],
 
     "@cognate/capabilities": ["@cognate/capabilities@workspace:packages/capabilities"],
+
+    "@cognate/cli": ["@cognate/cli@workspace:packages/cli"],
 
     "@cognate/client": ["@cognate/client@workspace:packages/client"],
 
