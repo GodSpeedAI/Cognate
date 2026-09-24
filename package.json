@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@cognate/a2a": "workspace:*",
     "@cognate/ag-ui": "workspace:*",
     "@cognate/artifacts": "workspace:*",
     "@cognate/capabilities": "workspace:*",
@@ -28,6 +29,7 @@
     "@cognate/events": "workspace:*",
     "@cognate/kernel-api": "workspace:*",
     "@cognate/kernel-cordis": "workspace:*",
+    "@cognate/mcp": "workspace:*",
     "@cognate/profile": "workspace:*",
     "@cognate/projections": "workspace:*",
     "@cognate/proto": "workspace:*",
