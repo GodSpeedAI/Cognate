@@ -89,7 +89,8 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Exit criterion:** The standard `webServer` option works on the CI host, or the workaround is documented as the supported pattern with a CI run.
 
 ## DEBT-013 — MCP proven only over the in-memory transport
-**Status:** Open
+**Status:** Closed (2026-09-24) — `packages/mcp/test/mcp.test.ts` drives the adapter over stdio from a separate process; see `.agents/evidence/m8-wire-client.md`.
+**Original status:** Open
 **Requirement(s):** AK-011, CG-MCP-001
 **Observed:** `@modelcontextprotocol/sdk` 1.30.1 server + client work under Bun over the linked in-memory transport. stdio and Streamable HTTP transports were not exercised. Invalid tool input returns `{isError: true}` (JSON-RPC -32602) rather than rejecting.
 **Consequence:** The MCP adapter may claim in-memory interoperability only until a stdio or HTTP fixture passes.

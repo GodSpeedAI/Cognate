@@ -1,45 +1,117 @@
+// React 19 bindings over the headless client (spec §25.2). All hooks are thin useSyncExternalStore
+// adapters over the client's framework-neutral Readables; the client remains the single source of truth.
 import type { CognateClient, ConnectionStatus, FrontendHandler, RunState } from "@cognate/client";
 import type { Json } from "@cognate/events";
 import type { ContinuationView, RunView } from "@cognate/runtime-api";
-import type { ReactNode } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
-export function CognateProvider(_props: { readonly client: CognateClient; readonly children: ReactNode }): ReactNode {
-  throw new Error("react: not implemented");
+const CognateContext = createContext<CognateClient | undefined>(undefined);
+
+export function CognateProvider({ client, children }: { readonly client: CognateClient; readonly children: ReactNode }): ReactNode {
+  return <CognateContext.Provider value={client}>{children}</CognateContext.Provider>;
 }
 
 /** The client from the nearest provider. */
 export function useCognate(): CognateClient {
-  throw new Error("react: not implemented");
+  const client = useContext(CognateContext);
+  if (!client) throw new Error("useCognate: no CognateProvider found in the component tree");
+  return client;
 }
 
 /** Live derived state of a run (undefined id → undefined). Uses useSyncExternalStore over the client's Readable. */
-export function useRun(_runId: string | undefined): RunState | undefined {
-  throw new Error("react: not implemented");
+export function useRun(runId: string | undefined): RunState | undefined {
+  const client = useCognate();
+  const store = useMemo(() => (runId === undefined ? undefined : client.run(runId)), [client, runId]);
+  const subscribe = useCallback((onStoreChange: () => void) => (store ? store.subscribe(onStoreChange) : () => {}), [store]);
+  const getSnapshot = useCallback(() => store?.get(), [store]);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 /** Start runs of one agent and follow the latest. */
-export function useAgent(_agent: string): { readonly start: (input: Json) => Promise<RunView>; readonly runId: string | undefined; readonly state: RunState | undefined } {
-  throw new Error("react: not implemented");
+export function useAgent(agent: string): { readonly start: (input: Json) => Promise<RunView>; readonly runId: string | undefined; readonly state: RunState | undefined } {
+  const client = useCognate();
+  const [runId, setRunId] = useState<string | undefined>(undefined);
+  const start = useCallback(
+    async (input: Json) => {
+      const view = await client.startRun(agent, input);
+      setRunId(view.runId);
+      return view;
+    },
+    [client, agent],
+  );
+  const state = useRun(runId);
+  return { start, runId, state };
 }
 
-export function useProjection(_name: string): readonly { readonly key: string; readonly value: Json }[] | undefined {
-  throw new Error("react: not implemented");
+export function useProjection(name: string): readonly { readonly key: string; readonly value: Json }[] | undefined {
+  const client = useCognate();
+  const store = useMemo(() => client.projection(name), [client, name]);
+  const subscribe = useCallback((onStoreChange: () => void) => store.subscribe(onStoreChange), [store]);
+  const getSnapshot = useCallback(() => store.get(), [store]);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 /** Provide a frontend capability while the component is mounted; unregistered on unmount (a reversible effect). */
-export function useCapability(_capability: string, _handler: FrontendHandler): void {
-  throw new Error("react: not implemented");
+export function useCapability(capability: string, handler: FrontendHandler): void {
+  const client = useCognate();
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
+  useEffect(() => {
+    return client.provideCapability(capability, (input, context) => handlerRef.current(input, context));
+  }, [client, capability]);
 }
 
 /** Open continuations of a run plus a resolver. */
-export function useContinuations(_runId: string | undefined): { readonly open: readonly ContinuationView[]; readonly resolve: (id: string, action: "resume" | "cancel", input?: Json) => Promise<void> } {
-  throw new Error("react: not implemented");
+export function useContinuations(runId: string | undefined): { readonly open: readonly ContinuationView[]; readonly resolve: (id: string, action: "resume" | "cancel", input?: Json) => Promise<void> } {
+  const client = useCognate();
+  const state = useRun(runId);
+  const resolve = useCallback(
+    async (id: string, action: "resume" | "cancel", input?: Json) => {
+      await client.resolveContinuation(id, action, input);
+    },
+    [client],
+  );
+  return { open: state?.openContinuations ?? [], resolve };
 }
 
-export function useArtifact(_artifactId: string | undefined): { readonly status: "idle" | "loading" | "ready" | "error"; readonly name?: string; readonly mediaType?: string; readonly text?: string; readonly error?: string } {
-  throw new Error("react: not implemented");
+export function useArtifact(artifactId: string | undefined): { readonly status: "idle" | "loading" | "ready" | "error"; readonly name?: string; readonly mediaType?: string; readonly text?: string; readonly error?: string } {
+  const client = useCognate();
+  type Result = { readonly status: "idle" | "loading" | "ready" | "error"; readonly name?: string; readonly mediaType?: string; readonly text?: string; readonly error?: string };
+  const [result, setResult] = useState<Result>({ status: "idle" });
+
+  useEffect(() => {
+    if (artifactId === undefined) {
+      setResult({ status: "idle" });
+      return;
+    }
+    let cancelled = false;
+    setResult({ status: "loading" });
+    client
+      .artifact(artifactId)
+      .then((record) => {
+        if (cancelled) return;
+        if (record.mediaType.startsWith("text/")) {
+          setResult({ status: "ready", name: record.name, mediaType: record.mediaType, text: new TextDecoder().decode(record.bytes) });
+        } else {
+          setResult({ status: "ready", name: record.name, mediaType: record.mediaType });
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setResult({ status: "error", error: error instanceof Error ? error.message : String(error) });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client, artifactId]);
+
+  return result;
 }
 
 export function useConnectionStatus(): ConnectionStatus {
-  throw new Error("react: not implemented");
+  const client = useCognate();
+  const subscribe = useCallback((onStoreChange: () => void) => client.status.subscribe(onStoreChange), [client]);
+  const getSnapshot = useCallback(() => client.status.get(), [client]);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
