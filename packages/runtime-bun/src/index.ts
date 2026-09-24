@@ -1,5 +1,5 @@
 import type { CognitiveIndex, Embedder, IndexDocument } from "@cognate/cognitive-api";
-import type { DurableStore, Json, StoredEvent } from "@cognate/events";
+import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@cognate/events";
 import type { Component, Kernel, Policy, Principal } from "@cognate/kernel-api";
 import type { Projection } from "@cognate/projections";
 import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-api";
@@ -22,6 +22,12 @@ export interface CognitionOptions {
   readonly persistent: boolean;
 }
 
+/** A run event about to be committed. */
+export type PendingEvent = NewEvent & { readonly eventId: string; readonly streamId: string; readonly recordedAt: string };
+
+/** Outbox topic whose items represent RealityTrace observations; `inspect` reports their observation ids. */
+export const OBSERVATION_OUTBOX_TOPIC = "observation.deliver";
+
 export interface RuntimeOptions {
   /** SQLite file path, `":memory:"` for an in-memory SQLite database, or an explicit store. */
   readonly store: string | { readonly store: DurableStore };
@@ -34,6 +40,11 @@ export interface RuntimeOptions {
   readonly cognition?: CognitionOptions;
   /** Projections kept current by the runtime; `public` ones are readable through the service. */
   readonly projections?: readonly { readonly projection: Projection; readonly public: boolean }[];
+  /**
+   * Extra outbox intents committed atomically with each run event (spec §13.1), e.g. RealityTrace observation
+   * intents. Receives the event before commit: `eventId` is pre-assigned; `recordedAt` is provisional (= occurredAt).
+   */
+  readonly outboxFor?: (event: PendingEvent) => readonly OutboxIntent[];
   /** Background work loop interval (run execution, resume delivery, expiry). Default 10 ms. */
   readonly tickMs?: number;
   readonly system?: Principal;

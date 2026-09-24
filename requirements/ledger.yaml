@@ -443,7 +443,9 @@ requirements:
     acceptance: [AC-RT-003-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/semantic-to-observation.test.ts', proof_paths: ['tests/integration/semantic-to-observation.test.ts']}
     dependencies: [CG-SEM-001, CG-RT-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
+    debt: DEBT-009
   - id: CG-COG-001
     title: 'Dependency-free CognitiveIndex with discoverable capabilities and a memory implementation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '14', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -507,7 +509,9 @@ requirements:
     acceptance: [AC-RVF-001-01]
     gate: {cwd: ., run: 'bun test ./packages/cognitive-rvf/test/rvf.test.ts', proof_paths: ['packages/cognitive-rvf/test/rvf.test.ts']}
     dependencies: [AK-007, CG-COG-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m7-cognition.md
+    debt: DEBT-006
   - id: CG-CLT-001
     title: 'Headless client: subscriptions, reconnect from cursor, continuation interaction, frontend capabilities.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25.1; 31.8', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

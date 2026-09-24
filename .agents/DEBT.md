@@ -40,7 +40,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Exit criterion:** Re-run AK-002 and the kernel conformance kit on every Cordis version bump; close when a stable Cordis release provides these behaviours natively.
 
 ## DEBT-006 — RVF 0.3.4 import integrity, metadata, and byte export gaps
-**Status:** Open (RVF adapter blocked per ADR-0006 until mitigated)
+**Status:** Mitigated in `cognitive-rvf` (ADR-0006 addendum; CG-RVF-001 passes); open against upstream
 **Requirement(s):** AK-007, CG-RVF-001
 **Observed:** `@ruvector/rvf` 0.3.4 under Bun: default `open()` accepts a 50%-truncated file or a flipped byte (including the magic header) and serves partial or stale data; metadata ingestion throws `MetadataNotSupported` (upstream #704); `exportBytes()`/`openBytes()` throw `BackendNotFound` on the native backend; string ids live in a sidecar JSON file outside the `.rvf`. Bun support is labelled experimental upstream.
 **Consequence:** Spec §18.3 import integrity cannot come from RVF itself. Any RVF adapter must verify a Cognate-recorded digest before opening and keep metadata and lineage outside the RVF file; otherwise RVF stays unsupported in the release capability matrix.
