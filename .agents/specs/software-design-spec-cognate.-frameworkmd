@@ -1,0 +1,2180 @@
+# Software Design Specification
+
+**Status:** Draft v0.1
+**Date:** 2026-09-24
+**Target runtime:** Bun 1.4.x
+**Reference UI:** React 19 + Astryx
+**Reference composition engine:** Cordis
+**Native wire format:** Protocol Buffers
+**Native RPC protocol:** Connect
+**Authoritative persistence:** `bun:sqlite`
+**Reference cognitive implementation:** RuVector
+**Portable cognitive format:** RVF
+**Semantic integration:** Existing DomainForge interfaces; `.sea` unchanged
+**Execution-evidence integration:** Existing RealityTrace interfaces; RealityTrace unchanged
+
+---
+
+# 1. Purpose
+
+The Framework is a semantic, composable application substrate for building agentic software.
+
+Its purpose is not to provide another monolithic agent framework. It provides a small set of domain-independent runtime primitives from which higher-level systems can be composed.
+
+Two initial reference profiles establish the design target:
+
+1. A **Copilot-like profile**, demonstrating agent/user interaction, shared state, frontend capabilities, human interaction, generative UI, streamed execution, and AG-UI compatibility.
+2. A **Harness-like profile**, demonstrating dynamically composed agents, models, tools, skills, sessions, storage, sandboxes, schedulers, and replaceable runtime services.
+
+Neither CopilotKit nor DeepSeek Harness defines the Framework's ontology. They are behavioral reference points.
+
+The theoretical basis for the composition layer is the same distinction formalized by Cordis between **temporal composability**, through reversible effects, and **spatial composability**, through reactive dependencies/coeffects.
+
+The Framework extends that execution model with:
+
+* semantic projection through DomainForge;
+* durable event history;
+* explicit continuations;
+* canonical cross-process Protocol Buffer contracts;
+* cognitive indexing and adaptive retrieval through RuVector;
+* portable cognitive snapshots and branches through RVF;
+* execution evidence through RealityTrace;
+* user-facing interaction through headless clients and optional UI/protocol adapters.
+
+---
+
+# 2. Governing Design Principle
+
+The Framework MUST distinguish between:
+
+**what something means, what is currently executing, what happened, what is relevant, how it is represented, and how it is transported.**
+
+These are separate concerns.
+
+```text
+                       .sea
+                        │
+                        ▼
+                   DomainForge
+                        │
+                        ▼
+                 SEMANTIC PLANE
+                        │
+                        ▼
+                 EXECUTION PLANE
+                        │
+              ┌─────────┴─────────┐
+              ▼                   ▼
+        DURABLE EVENT LOG    RealityTrace
+              │
+              ▼
+        COGNITIVE PLANE
+        RuVector / RVF
+              │
+              ▼
+       PROJECTION / WIRE
+     Protobuf / Connect / AG-UI
+              │
+              ▼
+        CLIENT / UI PLANE
+       React 19 / Astryx
+```
+
+No layer may silently become authoritative for a responsibility belonging to another layer.
+
+In particular:
+
+* `.sea` expresses semantics.
+* DomainForge projects existing semantics.
+* The runtime executes.
+* SQLite records authoritative durable framework history.
+* RealityTrace records execution evidence through its existing mechanisms.
+* RuVector discovers relevance and relationships.
+* RVF packages portable cognitive state.
+* Protobuf represents data across durable/wire boundaries.
+* Connect transports RPC.
+* AG-UI provides optional agent/UI interoperability.
+* Astryx renders the reference UI.
+
+---
+
+# 3. Non-Negotiable Architectural Invariants
+
+## 3.1 `.sea` remains unchanged
+
+The Framework MUST NOT require additions or modifications to `.sea` grammar.
+
+Framework concepts MUST be derived from existing semantic representations or projections produced by DomainForge.
+
+A new framework integration is a projection or adapter problem, not a language-design problem.
+
+## 3.2 DomainForge remains unchanged
+
+DomainForge MUST NOT depend on the Framework.
+
+The Framework integrates through an adapter against a stable interface already exposed by DomainForge.
+
+Conceptually:
+
+```text
+.sea
+  │
+  ▼
+DomainForge
+  │
+  ▼
+existing semantic representation
+  │
+  ▼
+Framework DomainForge Adapter
+```
+
+DomainForge is upstream of framework representation, not embedded inside its runtime.
+
+## 3.3 RealityTrace remains unchanged
+
+RealityTrace MUST NOT depend on the Framework.
+
+A Framework adapter translates execution observations into the form accepted by RealityTrace.
+
+RealityTrace is an evidence consumer, not an execution dependency.
+
+## 3.4 Framework public APIs MUST NOT expose Cordis
+
+Cordis is the initial execution engine.
+
+It is not the Framework API.
+
+Application code MUST depend on Framework abstractions such as:
+
+* `Context`
+* `Capability`
+* `Component`
+* `Scope`
+* `Effect`
+* `Continuation`
+
+rather than Cordis classes or APIs.
+
+This allows the Framework to replace or augment Cordis later without invalidating application code.
+
+## 3.5 SQLite is authoritative; RuVector is derived
+
+The authoritative record for Framework durability is the event store implemented initially with `bun:sqlite`.
+
+RuVector MUST NOT become the sole source of truth for:
+
+* application events;
+* authorization;
+* capability eligibility;
+* external commitments;
+* continuation state;
+* audit history.
+
+The entire cognitive index MUST be rebuildable from authoritative sources.
+
+A destructive operation equivalent to:
+
+```text
+delete cognitive index
+rebuild cognitive index
+```
+
+MUST NOT alter application correctness.
+
+It may temporarily reduce retrieval quality or learned optimization.
+
+## 3.6 Adaptive systems rank; deterministic systems constrain
+
+RuVector/SONA or any later adaptive selector MAY rank candidates only **after deterministic eligibility has been established**.
+
+Required ordering:
+
+```text
+all candidates
+      │
+      ▼
+semantic + security + policy constraints
+      │
+      ▼
+eligible candidates
+      │
+      ▼
+cognitive/adaptive ranking
+      │
+      ▼
+selection
+```
+
+The reverse is forbidden.
+
+Learning MUST NOT grant authority.
+
+## 3.7 Wire representation is not semantic ontology
+
+Protocol Buffers are the canonical cross-process and durable interchange schema.
+
+`.proto` definitions MUST NOT determine the semantic model of `.sea` or DomainForge.
+
+Protobuf represents framework concepts; it does not define their meaning.
+
+## 3.8 UI implementation is replaceable
+
+React and Astryx are the reference UI implementation.
+
+Framework concepts MUST remain usable without React or Astryx.
+
+Astryx is currently a React 19+ design system and remains beta, so its APIs MUST NOT leak into the headless client contract.
+
+## 3.9 External side effects are not reversible effects
+
+The Framework MUST distinguish:
+
+1. reversible runtime effects;
+2. durable internal facts;
+3. external commitments.
+
+A network registration can be reversed.
+
+A durable fact can be appended but should not be erased as if it never occurred.
+
+An email already sent or payment already committed cannot be treated as an ordinary runtime disposer.
+
+---
+
+# 4. Goals
+
+The Framework SHALL:
+
+* support dynamic composition of application capabilities;
+* react automatically to capability availability and loss;
+* guarantee lifecycle ownership of reversible effects;
+* provide explicit scoped contexts;
+* support replaceable providers without tight coupling;
+* record durable semantic events;
+* support resumable and externally satisfied continuations;
+* support UI, agent, protocol, and storage projections;
+* provide typed cross-language contracts;
+* allow agent applications to run locally with minimal infrastructure;
+* support semantic/cognitive recall across cases, traces, artifacts, events, and capabilities;
+* permit learned routing without compromising deterministic constraints;
+* provide portable cognitive snapshots and branches using RVF;
+* support compatibility with AG-UI, MCP, A2A and similar protocols through adapters;
+* make Copilot-like and Harness-like functionality compositions of common primitives;
+* provide sufficient runtime provenance for RealityTrace correlation;
+* support automated conformance and property testing.
+
+---
+
+# 5. Non-Goals
+
+The Framework SHALL NOT:
+
+* replace `.sea`;
+* modify `.sea` for framework-specific concepts;
+* replace DomainForge;
+* replace RealityTrace;
+* embed SEA-Forge governance into the kernel;
+* embed Gauntlet judgment into the kernel;
+* require a particular LLM provider;
+* require cloud infrastructure;
+* make React mandatory;
+* make AG-UI mandatory;
+* make RuVector authoritative;
+* allow learned routing to override security or semantic constraints;
+* guarantee reversibility of effects outside the process/system boundary;
+* require PostgreSQL, Redis, NATS, Kafka, Docker, Kubernetes, or another infrastructure service for a local application.
+
+---
+
+# 6. Reference Technology Stack
+
+## Required reference platform
+
+**Bun 1.4.x**
+
+The initial compatibility baseline SHOULD pin a tested 1.4.x patch release in CI rather than implicitly floating to later major/minor releases.
+
+Bun supplies:
+
+* JavaScript/TypeScript runtime;
+* package manager;
+* workspace management;
+* test runner;
+* bundler;
+* HTTP server;
+* server WebSockets;
+* SQLite;
+* Web-standard Request/Response primitives.
+
+Current Bun 1.4 releases expose the all-in-one runtime/tooling model and native server/WebSocket facilities needed for this design.
+
+## Reference composition engine
+
+**Cordis**
+
+Cordis supplies the initial implementation of:
+
+* contexts;
+* services/capabilities;
+* scoped dependency resolution;
+* component/plugin lifecycle;
+* fibers;
+* effect ownership;
+* disposal;
+* dependency-driven activation.
+
+Cordis explicitly models a fiber as one live plugin instance owning its effects, with effect disposers executed in reverse order during unload.
+
+## Wire schema
+
+**Protocol Buffers**
+
+Recommended implementation dependency:
+
+* `@bufbuild/protobuf`
+
+## Native RPC
+
+**Connect**
+
+Connect is preferred over raw gRPC for the Bun reference runtime because the protocol is defined over general HTTP semantics while retaining protobuf, unary RPC, and streaming modes.
+
+Native gRPC interoperability MAY be supplied by adapters where required.
+
+## Persistence
+
+**`bun:sqlite`**
+
+No external SQLite driver is required.
+
+## Cognitive implementation
+
+**RuVector**
+
+RuVector is the reference implementation for:
+
+* semantic similarity;
+* cognitive recall;
+* vector retrieval;
+* graph relationships;
+* causal/temporal retrieval where supported;
+* adaptive ranking;
+* learned routing.
+
+## Cognitive container
+
+**RVF**
+
+RVF remains part of the initial architecture for:
+
+* portable cognitive snapshots;
+* lineage;
+* branching;
+* cognitive state distribution;
+* optional witness/attestation information.
+
+RVF currently provides vector, graph, metadata, witness and copy-on-write oriented structures in a portable format.
+
+## Reference UI
+
+**React 19 + Astryx**
+
+Astryx sits above the framework's React bindings.
+
+```text
+headless framework client
+          │
+          ▼
+    framework-react
+          │
+          ▼
+      ui-astryx
+```
+
+## Optional protocols
+
+* AG-UI
+* MCP
+* A2A
+* WebSocket
+* SSE
+* raw HTTP
+* gRPC compatibility adapters
+
+AG-UI remains an adapter rather than an internal event model. Its role is agent/user bidirectional interaction through standardized event streams.
+
+---
+
+# 7. Logical Architecture
+
+The Framework is organized into six primary planes.
+
+## 7.1 Semantic Plane
+
+Source:
+
+```text
+.sea → DomainForge
+```
+
+Responsibilities:
+
+* expose existing semantic identities;
+* resolve semantic references;
+* provide framework projections from existing DomainForge output;
+* preserve semantic provenance.
+
+The Framework SHALL introduce an opaque `SemanticRef`.
+
+A `SemanticRef` identifies an existing semantic object without dictating how DomainForge represents that object internally.
+
+At minimum it SHALL support:
+
+* namespace;
+* stable object identity;
+* semantic type when available;
+* source/projection version when available.
+
+The adapter owns mapping between `SemanticRef` and existing DomainForge identities.
+
+---
+
+## 7.2 Execution Plane
+
+Responsibilities:
+
+* contexts;
+* scopes;
+* capabilities;
+* components;
+* fibers;
+* dependencies;
+* reversible effects;
+* continuations;
+* event emission;
+* boundary classification.
+
+Cordis is the first implementation.
+
+The public execution API remains framework-owned.
+
+---
+
+## 7.3 Durable State Plane
+
+Responsibilities:
+
+* event log;
+* run state;
+* continuation state;
+* snapshots/checkpoints;
+* external-commit/outbox state;
+* schema versions;
+* replay position.
+
+Reference implementation: `bun:sqlite`.
+
+---
+
+## 7.4 Cognitive Plane
+
+Responsibilities:
+
+* relevance;
+* semantic recall;
+* similarity;
+* relationship traversal;
+* context retrieval;
+* outcome-informed ranking;
+* optional learned adaptation;
+* cognitive snapshot/branch packaging.
+
+Reference implementation: RuVector + RVF.
+
+The cognitive plane MUST reference authoritative objects using stable IDs rather than duplicating authority.
+
+---
+
+## 7.5 Wire and Interoperability Plane
+
+Responsibilities:
+
+* protobuf encoding;
+* Connect RPC;
+* optional AG-UI;
+* MCP;
+* A2A;
+* WebSocket/SSE;
+* cross-language clients.
+
+---
+
+## 7.6 Presentation Plane
+
+Responsibilities:
+
+* headless client state;
+* framework hooks;
+* projection rendering;
+* continuation UI;
+* artifact UI;
+* capability registration from the client;
+* reference design system.
+
+Reference implementation:
+
+```text
+React 19
+   +
+Astryx
+```
+
+---
+
+# 8. Core Runtime Concepts
+
+## 8.1 Context
+
+A Context defines the capability environment visible to a component.
+
+It SHALL support:
+
+* parent/child scope;
+* metadata;
+* capability resolution;
+* policy/interception;
+* isolation;
+* lifecycle ownership;
+* semantic association.
+
+A child Context MAY narrow or extend its parent but MUST NOT mutate parent scope implicitly.
+
+---
+
+## 8.2 Capability
+
+A Capability describes something available to another component.
+
+Capabilities SHALL have:
+
+* stable capability identity;
+* provider identity;
+* scope;
+* version;
+* optional semantic reference;
+* machine-readable attributes;
+* lifecycle state.
+
+Capability matching has two phases.
+
+### Eligibility
+
+Deterministic.
+
+Based on:
+
+* exact required identity or compatible category;
+* scope;
+* permissions;
+* declared constraints;
+* semantic contract;
+* policy.
+
+### Selection
+
+May be adaptive.
+
+Based on:
+
+* context;
+* prior outcomes;
+* latency;
+* cost;
+* relevance;
+* task similarity;
+* learned ranking.
+
+---
+
+## 8.3 Component
+
+A Component is a declarative unit of composition.
+
+A component MAY:
+
+* require capabilities;
+* provide capabilities;
+* register effects;
+* emit events;
+* expose projections;
+* open continuations;
+* observe runtime state.
+
+Component definitions MUST be independent from one instantiated runtime occurrence.
+
+---
+
+## 8.4 Fiber
+
+A Fiber is one live instance of a Component.
+
+A Fiber owns:
+
+* resolved dependencies;
+* scoped context;
+* reversible effects;
+* active continuations created by that component where ownership applies;
+* lifecycle state.
+
+Reference lifecycle:
+
+```text
+DECLARED
+   ↓
+WAITING
+   ↓
+ACTIVATING
+   ↓
+ACTIVE
+   ↓
+DEACTIVATING
+   ↓
+DISPOSED
+```
+
+Loss of a required capability SHALL move affected fibers toward deactivation.
+
+Availability of all required capabilities MAY reactivate waiting components.
+
+---
+
+# 9. Runtime Change Model
+
+Every meaningful operation SHALL belong to one of three classes.
+
+## 9.1 Reversible Effect
+
+Examples:
+
+* listener registration;
+* timer registration;
+* capability registration;
+* UI renderer registration;
+* ephemeral subscription;
+* runtime hook;
+* local resource acquisition.
+
+A reversible effect SHALL have a disposer.
+
+Disposal SHALL be:
+
+* idempotent;
+* owned by a lifecycle scope;
+* executed automatically on fiber teardown;
+* ordered inversely where ordering matters.
+
+---
+
+## 9.2 Durable Fact
+
+Examples:
+
+* user submitted message;
+* case transitioned;
+* tool result produced;
+* approval granted;
+* continuation resumed;
+* agent run completed.
+
+Durable facts SHALL be appended to the event store.
+
+They MUST NOT be "undone" by deleting history.
+
+Correction is represented by later facts.
+
+---
+
+## 9.3 External Commitment
+
+Examples:
+
+* email sent;
+* payment charged;
+* remote record mutated;
+* irreversible job submitted.
+
+External commitments require explicit handling.
+
+The framework SHOULD support:
+
+```text
+INTENT
+  ↓
+PREPARE
+  ↓
+COMMIT
+  ↓
+OBSERVE
+```
+
+Where possible, external handlers SHOULD support:
+
+* idempotency keys;
+* deduplication;
+* transactional outbox;
+* explicit result recording;
+* compensation semantics.
+
+An external commitment MUST NOT be represented as an ordinary reversible effect.
+
+---
+
+# 10. Event Model
+
+The event stream is the durable backbone of Framework execution.
+
+The Framework SHALL use an append-only event model.
+
+A canonical event envelope SHALL contain at least:
+
+* `event_id`
+* `stream_id`
+* `stream_sequence`
+* `event_type`
+* `schema_version`
+* `occurred_at`
+* `recorded_at`
+* `correlation_id`
+* `causation_id`
+* `run_id`
+* `scope_id`
+* `component_id` when applicable
+* `fiber_id` when applicable
+* `semantic_ref` when applicable
+* typed payload
+* metadata
+
+Events MUST be replayable in stable stream order.
+
+Wall-clock timestamps MUST NOT be used as the sole ordering mechanism.
+
+---
+
+# 11. Projections
+
+A Projection derives another representation from authoritative semantic/event inputs.
+
+Examples:
+
+```text
+events → current application state
+events → model conversation
+events → AG-UI stream
+events → React client state
+events → RuVector index
+events → RealityTrace observation
+events → audit view
+events → metrics
+events → test oracle
+```
+
+Projection failures MUST NOT corrupt authoritative event history.
+
+A projection SHALL track its progress independently enough to resume or rebuild.
+
+---
+
+# 12. Continuations
+
+A Continuation represents valid but unfinished execution.
+
+Examples:
+
+* waiting for human approval;
+* waiting for tool result;
+* waiting for OAuth authorization;
+* waiting for external job;
+* waiting for remote agent;
+* waiting for unavailable capability;
+* waiting for requested data.
+
+A continuation SHALL contain:
+
+* continuation ID;
+* originating run;
+* originating scope;
+* continuation type;
+* required satisfaction condition;
+* resumable payload/state;
+* expiration policy;
+* semantic reference if available;
+* current status;
+* creation and resolution events.
+
+Reference lifecycle:
+
+```text
+OPEN
+  │
+  ├── RESUMED
+  ├── CANCELLED
+  ├── EXPIRED
+  └── FAILED
+```
+
+Human-in-the-loop interactions are a specialization of Continuation, not a privileged kernel primitive.
+
+---
+
+# 13. Authoritative Persistence
+
+## 13.1 SQLite responsibility
+
+The default SQLite store SHALL persist:
+
+* events;
+* streams;
+* projection checkpoints;
+* continuations;
+* runs;
+* external commitment/outbox records;
+* schema migration/version information;
+* cognitive-index checkpoints/references;
+* RVF snapshot references.
+
+## 13.2 Suggested logical tables
+
+The implementation MAY vary physically, but SHOULD expose logical equivalents of:
+
+```text
+events
+event_streams
+runs
+continuations
+projection_checkpoints
+external_commitments
+outbox
+cognitive_checkpoints
+rvf_snapshots
+schema_versions
+```
+
+## 13.3 Rebuildability
+
+Given:
+
+```text
+DomainForge-visible semantics
++
+Framework event store
++
+durable artifacts
+```
+
+the implementation SHOULD be able to rebuild:
+
+* application projections;
+* RuVector indexes;
+* graph relationships;
+* model-context projections;
+* most UI-derived state.
+
+---
+
+# 14. Cognitive Plane
+
+The Framework SHALL define a dependency-free cognitive interface rather than exposing RuVector types.
+
+Reference abstraction:
+
+```text
+CognitiveIndex
+```
+
+Required conceptual operations:
+
+* index;
+* remove derived entry;
+* retrieve similar;
+* recall for context;
+* traverse relationships;
+* retrieve causally/temporally related entries;
+* record outcome feedback;
+* snapshot;
+* branch;
+* inspect provenance.
+
+Not every implementation must support every advanced operation.
+
+Capabilities SHALL be discoverable.
+
+Example capability flags:
+
+```text
+vector_search
+graph_traversal
+temporal_search
+causal_search
+adaptive_ranking
+snapshot
+branch
+witness
+```
+
+---
+
+# 15. RuVector Integration
+
+RuVector SHALL be the reference `CognitiveIndex` implementation.
+
+The adapter SHOULD initially index:
+
+1. DomainForge semantic objects or projections;
+2. Framework events;
+3. artifacts;
+4. completed runs;
+5. tool outcomes;
+6. continuation outcomes;
+7. RealityTrace references;
+8. application-defined knowledge.
+
+The cognitive representation MUST preserve links back to authoritative sources.
+
+Example derived entry:
+
+```text
+CognitiveEntry
+  id
+  source_type
+  source_ref
+  semantic_ref
+  event_ref
+  trace_ref
+  embedding
+  metadata
+  relationships
+  valid_from
+  valid_to
+```
+
+The vector or graph record is a retrieval aid.
+
+`source_ref` is the route back to truth.
+
+---
+
+# 16. Cognitive Retrieval Pipeline
+
+The standard retrieval path SHALL be:
+
+```text
+current execution context
+          │
+          ▼
+construct cognitive query
+          │
+          ▼
+RuVector retrieval
+          │
+          ▼
+candidate source references
+          │
+          ▼
+authorization / scope filtering
+          │
+          ▼
+authoritative object fetch
+          │
+          ▼
+consumer
+```
+
+Where sensitive scope is known before retrieval, filtering SHOULD occur as early as the RuVector implementation safely permits.
+
+A retrieved cognitive item MUST NOT be treated as authoritative merely because similarity is high.
+
+---
+
+# 17. Adaptive Selection and SONA
+
+SONA MAY implement adaptive ranking.
+
+Current RuVector SONA describes runtime adaptation for routing/ranking without conventional retraining.
+
+The Framework contract SHALL constrain its use.
+
+Allowed:
+
+```text
+eligible model providers
+      ↓
+rank by historical outcome
+```
+
+Allowed:
+
+```text
+authorized relevant artifacts
+      ↓
+rank by usefulness
+```
+
+Allowed:
+
+```text
+compatible agent implementations
+      ↓
+rank by context + performance
+```
+
+Forbidden:
+
+```text
+all providers
+      ↓
+SONA chooses one
+      ↓
+skip policy check
+```
+
+Adaptive feedback SHOULD originate from explicit outcome signals where possible.
+
+The Framework MUST preserve enough evidence to explain:
+
+* candidate set;
+* deterministic filters;
+* scores/ranking if available;
+* selected candidate;
+* observed outcome.
+
+---
+
+# 18. RVF
+
+RVF is a first-class cognitive portability facility.
+
+It is not the authoritative event store.
+
+The Framework SHALL provide an RVF adapter capable of supporting, as the underlying library permits:
+
+* export of cognitive state;
+* import of cognitive state;
+* frozen cognitive snapshots;
+* copy-on-write branches;
+* lineage metadata;
+* provenance/witness metadata;
+* portable transfer of cognitive indexes.
+
+RVF currently describes copy-on-write derivation and typed segments for vectors, graphs, metadata, witnesses and related state.
+
+## 18.1 Branching model
+
+A use case may create:
+
+```text
+base cognition
+      │
+      ├── user branch
+      ├── agent experiment
+      ├── scenario simulation
+      ├── case branch
+      └── test branch
+```
+
+A branch MUST NOT change authoritative application history.
+
+It represents a cognitive fork unless separately committed through normal framework semantics.
+
+## 18.2 RVF identity
+
+Every Framework-generated RVF snapshot SHOULD record:
+
+* framework version;
+* cognitive schema version;
+* source event checkpoint;
+* semantic source version when available;
+* parent RVF identity if branched;
+* creation timestamp;
+* integrity metadata;
+* optional RealityTrace correlation.
+
+## 18.3 Import safety
+
+An imported RVF MUST be classified as either:
+
+**attached** — verified to correspond to the current authoritative application lineage;
+
+or
+
+**detached** — useful for retrieval/analysis but not presumed to represent current authoritative state.
+
+---
+
+# 19. DomainForge Adapter
+
+Package:
+
+```text
+packages/domainforge
+```
+
+Responsibilities:
+
+* invoke or consume the existing supported DomainForge interface;
+* translate existing outputs into Framework semantic projections;
+* generate `SemanticRef` mappings;
+* expose projected capability/contract information where already represented;
+* preserve source identity and version information;
+* remain independently replaceable.
+
+Forbidden:
+
+* `.sea` grammar extensions for Framework support;
+* DomainForge forks required by the Framework;
+* hardcoded framework syntax inside `.sea`.
+
+---
+
+# 20. RealityTrace Adapter
+
+Package:
+
+```text
+packages/realitytrace
+```
+
+The runtime SHALL expose an implementation-independent observation port.
+
+Conceptually:
+
+```text
+EvidenceSink.observe(observation)
+```
+
+Framework observations SHOULD include where available:
+
+* trace ID;
+* event ID;
+* causation ID;
+* correlation ID;
+* run ID;
+* scope ID;
+* component ID;
+* fiber ID;
+* capability ID;
+* continuation ID;
+* semantic reference;
+* operation classification;
+* input reference;
+* output reference;
+* timestamp.
+
+The adapter maps these observations onto existing RealityTrace capabilities.
+
+RealityTrace failure MUST NOT prevent authoritative event persistence unless an application explicitly configures strict evidence requirements.
+
+---
+
+# 21. Protocol Buffers
+
+The Framework SHALL maintain canonical protobuf schemas under:
+
+```text
+proto/
+```
+
+Initial schema domains SHOULD include:
+
+```text
+identity.proto
+event.proto
+capability.proto
+component.proto
+execution.proto
+continuation.proto
+artifact.proto
+cognitive.proto
+trace.proto
+runtime.proto
+```
+
+Core schema evolution SHALL follow backward-compatible protobuf practices.
+
+Fields MUST NOT be reused after removal.
+
+Persisted protobuf versioning and Framework schema versioning SHALL be explicit.
+
+---
+
+# 22. RPC
+
+Default RPC SHALL use Connect over standard HTTP.
+
+The design MUST isolate the transport:
+
+```text
+Framework service interface
+          │
+          ▼
+      RPC adapter
+          │
+     ┌────┴─────┐
+     ▼          ▼
+ Connect       future
+```
+
+The Bun implementation SHALL adapt `Bun.serve()` Request/Response handling to the RPC layer.
+
+A transport compatibility spike is required early because the Framework SHOULD NOT depend on assumptions about Node-only server adapters.
+
+The protocol abstraction MUST survive replacement of the initial Connect/Bun bridge.
+
+---
+
+# 23. Streaming
+
+The Framework's internal streaming primitive SHOULD use Web standards wherever possible:
+
+```text
+AsyncIterable<T>
+ReadableStream<T>
+```
+
+RxJS MUST NOT be required by the kernel.
+
+Adapters MAY expose:
+
+* Observable;
+* SSE;
+* WebSocket;
+* AG-UI event stream;
+* Connect streaming.
+
+---
+
+# 24. AG-UI
+
+Package:
+
+```text
+packages/ag-ui
+```
+
+AG-UI SHALL be a projection and interoperability layer.
+
+Internal Framework events MUST NOT be aliases of AG-UI events.
+
+Mapping examples:
+
+```text
+Framework run lifecycle
+    → AG-UI RUN_* events
+
+Framework message projection
+    → AG-UI TEXT_MESSAGE_* events
+
+Framework tool execution
+    → AG-UI TOOL_CALL_* events
+
+Framework projected state
+    → AG-UI STATE_SNAPSHOT / STATE_DELTA
+```
+
+AG-UI currently standardizes agent/user interaction through event-based communication, including lifecycle, messages, tools and state.
+
+The adapter SHOULD support interoperability with existing CopilotKit-compatible consumers without requiring CopilotKit itself.
+
+---
+
+# 25. UI Architecture
+
+## 25.1 Headless client
+
+Package:
+
+```text
+packages/client
+```
+
+Responsibilities:
+
+* connection management;
+* local projection cache;
+* subscriptions;
+* optimistic state where supported;
+* capability registration;
+* continuation interaction;
+* artifact access;
+* run control.
+
+No React dependency.
+
+## 25.2 React bindings
+
+Package:
+
+```text
+packages/react
+```
+
+Possible public hooks:
+
+```text
+useAgent
+useRun
+useCapability
+useProjection
+useSharedState
+useContinuation
+useArtifact
+useCognitiveRecall
+```
+
+Names are provisional.
+
+## 25.3 Astryx renderer
+
+Package:
+
+```text
+packages/ui-astryx
+```
+
+Responsibilities:
+
+* reference application shell;
+* chat/agent surfaces;
+* artifact surfaces;
+* continuation/approval surfaces;
+* state inspection;
+* run inspection;
+* accessible controls;
+* theme/dark mode.
+
+Astryx implementation types MUST NOT cross into `packages/client` or `packages/react`.
+
+Astryx currently supplies a broad React 19+ component system intended to be customizable and usable by both developers and agents.
+
+---
+
+# 26. Model Providers
+
+No LLM SDK SHALL be required by the kernel.
+
+The Framework SHALL expose a provider contract.
+
+Conceptual capabilities:
+
+```text
+generate
+stream
+tool_use
+structured_output
+multimodal_input
+context_limit
+```
+
+Potential optional packages:
+
+```text
+provider-openai-compatible
+provider-anthropic
+provider-local
+provider-ollama
+provider-llamacpp
+provider-custom
+```
+
+Provider selection MAY use cognitive ranking after deterministic compatibility and policy constraints.
+
+---
+
+# 27. Package Topology
+
+Initial repository layout:
+
+```text
+/
+├── packages/
+│   ├── kernel-api/
+│   ├── kernel-cordis/
+│   │
+│   ├── events/
+│   ├── capabilities/
+│   ├── continuations/
+│   ├── projections/
+│   ├── artifacts/
+│   │
+│   ├── store-memory/
+│   ├── store-sqlite/
+│   │
+│   ├── cognitive-api/
+│   ├── cognitive-memory/
+│   ├── cognitive-ruvector/
+│   ├── cognitive-rvf/
+│   │
+│   ├── proto/
+│   ├── protocol-connect/
+│   ├── protocol-connect-bun/
+│   │
+│   ├── runtime-bun/
+│   │
+│   ├── client/
+│   ├── react/
+│   ├── ui-astryx/
+│   │
+│   ├── ag-ui/
+│   ├── mcp/
+│   ├── a2a/
+│   │
+│   ├── domainforge/
+│   ├── realitytrace/
+│   │
+│   ├── provider-openai-compatible/
+│   └── provider-local/
+│
+├── profiles/
+│   ├── copilot/
+│   └── harness/
+│
+├── proto/
+│
+├── examples/
+│
+├── compatibility/
+│   ├── copilotkit/
+│   └── deepseek-harness/
+│
+└── tests/
+    ├── properties/
+    ├── integration/
+    └── e2e/
+```
+
+---
+
+# 28. Dependency Rules
+
+The repository SHALL enforce dependency direction.
+
+Allowed:
+
+```text
+kernel-cordis → kernel-api
+store-sqlite → events
+cognitive-ruvector → cognitive-api
+cognitive-rvf → cognitive-api
+react → client
+ui-astryx → react
+ag-ui → events/client
+domainforge → kernel-api/projections
+realitytrace → events/evidence contracts
+profiles/* → packages/*
+```
+
+Forbidden examples:
+
+```text
+kernel-api → cordis
+kernel-api → ruvector
+kernel-api → react
+kernel-api → astryx
+kernel-api → ag-ui
+kernel-api → domainforge
+kernel-api → realitytrace
+
+events → ruvector
+cognitive-api → ruvector
+client → react
+react → astryx
+```
+
+Dependency-cycle checking SHOULD be part of CI.
+
+---
+
+# 29. Reference Profiles
+
+## 29.1 Copilot Profile
+
+The Copilot profile SHALL demonstrate that common Copilot-style behavior can be constructed without introducing profile-specific kernel primitives.
+
+Composition:
+
+```text
+runtime
+  +
+runs
+  +
+continuations
+  +
+frontend capabilities
+  +
+state projections
+  +
+artifact projections
+  +
+AG-UI
+  +
+React bindings
+  +
+Astryx UI
+```
+
+Acceptance behaviors:
+
+* streamed agent response;
+* frontend tool;
+* backend tool;
+* shared application state;
+* human approval;
+* artifact rendering;
+* generative UI projection;
+* resumable interaction;
+* AG-UI-compatible event output.
+
+---
+
+## 29.2 Harness Profile
+
+The Harness profile SHALL demonstrate:
+
+* model providers;
+* tool registry;
+* agent loop;
+* sessions;
+* storage;
+* skills/extensions;
+* scheduler;
+* sandbox adapters;
+* replaceable services;
+* dynamic activation/deactivation;
+* subagent composition.
+
+A provider MUST be replaceable without consumers importing its concrete implementation.
+
+Removal of a capability MUST deterministically deactivate dependent fibers.
+
+Restoration of a compatible capability MAY reactivate them.
+
+---
+
+# 30. Cognitive Reference Scenario
+
+Given a support case:
+
+```text
+duplicate payment
+customer = X
+amount = Y
+current state = investigation
+```
+
+The runtime creates a cognitive query.
+
+RuVector may return:
+
+* semantically related DomainForge objects;
+* similar prior cases;
+* related artifacts;
+* relevant RealityTrace executions;
+* previously useful tools;
+* analogous resolutions.
+
+Returned objects contain source references.
+
+The Framework fetches authoritative source data and filters according to context and policy before supplying it to the consuming agent.
+
+If multiple eligible tools/providers can satisfy an operation:
+
+```text
+semantic constraints
+      ↓
+security constraints
+      ↓
+capability compatibility
+      ↓
+eligible candidates
+      ↓
+RuVector/SONA ranking
+      ↓
+selection
+```
+
+The selection and outcome are recorded so later adaptation has explicit evidence.
+
+---
+
+# 31. Failure Semantics
+
+## 31.1 Cordis/kernel-engine failure
+
+Must not corrupt the durable event store.
+
+Fiber teardown SHALL attempt all registered disposers even where an earlier disposer fails.
+
+Aggregate cleanup errors SHOULD be observable.
+
+## 31.2 SQLite failure
+
+Durable operations SHALL fail closed.
+
+The runtime MUST NOT claim a durable event was committed before SQLite confirms the transaction.
+
+## 31.3 RuVector failure
+
+Framework execution continues without cognitive optimization unless an application explicitly declares cognition as required.
+
+Fallback:
+
+```text
+RuVector unavailable
+      ↓
+deterministic/non-cognitive behavior
+```
+
+## 31.4 RVF failure
+
+Failure to create a cognitive snapshot MUST NOT corrupt the active cognitive index or event store.
+
+## 31.5 DomainForge integration failure
+
+Components requiring unavailable semantic projections wait/fail according to their declared requirement.
+
+No `.sea` fallback grammar is introduced.
+
+## 31.6 RealityTrace failure
+
+Framework execution MAY continue in normal mode.
+
+Applications requiring trace evidence for a regulated/high-assurance operation MAY opt into fail-closed policy outside the generic kernel.
+
+## 31.7 UI failure
+
+UI rendering failure MUST NOT mutate or corrupt authoritative runtime state.
+
+## 31.8 Protocol adapter failure
+
+Reconnect/resume SHOULD use durable run/event position rather than assuming the stream remained continuously connected.
+
+---
+
+# 32. Security Model
+
+Capabilities SHOULD default to least authority.
+
+Every capability invocation SHALL have access to:
+
+* caller identity/context;
+* scope;
+* capability identity;
+* selected provider;
+* applicable policy information;
+* trace/correlation identity.
+
+Sensitive cognitive retrieval SHALL enforce authorization independently of similarity.
+
+Cognitive indexes SHOULD avoid embedding unrestricted sensitive payloads when references or redacted projections are sufficient.
+
+External commitments SHOULD use idempotency identifiers when the target supports them.
+
+Protocol input MUST be schema validated.
+
+Untrusted protobuf/JSON payloads MUST NOT construct arbitrary runtime components without authorization.
+
+---
+
+# 33. Observability and Provenance
+
+Every significant execution SHOULD preserve enough identifiers to reconstruct causality:
+
+```text
+correlation
+    │
+run
+    │
+event
+    │
+causation
+    │
+component/fiber
+    │
+capability/provider
+    │
+semantic reference
+    │
+artifact
+    │
+RealityTrace reference
+```
+
+Logging is not sufficient.
+
+Machine-readable causal identity is required.
+
+---
+
+# 34. Testing Strategy
+
+## 34.1 Kernel unit tests
+
+Test:
+
+* context inheritance;
+* capability resolution;
+* scope isolation;
+* component lifecycle;
+* continuation lifecycle;
+* event ordering;
+* external commitment handling.
+
+## 34.2 Property-based tests
+
+Use `fast-check`.
+
+Generate arbitrary:
+
+* component graphs;
+* dependency graphs;
+* capability appearance/removal;
+* activation sequences;
+* disposal sequences;
+* continuation sequences;
+* provider replacement;
+* failures.
+
+Critical properties:
+
+### Reversibility
+
+For a purely reversible component:
+
+```text
+state0
+  ↓ mount
+state1
+  ↓ unmount
+state2
+```
+
+Observable `state2` MUST equal `state0` with respect to the component's owned effects.
+
+### Dependency closure
+
+A component MUST NOT remain active when a required capability is unavailable.
+
+### Scope isolation
+
+A child scope MUST NOT leak isolated capabilities into siblings or parents.
+
+### Disposal idempotence
+
+Repeated disposal MUST NOT duplicate teardown side effects.
+
+### Replay determinism
+
+Given the same authoritative event sequence and compatible projection version, deterministic projections MUST produce equivalent results.
+
+### Cognitive non-authority
+
+Deleting or replacing the cognitive index MUST NOT change deterministic authorization outcomes.
+
+### Adaptive containment
+
+Adaptive ranking MUST NOT select an ineligible candidate.
+
+---
+
+# 35. Compatibility Testing
+
+CopilotKit and DeepSeek Harness SHOULD appear only in compatibility/reference testing where useful.
+
+They SHOULD NOT be runtime requirements.
+
+The Framework SHALL test scenarios behaviorally.
+
+Example:
+
+```text
+scenario
+   ├── reference Copilot-style implementation
+   └── Framework Copilot profile
+```
+
+Compare semantic behavior rather than requiring identical internal implementation.
+
+For Harness behavior:
+
+```text
+provide capability A
+      ↓
+dependent component activates
+      ↓
+remove A
+      ↓
+dependent component deactivates
+      ↓
+restore compatible A
+      ↓
+dependent component reactivates
+```
+
+The Cordis paper and DeepSeek Harness serve as the theoretical/reference basis for these composition semantics.
+
+---
+
+# 36. End-to-End Tests
+
+Use Playwright for UI journeys.
+
+Initial E2E journey:
+
+```text
+launch Bun application
+      ↓
+load DomainForge-derived semantic projection
+      ↓
+mount runtime components
+      ↓
+open Astryx UI
+      ↓
+start agent run
+      ↓
+invoke backend capability
+      ↓
+stream result to UI
+      ↓
+open continuation
+      ↓
+human resolves continuation
+      ↓
+run resumes
+      ↓
+artifact produced
+      ↓
+artifact opened
+      ↓
+events persisted
+      ↓
+RealityTrace observation emitted
+      ↓
+RuVector indexes completed interaction
+      ↓
+new related run recalls prior interaction
+      ↓
+RVF snapshot created
+```
+
+The test SHALL verify authoritative state independently from displayed UI state.
+
+---
+
+# 37. Initial Implementation Sequence
+
+## Phase 0 — Architecture characterization
+
+Before implementation:
+
+* characterize Cordis lifecycle behavior;
+* characterize Bun 1.4 runtime features used;
+* prove Bun + selected Cordis package compatibility;
+* prove selected RuVector bindings under Bun;
+* determine native versus WASM fallback;
+* spike Connect handling over `Bun.serve`;
+* characterize existing DomainForge integration interface;
+* characterize existing RealityTrace integration interface.
+
+No application features should be built before these uncertainties are resolved.
+
+## Phase 1 — Kernel
+
+Implement:
+
+* `kernel-api`;
+* Context;
+* Capability;
+* Component;
+* Scope;
+* Effect;
+* Fiber abstraction;
+* kernel-Cordis mapping.
+
+Success criterion:
+
+A component graph can activate/deactivate dynamically and reverse owned effects deterministically.
+
+## Phase 2 — Durable event system
+
+Implement:
+
+* event envelopes;
+* in-memory event store;
+* Bun SQLite store;
+* projection checkpoints;
+* replay.
+
+Success criterion:
+
+Delete all derived state and reconstruct it from SQLite.
+
+## Phase 3 — Continuations and commitments
+
+Implement:
+
+* continuation lifecycle;
+* resume/cancel/expire;
+* external commitment/outbox model;
+* idempotency mechanism.
+
+## Phase 4 — Protobuf + Connect
+
+Implement canonical schemas and Bun transport.
+
+Success criterion:
+
+A second process can observe and control a runtime through generated protobuf clients.
+
+## Phase 5 — DomainForge + RealityTrace
+
+Implement adapters without modifying either project.
+
+Success criterion:
+
+A semantic object can be correlated through:
+
+```text
+DomainForge
+→ SemanticRef
+→ runtime execution
+→ event
+→ RealityTrace observation
+```
+
+## Phase 6 — Cognitive API + RuVector
+
+Implement:
+
+* `CognitiveIndex`;
+* memory implementation;
+* RuVector adapter;
+* indexing projection;
+* semantic recall;
+* authoritative source dereferencing.
+
+Success criterion:
+
+The RuVector index can be deleted and reconstructed without changing deterministic runtime behavior.
+
+## Phase 7 — RVF
+
+Implement:
+
+* export;
+* snapshot;
+* branch;
+* lineage metadata;
+* import classification.
+
+Success criterion:
+
+A cognitive branch can diverge without mutating authoritative application state.
+
+## Phase 8 — Headless client + React + Astryx
+
+Implement:
+
+* client;
+* React bindings;
+* Astryx reference surfaces.
+
+## Phase 9 — AG-UI profile
+
+Implement event mappings and demonstrate existing AG-UI interoperability.
+
+## Phase 10 — Copilot and Harness reference profiles
+
+Demonstrate that both profiles are compositions rather than kernel exceptions.
+
+---
+
+# 38. V0 Dependency Policy
+
+## Core
+
+Aim for the smallest practical set:
+
+```text
+Bun 1.4.x
+Cordis
+@bufbuild/protobuf
+@connectrpc/connect
+```
+
+## Cognitive implementation
+
+```text
+selected RuVector packages
+@ruvector/rvf / appropriate RVF binding
+```
+
+Prefer narrow RuVector packages over the umbrella package where feasible.
+
+## UI
+
+```text
+react
+react-dom
+@astryxdesign/core
+@astryxdesign/theme-neutral
+```
+
+Include StyleX only where required by the selected Astryx distribution path.
+
+## Optional interoperability
+
+```text
+@ag-ui/core
+@ag-ui/proto or encoder as required
+MCP SDK
+A2A implementation
+provider SDKs
+```
+
+## Development
+
+```text
+fast-check
+playwright
+protobuf/buf generation tooling
+```
+
+Use `bun:test` rather than introducing another general test runner unless a concrete limitation requires one.
+
+---
+
+# 39. Dependency Maturity Policy
+
+Cordis, Astryx, RuVector and RVF are active external projects.
+
+The Framework SHALL therefore:
+
+* pin exact tested versions;
+* update through controlled dependency PRs;
+* maintain compatibility tests around behavioral contracts;
+* prevent third-party types from leaking across public abstraction boundaries;
+* maintain fallback implementations for core interfaces;
+* avoid depending on undocumented internals unless isolated inside one adapter;
+* record the exact dependency versions used to produce releases.
+
+RuVector and RVF in particular are evolving rapidly; the Framework gains their functionality without making their implementation architecture part of its own identity.
+
+---
+
+# 40. Architectural Acceptance Criteria
+
+The architecture is considered validated only if all of the following are true.
+
+### A. Cordis can be removed conceptually
+
+Application code imports no Cordis runtime types.
+
+### B. RuVector can be deleted operationally
+
+Deleting cognitive state does not destroy truth or authorization state.
+
+### C. `.sea` does not know the Framework exists
+
+No framework-specific grammar is required.
+
+### D. DomainForge remains independently releasable
+
+Framework integration is an adapter.
+
+### E. RealityTrace remains independently releasable
+
+Framework integration is an evidence adapter.
+
+### F. Astryx can be replaced
+
+Headless and React APIs remain valid.
+
+### G. Connect can be replaced
+
+The service contract survives transport changes.
+
+### H. AG-UI can be removed
+
+Native Framework execution and UI remain functional.
+
+### I. Learning cannot expand authority
+
+Adaptive systems operate only inside deterministic eligibility.
+
+### J. A Copilot-like application can be composed
+
+No Copilot-specific kernel primitives are introduced.
+
+### K. A Harness-like system can be composed
+
+No Harness-specific kernel primitives are introduced.
+
+### L. The cognitive system can improve without semantic mutation
+
+New learned rankings and memories do not require `.sea` grammar changes.
+
+### M. Runtime behavior is causally inspectable
+
+Events, fibers, capabilities, semantic references and RealityTrace observations can be correlated.
+
+---
+
+# 41. Definition of the Framework
+
+The Framework can be summarized as:
+
+> A Bun-native semantic application substrate in which dynamically composed capabilities execute through scoped, reversible lifecycles; durable facts form an authoritative event history; unfinished work is represented explicitly as continuations; DomainForge projects existing `.sea` semantics into the runtime without language changes; RealityTrace receives correlated execution evidence; RuVector provides rebuildable cognitive recall and adaptive ranking; RVF provides portable cognitive state and branching; Protobuf and Connect expose typed cross-language boundaries; and headless clients, AG-UI, React and Astryx project the same underlying system into user-facing applications.
+
+The central dependency chain is therefore:
+
+```text
+                     .sea
+                      │
+                 DomainForge
+                      │
+                      ▼
+             SEMANTIC PROJECTION
+                      │
+                      ▼
+                 FRAMEWORK
+          ┌───────────┼────────────┐
+          │           │            │
+       Cordis      SQLite      RealityTrace
+     execution      truth        evidence
+          │           │
+          └─────┬─────┘
+                ▼
+             RuVector
+             cognition
+                │
+                ▼
+               RVF
+       portable cognition
+
+                │
+        ┌───────┴─────────┐
+        ▼                 ▼
+ Protobuf / Connect     AG-UI
+        │                 │
+        └───────┬─────────┘
+                ▼
+         Headless Client
+                │
+             React
+                │
+             Astryx
+```
+
+The architectural rule that governs the entire design is:
+
+> **Semantics constrain execution. Events preserve truth. Cognition discovers relevance. Evidence records reality. Representations remain replaceable.**
