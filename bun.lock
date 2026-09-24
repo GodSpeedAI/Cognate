@@ -10,6 +10,7 @@
         "@cognate/cognitive-api": "workspace:*",
         "@cognate/cognitive-memory": "workspace:*",
         "@cognate/cognitive-ruvector": "workspace:*",
+        "@cognate/cognitive-rvf": "workspace:*",
         "@cognate/continuations": "workspace:*",
         "@cognate/domainforge": "workspace:*",
         "@cognate/events": "workspace:*",
@@ -83,6 +84,15 @@
       "dependencies": {
         "@cognate/cognitive-api": "workspace:*",
         "@ruvector/core": "0.1.32",
+      },
+    },
+    "packages/cognitive-rvf": {
+      "name": "@cognate/cognitive-rvf",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/cognitive-api": "workspace:*",
+        "@cognate/events": "workspace:*",
+        "@ruvector/rvf": "0.3.4",
       },
     },
     "packages/continuations": {
@@ -291,6 +301,8 @@
 
     "@cognate/cognitive-ruvector": ["@cognate/cognitive-ruvector@workspace:packages/cognitive-ruvector"],
 
+    "@cognate/cognitive-rvf": ["@cognate/cognitive-rvf@workspace:packages/cognitive-rvf"],
+
     "@cognate/continuations": ["@cognate/continuations@workspace:packages/continuations"],
 
     "@cognate/domainforge": ["@cognate/domainforge@workspace:packages/domainforge"],
@@ -332,6 +344,24 @@
     "@godspeedai/domainforge": ["@godspeedai/domainforge@0.16.0", "", {}, "sha512-yEq/hCAA7FyUT40OdNBkS4KIghIIuZyMTS5cZVAsrR86ySm1oDOVWzFc1M9aryXI6OhUQhmRxTZ9Rl4esptUaw=="],
 
     "@ruvector/core": ["@ruvector/core@0.1.32", "", { "optionalDependencies": { "ruvector-core-darwin-arm64": "0.1.30", "ruvector-core-darwin-x64": "0.1.30", "ruvector-core-linux-arm64-gnu": "0.1.30", "ruvector-core-linux-x64-gnu": "0.1.30", "ruvector-core-win32-x64-msvc": "0.1.30" } }, "sha512-tctBcZ9//AXHh6tntaYW3ezHN5aUlhv/kAwJlZgQiwmFhTL8Vl/WqqEQd+Uibdpbo2D2LQI8oRc/pehNFcMq7w=="],
+
+    "@ruvector/rvf": ["@ruvector/rvf@0.3.4", "", { "dependencies": { "@ruvector/rvf-node": "^0.2.3" }, "optionalDependencies": { "@ruvector/rvf-solver": "^0.1.0", "@ruvector/rvf-wasm": "^0.1.7" } }, "sha512-hl/v3MOMKZ3JsNLwEoZ7pMmKZ+FZZspoXwo3qJ5Bf+qCFiuIrdUDBtQoyEdtOK7GD8eUu5u37Wv/BQX1GjW1HQ=="],
+
+    "@ruvector/rvf-node": ["@ruvector/rvf-node@0.2.3", "", { "optionalDependencies": { "@ruvector/rvf-node-darwin-arm64": "0.2.2", "@ruvector/rvf-node-darwin-x64": "0.2.2", "@ruvector/rvf-node-linux-arm64-gnu": "0.2.2", "@ruvector/rvf-node-linux-x64-gnu": "0.2.2", "@ruvector/rvf-node-win32-x64-msvc": "0.2.2" } }, "sha512-UIPw6zekOjVGl9ueZm/TnCJOvlgagsXqrKqTB1s9T8jK7Py/3toZvtR+2hdeM+FPol+J8kUwV8IAz/RMf9kCeA=="],
+
+    "@ruvector/rvf-node-darwin-arm64": ["@ruvector/rvf-node-darwin-arm64@0.2.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-dkPL/oF/Ht4xoYhTxPTDpVELlZBmvxXSH91KAsOj0IpPWKzqTyLEefaHeoL7NmXJcUFhhtcXLdcNVk/9NGTYuQ=="],
+
+    "@ruvector/rvf-node-darwin-x64": ["@ruvector/rvf-node-darwin-x64@0.2.2", "", { "os": "darwin", "cpu": "x64" }, "sha512-3is+EqM3wMZi0RwvuC8+VkFYkt2Jo4gE+XgFKtGxn/X8jDhrGY/En+xx+/6Jp6M1QxLcz21If7lJ93CPHs+i9g=="],
+
+    "@ruvector/rvf-node-linux-arm64-gnu": ["@ruvector/rvf-node-linux-arm64-gnu@0.2.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-s+B+slW4R1Vy504MYELEq1CNstZ1mbvc8hirYydJ7qJ4L1y5JwcmOpKsouDb59tmw93e6IDsvjw8wLB1VHkeFQ=="],
+
+    "@ruvector/rvf-node-linux-x64-gnu": ["@ruvector/rvf-node-linux-x64-gnu@0.2.2", "", { "os": "linux", "cpu": "x64" }, "sha512-RGIZCsQdBl1ewpnh5QHRirbyOPpkB/193UeG6ch8bnhj3/9vP4NNNn7/TTTw1iiPSFzfcfzZIqxCOxjbue7jOg=="],
+
+    "@ruvector/rvf-node-win32-x64-msvc": ["@ruvector/rvf-node-win32-x64-msvc@0.2.2", "", { "os": "win32", "cpu": "x64" }, "sha512-kp9wcq6AnD5Su4k9gST08q6t8A3jHmoLtbPOmwWc/cHsBnf856rXY07zAqaAd/OgUAEGYXxQxk0OVwsrCsvlqQ=="],
+
+    "@ruvector/rvf-solver": ["@ruvector/rvf-solver@0.1.8", "", {}, "sha512-YM7L6TvhVoC5w0kUMl8ASback2ka3MesPvuf+lRYSJEcaf6bncPX7YGzcrsheOe4BBwyiyx39vAijVPx1nZkWA=="],
+
+    "@ruvector/rvf-wasm": ["@ruvector/rvf-wasm@0.1.9", "", {}, "sha512-C6kKdnv47Ud2t0U61eAjRU8dh9DgfQT6KFlGicZKfwUwVcr9NRA52xbM9hI9nd6G3iEOtNqdhkqDe0c6BUwFew=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
