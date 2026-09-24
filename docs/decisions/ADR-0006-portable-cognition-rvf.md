@@ -90,3 +90,18 @@ actually uses), the adapter does not meet the Phase 0 bar.
   instead of trusting `RvfDatabase.open()`?
 - Behavior on macOS/Windows/aarch64 native binaries is unverified (only
   linux-x64-gnu was exercised for this ADR).
+
+## Addendum (2026-09-24): supported with Cognate-owned mitigations
+
+`packages/cognitive-rvf` closes each DEBT-006 gap inside the adapter rather than relying on RVF 0.3.4:
+
+| RVF 0.3.4 gap | Adapter mitigation | Proof (`packages/cognitive-rvf/test/rvf.test.ts`) |
+| --- | --- | --- |
+| `open()` does not verify integrity | Cognate manifest records sha256 over the `.rvf` bytes and the entries sidecar; verified before any open; manifest recorded in `rvf_snapshots` | tampered, truncated, and manifest-less snapshots rejected |
+| metadata ingestion unsupported | provenance, tenant, scope, and metadata live in an adapter-owned `<path>.entries.json` sidecar | imported entries keep `sourceRef`/`sourceType` |
+| `exportBytes`/`openBytes` unsupported on native | file-path snapshots only (copy of the `.rvf` plus its native `<path>.idmap.json`) | attached import returns identical results |
+| — | copy-on-write via RVF `branch()` (not `derive()`, which does not read through to parent vectors) | branch isolation both ways; lineage parent/depth |
+
+Import classification follows §18.3: attached only with matching lineage, a checkpoint not beyond the store head, and a matching `rvf_snapshots` record; otherwise detached; tenant or size violations reject. A lagging index fails or is labelled partial.
+
+Status: **Accepted with mitigations** for the reference profile, superseding "blocked". DEBT-006 stays open against upstream (Bun support is experimental upstream; only linux-x64-gnu was exercised).

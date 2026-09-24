@@ -64,7 +64,9 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
         ...(event.fiberId ? { fiberId: event.fiberId } : {}),
       };
       try {
-        const outcome = await core.store.commit({ appends: [{ streamId, expectedVersion: version, events: [envelope] }] });
+        // Pre-assign the id so hooks can derive intents that commit atomically with the event (spec §13.1).
+        const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt };
+        const outcome = await core.store.commit({ appends: [{ streamId, expectedVersion: version, events: [{ ...envelope, eventId: pending.eventId }] }], outbox: core.outboxFor(pending) });
         const stored = outcome.events[0]!;
         version += 1;
         lastEventId = stored.eventId;

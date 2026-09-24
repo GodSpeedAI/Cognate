@@ -3,7 +3,7 @@
 import type { ContinuationService } from "@cognate/continuations";
 import type { DurableStore, Json, StoredEvent } from "@cognate/events";
 import { field, meta } from "./fold.ts";
-import type { CausalChain } from "./index.ts";
+import { type CausalChain, OBSERVATION_OUTBOX_TOPIC } from "./index.ts";
 
 const PAGE = 1000;
 
@@ -47,5 +47,12 @@ export async function inspectCorrelation(store: DurableStore, continuations: Con
     };
   });
 
-  return { correlationId, runs, events, invocations, artifacts, observations: [] };
+  // Observations are outbox intents on the observation topic whose source event belongs to this correlation.
+  const eventIds = new Set(matching.map((event) => event.eventId));
+  const observations = (await store.listOutbox({ topic: OBSERVATION_OUTBOX_TOPIC }))
+    .map((item) => item.payload as { eventId?: Json; observationId?: Json } | null)
+    .filter((payload): payload is { eventId: string; observationId: string } => typeof payload?.eventId === "string" && typeof payload.observationId === "string" && eventIds.has(payload.eventId))
+    .map((payload) => payload.observationId);
+
+  return { correlationId, runs, events, invocations, artifacts, observations };
 }

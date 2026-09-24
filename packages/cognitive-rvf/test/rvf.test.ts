@@ -68,7 +68,8 @@ describe("RVF snapshots and branches (§18)", () => {
     await i.snapshot(store, snap(dir));
     const rvf = join(dir, "base.rvf");
     const bytes = readFileSync(rvf);
-    bytes[Math.floor(bytes.length / 2)] ^= 0xff;
+    const middle = Math.floor(bytes.length / 2);
+    bytes[middle] = bytes[middle]! ^ 0xff;
     writeFileSync(rvf, bytes);
     expect(await importSnapshot(store, join(dir, "base.manifest.json"), limits)).toMatchObject({ kind: "rejected", reason: expect.stringMatching(/integrity/) });
     writeFileSync(rvf, bytes.subarray(0, bytes.length / 2));

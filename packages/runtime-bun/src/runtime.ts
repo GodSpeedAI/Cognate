@@ -54,6 +54,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     agents: new Map(options.agents.map((a) => [a.id, a])),
     scopeId: kernel.root.id,
     recall: recallFor(store, options.cognition),
+    outboxFor: options.outboxFor ?? (() => []),
     controllers: new Map(),
     execute,
     kick: () => kick(),
