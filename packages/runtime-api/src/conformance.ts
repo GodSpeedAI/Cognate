@@ -1,0 +1,242 @@
+// Runtime service conformance kit (ADR-0011). Runs unchanged in-process and over every transport.
+import { afterEach, describe, expect, test } from "bun:test";
+import type { Json, StoredEvent } from "@cognate/events";
+import type { Principal } from "@cognate/kernel-api";
+import { type AgentDefinition, type Caller, type RunStatus, type RuntimeService, ServiceError } from "./types.ts";
+
+export const alice: Caller = { actor: { id: "alice", kind: "user" }, tenant: "tenant-a" };
+export const mallory: Caller = { actor: { id: "mallory", kind: "user" }, tenant: "tenant-a" };
+export const bob: Caller = { actor: { id: "bob", kind: "user" }, tenant: "tenant-b" };
+
+/** Observable side-effect counters shared with test agents, to prove replay does not repeat work. */
+export interface Counters {
+  quotes: number;
+  lookups: number;
+}
+
+export interface KitSetup {
+  readonly agents: readonly AgentDefinition[];
+  /** A capability `tool.lookup` v1 the runtime must mount as a component. */
+  readonly lookup: (input: { key: string }) => { key: string; value: string };
+  /** Policy: allow invocations by anyone except principal `mallory`; continuation actions likewise. */
+  readonly deniedPrincipal: Principal["id"];
+}
+
+export interface RuntimeHandle {
+  readonly service: RuntimeService;
+  /** Stop and start the runtime on the same durable store (persistent runtimes only). */
+  readonly restart?: () => Promise<RuntimeService>;
+  close(): Promise<void>;
+}
+
+export type RuntimeFactory = (setup: KitSetup) => Promise<RuntimeHandle>;
+
+export function kitAgents(counters: Counters): AgentDefinition[] {
+  return [
+    { id: "agent.echo", version: "1.0.0", run: async (input) => ({ echo: input }) },
+    {
+      id: "agent.approval",
+      version: "1.0.0",
+      async run(input, ctx): Promise<Json> {
+        const { amount } = input as { amount: number };
+        const quote = await ctx.step("quote", () => (counters.quotes++, { total: amount * 2 }));
+        for (const chunk of ["Reviewing ", "refund ", "request"]) await ctx.emit("message.delta", { text: chunk });
+        const decision = (await ctx.waitFor("approval", { type: "refund-approval", condition: { kind: "human_approval" }, payload: { amount, total: quote.total } })) as { approved: boolean };
+        if (!decision.approved) return { approved: false };
+        const artifactId = await ctx.artifact({ name: "refund.md", mediaType: "text/markdown", bytes: new TextEncoder().encode(`# Refund\n${quote.total}`), readers: ["alice"] });
+        return { approved: true, total: quote.total, artifactId };
+      },
+    },
+    {
+      id: "agent.tooluser",
+      version: "1.0.0",
+      async run(input, ctx) {
+        return { found: await ctx.invoke("tool.lookup", input) };
+      },
+    },
+    {
+      id: "agent.fails",
+      version: "1.0.0",
+      async run() {
+        throw new Error("model provider exploded");
+      },
+    },
+  ];
+}
+
+async function until(service: RuntimeService, caller: Caller, runId: string, status: RunStatus, timeoutMs = 5000) {
+  const start = Date.now();
+  for (;;) {
+    const run = await service.getRun(caller, { runId });
+    if (run.status === status) return run;
+    if (Date.now() - start > timeoutMs) throw new Error(`run ${runId} is ${run.status}, expected ${status}`);
+    await Bun.sleep(10);
+  }
+}
+
+async function collect(iterable: AsyncIterable<StoredEvent>, limit = 10_000): Promise<StoredEvent[]> {
+  const out: StoredEvent[] = [];
+  for await (const e of iterable) {
+    out.push(e);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+async function code(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+    return "ok";
+  } catch (error) {
+    return error instanceof ServiceError ? error.code : `untyped: ${String(error)}`;
+  }
+}
+
+export function runtimeServiceConformance(name: string, factory: RuntimeFactory, options: { readonly persistent: boolean }): void {
+  describe(`${name}: runtime service conformance`, () => {
+    const handles: RuntimeHandle[] = [];
+    let counters: Counters;
+    afterEach(async () => {
+      for (const handle of handles.splice(0)) await handle.close();
+    });
+    const open = async () => {
+      counters = { quotes: 0, lookups: 0 };
+      const handle = await factory({ agents: kitAgents(counters), lookup: ({ key }) => (counters.lookups++, { key, value: key.toUpperCase() }), deniedPrincipal: "mallory" });
+      handles.push(handle);
+      return handle;
+    };
+
+    test("a run completes with output and a durable lifecycle in its event stream", async () => {
+      const { service } = await open();
+      const started = await service.startRun(alice, { agent: "agent.echo", input: { hi: 1 }, idempotencyKey: "s1", correlationId: "corr-echo" });
+      const done = await until(service, alice, started.runId, "completed");
+      expect(done).toMatchObject({ agent: "agent.echo", tenant: "tenant-a", output: { echo: { hi: 1 } }, error: null, correlationId: "corr-echo", startedBy: "alice", waitingOn: [] });
+      const types = (await collect(service.events(alice, { runId: started.runId }))).map((e) => e.eventType);
+      expect(types[0]).toBe("run.started");
+      expect(types.at(-1)).toBe("run.completed");
+    });
+
+    test("starting a run is idempotent by key", async () => {
+      const { service } = await open();
+      const a = await service.startRun(alice, { agent: "agent.echo", input: {}, idempotencyKey: "same" });
+      const b = await service.startRun(alice, { agent: "agent.echo", input: {}, idempotencyKey: "same" });
+      expect(b.runId).toBe(a.runId);
+    });
+
+    test("a run suspends on a continuation, resumes after resolution, and never repeats recorded steps", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.approval", input: { amount: 21 }, idempotencyKey: "r1" });
+      const waiting = await until(service, alice, runId, "waiting");
+      expect(waiting.waitingOn).toHaveLength(1);
+      const [continuation] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      expect(continuation).toMatchObject({ type: "refund-approval", status: "OPEN", payload: { amount: 21, total: 42 }, condition: { kind: "human_approval" } });
+      const resolved = await service.resolveContinuation(alice, { continuationId: continuation!.id, action: "resume", input: { approved: true }, idempotencyKey: "approve-1", expectedVersion: continuation!.version });
+      expect(resolved.outcome).toBe("transitioned");
+      const done = await until(service, alice, runId, "completed");
+      expect(done.output).toMatchObject({ approved: true, total: 42 });
+      expect(counters.quotes).toBe(1);
+      const events = await collect(service.events(alice, { runId }));
+      expect(events.filter((e) => e.eventType === "message.delta").map((e) => (e.payload as { text: string }).text).join("")).toBe("Reviewing refund request");
+      const artifact = await service.getArtifact(alice, { artifactId: (done.output as { artifactId: string }).artifactId });
+      expect(new TextDecoder().decode(artifact.bytes)).toBe("# Refund\n42");
+      expect(await service.resolveContinuation(alice, { continuationId: continuation!.id, action: "resume", input: { approved: true }, idempotencyKey: "approve-1" })).toMatchObject({ outcome: "duplicate" });
+    });
+
+    test("a rejected continuation ends the run on the agent's own terms", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.approval", input: { amount: 1 }, idempotencyKey: "r2" });
+      await until(service, alice, runId, "waiting");
+      const [c] = await service.listContinuations(alice, { runId });
+      await service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: { approved: false }, idempotencyKey: "no" });
+      expect((await until(service, alice, runId, "completed")).output).toEqual({ approved: false });
+    });
+
+    test("cancelling a waiting run cancels its open continuation", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.approval", input: { amount: 3 }, idempotencyKey: "r3" });
+      await until(service, alice, runId, "waiting");
+      const cancelled = await service.cancelRun(alice, { runId, reason: "customer withdrew", idempotencyKey: "cx" });
+      expect(cancelled.status).toBe("cancelled");
+      expect((await service.listContinuations(alice, { runId }))[0]!.status).toBe("CANCELLED");
+    });
+
+    test("an agent failure is a failed run with its error recorded", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.fails", input: null, idempotencyKey: "f" });
+      expect(await until(service, alice, runId, "failed")).toMatchObject({ error: "model provider exploded" });
+    });
+
+    test("agents invoke capabilities through kernel policy; results are recorded", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.tooluser", input: { key: "abc" }, idempotencyKey: "t1" });
+      expect((await until(service, alice, runId, "completed")).output).toEqual({ found: { key: "abc", value: "ABC" } });
+      const denied = await service.startRun(mallory, { agent: "agent.tooluser", input: { key: "x" }, idempotencyKey: "t2" });
+      expect((await until(service, mallory, denied.runId, "failed")).error).toContain("denied");
+    });
+
+    test("direct invocation is authorized per caller and typed on failure", async () => {
+      const { service } = await open();
+      expect(await service.invoke(alice, { capability: "tool.lookup", input: { key: "q" } })).toEqual({ key: "q", value: "Q" });
+      expect(await code(service.invoke(mallory, { capability: "tool.lookup", input: { key: "q" } }))).toBe("permission_denied");
+      expect(await code(service.invoke(alice, { capability: "tool.absent", input: null }))).toBe("unavailable");
+    });
+
+    test("tenants are isolated: runs, events, continuations, and artifacts", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.approval", input: { amount: 5 }, idempotencyKey: "iso" });
+      await until(service, alice, runId, "waiting");
+      expect(await code(service.getRun(bob, { runId }))).toBe("not_found");
+      expect(await service.listContinuations(bob, {})).toEqual([]);
+      const [c] = await service.listContinuations(alice, { runId });
+      expect(await code(service.resolveContinuation(bob, { continuationId: c!.id, action: "resume", input: { approved: true }, idempotencyKey: "steal" }))).toBe("not_found");
+      expect(await collect(service.events(bob, {}))).toEqual([]);
+      expect(await code(service.resolveContinuation(mallory, { continuationId: c!.id, action: "resume", input: { approved: true }, idempotencyKey: "m" }))).toBe("permission_denied");
+    });
+
+    test("the event stream resumes from a known position without gaps or duplicates", async () => {
+      const { service } = await open();
+      for (let i = 0; i < 3; i++) await until(service, alice, (await service.startRun(alice, { agent: "agent.echo", input: i, idempotencyKey: `e${i}` })).runId, "completed");
+      const all = await collect(service.events(alice, {}));
+      const cut = all[Math.floor(all.length / 2)]!.position;
+      const resumed = await collect(service.events(alice, { afterPosition: cut }));
+      expect(resumed.map((e) => e.eventId)).toEqual(all.filter((e) => e.position > cut).map((e) => e.eventId));
+    });
+
+    test("a following stream delivers new commits live and stops on abort", async () => {
+      const { service } = await open();
+      const controller = new AbortController();
+      const seen: string[] = [];
+      const reader = (async () => {
+        for await (const e of service.events(alice, { follow: true, signal: controller.signal })) {
+          seen.push(e.eventType);
+          if (e.eventType === "run.completed") controller.abort();
+        }
+      })();
+      await Bun.sleep(20);
+      await service.startRun(alice, { agent: "agent.echo", input: "live", idempotencyKey: "live" });
+      await Promise.race([reader, Bun.sleep(5000).then(() => { throw new Error("stream did not deliver"); })]);
+      expect(seen).toContain("run.started");
+      expect(seen).toContain("run.completed");
+    });
+
+    test("unknown agents and unknown runs are typed errors", async () => {
+      const { service } = await open();
+      expect(await code(service.startRun(alice, { agent: "agent.nope", input: null, idempotencyKey: "n" }))).toBe("not_found");
+      expect(await code(service.getRun(alice, { runId: "missing" }))).toBe("not_found");
+      expect(await code(service.readProjection(alice, { name: "no-such-projection" }))).toBe("not_found");
+    });
+
+    if (options.persistent) {
+      test("a waiting run survives a runtime restart and completes after resolution", async () => {
+        const handle = await open();
+        const { runId } = await handle.service.startRun(alice, { agent: "agent.approval", input: { amount: 50 }, idempotencyKey: "restart" });
+        await until(handle.service, alice, runId, "waiting");
+        const service = await handle.restart!();
+        const [c] = await service.listContinuations(alice, { runId, status: "OPEN" });
+        await service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: { approved: true }, idempotencyKey: "after-restart" });
+        expect((await until(service, alice, runId, "completed")).output).toMatchObject({ approved: true, total: 100 });
+        expect(counters.quotes).toBe(1);
+      });
+    }
+  });
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@cognate/runtime-bun",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bun reference runtime: composes kernel, durable store, runs, continuations, commitments, artifacts, and cognition behind RuntimeService.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@cognate/artifacts": "workspace:*",
+    "@cognate/capabilities": "workspace:*",
+    "@cognate/cognitive-api": "workspace:*",
+    "@cognate/continuations": "workspace:*",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/kernel-cordis": "workspace:*",
+    "@cognate/projections": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/store-memory": "workspace:*",
+    "@cognate/store-sqlite": "workspace:*"
+  },
+  "devDependencies": { "@cognate/cognitive-memory": "workspace:*" }
+}
