@@ -31,6 +31,8 @@
     "@cognate/kernel-cordis": "workspace:*",
     "@cognate/mcp": "workspace:*",
     "@cognate/profile": "workspace:*",
+    "@cognate/profile-copilot": "workspace:*",
+    "@cognate/profile-harness": "workspace:*",
     "@cognate/projections": "workspace:*",
     "@cognate/proto": "workspace:*",
     "@cognate/protocol-connect": "workspace:*",

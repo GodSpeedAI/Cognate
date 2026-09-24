@@ -1,0 +1,35 @@
+{
+  "name": "@cognate/profile-copilot",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Copilot reference profile: a composition of runtime, runs, continuations, frontend capabilities, state and artifact projections, AG-UI, React, and Astryx (spec \u00a729.1). No kernel additions.",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "dependencies": {
+    "@cognate/ag-ui": "workspace:*",
+    "@cognate/capabilities": "workspace:*",
+    "@cognate/client": "workspace:*",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/profile": "workspace:*",
+    "@cognate/provider-openai-compatible": "workspace:*",
+    "@cognate/react": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*",
+    "@cognate/ui-astryx": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@ag-ui/core": "1.0.0",
+    "@cognate/provider-local": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.2"
+  }
+}
