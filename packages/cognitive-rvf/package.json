@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/cognitive-rvf",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional RVF-backed CognitiveIndex with snapshot/branch, Cognate-owned integrity manifests, and attached/detached import classification (spec §18; DEBT-006 mitigations).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/cognitive-api": "workspace:*", "@cognate/events": "workspace:*", "@ruvector/rvf": "0.3.4" }
+}
