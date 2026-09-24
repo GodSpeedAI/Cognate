@@ -1,0 +1,12 @@
+{
+  "name": "@cognate/events",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Event envelope, durable store port, and the store conformance kit.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./conformance": "./src/conformance.ts"
+  },
+  "dependencies": { "@cognate/kernel-api": "workspace:*" }
+}

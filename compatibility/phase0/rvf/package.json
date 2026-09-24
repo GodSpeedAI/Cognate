@@ -1,0 +1,13 @@
+{
+  "name": "cognate-phase0-rvf-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Phase 0 compatibility fixture for @ruvector/rvf under Bun. Not part of the workspace; run bun install/bun test from this directory only.",
+  "dependencies": {
+    "@ruvector/rvf": "0.3.4"
+  },
+  "scripts": {
+    "test": "bun test rvf.test.ts"
+  }
+}

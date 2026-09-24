@@ -21,7 +21,9 @@ requirements:
     acceptance: [AC-002-01]
     gate: {cwd: compatibility/phase0/cordis, run: 'bun test', proof_paths: ['cordis.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-cordis.md
+    debt: DEBT-005
   - id: AK-003
     title: 'Characterize DomainForge Graph parsing and source identity under Bun.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -29,7 +31,9 @@ requirements:
     acceptance: [AC-003-01]
     gate: {cwd: compatibility/phase0/domainforge, run: 'bun test', proof_paths: ['domainforge.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-domainforge.md
+    debt: DEBT-001
   - id: AK-004
     title: 'Characterize pinned Connect and protobuf codegen over Bun serve.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 22; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -37,7 +41,9 @@ requirements:
     acceptance: [AC-004-01]
     gate: {cwd: compatibility/phase0/connect, run: 'bun test', proof_paths: ['connect.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-connect.md
+    debt: DEBT-004
   - id: AK-005
     title: 'Characterize RuVector index rebuild and deterministic fallback under Bun.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -45,7 +51,9 @@ requirements:
     acceptance: [AC-005-01]
     gate: {cwd: compatibility/phase0/ruvector, run: 'bun test', proof_paths: ['ruvector.test.ts']}
     dependencies: [AK-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-ruvector.md
+    debt: DEBT-007
   - id: AK-006
     title: 'Characterize RealityTrace enrollment to observation and duplicate delivery.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 20', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -53,7 +61,9 @@ requirements:
     acceptance: [AC-006-01]
     gate: {cwd: compatibility/phase0/realitytrace, run: 'bun test', proof_paths: ['realitytrace.test.ts']}
     dependencies: [AK-001]
-    status: candidate
+    status: blocked
+    evidence: .agents/evidence/phase0-realitytrace.md
+    debt: DEBT-009
   - id: AK-007
     title: 'Characterize optional RVF Bun load and cognitive branch isolation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 18', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -61,7 +71,9 @@ requirements:
     acceptance: [AC-007-01]
     gate: {cwd: compatibility/phase0/rvf, run: 'bun test', proof_paths: ['rvf.test.ts']}
     dependencies: [AK-005]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-rvf.md
+    debt: DEBT-006
   - id: AK-008
     title: 'Characterize SONA candidate-bounded ranking, durable feedback, and fallback.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '17; 37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -69,7 +81,9 @@ requirements:
     acceptance: [AC-008-01]
     gate: {cwd: compatibility/phase0/sona, run: 'bun test', proof_paths: ['sona.test.ts']}
     dependencies: [AK-005]
-    status: candidate
+    status: blocked
+    evidence: .agents/evidence/phase0-sona.md
+    debt: DEBT-008
   - id: AK-009
     title: 'Characterize pinned AG-UI core schemas under Bun.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

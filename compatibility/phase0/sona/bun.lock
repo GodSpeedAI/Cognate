@@ -1,0 +1,29 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "phase0-sona-fixture",
+      "dependencies": {
+        "@ruvector/sona": "0.1.8",
+      },
+    },
+  },
+  "packages": {
+    "@ruvector/sona": ["@ruvector/sona@0.1.8", "", { "optionalDependencies": { "@ruvector/sona-darwin-arm64": "0.1.8", "@ruvector/sona-darwin-x64": "0.1.8", "@ruvector/sona-linux-arm64-gnu": "0.1.8", "@ruvector/sona-linux-x64-gnu": "0.1.8", "@ruvector/sona-linux-x64-musl": "0.1.8", "@ruvector/sona-win32-arm64-msvc": "0.1.8", "@ruvector/sona-win32-x64-msvc": "0.1.8" } }, "sha512-IzeaJr0hH7E55vya00ruSKtqZ7qNfqeTwUPnDOusZR+A0IczX+6p8y7mKO74kYc66ozlyfFg1StAvyE+W3ROoA=="],
+
+    "@ruvector/sona-darwin-arm64": ["@ruvector/sona-darwin-arm64@0.1.8", "", { "os": "darwin", "cpu": "arm64" }, "sha512-lv8YOBTamryaAKsjGgYe8TvAW/pccTJhwLexaBre0KpCp1BPnULqT4lYQQB4YjIQqML4cuzSIoDHRH9a9JwTtQ=="],
+
+    "@ruvector/sona-darwin-x64": ["@ruvector/sona-darwin-x64@0.1.8", "", { "os": "darwin", "cpu": "x64" }, "sha512-a5jRBNQSo60698kIbVoDxj28nuVxpdpYKj/3gvFy3Z0wUlXc4jkz+r+Wpwn/mFOq5xDCm6VHsiYPRYA4/EBQcg=="],
+
+    "@ruvector/sona-linux-arm64-gnu": ["@ruvector/sona-linux-arm64-gnu@0.1.8", "", { "os": "linux", "cpu": "arm64" }, "sha512-rYoJdW3cDVIgORqSZoSzYgPkC0L4K9KoxsdZFdiXpKWGP9SWOwUXLVIbNeEk+Po+QNoju02TXAf+lLva+VmI7w=="],
+
+    "@ruvector/sona-linux-x64-gnu": ["@ruvector/sona-linux-x64-gnu@0.1.8", "", { "os": "linux", "cpu": "x64" }, "sha512-5dtjvRk/buod4JBnfJaSXLWwvOTkDTt8l8yiK53VfIBeTHLVD4HxCs2UXOanf367KNKrSWlIkssE/UCtX8jtUQ=="],
+
+    "@ruvector/sona-linux-x64-musl": ["@ruvector/sona-linux-x64-musl@0.1.8", "", { "os": "linux", "cpu": "x64" }, "sha512-9f9ZYzvUuuUrUoZOAtXRfG0ZEDEOJj8+1hnyk7Yf9yj7taocb048tTcKDRrHmAiUBOgt8Nm9Qo+TetvxVnkKYA=="],
+
+    "@ruvector/sona-win32-arm64-msvc": ["@ruvector/sona-win32-arm64-msvc@0.1.8", "", { "os": "win32", "cpu": "arm64" }, "sha512-LKhT9x9Tkz4SvEKO5PSjj0fj30hSS4DYmWd+mxf2y1iF9GfDzWxy2OxTkDJ8t/fT9YD+N7Da32lfRrWcKzc3AA=="],
+
+    "@ruvector/sona-win32-x64-msvc": ["@ruvector/sona-win32-x64-msvc@0.1.8", "", { "os": "win32", "cpu": "x64" }, "sha512-eu1GbQ3RjhrKuT4cKoYT56RLCJ7v30iBlVSh+I9lUCE6CNFvyejQwTL+I/g1eIpT4LX/i2g2YEWzYFeFQrhaew=="],
+  }
+}

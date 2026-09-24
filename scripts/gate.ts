@@ -52,9 +52,10 @@ if (arg === "--all" || arg === "--implemented") {
     const { exit, reason } = await runGate(requirement, true);
     const verdict = exit === 0 ? "PASS" : "FAIL";
     if (exit !== 0) failures++;
-    // A passing gate on a non-implemented requirement, or a failing gate on an implemented one, is drift.
+    // Drift: a passing gate still marked candidate, or a failing gate marked implemented.
+    // A blocked requirement may pass its gate: the characterization proves why it is blocked.
     const drift =
-      (exit === 0 && requirement.status !== "implemented") || (exit !== 0 && requirement.status === "implemented")
+      (exit === 0 && requirement.status === "candidate") || (exit !== 0 && requirement.status === "implemented")
         ? "  <-- status drift"
         : "";
     console.log(`${verdict}  ${requirement.id.padEnd(12)} [${requirement.status}] ${reason}${drift}`);
