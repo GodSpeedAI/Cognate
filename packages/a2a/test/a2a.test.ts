@@ -39,20 +39,36 @@ afterAll(async () => {
 
 describe("A2A adapter", () => {
   test("serves an agent card and completes an input-required task using the SDK client", async () => {
-    const { A2AClient } = await import("@a2a-js/sdk/client");
+    // 1.2.1 has no `A2AClient.fromCardUrl`; the real discovery/transport surface is
+    // `ClientFactory` (with a `JsonRpcTransportFactory`) → `createFromUrl` → `Client.sendMessage`.
+    const { ClientFactory, JsonRpcTransportFactory } = await import("@a2a-js/sdk/client");
+    const { TaskState } = await import("@a2a-js/sdk");
+
     const card = await (await fetch(`${base}/.well-known/agent-card.json`)).json();
     expect(card).toMatchObject({ name: "Refund agent", skills: [{ id: "refund" }] });
-    const client = await A2AClient.fromCardUrl(`${base}/.well-known/agent-card.json`, { fetchImpl: (url: RequestInfo | URL, init?: RequestInit) => fetch(url, { ...init, headers: { ...(init?.headers as Record<string, string>), authorization: "Bearer alice" } }) });
-    const first = (await client.sendMessage({ message: { kind: "message", messageId: "m1", role: "user", parts: [{ kind: "text", text: "refund order 7" }] } })) as { result: { kind: string; id: string; status: { state: string } } };
-    expect(first.result.kind).toBe("task");
-    expect(first.result.status.state).toBe("input-required");
-    const second = (await client.sendMessage({ message: { kind: "message", messageId: "m2", role: "user", taskId: first.result.id, parts: [{ kind: "text", text: "yes" }] } })) as { result: { status: { state: string }; artifacts?: { parts: { kind: string; data?: unknown; text?: string }[] }[] } };
-    expect(second.result.status.state).toBe("completed");
-    expect(JSON.stringify(second.result.artifacts)).toContain("approved");
+
+    // Authentication is passed via the SDK's supported mechanism: a custom `fetchImpl` on the transport factory.
+    const authenticatedFetch = ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, headers: { ...(init?.headers as Record<string, string>), authorization: "Bearer alice" } })) as unknown as typeof fetch;
+    const factory = new ClientFactory({ transports: [new JsonRpcTransportFactory({ fetchImpl: authenticatedFetch })] });
+    const client = await factory.createFromUrl(base);
+
+    const first = await client.sendMessage({ message: { messageId: "m1", contextId: "", taskId: "", role: 1, parts: [{ content: { $case: "text", value: "refund order 7" }, metadata: undefined, filename: "", mediaType: "" }], metadata: undefined, extensions: [], referenceTaskIds: [] }, tenant: "", configuration: undefined, metadata: undefined });
+    expect("status" in first).toBe(true);
+    const firstTask = first as Extract<typeof first, { status: unknown }>;
+    expect(firstTask.status?.state).toBe(TaskState.TASK_STATE_INPUT_REQUIRED);
+
+    const second = await client.sendMessage({ message: { messageId: "m2", contextId: "", taskId: firstTask.id, role: 1, parts: [{ content: { $case: "text", value: "yes" }, metadata: undefined, filename: "", mediaType: "" }], metadata: undefined, extensions: [], referenceTaskIds: [] }, tenant: "", configuration: undefined, metadata: undefined });
+    const secondTask = second as Extract<typeof second, { status: unknown }>;
+    expect(secondTask.status?.state).toBe(TaskState.TASK_STATE_COMPLETED);
+    expect(JSON.stringify(secondTask.artifacts)).toContain("approved");
   });
 
   test("unauthenticated JSON-RPC calls are rejected", async () => {
-    const response = await fetch(`${base}/a2a`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "message/send", params: { message: { kind: "message", messageId: "x", role: "user", parts: [{ kind: "text", text: "hi" }] } } }) });
+    const response = await fetch(`${base}/a2a`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "SendMessage", params: { message: { messageId: "x", role: "ROLE_USER", parts: [{ text: "hi" }] } } }),
+    });
     expect(response.status).toBe(401);
   });
 });
