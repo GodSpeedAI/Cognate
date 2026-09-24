@@ -458,7 +458,9 @@ requirements:
     acceptance: [AC-COG-003-01]
     gate: {cwd: ., run: 'bun test ./packages/cognitive-ruvector/test/conformance.test.ts', proof_paths: ['packages/cognitive-ruvector/test/conformance.test.ts']}
     dependencies: [AK-005, CG-COG-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m7-cognition.md
+    debt: DEBT-007
   - id: CG-COG-004
     title: 'Deleting and rebuilding the cognitive index leaves deterministic behavior unchanged.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.5; 37 / Phase 6; 40.B', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
