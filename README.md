@@ -2,7 +2,7 @@
 
 **Define meaning once. Project it everywhere.**
 
-> **Status: design proposal.** This repository currently contains the proposed architecture and this target-state README; the Cognate packages, CLI, examples, tests, and commands shown below have not been implemented. Present-tense descriptions below state intended behavior, not available features. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) records the implementation contract and unresolved dependency gates.
+> **Status: design proposal with a Phase 0 substrate.** This repository now contains project routing, a candidate Phase 0 requirement ledger, and Bun SQLite compatibility tests. Cognate runtime packages, CLI, UI, examples, and the product commands shown below do not exist yet. Present-tense feature descriptions state intended behavior. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the implementation contract; [current status](.agents/CURRENT_STATUS.md) records what has actually been verified.
 
 Cognate is a proposed open-source semantic application framework for building agent-native software.
 
@@ -1420,13 +1420,13 @@ Planned documentation map (these pages do not exist yet):
 * `docs/extensions.md` — capabilities, components, adapters, providers, and profiles
 * `docs/security.md` — authority, retrieval, boundaries, and external commitments
 
-For implementation work today, start with the [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd). The root `AGENTS.md` is currently empty; package guidance is planned.
+For implementation work today, start with the [agent operating guide](AGENTS.md), [current status](.agents/CURRENT_STATUS.md), and [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd). Package-specific guidance will be added as packages are created.
 
 ---
 
 # Development
 
-The following commands are the target development workflow after the workspace, scripts, and packages are implemented. They do not run against the current design-only repository.
+The current repository supports `just --list`, `just verify`, and the narrow `just gate-ak-001` SQLite fixture. `bun test` also runs the current Phase 0 and substrate tests. The remaining commands below are the target workflow after runtime packages and scripts are implemented.
 
 Clone Cognate and install with Bun:
 

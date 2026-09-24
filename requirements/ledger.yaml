@@ -1,0 +1,119 @@
+ledger_version: 1
+project: Cognate
+generated_at: 2026-09-24T00:00:00Z
+freeze_hash: candidate
+# Formation slice: Phase 0 only. The rest of the specification is not yet projected.
+requirements:
+  - id: AK-001
+    title: Prove Bun SQLite transaction, rollback, optimistic append, and reopen behavior.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Authoritative event store, invariant: Confirmed transactions alone become durable facts}
+    acceptance: [AC-001-01]
+    proof: [just gate-ak-001]
+    mutable_surfaces: [compatibility/phase0/sqlite.test.ts]
+    frozen_surfaces: []
+    dependencies: []
+    critic_predicate: verification-quality
+    status: candidate
+  - id: AK-002
+    title: Characterize a pinned Cordis lifecycle under Bun.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Component fiber, invariant: Activation and dependency loss reverse owned effects without leaked capabilities}
+    acceptance: [AC-002-01]
+    proof: [just gate-ak-002]
+    mutable_surfaces: [compatibility/phase0/, package.json]
+    frozen_surfaces: []
+    dependencies: []
+    critic_predicate: verification-quality
+    status: candidate
+  - id: AK-003
+    title: Characterize DomainForge Graph parsing and source identity under Bun.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Semantic projection, invariant: Existing sea meaning maps to versioned framework references without grammar changes}
+    acceptance: [AC-003-01]
+    proof: [just gate-ak-003]
+    mutable_surfaces: [compatibility/phase0/, package.json]
+    frozen_surfaces: []
+    dependencies: []
+    critic_predicate: semantic-fidelity
+    status: candidate
+  - id: AK-004
+    title: Characterize pinned Connect and protobuf codegen over Bun serve.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Wire boundary, invariant: Generated clients use a versioned schema and real Bun transport for unary and streaming RPC}
+    acceptance: [AC-004-01]
+    proof: [just gate-ak-004]
+    mutable_surfaces: [compatibility/phase0/, package.json]
+    frozen_surfaces: []
+    dependencies: []
+    critic_predicate: verification-quality
+    status: candidate
+  - id: AK-005
+    title: Characterize RuVector index rebuild and deterministic fallback under Bun.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Cognitive index, invariant: Loss of derived index cannot alter authoritative state or authorization}
+    acceptance: [AC-005-01]
+    proof: [just gate-ak-005]
+    mutable_surfaces: [compatibility/phase0/, package.json]
+    frozen_surfaces: []
+    dependencies: [AK-001]
+    critic_predicate: verification-quality
+    status: candidate
+  - id: AK-006
+    title: Characterize RealityTrace enrollment to observation and duplicate delivery.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Observation port, invariant: Correlated delivery is idempotent and distinct from evidence or settlement}
+    acceptance: [AC-006-01]
+    proof: [just gate-ak-006]
+    mutable_surfaces: [compatibility/phase0/]
+    frozen_surfaces: []
+    dependencies: [AK-001]
+    critic_predicate: source-fidelity
+    status: candidate
+  - id: AK-007
+    title: Characterize optional RVF Bun load and cognitive branch isolation.
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: Cognitive snapshot, invariant: Export and import cannot mutate authoritative history or grant authority}
+    acceptance: [AC-007-01]
+    proof: [just gate-ak-007]
+    mutable_surfaces: [compatibility/phase0/, package.json]
+    frozen_surfaces: []
+    dependencies: [AK-005]
+    critic_predicate: verification-quality
+    status: candidate
+acceptance_contracts:
+  - id: AC-001-01
+    requirement: AK-001
+    expected: A committed event survives reopen; a failed transaction leaves no event; a stale expected revision cannot append.
+    gate_command: just gate-ak-001
+    status: candidate
+  - id: AC-002-01
+    requirement: AK-002
+    expected: The tested Cordis release activates, deactivates on dependency loss, rolls back failed setup, and disposes in reverse order under Bun.
+    gate_command: just gate-ak-002
+    status: candidate
+  - id: AC-003-01
+    requirement: AK-003
+    expected: The selected Graph binding parses a valid sea fixture under Bun and preserves stable semantic source identity.
+    gate_command: just gate-ak-003
+    status: candidate
+  - id: AC-004-01
+    requirement: AK-004
+    expected: A generated client performs unary and streaming RPC against a real Bun server using the selected pinned tuple.
+    gate_command: just gate-ak-004
+    status: candidate
+  - id: AC-005-01
+    requirement: AK-005
+    expected: The selected RuVector binding rebuilds derived entries and an unavailable binding triggers deterministic behavior without authority changes.
+    gate_command: just gate-ak-005
+    status: candidate
+  - id: AC-006-01
+    requirement: AK-006
+    expected: CLI prerequisites complete; a correlated observation is accepted; duplicate delivery is reconciled without claiming evidence or settlement.
+    gate_command: just gate-ak-006
+    status: candidate
+  - id: AC-007-01
+    requirement: AK-007
+    expected: The selected RVF binding loads under Bun and export, import, and branch operations remain isolated from authoritative history.
+    gate_command: just gate-ak-007
+    status: candidate
