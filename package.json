@@ -12,7 +12,22 @@
     "check": "bun scripts/check-substrate.ts",
     "test": "bun test ./compatibility/phase0/sqlite.test.ts ./tests ./packages ./profiles",
     "verify": "bun run check && bun run test",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "example:copilot": "bun examples/copilot/index.ts",
+    "example:autonomous-harness": "bun examples/autonomous-harness/index.ts",
+    "example:human-approval": "bun examples/human-approval/index.ts",
+    "example:generative-ui": "bun examples/generative-ui/index.ts",
+    "example:shared-state": "bun examples/shared-state/index.ts",
+    "example:artifact-workbench": "bun examples/artifact-workbench/index.ts",
+    "example:multi-agent": "bun examples/multi-agent/index.ts",
+    "example:cognitive-memory": "bun examples/cognitive-memory/index.ts",
+    "example:rvf-branching": "bun examples/rvf-branching/index.ts",
+    "example:capability-hot-swap": "bun examples/capability-hot-swap/index.ts",
+    "example:domainforge": "bun examples/domainforge/index.ts",
+    "example:realitytrace": "bun examples/realitytrace/index.ts",
+    "example:ag-ui": "bun examples/ag-ui/index.ts",
+    "example:mcp": "bun examples/mcp/index.ts",
+    "example:connect": "bun examples/connect/index.ts"
   },
   "devDependencies": {
     "@cognate/a2a": "workspace:*",

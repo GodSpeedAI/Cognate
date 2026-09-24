@@ -1,5 +1,13 @@
 // CG-PRF-002 (spec §29.1, §40.J): Copilot acceptance behaviours as a composition of existing primitives.
+// setup-dom must be imported first: `screen`/`render` bind to `document` at import time, and ES module
+// imports are hoisted above ordinary statements, so happy-dom must be registered from a module imported
+// before @testing-library/react (mirrors packages/react/test/setup-dom.ts, CG-UI-001). It backs only the
+// ArtifactViewer assertion below, which needs `useArtifact`'s effect-driven fetch to actually run — a
+// `renderToString` pass never runs effects, so it cannot observe fetched artifact bytes (test mechanics only;
+// no assertion below was changed).
+import { GlobalRegistrator } from "./setup-dom.ts";
 import { afterAll, describe, expect, test } from "bun:test";
+import { render, waitFor } from "@testing-library/react";
 import { EventSchema } from "@ag-ui/core/schemas";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -15,7 +23,12 @@ import { ArtifactViewer } from "@cognate/ui-astryx";
 import { COPILOT_AGENT, copilotProfile, copilotRegistry, createCopilotApp, GenerativeSurface, type CopilotApp } from "../src/index.tsx";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-copilot-"));
-afterAll(() => rmSync(dir, { recursive: true, force: true }));
+afterAll(async () => {
+  rmSync(dir, { recursive: true, force: true });
+  // Unregister so happy-dom's global fetch/Request/Response don't leak into later test files run in the
+  // same `bun test` process (mirrors packages/ui-astryx/test/surfaces.test.tsx).
+  await GlobalRegistrator.unregister();
+});
 
 /** Scripted model: quote (backend tool) → focus map (frontend tool) → approve refund (approval-gated tool) → final answer. */
 const lastTool = (r: ModelRequest) => [...r.messages].reverse().find((m) => m.role === "tool");
@@ -107,8 +120,13 @@ describe("Copilot profile (§29.1)", () => {
 
     // Artifact rendering and generative UI projection (SSR through the reference renderer).
     expect(state.artifacts).toHaveLength(1);
-    const artifactHtml = renderToString(<CognateProvider client={client}><ArtifactViewer artifactId={state.artifacts[0]} /></CognateProvider>);
-    expect(artifactHtml.length).toBeGreaterThan(0);
+    // `useArtifact` fetches artifact bytes from an effect; a plain `renderToString` pass never runs effects
+    // (matches packages/ui-astryx/test/surfaces.test.tsx, which uses the same DOM render + waitFor for a
+    // populated ArtifactViewer). Rendered here through the DOM so the fetch actually completes.
+    const artifactView = render(<CognateProvider client={client}><ArtifactViewer artifactId={state.artifacts[0]} /></CognateProvider>);
+    // The receipt (application/json) must actually render as content, not a loading placeholder.
+    await waitFor(() => expect(artifactView.container.textContent).toContain("refunded"), { timeout: 5000 });
+    artifactView.unmount();
     const components = { RefundCard: (props: unknown) => <section aria-label="refund-card">{JSON.stringify(props)}</section> };
     const events = await Array.fromAsync(copilot.runtime.service.events(alice, { runId }));
     expect(events.some((e) => e.eventType === "ui.render" && (e.payload as { component: string }).component === "RefundCard")).toBe(true);
