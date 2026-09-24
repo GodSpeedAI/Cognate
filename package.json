@@ -15,8 +15,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@cognate/ag-ui": "workspace:*",
     "@cognate/artifacts": "workspace:*",
     "@cognate/capabilities": "workspace:*",
+    "@cognate/client": "workspace:*",
     "@cognate/cognitive-api": "workspace:*",
     "@cognate/cognitive-memory": "workspace:*",
     "@cognate/cognitive-ruvector": "workspace:*",

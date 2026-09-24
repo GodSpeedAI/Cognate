@@ -420,7 +420,8 @@ requirements:
     acceptance: [AC-RT-001-01]
     gate: {cwd: ., run: 'bun test ./packages/realitytrace/test/port.test.ts', proof_paths: ['packages/realitytrace/test/port.test.ts']}
     dependencies: [CG-CMT-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
   - id: CG-RT-002
     title: 'SXR CLI adapter delivers correlated observations after workflow prerequisites.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '20; 37 / Phase 5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -428,7 +429,9 @@ requirements:
     acceptance: [AC-RT-002-01]
     gate: {cwd: ., run: 'bun test ./packages/realitytrace/test/sxr-cli.test.ts', proof_paths: ['packages/realitytrace/test/sxr-cli.test.ts']}
     dependencies: [AK-006, CG-RT-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
+    debt: DEBT-009
   - id: CG-RT-003
     title: 'Correlation chain DomainForge to SemanticRef to execution to event to queued observation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -579,7 +582,8 @@ requirements:
     acceptance: [AC-PRV-001-01]
     gate: {cwd: ., run: 'bun test ./packages/provider-openai-compatible/test/provider.test.ts', proof_paths: ['packages/provider-openai-compatible/test/provider.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
   - id: CG-PRF-001
     title: 'defineProfile composes packages without new kernel concepts.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '29; 40.J; 40.K', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -587,7 +591,8 @@ requirements:
     acceptance: [AC-PRF-001-01]
     gate: {cwd: ., run: 'bun test ./packages/profile/test/profile.test.ts', proof_paths: ['packages/profile/test/profile.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m6-semantics-evidence.md
   - id: CG-PRF-002
     title: 'Copilot profile acceptance behaviors.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '29.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
