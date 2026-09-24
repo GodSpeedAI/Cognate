@@ -11,10 +11,14 @@
         "@cognate/cognitive-memory": "workspace:*",
         "@cognate/cognitive-ruvector": "workspace:*",
         "@cognate/continuations": "workspace:*",
+        "@cognate/domainforge": "workspace:*",
         "@cognate/events": "workspace:*",
         "@cognate/kernel-api": "workspace:*",
         "@cognate/kernel-cordis": "workspace:*",
         "@cognate/projections": "workspace:*",
+        "@cognate/proto": "workspace:*",
+        "@cognate/protocol-connect": "workspace:*",
+        "@cognate/protocol-connect-bun": "workspace:*",
         "@cognate/runtime-api": "workspace:*",
         "@cognate/runtime-bun": "workspace:*",
         "@cognate/store-memory": "workspace:*",
@@ -89,6 +93,14 @@
         "@cognate/store-sqlite": "workspace:*",
       },
     },
+    "packages/domainforge": {
+      "name": "@cognate/domainforge",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/kernel-api": "workspace:*",
+        "@godspeedai/domainforge": "0.16.0",
+      },
+    },
     "packages/events": {
       "name": "@cognate/events",
       "version": "0.0.0",
@@ -117,6 +129,46 @@
       "devDependencies": {
         "@cognate/store-memory": "workspace:*",
         "@cognate/store-sqlite": "workspace:*",
+      },
+    },
+    "packages/proto": {
+      "name": "@cognate/proto",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "2.15.0",
+      },
+      "devDependencies": {
+        "@bufbuild/buf": "1.73.0",
+        "@bufbuild/protoc-gen-es": "2.15.0",
+      },
+    },
+    "packages/protocol-connect": {
+      "name": "@cognate/protocol-connect",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "2.15.0",
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/proto": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@connectrpc/connect": "2.2.0",
+      },
+      "devDependencies": {
+        "@cognate/protocol-connect-bun": "workspace:*",
+        "@cognate/runtime-bun": "workspace:*",
+      },
+    },
+    "packages/protocol-connect-bun": {
+      "name": "@cognate/protocol-connect-bun",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/protocol-connect": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@connectrpc/connect": "2.2.0",
+        "@connectrpc/connect-web": "2.2.0",
+      },
+      "devDependencies": {
+        "@cognate/runtime-bun": "workspace:*",
       },
     },
     "packages/runtime-api": {
@@ -163,6 +215,28 @@
     },
   },
   "packages": {
+    "@bufbuild/buf": ["@bufbuild/buf@1.73.0", "", { "optionalDependencies": { "@bufbuild/buf-darwin-arm64": "1.73.0", "@bufbuild/buf-darwin-x64": "1.73.0", "@bufbuild/buf-linux-aarch64": "1.73.0", "@bufbuild/buf-linux-armv7": "1.73.0", "@bufbuild/buf-linux-x64": "1.73.0", "@bufbuild/buf-win32-arm64": "1.73.0", "@bufbuild/buf-win32-x64": "1.73.0" }, "bin": { "buf": "bin/buf", "protoc-gen-buf-lint": "bin/protoc-gen-buf-lint", "protoc-gen-buf-breaking": "bin/protoc-gen-buf-breaking" } }, "sha512-W3whb4P1y3Hs9bqwCu9++W1v1ofHZ3dBUCe6JSZq0Ff5OK5UKKZuMN4iunPbgdyXY4+4ujEYf2ESrN/6MbcFSQ=="],
+
+    "@bufbuild/buf-darwin-arm64": ["@bufbuild/buf-darwin-arm64@1.73.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-cDd3y376ecClhyytNLlY3AtsZqsqXvEkQjMvrahrv/xUWWhEIX3efD8y0uufXDe8Yuk3sEmj7J1Xlx73Y46SkA=="],
+
+    "@bufbuild/buf-darwin-x64": ["@bufbuild/buf-darwin-x64@1.73.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-VTBTCwaqT7otsMGXlk3MRu6x5hp+YH9PaLKcyWAa8wEt0NnMzbXdkE8GiLgI8Qkl7S3+pC9YSTCE/I+O87Fvrw=="],
+
+    "@bufbuild/buf-linux-aarch64": ["@bufbuild/buf-linux-aarch64@1.73.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-HjoQ3wbLiUv5N5XLM3EAR2FY51Yn6t5MEXLPnS/Hx0KDkK/5eyIBZZ6toHBLjczAr1RTA1LagF38+lglZI+kvA=="],
+
+    "@bufbuild/buf-linux-armv7": ["@bufbuild/buf-linux-armv7@1.73.0", "", { "os": "linux", "cpu": "arm" }, "sha512-NsZuVg8hXfGcR96Is14ArKxZg6pdJb6kb63bx2g7q8Cjo+gRqZMBFKGvF/fnQMxTrRQAm6hzeF4a2vV4W3lszg=="],
+
+    "@bufbuild/buf-linux-x64": ["@bufbuild/buf-linux-x64@1.73.0", "", { "os": "linux", "cpu": "x64" }, "sha512-dMe6lBQrlHTU7DzqzaR7Udky7R78EDzzxtYZQdjkZun9jKdjGR4fLbPWEPyY4rLGVyk6UUnrtkf5qoIK2SC6qw=="],
+
+    "@bufbuild/buf-win32-arm64": ["@bufbuild/buf-win32-arm64@1.73.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-UmubCflc8zJ48bVW0WeGeVTkNuumJP//wCWKUmeTXT1iNlEqkpaXy6y7o8YJKHGWLfX0/1UV3oay9ti0EyojMw=="],
+
+    "@bufbuild/buf-win32-x64": ["@bufbuild/buf-win32-x64@1.73.0", "", { "os": "win32", "cpu": "x64" }, "sha512-/Buo10rXzqNLnFDh3BpzGdcrx6OalcU8o8gUyObCFZA5wKcUvBVNDhhpMmoB6YeiOPpPn47jHgW4bSSlypaaOQ=="],
+
+    "@bufbuild/protobuf": ["@bufbuild/protobuf@2.15.0", "", {}, "sha512-DAheWUkVr/SJTWCc+lg9dhY0eN4SaWlf4+bG1KzHeXbnqt0AfB/NX0Z+VunGlM1ki1B4zVvye27MpKh/svySUA=="],
+
+    "@bufbuild/protoc-gen-es": ["@bufbuild/protoc-gen-es@2.15.0", "", { "dependencies": { "@bufbuild/protobuf": "2.15.0", "@bufbuild/protoplugin": "2.15.0" }, "bin": { "protoc-gen-es": "bin/protoc-gen-es" } }, "sha512-FRhNTAZEXW6arWx2JxgtpuazhmewYctXugu5SfXGpXpLLCInDT1005fSKDzEM/70Es2oIn07PM4RvpwvDvR/fg=="],
+
+    "@bufbuild/protoplugin": ["@bufbuild/protoplugin@2.15.0", "", { "dependencies": { "@bufbuild/protobuf": "2.15.0", "@typescript/vfs": "^1.6.2", "typescript": "5.4.5" } }, "sha512-vZhRoqB/jTHATqItRvJQf1zbxdrGRRhiusGty4+lKcfEFODG0PMXky2Ezv4WHHS6oSxq+5qShITuE7K1/82SuQ=="],
+
     "@cognate/artifacts": ["@cognate/artifacts@workspace:packages/artifacts"],
 
     "@cognate/capabilities": ["@cognate/capabilities@workspace:packages/capabilities"],
@@ -175,6 +249,8 @@
 
     "@cognate/continuations": ["@cognate/continuations@workspace:packages/continuations"],
 
+    "@cognate/domainforge": ["@cognate/domainforge@workspace:packages/domainforge"],
+
     "@cognate/events": ["@cognate/events@workspace:packages/events"],
 
     "@cognate/kernel-api": ["@cognate/kernel-api@workspace:packages/kernel-api"],
@@ -183,6 +259,12 @@
 
     "@cognate/projections": ["@cognate/projections@workspace:packages/projections"],
 
+    "@cognate/proto": ["@cognate/proto@workspace:packages/proto"],
+
+    "@cognate/protocol-connect": ["@cognate/protocol-connect@workspace:packages/protocol-connect"],
+
+    "@cognate/protocol-connect-bun": ["@cognate/protocol-connect-bun@workspace:packages/protocol-connect-bun"],
+
     "@cognate/runtime-api": ["@cognate/runtime-api@workspace:packages/runtime-api"],
 
     "@cognate/runtime-bun": ["@cognate/runtime-bun@workspace:packages/runtime-bun"],
@@ -190,6 +272,12 @@
     "@cognate/store-memory": ["@cognate/store-memory@workspace:packages/store-memory"],
 
     "@cognate/store-sqlite": ["@cognate/store-sqlite@workspace:packages/store-sqlite"],
+
+    "@connectrpc/connect": ["@connectrpc/connect@2.2.0", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, "sha512-M63OQ1ZFcPUm85CuewJ9G9CMV8LjzGR9935xOnXNQGSazAbwMb3x2W7vXBYM1zqrP7XFD8uxp/dUAhirclgwnQ=="],
+
+    "@connectrpc/connect-web": ["@connectrpc/connect-web@2.2.0", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect": "2.2.0" } }, "sha512-uuBUcBTYfb/r1o98LzCCZk1H90yx0vmZ5m21dpw/q4EUwsKwkCDGI8H0aEdjcZld+Q2jJ5A5ADvPqfb6lzQ/sg=="],
+
+    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.16.0", "", {}, "sha512-yEq/hCAA7FyUT40OdNBkS4KIghIIuZyMTS5cZVAsrR86ySm1oDOVWzFc1M9aryXI6OhUQhmRxTZ9Rl4esptUaw=="],
 
     "@ruvector/core": ["@ruvector/core@0.1.32", "", { "optionalDependencies": { "ruvector-core-darwin-arm64": "0.1.30", "ruvector-core-darwin-x64": "0.1.30", "ruvector-core-linux-arm64-gnu": "0.1.30", "ruvector-core-linux-x64-gnu": "0.1.30", "ruvector-core-win32-x64-msvc": "0.1.30" } }, "sha512-tctBcZ9//AXHh6tntaYW3ezHN5aUlhv/kAwJlZgQiwmFhTL8Vl/WqqEQd+Uibdpbo2D2LQI8oRc/pehNFcMq7w=="],
 
@@ -239,13 +327,19 @@
 
     "@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g=="],
 
+    "@typescript/vfs": ["@typescript/vfs@1.6.5", "", { "dependencies": { "debug": "^4.4.3" }, "peerDependencies": { "typescript": "*" } }, "sha512-gobLHQLmvQGJInFk31NvgMd1uYzRXsd8qgnOssyLD055R2QPnw1ubRbBQ4+T+5qC7IQVuYXdvNDE2G7tMDVHgw=="],
+
     "bun-types": ["bun-types@1.4.2", "", { "dependencies": { "@types/node": "*" } }, "sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w=="],
 
     "cordis": ["cordis@4.0.0-rc.10", "", { "dependencies": { "@standard-schema/spec": "^1.1.0", "cosmokit": "^1.8.1" }, "peerDependencies": { "@cordisjs/plugin-include": "^1.1.0", "@cordisjs/plugin-loader": "^1.0.0-rc.7" }, "optionalPeers": ["@cordisjs/plugin-include", "@cordisjs/plugin-loader"], "bin": "bin.js" }, "sha512-xG90nPNQxR272cC4lR/m5LHevegIJvdddQBlKdEAdGz3n+zgH5lsgkg8o9fc2P3T/f+pO5D7FN1HZvkNBiABnw=="],
 
     "cosmokit": ["cosmokit@1.8.1", "", {}, "sha512-PDBv4l90xZKrUsZ0vtoycgZpO/j4iFsqJXrAxsyBDsnQRI7ZMJXIjgDJsKNjd5L8jnVnnlrDCdhkFbTncgCVjQ=="],
 
+    "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" }, "peerDependencies": { "supports-color": "*" }, "optionalPeers": ["supports-color"] }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
+
     "fast-check": ["fast-check@4.10.2", "", { "dependencies": { "pure-rand": "^8.0.0" } }, "sha512-iK2f+YrcmoeGqk6fA0ea2bptcu/itMIm4NfEozq6N25+aG6h7s5HZbB/k1aV7b5w5sFLMCbbtRUsTVR+BgC3xw=="],
+
+    "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
     "pure-rand": ["pure-rand@8.4.2", "", {}, "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng=="],
 
@@ -262,5 +356,7 @@
     "typescript": ["typescript@7.0.2", "", { "optionalDependencies": { "@typescript/typescript-aix-ppc64": "7.0.2", "@typescript/typescript-darwin-arm64": "7.0.2", "@typescript/typescript-darwin-x64": "7.0.2", "@typescript/typescript-freebsd-arm64": "7.0.2", "@typescript/typescript-freebsd-x64": "7.0.2", "@typescript/typescript-linux-arm": "7.0.2", "@typescript/typescript-linux-arm64": "7.0.2", "@typescript/typescript-linux-loong64": "7.0.2", "@typescript/typescript-linux-mips64el": "7.0.2", "@typescript/typescript-linux-ppc64": "7.0.2", "@typescript/typescript-linux-riscv64": "7.0.2", "@typescript/typescript-linux-s390x": "7.0.2", "@typescript/typescript-linux-x64": "7.0.2", "@typescript/typescript-netbsd-arm64": "7.0.2", "@typescript/typescript-netbsd-x64": "7.0.2", "@typescript/typescript-openbsd-arm64": "7.0.2", "@typescript/typescript-openbsd-x64": "7.0.2", "@typescript/typescript-sunos-x64": "7.0.2", "@typescript/typescript-win32-arm64": "7.0.2", "@typescript/typescript-win32-x64": "7.0.2" }, "bin": { "tsc": "bin/tsc" } }, "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA=="],
 
     "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
+
+    "@bufbuild/protoplugin/typescript": ["typescript@5.4.5", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ=="],
   }
 }

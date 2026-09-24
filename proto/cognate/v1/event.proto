@@ -1,0 +1,34 @@
+syntax = "proto3";
+package cognate.v1;
+
+import "google/protobuf/struct.proto";
+import "cognate/v1/identity.proto";
+
+// Canonical durable event envelope (spec §10). Stream sequence and store position are the ordering authority.
+message Event {
+  string event_id = 1;
+  string stream_id = 2;
+  uint64 stream_sequence = 3;
+  uint64 position = 4;
+  string event_type = 5;
+  uint32 schema_version = 6;
+  string occurred_at = 7;
+  string recorded_at = 8;
+  string tenant = 9;
+  string correlation_id = 10;
+  optional string causation_id = 11;
+  optional string run_id = 12;
+  string scope_id = 13;
+  optional string component_id = 14;
+  optional string fiber_id = 15;
+  optional SemanticRef semantic_ref = 16;
+  // Null after erasure; see `erasure`.
+  google.protobuf.Value payload = 17;
+  google.protobuf.Struct metadata = 18;
+  optional Erasure erasure = 19;
+}
+
+message Erasure {
+  string reason = 1;
+  string erased_at = 2;
+}

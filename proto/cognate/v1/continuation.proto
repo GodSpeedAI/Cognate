@@ -1,0 +1,62 @@
+syntax = "proto3";
+package cognate.v1;
+
+import "google/protobuf/struct.proto";
+
+// Continuations (spec §12).
+enum ContinuationStatus {
+  CONTINUATION_STATUS_UNSPECIFIED = 0;
+  CONTINUATION_STATUS_OPEN = 1;
+  CONTINUATION_STATUS_RESUMED = 2;
+  CONTINUATION_STATUS_CANCELLED = 3;
+  CONTINUATION_STATUS_EXPIRED = 4;
+  CONTINUATION_STATUS_FAILED = 5;
+  CONTINUATION_STATUS_BLOCKED = 6;
+}
+
+message Continuation {
+  string id = 1;
+  string run_id = 2;
+  string type = 3;
+  ContinuationStatus status = 4;
+  google.protobuf.Value condition = 5;
+  google.protobuf.Value payload = 6;
+  uint64 version = 7;
+  optional uint64 expires_at = 8;
+}
+
+message ListContinuationsRequest {
+  optional string run_id = 1;
+  ContinuationStatus status = 2;
+}
+
+message ListContinuationsResponse {
+  repeated Continuation continuations = 1;
+}
+
+enum ContinuationAction {
+  CONTINUATION_ACTION_UNSPECIFIED = 0;
+  CONTINUATION_ACTION_RESUME = 1;
+  CONTINUATION_ACTION_CANCEL = 2;
+}
+
+message ResolveContinuationRequest {
+  string continuation_id = 1;
+  ContinuationAction action = 2;
+  google.protobuf.Value input = 3;
+  optional string reason = 4;
+  string idempotency_key = 5;
+  optional uint64 expected_version = 6;
+}
+
+enum ResolveOutcome {
+  RESOLVE_OUTCOME_UNSPECIFIED = 0;
+  RESOLVE_OUTCOME_TRANSITIONED = 1;
+  RESOLVE_OUTCOME_DUPLICATE = 2;
+  RESOLVE_OUTCOME_ALREADY_TERMINAL = 3;
+}
+
+message ResolveContinuationResponse {
+  ResolveOutcome outcome = 1;
+  Continuation continuation = 2;
+}

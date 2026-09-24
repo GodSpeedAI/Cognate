@@ -1,0 +1,44 @@
+syntax = "proto3";
+package cognate.v1;
+
+import "google/protobuf/struct.proto";
+
+// Durable runs (ADR-0011).
+enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0;
+  RUN_STATUS_RUNNING = 1;
+  RUN_STATUS_WAITING = 2;
+  RUN_STATUS_COMPLETED = 3;
+  RUN_STATUS_FAILED = 4;
+  RUN_STATUS_CANCELLED = 5;
+}
+
+message Run {
+  string run_id = 1;
+  string agent = 2;
+  string tenant = 3;
+  RunStatus status = 4;
+  google.protobuf.Value input = 5;
+  google.protobuf.Value output = 6;
+  optional string error = 7;
+  string correlation_id = 8;
+  string started_by = 9;
+  repeated string waiting_on = 10;
+}
+
+message StartRunRequest {
+  string agent = 1;
+  google.protobuf.Value input = 2;
+  string idempotency_key = 3;
+  optional string correlation_id = 4;
+}
+
+message GetRunRequest {
+  string run_id = 1;
+}
+
+message CancelRunRequest {
+  string run_id = 1;
+  string reason = 2;
+  string idempotency_key = 3;
+}

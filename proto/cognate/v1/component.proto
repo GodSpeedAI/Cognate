@@ -1,0 +1,23 @@
+syntax = "proto3";
+package cognate.v1;
+
+import "cognate/v1/capability.proto";
+
+// Component and fiber views for inspection (spec §8.3, §8.4). Untrusted input never constructs components (§32).
+enum FiberState {
+  FIBER_STATE_UNSPECIFIED = 0;
+  FIBER_STATE_WAITING = 1;
+  FIBER_STATE_ACTIVATING = 2;
+  FIBER_STATE_ACTIVE = 3;
+  FIBER_STATE_FAILED = 4;
+  FIBER_STATE_DEACTIVATING = 5;
+  FIBER_STATE_DISPOSED = 6;
+}
+
+message ComponentView {
+  string component_id = 1;
+  string scope_id = 2;
+  FiberState state = 3;
+  optional string fiber_id = 4;
+  repeated CapabilityContract provides = 5;
+}
