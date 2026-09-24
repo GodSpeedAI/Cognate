@@ -260,6 +260,22 @@ export function lifecycleSuite(name: string, factory: KernelFactory): void {
       expect(handle.state).toBe("FAILED");
     });
 
+    test("a timed-out activation still disposes the effects it registered before hanging", async () => {
+      const h = await make();
+      const handle = await h.kernel.mount({
+        id: "hang-after-effect",
+        activationTimeoutMs: 30,
+        retry: { maxAttempts: 1, baseDelayMs: 1, maxDelayMs: 1 },
+        async activate(fiber) {
+          fiber.effects.register(() => void h.log.push("partial:down"), "partial");
+          await new Promise<void>(() => {});
+        },
+      });
+      await handle.waitFor("FAILED", 1000);
+      await until(() => h.log.includes("partial:down"), 1000, "partial effect disposal after timeout");
+      expect(h.log).toEqual(["partial:down"]);
+    });
+
     test("dispose during a pending activation wins, cleans partial effects, and publishes nothing", async () => {
       const h = await make();
       let release!: () => void;

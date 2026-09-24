@@ -115,7 +115,9 @@ requirements:
     acceptance: [AC-KRN-001-01]
     gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/contract.test.ts', proof_paths: ['packages/kernel-cordis/test/contract.test.ts']}
     dependencies: [AK-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
+    debt: DEBT-005
   - id: CG-KRN-002
     title: 'Fiber lifecycle including FAILED, bounded retry, transient versus permanent failure.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.4', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -123,7 +125,9 @@ requirements:
     acceptance: [AC-KRN-002-01]
     gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/lifecycle.test.ts', proof_paths: ['packages/kernel-cordis/test/lifecycle.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
+    debt: DEBT-005
   - id: CG-KRN-003
     title: 'Reversible effects dispose idempotently in reverse order with aggregated errors.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '9.1; 31.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -131,7 +135,9 @@ requirements:
     acceptance: [AC-KRN-003-01]
     gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/effects.test.ts', proof_paths: ['packages/kernel-cordis/test/effects.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
+    debt: DEBT-005
   - id: CG-KRN-004
     title: 'Dependency closure with deactivation on loss and reactivation on compatible replacement.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.4; 29.2; 35', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -139,7 +145,9 @@ requirements:
     acceptance: [AC-KRN-004-01]
     gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/dependencies.test.ts', proof_paths: ['packages/kernel-cordis/test/dependencies.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
+    debt: DEBT-005
   - id: CG-KRN-005
     title: 'Scope isolation and narrowing without implicit parent mutation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.1; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -147,7 +155,9 @@ requirements:
     acceptance: [AC-KRN-005-01]
     gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/scopes.test.ts', proof_paths: ['packages/kernel-cordis/test/scopes.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
+    debt: DEBT-005
   - id: CG-KRN-006
     title: 'Resolution grants no authority; invocation is policy checked; revoked leases fail typed.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.5; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -155,7 +165,9 @@ requirements:
     acceptance: [AC-KRN-006-01]
     gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/authority.test.ts', proof_paths: ['packages/kernel-cordis/test/authority.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
+    debt: DEBT-005
   - id: CG-KRN-007
     title: 'Cordis stays behind the kernel boundary.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.4; 40.A', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -163,7 +175,8 @@ requirements:
     acceptance: [AC-KRN-007-01]
     gate: {cwd: ., run: 'bun test ./tests/architecture/engine-boundary.test.ts', proof_paths: ['tests/architecture/engine-boundary.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
   - id: CG-KRN-008
     title: 'Kernel properties: reversibility, dependency closure, scope isolation, disposal idempotence.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '34.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -171,7 +184,8 @@ requirements:
     acceptance: [AC-KRN-008-01]
     gate: {cwd: ., run: 'bun test ./tests/properties/kernel.property.test.ts', proof_paths: ['tests/properties/kernel.property.test.ts']}
     dependencies: [CG-KRN-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m2-kernel.md
   - id: CG-EVT-001
     title: 'Canonical event envelope with validation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

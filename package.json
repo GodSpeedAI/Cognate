@@ -19,6 +19,7 @@
     "@cognate/capabilities": "workspace:*",
     "@cognate/cognitive-api": "workspace:*",
     "@cognate/cognitive-memory": "workspace:*",
+    "@cognate/cognitive-ruvector": "workspace:*",
     "@cognate/continuations": "workspace:*",
     "@cognate/events": "workspace:*",
     "@cognate/kernel-api": "workspace:*",
