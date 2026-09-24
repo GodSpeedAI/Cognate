@@ -9,6 +9,7 @@
         "@cognate/capabilities": "workspace:*",
         "@cognate/cognitive-api": "workspace:*",
         "@cognate/cognitive-memory": "workspace:*",
+        "@cognate/cognitive-ruvector": "workspace:*",
         "@cognate/continuations": "workspace:*",
         "@cognate/events": "workspace:*",
         "@cognate/kernel-api": "workspace:*",
@@ -64,6 +65,14 @@
       "version": "0.0.0",
       "dependencies": {
         "@cognate/cognitive-api": "workspace:*",
+      },
+    },
+    "packages/cognitive-ruvector": {
+      "name": "@cognate/cognitive-ruvector",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/cognitive-api": "workspace:*",
+        "@ruvector/core": "0.1.32",
       },
     },
     "packages/continuations": {
@@ -132,6 +141,8 @@
 
     "@cognate/cognitive-memory": ["@cognate/cognitive-memory@workspace:packages/cognitive-memory"],
 
+    "@cognate/cognitive-ruvector": ["@cognate/cognitive-ruvector@workspace:packages/cognitive-ruvector"],
+
     "@cognate/continuations": ["@cognate/continuations@workspace:packages/continuations"],
 
     "@cognate/events": ["@cognate/events@workspace:packages/events"],
@@ -145,6 +156,8 @@
     "@cognate/store-memory": ["@cognate/store-memory@workspace:packages/store-memory"],
 
     "@cognate/store-sqlite": ["@cognate/store-sqlite@workspace:packages/store-sqlite"],
+
+    "@ruvector/core": ["@ruvector/core@0.1.32", "", { "optionalDependencies": { "ruvector-core-darwin-arm64": "0.1.30", "ruvector-core-darwin-x64": "0.1.30", "ruvector-core-linux-arm64-gnu": "0.1.30", "ruvector-core-linux-x64-gnu": "0.1.30", "ruvector-core-win32-x64-msvc": "0.1.30" } }, "sha512-tctBcZ9//AXHh6tntaYW3ezHN5aUlhv/kAwJlZgQiwmFhTL8Vl/WqqEQd+Uibdpbo2D2LQI8oRc/pehNFcMq7w=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
@@ -201,6 +214,16 @@
     "fast-check": ["fast-check@4.10.2", "", { "dependencies": { "pure-rand": "^8.0.0" } }, "sha512-iK2f+YrcmoeGqk6fA0ea2bptcu/itMIm4NfEozq6N25+aG6h7s5HZbB/k1aV7b5w5sFLMCbbtRUsTVR+BgC3xw=="],
 
     "pure-rand": ["pure-rand@8.4.2", "", {}, "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng=="],
+
+    "ruvector-core-darwin-arm64": ["ruvector-core-darwin-arm64@0.1.30", "", { "os": "darwin", "cpu": "arm64" }, "sha512-2UxrmErYik+1SU8Qd7hK5tYWZpmS/4P25juNEATzpZoSbtW2MHsgnweytXB3rLDQoL+1IZB5Ov6t+W0wy05jIg=="],
+
+    "ruvector-core-darwin-x64": ["ruvector-core-darwin-x64@0.1.30", "", { "os": "darwin", "cpu": "x64" }, "sha512-ba0vyYYNB94tS7wkz3oWd1U6dGq1PAxO2skVgJ8tlrX1uxAzmff9rciF9mst5B53DJVkDhmVN/mDyqa6UGnNKg=="],
+
+    "ruvector-core-linux-arm64-gnu": ["ruvector-core-linux-arm64-gnu@0.1.30", "", { "os": "linux", "cpu": "arm64" }, "sha512-+dLsq9MCv7il60i/7/3BeF3AkT7BGOkCv5P53ljaWBrMdAY1Q0lS75Mb3ze24j2pEcd1tP/X92mHBPjsB6uBGw=="],
+
+    "ruvector-core-linux-x64-gnu": ["ruvector-core-linux-x64-gnu@0.1.30", "", { "os": "linux", "cpu": "x64" }, "sha512-w4rm2Jakm+tNI1Ogf2S0Nq8ghH8F+tzf0LtrCra1Ox5xCoeDItN6yrGkXCplm4qiKdIVAhzVYdwEoTOYiAbSmA=="],
+
+    "ruvector-core-win32-x64-msvc": ["ruvector-core-win32-x64-msvc@0.1.30", "", { "os": "win32", "cpu": "x64" }, "sha512-tR3gB5AGe8QJyd8Tq/8HPrRBpbYiof3rE8Qxc2jiK4TfFq7egJN3Ak4Q+dknkcqldfOZjVNYrC312lmT+FbF9g=="],
 
     "typescript": ["typescript@7.0.2", "", { "optionalDependencies": { "@typescript/typescript-aix-ppc64": "7.0.2", "@typescript/typescript-darwin-arm64": "7.0.2", "@typescript/typescript-darwin-x64": "7.0.2", "@typescript/typescript-freebsd-arm64": "7.0.2", "@typescript/typescript-freebsd-x64": "7.0.2", "@typescript/typescript-linux-arm": "7.0.2", "@typescript/typescript-linux-arm64": "7.0.2", "@typescript/typescript-linux-loong64": "7.0.2", "@typescript/typescript-linux-mips64el": "7.0.2", "@typescript/typescript-linux-ppc64": "7.0.2", "@typescript/typescript-linux-riscv64": "7.0.2", "@typescript/typescript-linux-s390x": "7.0.2", "@typescript/typescript-linux-x64": "7.0.2", "@typescript/typescript-netbsd-arm64": "7.0.2", "@typescript/typescript-netbsd-x64": "7.0.2", "@typescript/typescript-openbsd-arm64": "7.0.2", "@typescript/typescript-openbsd-x64": "7.0.2", "@typescript/typescript-sunos-x64": "7.0.2", "@typescript/typescript-win32-arm64": "7.0.2", "@typescript/typescript-win32-x64": "7.0.2" }, "bin": { "tsc": "bin/tsc" } }, "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA=="],
 

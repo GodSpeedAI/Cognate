@@ -107,3 +107,13 @@ wrap the engine, not fixture failures).
    `compatibility/phase0/cordis/cordis.test.ts` against any candidate
    version bump before changing the pinned dependency, and treat a failing
    required behaviour as blocking per §37.
+
+## Addendum (2026-09-24, after implementing kernel-cordis)
+
+Implementing the full kernel conformance kit showed that Cordis 4.0.0-rc.10 contributes less than this ADR assumed:
+
+- **Cordis provides:** one `Context` per Cognate scope (`ctx.isolate`), one plugin fiber per activation attempt, and effect hosting for the attempt's teardown.
+- **The adapter owns:** capability registry and eligibility (`isCompatible` version/attribute matching; Cordis `provide`/`inject` is one slot per name with no version matching), scope visibility for dynamic capability ids (`isolate()` isolates one named slot, not arbitrary ids), strict reverse-sequential disposal and error aggregation, cancellation signals, retry/backoff, activation timeout, and the FAILED/WAITING vocabulary.
+- **Defect found in review and fixed:** on activation timeout the adapter relied on Cordis `dispose()`, which blocks on a hung `apply()`, so effects registered before the hang leaked. The kit now includes "a timed-out activation still disposes the effects it registered before hanging"; teardown is bound to its attempt's effect stack.
+
+Consequence: the Cordis dependency is real but thin. Replacing it (§37) would touch `scope.ts` and the plugin wrapper in `fiber.ts` only; the conformance kit is the contract. Tracked in DEBT-005.
