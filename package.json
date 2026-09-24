@@ -1,0 +1,13 @@
+{
+  "name": "cognate-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "check": "bun scripts/check-substrate.ts",
+    "test": "bun test compatibility/phase0 tests",
+    "verify": "bun run check && bun run test"
+  }
+}
