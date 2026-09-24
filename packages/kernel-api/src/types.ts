@@ -41,6 +41,8 @@ export interface Requirement {
 
 export interface InvocationContext {
   readonly actor: Principal;
+  /** The caller's tenant. Defaults to the kernel's tenant; policy and handlers see this value (spec §32). */
+  readonly tenant?: string;
   readonly correlationId: string;
   readonly causationId?: string;
   readonly runId?: string;

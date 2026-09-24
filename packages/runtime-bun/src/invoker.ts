@@ -19,7 +19,6 @@ export interface InvocationOutcome {
 }
 
 interface Slot {
-  readonly tenant: string;
   decision?: PolicyDecision;
 }
 
@@ -31,13 +30,13 @@ export class Invoker {
   constructor(private readonly userPolicy: Policy) {}
 
   /**
-   * The policy handed to the kernel. The kernel is single-tenant; the wrapper substitutes the tenant of the
-   * current invocation and captures the decision so it can be recorded with the invocation (spec §32, §33).
+   * The policy handed to the kernel. The caller's tenant travels in the InvocationContext; this wrapper only
+   * captures the decision so it can be recorded with the invocation (spec §32, §33).
    */
   readonly policy: Policy = {
     authorize: async (request) => {
       const slot = this.slots.getStore();
-      const decision = await this.userPolicy.authorize(slot ? { ...request, tenant: slot.tenant } : request);
+      const decision = await this.userPolicy.authorize(request);
       if (slot) slot.decision = decision;
       return decision;
     },
@@ -58,8 +57,8 @@ export class Invoker {
     const base = { capability: request.capability, providerId: null, componentId: null, fiberId: null, decision: null, semanticRef: null, value: null };
     if (isUnavailable(lease)) return { ...base, ok: false, failure: { kind: "unavailable", reason: lease.reason } };
 
-    const slot: Slot = { tenant: request.tenant };
-    const result = await this.slots.run(slot, () => lease.invoke(request.input, request.context));
+    const slot: Slot = {};
+    const result = await this.slots.run(slot, () => lease.invoke(request.input, { ...request.context, tenant: request.tenant }));
     const provider = this.providerOf(lease.providerId, request.capability);
     const common = { ...base, providerId: lease.providerId, ...provider, semanticRef: lease.contract.semanticRef ?? null };
     if (result.ok) return { ...common, decision: slot.decision ?? null, ok: true, value: toJson(result.value), failure: null };

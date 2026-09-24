@@ -581,6 +581,18 @@ export function authoritySuite(name: string, factory: KernelFactory): void {
       expect(requests[0]).toMatchObject({ operation: "invoke", actor: { id: "alice" }, tenant: "tenant-a", scopeId: "ws", capability: { id: "x.read" }, providerId: l.providerId, correlationId: "corr-1" });
     });
 
+    test("the caller's tenant reaches both the policy and the handler", async () => {
+      const seen: string[] = [];
+      const h = await make({ authorize: (r) => (seen.push(`policy:${r.tenant}`), { allow: true, policyId: "p", reason: "ok" }) });
+      await (
+        await h.kernel.mount({ id: "t", provides: [contract("x.tenant")], activate: (f) => f.provide(contract("x.tenant"), (_i, ctx) => void seen.push(`handler:${ctx.tenant}`)) })
+      ).waitFor("ACTIVE");
+      const l = lease(h.kernel.resolve({ capability: "x.tenant" }));
+      await l.invoke(null, invocation({ tenant: "tenant-b" }));
+      await l.invoke(null, invocation());
+      expect(seen).toEqual(["policy:tenant-b", "handler:tenant-b", "policy:tenant-a", "handler:tenant-a"]);
+    });
+
     test("every invocation emits an auditable decision event", async () => {
       const h = await make(denyAll);
       await (await h.kernel.mount(provider(h, "p", contract("x.pay")))).waitFor("ACTIVE");
