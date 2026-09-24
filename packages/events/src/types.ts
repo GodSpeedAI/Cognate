@@ -140,7 +140,7 @@ export interface DurableStore {
   onCommitted(listener: (events: readonly StoredEvent[]) => void): () => void;
 
   getRecord(collection: string, id: string): Promise<StoredRecord | undefined>;
-  /** Records whose top-level fields equal every `where` entry. */
+  /** Records whose top-level fields equal every `where` entry, ordered by id (code-point order). */
   listRecords(collection: string, where?: { readonly [field: string]: string | number | boolean | null }): Promise<StoredRecord[]>;
 
   claimOutbox(options: { readonly topic: string; readonly now: number; readonly limit: number; readonly leaseMs: number }): Promise<OutboxItem[]>;
@@ -154,6 +154,7 @@ export interface DurableStore {
   /** Record a poison event without advancing the checkpoint. */
   failProjection(name: string, error: { readonly position: number; readonly eventId: string; readonly message: string }): Promise<void>;
   readProjection(name: string, key: string): Promise<Json | undefined>;
+  /** All state entries ordered by key (code-point order), so replay comparisons are store-independent. */
   listProjection(name: string): Promise<{ readonly key: string; readonly value: Json }[]>;
   /** Delete a projection's state and checkpoint (derived data only). */
   resetProjection(name: string): Promise<void>;

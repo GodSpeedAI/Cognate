@@ -73,3 +73,10 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed:** The fixture spawns `SXR_BIN` (default `.tmp/sxr-target/release/sxr`, built from the local sxr checkout in ~7 min). No published binary or pinned release artifact exists.
 **Consequence:** The gate fails on a machine without that build; it does not skip.
 **Exit criterion:** A pinned, downloadable SXR release artifact, fetched by a setup recipe.
+
+## DEBT-011 — SQLite store assumes a single writer process
+**Status:** Open
+**Requirement(s):** CG-EVT-004, CG-EVT-006
+**Observed:** `store-sqlite` serializes commits in-process (synchronous bun:sqlite + `BEGIN IMMEDIATE`); a second process writing the same file waits up to `busy_timeout=5000` then fails with `SQLITE_BUSY`. Crash atomicity was proven with one writer (`tests/integration/crash.test.ts`); multi-process concurrent writers were not tested. Backups must include `-wal`/`-shm` or use the backup API.
+**Consequence:** One runtime process owns a database file. Other processes (CLI, second-process clients) must go through the runtime service, not open the file for writing.
+**Exit criterion:** A multi-process writer test proves correct serialization and typed busy failures, or the runtime enforces single ownership with a lock file and a test.

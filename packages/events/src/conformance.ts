@@ -231,6 +231,14 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       expect(await store.listProjection("p")).toEqual([{ key: "a", value: 1 }]);
     });
 
+    test("listProjection and listRecords are ordered by key and id regardless of write order", async () => {
+      const store = await open();
+      await store.commitProjection({ name: "o", version: "1", fromPosition: 0, toPosition: 1, writes: [{ key: "zeta", value: 1 }, { key: "Alpha", value: 2 }, { key: "\u{1F600}", value: 3 }, { key: "alpha", value: 4 }, { key: "\uFF21", value: 5 }] });
+      expect((await store.listProjection("o")).map((e) => e.key)).toEqual(["Alpha", "alpha", "zeta", "\uFF21", "\u{1F600}"]);
+      await store.commit({ appends: [], records: ["z", "B", "a"].map((id) => ({ collection: "ord", id, expectedVersion: 0, value: {} })) });
+      expect((await store.listRecords("ord")).map((r) => r.id)).toEqual(["B", "a", "z"]);
+    });
+
     test("failure records an error without advancing; reset removes derived state", async () => {
       const store = await open();
       await store.commitProjection({ name: "p", version: "1", fromPosition: 0, toPosition: 2, writes: [{ key: "k", value: "v" }] });

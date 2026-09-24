@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/store-sqlite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Authoritative DurableStore on bun:sqlite (spec §13).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/events": "workspace:*" }
+}

@@ -274,6 +274,7 @@ export function createMemoryStore(): DurableStore {
         if (where && !Object.entries(where).every(([field, value]) => record.value[field] === value)) continue;
         results.push(record);
       }
+      results.sort((a, b) => compareCodePoints(a.id, b.id));
       return clone(results);
     },
 
@@ -360,7 +361,9 @@ export function createMemoryStore(): DurableStore {
     async listProjection(name) {
       const projectionMap = state.projectionState.get(name);
       if (!projectionMap) return [];
-      return clone([...projectionMap.entries()].map(([key, value]) => ({ key, value })));
+      const entries = [...projectionMap.entries()].map(([key, value]) => ({ key, value }));
+      entries.sort((a, b) => compareCodePoints(a.key, b.key));
+      return clone(entries);
     },
 
     async resetProjection(name) {
@@ -420,4 +423,15 @@ export function createMemoryStore(): DurableStore {
       state.listeners.clear();
     },
   };
+}
+
+/** Code-point order (= UTF-8 byte order), matching SQLite's BINARY collation; plain `<` compares UTF-16 units. */
+function compareCodePoints(a: string, b: string): number {
+  const x = [...a];
+  const y = [...b];
+  for (let i = 0; i < Math.min(x.length, y.length); i++) {
+    const d = x[i]!.codePointAt(0)! - y[i]!.codePointAt(0)!;
+    if (d !== 0) return d;
+  }
+  return x.length - y.length;
 }
