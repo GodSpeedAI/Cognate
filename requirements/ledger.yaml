@@ -91,15 +91,18 @@ requirements:
     acceptance: [AC-009-01]
     gate: {cwd: compatibility/phase0/ag-ui, run: 'bun test', proof_paths: ['ag-ui.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-ag-ui.md
   - id: AK-010
     title: 'Characterize React 19, Astryx, bundling, and Playwright under Bun.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25; 36; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'Reference UI', invariant: 'The renderer is replaceable and runs on the reference platform'}
     acceptance: [AC-010-01]
-    gate: {cwd: compatibility/phase0/ui, run: 'bun test', proof_paths: ['ui.test.tsx']}
+    gate: {cwd: compatibility/phase0/ui, run: 'bun test ./ui.test.tsx && bun x playwright test', proof_paths: ['ui.test.tsx', 'hydration.spec.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-ui.md
+    debt: DEBT-012
   - id: AK-011
     title: 'Characterize the MCP SDK under Bun.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -107,7 +110,9 @@ requirements:
     acceptance: [AC-011-01]
     gate: {cwd: compatibility/phase0/mcp, run: 'bun test', proof_paths: ['mcp.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/phase0-mcp.md
+    debt: DEBT-013
   - id: CG-KRN-001
     title: 'Framework-owned kernel contract: mount, resolve, invoke, dispose, scope close, effect registration.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -276,7 +281,8 @@ requirements:
     acceptance: [AC-CON-001-01]
     gate: {cwd: ., run: 'bun test ./packages/continuations/test/lifecycle.test.ts', proof_paths: ['packages/continuations/test/lifecycle.test.ts']}
     dependencies: [CG-EVT-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-CON-002
     title: 'Continuations survive restart and resume through a newly mounted handler; unsupported versions block.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '12', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -284,7 +290,8 @@ requirements:
     acceptance: [AC-CON-002-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/continuation-restart.test.ts', proof_paths: ['tests/integration/continuation-restart.test.ts']}
     dependencies: [CG-CON-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-CMT-001
     title: 'External commitment state machine with unknown-outcome reconciliation and separate compensation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '9.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -292,7 +299,8 @@ requirements:
     acceptance: [AC-CMT-001-01]
     gate: {cwd: ., run: 'bun test ./packages/continuations/test/commitments.test.ts', proof_paths: ['packages/continuations/test/commitments.test.ts']}
     dependencies: [CG-EVT-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-CMT-002
     title: 'Outbox dispatch is at least once with bounded backoff and deduplication.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '11; 13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -300,7 +308,8 @@ requirements:
     acceptance: [AC-CMT-002-01]
     gate: {cwd: ., run: 'bun test ./packages/events/test/outbox-dispatcher.test.ts', proof_paths: ['packages/events/test/outbox-dispatcher.test.ts']}
     dependencies: [CG-CMT-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m4-execution-services.md
   - id: CG-ART-001
     title: 'Artifacts have authoritative records, content-addressed bytes, and tombstones.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
