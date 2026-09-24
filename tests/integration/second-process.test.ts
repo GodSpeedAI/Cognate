@@ -24,14 +24,17 @@ test("a separate Bun process starts a run, streams its events, and resolves its 
     `import { createClient } from ${JSON.stringify(Bun.resolveSync("@connectrpc/connect", resolve("packages/protocol-connect-bun")))};
      import { createConnectTransport } from ${JSON.stringify(Bun.resolveSync("@connectrpc/connect-web", resolve("packages/protocol-connect-bun")))};
      import { RuntimeService, ContinuationAction, ContinuationStatus, RunStatus } from ${JSON.stringify(resolve("packages/proto/src/index.ts"))};
+     import { fromJson } from ${JSON.stringify(Bun.resolveSync("@bufbuild/protobuf", resolve("packages/proto")))};
+     import { ValueSchema } from ${JSON.stringify(Bun.resolveSync("@bufbuild/protobuf/wkt", resolve("packages/proto")))};
+     const value = (json) => fromJson(ValueSchema, json);
      const transport = createConnectTransport({ baseUrl: ${JSON.stringify(server.url)}, useBinaryFormat: true });
      const client = createClient(RuntimeService, transport);
      const headers = { authorization: "Bearer tenant-a:alice" };
-     const run = await client.startRun({ agent: "agent.approval", input: { amount: 7 }, idempotencyKey: "2p" }, { headers });
+     const run = await client.startRun({ agent: "agent.approval", input: value({ amount: 7 }), idempotencyKey: "2p" }, { headers });
      let waiting;
      for (let i = 0; i < 300; i++) { waiting = await client.getRun({ runId: run.runId }, { headers }); if (waiting.status === RunStatus.WAITING) break; await Bun.sleep(10); }
      const { continuations } = await client.listContinuations({ runId: run.runId, status: ContinuationStatus.OPEN }, { headers });
-     await client.resolveContinuation({ continuationId: continuations[0].id, action: ContinuationAction.RESUME, input: { approved: true }, idempotencyKey: "ok" }, { headers });
+     await client.resolveContinuation({ continuationId: continuations[0].id, action: ContinuationAction.RESUME, input: value({ approved: true }), idempotencyKey: "ok" }, { headers });
      const seen = [];
      const controller = new AbortController();
      for await (const e of client.streamEvents({ runId: run.runId, follow: true }, { headers, signal: controller.signal })) {

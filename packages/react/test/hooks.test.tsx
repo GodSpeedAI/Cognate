@@ -1,8 +1,9 @@
 // CG-UI-001 (spec §25.2): React 19 hooks over the headless client, against a real in-process runtime.
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
-GlobalRegistrator.register();
-import { afterEach, describe, expect, test } from "bun:test";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+// setup-dom must be imported first: `screen` binds to document.body at import time, and imports are
+// hoisted above module statements — a `register()` call between imports runs too late.
+import { GlobalRegistrator } from "./setup-dom.ts";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { createClient } from "@cognate/client";
 import { type AgentDefinition, invokeFrontend } from "@cognate/runtime-api";
 import { alice } from "@cognate/runtime-api/conformance";
@@ -30,6 +31,11 @@ afterEach(async () => {
   cleanup();
   await runtime?.close();
 });
+// Unregister so happy-dom's global fetch/Response/window don't leak into later test files —
+// `bun test` runs every file in one process, and a leaked DOM fetch breaks the Connect servers.
+afterAll(async () => {
+  await GlobalRegistrator.unregister();
+});
 
 function App({ onFocus }: { onFocus: (input: unknown) => void }) {
   const { start, state, runId } = useAgent("agent.ui");
@@ -56,7 +62,8 @@ describe("React bindings (§25.2)", () => {
     runtime = await createRuntime({ store: ":memory:", policy: { authorize: () => ({ allow: true, policyId: "p", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) }, agents, projections: [{ projection: counter, public: true }] });
     const client = createClient({ service: runtime.service, caller: alice });
     const focused: unknown[] = [];
-    render(<CognateProvider client={client}><App onFocus={(i) => focused.push(i)} /></CognateProvider>);
+    // Queries from render() bind at call time; `screen` binds at import time, before happy-dom registers.
+    const screen = render(<CognateProvider client={client}><App onFocus={(i) => focused.push(i)} /></CognateProvider>);
     await act(async () => screen.getByText("start").click());
     await waitFor(() => expect(screen.getByLabelText("text").textContent).toBe("Hello from the agent"), { timeout: 5000 });
     await waitFor(() => expect(screen.getByLabelText("runs").textContent).toBe("1"), { timeout: 5000 });

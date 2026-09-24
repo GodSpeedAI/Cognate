@@ -372,7 +372,8 @@ requirements:
     acceptance: [AC-WIR-001-01]
     gate: {cwd: ., run: 'bun test ./packages/proto/test/codegen.test.ts', proof_paths: ['packages/proto/test/codegen.test.ts']}
     dependencies: [AK-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-WIR-002
     title: 'A second process observes and controls a runtime through generated clients over Connect on Bun.serve.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '22; 37 / Phase 4', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -380,7 +381,9 @@ requirements:
     acceptance: [AC-WIR-002-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/second-process.test.ts', proof_paths: ['tests/integration/second-process.test.ts']}
     dependencies: [CG-WIR-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
+    debt: DEBT-004
   - id: CG-WIR-003
     title: 'The runtime service contract survives transport replacement.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '22; 40.G', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -388,7 +391,8 @@ requirements:
     acceptance: [AC-WIR-003-01]
     gate: {cwd: ., run: 'bun test ./packages/protocol-connect/test/service.test.ts', proof_paths: ['packages/protocol-connect/test/service.test.ts']}
     dependencies: [CG-WIR-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-WIR-004
     title: 'Untrusted protocol input is validated, bounded, deadlined, and authenticated.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -396,7 +400,8 @@ requirements:
     acceptance: [AC-WIR-004-01]
     gate: {cwd: ., run: 'bun test ./packages/protocol-connect-bun/test/limits.test.ts', proof_paths: ['packages/protocol-connect-bun/test/limits.test.ts']}
     dependencies: [CG-WIR-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-SEM-001
     title: 'DomainForge adapter produces SemanticRefs with an explicit kind mapping table.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '7.1; 19', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -519,7 +524,8 @@ requirements:
     acceptance: [AC-CLT-001-01]
     gate: {cwd: ., run: 'bun test ./packages/client/test/client.test.ts', proof_paths: ['packages/client/test/client.test.ts']}
     dependencies: [CG-WIR-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-UI-001
     title: 'React bindings expose runs, projections, capabilities, continuations, and artifacts.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -527,7 +533,8 @@ requirements:
     acceptance: [AC-UI-001-01]
     gate: {cwd: ., run: 'bun test ./packages/react/test/hooks.test.tsx', proof_paths: ['packages/react/test/hooks.test.tsx']}
     dependencies: [CG-CLT-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-UI-002
     title: 'Astryx reference surfaces: shell, chat, approval, artifact, run and state inspection, themes.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -575,7 +582,8 @@ requirements:
     acceptance: [AC-MCP-001-01]
     gate: {cwd: ., run: 'bun test ./packages/mcp/test/mcp.test.ts', proof_paths: ['packages/mcp/test/mcp.test.ts']}
     dependencies: [AK-011, CG-KRN-006]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-A2A-001
     title: 'A2A adapter exposes a runtime agent over the A2A protocol.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
