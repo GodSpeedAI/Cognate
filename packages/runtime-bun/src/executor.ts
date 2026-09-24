@@ -123,7 +123,8 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
         guard();
         done = await append({
           eventType: "run.invocation",
-          payload: outcome.ok ? { result: outcome.value } : { failure: outcome.failure },
+          // Input and result live in the erasable payload (spec §32); routing facts stay in metadata.
+          payload: outcome.ok ? { input: toJson(input), result: outcome.value } : { input: toJson(input), failure: outcome.failure },
           metadata: {
             stepId,
             capability,
