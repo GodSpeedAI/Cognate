@@ -1,0 +1,17 @@
+{
+  "name": "@cognate/protocol-connect",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Maps RuntimeService to the generated Connect service (server routes and a remote client). Transport-agnostic.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.15.0",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/proto": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@connectrpc/connect": "2.2.0"
+  },
+  "devDependencies": { "@cognate/protocol-connect-bun": "workspace:*", "@cognate/runtime-bun": "workspace:*" }
+}

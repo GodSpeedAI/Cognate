@@ -1,0 +1,2 @@
+Entity "Warehouse" in logistics
+Flow "Cameras" from "Warehouse" to "Nowhere" quantity 5

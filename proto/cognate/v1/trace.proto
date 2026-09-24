@@ -1,0 +1,11 @@
+syntax = "proto3";
+package cognate.v1;
+
+// Observation delivery status (spec §20). A receipt is not evidence or settlement.
+message ObservationReceipt {
+  string observation_id = 1;
+  string event_id = 2;
+  string status = 3; // queued | accepted | duplicate | failed
+  optional string ledger_position = 4;
+  optional string error = 5;
+}

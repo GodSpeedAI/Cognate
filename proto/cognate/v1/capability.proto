@@ -1,0 +1,32 @@
+syntax = "proto3";
+package cognate.v1;
+
+import "google/protobuf/struct.proto";
+import "cognate/v1/identity.proto";
+
+// Capability contracts and invocation (spec §8.2, §8.5).
+message CapabilityContract {
+  string id = 1;
+  string version = 2;
+  google.protobuf.Struct attributes = 3;
+  optional SemanticRef semantic_ref = 4;
+}
+
+message PolicyDecision {
+  bool allow = 1;
+  string policy_id = 2;
+  string reason = 3;
+}
+
+message InvokeRequest {
+  string capability = 1;
+  google.protobuf.Value input = 2;
+  optional string correlation_id = 3;
+  optional string idempotency_key = 4;
+  // Absolute deadline, epoch milliseconds.
+  optional uint64 deadline = 5;
+}
+
+message InvokeResponse {
+  google.protobuf.Value output = 1;
+}

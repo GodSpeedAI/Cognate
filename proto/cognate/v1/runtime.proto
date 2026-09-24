@@ -1,0 +1,42 @@
+syntax = "proto3";
+package cognate.v1;
+
+import "google/protobuf/struct.proto";
+import "cognate/v1/artifact.proto";
+import "cognate/v1/capability.proto";
+import "cognate/v1/continuation.proto";
+import "cognate/v1/event.proto";
+import "cognate/v1/execution.proto";
+
+// Runtime service (ADR-0011). Caller identity comes from transport authentication, never from messages (§32).
+// Only unary and server-streaming methods: client/bidi streaming are unsupported on the Bun transport (DEBT-004).
+service RuntimeService {
+  rpc StartRun(StartRunRequest) returns (Run);
+  rpc GetRun(GetRunRequest) returns (Run);
+  rpc CancelRun(CancelRunRequest) returns (Run);
+  rpc StreamEvents(StreamEventsRequest) returns (stream Event);
+  rpc ListContinuations(ListContinuationsRequest) returns (ListContinuationsResponse);
+  rpc ResolveContinuation(ResolveContinuationRequest) returns (ResolveContinuationResponse);
+  rpc Invoke(InvokeRequest) returns (InvokeResponse);
+  rpc GetArtifact(GetArtifactRequest) returns (Artifact);
+  rpc ReadProjection(ReadProjectionRequest) returns (ReadProjectionResponse);
+}
+
+message StreamEventsRequest {
+  optional uint64 after_position = 1;
+  optional string run_id = 2;
+  bool follow = 3;
+}
+
+message ReadProjectionRequest {
+  string name = 1;
+}
+
+message ProjectionEntry {
+  string key = 1;
+  google.protobuf.Value value = 2;
+}
+
+message ReadProjectionResponse {
+  repeated ProjectionEntry entries = 1;
+}

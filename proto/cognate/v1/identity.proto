@@ -1,0 +1,22 @@
+syntax = "proto3";
+package cognate.v1;
+
+// Framework identity types (spec §7.1, §33). Wire representation only; meaning lives in .sea / DomainForge (§3.7).
+
+message Principal {
+  string id = 1;
+  string kind = 2; // user | agent | service | system
+}
+
+message SemanticSource {
+  string uri = 1;
+  string digest = 2;
+}
+
+message SemanticRef {
+  string namespace = 1;
+  string id = 2;
+  string kind = 3;
+  SemanticSource source = 4;
+  string projection_version = 5;
+}

@@ -1,0 +1,4 @@
+Entity "Warehouse" in logistics
+Entity "Factory" in manufacturing
+Resource "Cameras" units in equipment
+Flow "Cameras" from "Warehouse" to "Factory" quantity 10
