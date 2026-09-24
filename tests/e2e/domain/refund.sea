@@ -1,0 +1,4 @@
+Entity "Customer" in support
+Entity "SupportDesk" in support
+Resource "Refund" units in billing
+Flow "Refund" from "SupportDesk" to "Customer" quantity 1

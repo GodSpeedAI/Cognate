@@ -47,6 +47,7 @@
     "@cognate/store-memory": "workspace:*",
     "@cognate/store-sqlite": "workspace:*",
     "@cognate/ui-astryx": "workspace:*",
+    "@playwright/test": "1.63.0",
     "@types/bun": "1.4.2",
     "fast-check": "4.10.2",
     "typescript": "7.0.2"
