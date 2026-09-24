@@ -188,7 +188,8 @@ requirements:
     acceptance: [AC-EVT-002-01]
     gate: {cwd: ., run: 'bun test ./packages/store-sqlite/test/conformance.test.ts', proof_paths: ['packages/store-sqlite/test/conformance.test.ts']}
     dependencies: [AK-001, CG-EVT-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-EVT-003
     title: 'Idempotent commands commit event, result, continuation transition, and outbox atomically.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10; 13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -196,7 +197,8 @@ requirements:
     acceptance: [AC-EVT-003-01]
     gate: {cwd: ., run: 'bun test ./packages/store-sqlite/test/conformance.test.ts', proof_paths: ['packages/store-sqlite/test/conformance.test.ts']}
     dependencies: [CG-EVT-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-EVT-004
     title: 'SQLite store persists authoritative state and fails closed.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13.1; 31.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -204,7 +206,9 @@ requirements:
     acceptance: [AC-EVT-004-01]
     gate: {cwd: ., run: 'bun test ./packages/store-sqlite/test/conformance.test.ts', proof_paths: ['packages/store-sqlite/test/conformance.test.ts']}
     dependencies: [CG-EVT-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
+    debt: DEBT-011
   - id: CG-EVT-005
     title: 'In-memory store passes the same conformance kit.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -221,7 +225,9 @@ requirements:
     acceptance: [AC-EVT-006-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/crash.test.ts', proof_paths: ['tests/integration/crash.test.ts']}
     dependencies: [CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
+    debt: DEBT-011
   - id: CG-PRJ-001
     title: 'Projections are idempotent, checkpointed atomically, and never skip failures.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '11', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -229,7 +235,8 @@ requirements:
     acceptance: [AC-PRJ-001-01]
     gate: {cwd: ., run: 'bun test ./packages/projections/test/projections.test.ts', proof_paths: ['packages/projections/test/projections.test.ts']}
     dependencies: [CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-PRJ-002
     title: 'Delete all derived state and reconstruct it from SQLite.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13.3; 37 / Phase 2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -237,7 +244,8 @@ requirements:
     acceptance: [AC-PRJ-002-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/rebuild.test.ts', proof_paths: ['tests/integration/rebuild.test.ts']}
     dependencies: [CG-PRJ-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-PRJ-003
     title: 'Replay determinism property.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '34.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -245,7 +253,8 @@ requirements:
     acceptance: [AC-PRJ-003-01]
     gate: {cwd: ., run: 'bun test ./tests/properties/replay.property.test.ts', proof_paths: ['tests/properties/replay.property.test.ts']}
     dependencies: [CG-PRJ-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-CON-001
     title: 'Continuation lifecycle with exactly one terminal transition under races.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '12', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -581,7 +590,8 @@ requirements:
     acceptance: [AC-ARC-001-01]
     gate: {cwd: ., run: 'bun test ./tests/architecture/dependencies.test.ts', proof_paths: ['tests/architecture/dependencies.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m3-durable-state.md
   - id: CG-ARC-002
     title: 'Architectural acceptance criteria A–M are each bound to a passing gate.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '40', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

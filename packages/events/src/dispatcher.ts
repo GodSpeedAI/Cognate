@@ -36,8 +36,39 @@ export class OutboxDispatcher {
   ) {}
 
   /** Claim and deliver every currently available item once. */
-  drain(): Promise<DrainReport> {
-    throw new Error("OutboxDispatcher: not implemented");
+  async drain(): Promise<DrainReport> {
+    const now = this.options.now ? this.options.now() : Date.now();
+    const items = await this.store.claimOutbox({
+      topic: this.options.topic,
+      now,
+      limit: this.options.batchSize ?? 100,
+      leaseMs: this.options.leaseMs ?? 30_000,
+    });
+
+    const delivered: string[] = [];
+    const retried: { readonly id: string; readonly retryAt: number }[] = [];
+    const poisoned: string[] = [];
+
+    for (const item of items) {
+      const controller = new AbortController();
+      try {
+        const receipt = await this.options.deliver(item, controller.signal);
+        await this.store.settleOutbox(item.id, { kind: "delivered", receipt });
+        delivered.push(item.id);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (error instanceof PermanentDeliveryError || item.attempts >= this.options.backoff.maxAttempts) {
+          await this.store.settleOutbox(item.id, { kind: "poisoned", error: message });
+          poisoned.push(item.id);
+        } else {
+          const retryAt = now + this.delayFor(item.attempts);
+          await this.store.settleOutbox(item.id, { kind: "retry", error: message, retryAt });
+          retried.push({ id: item.id, retryAt });
+        }
+      }
+    }
+
+    return { delivered, retried, poisoned };
   }
 
   /** Retry delay for the given attempt: min(maxMs, baseMs * 2^(attempt-1)). */
