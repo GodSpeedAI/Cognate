@@ -99,7 +99,7 @@ requirements:
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'Kernel', invariant: 'Public operations are expressed without engine types'}
     acceptance: [AC-KRN-001-01]
-    gate: {cwd: ., run: 'bun test ./packages/kernel-api/test/contract.test.ts', proof_paths: ['packages/kernel-api/test/contract.test.ts']}
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/contract.test.ts', proof_paths: ['packages/kernel-cordis/test/contract.test.ts']}
     dependencies: [AK-002]
     status: candidate
   - id: CG-KRN-002

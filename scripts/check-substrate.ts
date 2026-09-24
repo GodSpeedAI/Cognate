@@ -37,7 +37,7 @@ if (existsSync(".agents/CURRENT_STATUS.yaml") && existsSync(".agents/CURRENT_STA
   for (let index = 0; index + 1 < lines.length; index += 2) {
     if (lines[index] !== "---") errors.push(`Status document ${index / 2 + 1}: missing separator`);
     try {
-      const snapshot = JSON.parse(lines[index + 1]) as Record<string, unknown>;
+      const snapshot = JSON.parse(lines[index + 1] ?? "") as Record<string, unknown>;
       const required = ["revision", "recorded_at", "stage", "summary", "verified", "limits", "next", "evidence", "spec", "ledger"];
       for (const field of required) if (!(field in snapshot)) errors.push(`Status document ${index / 2 + 1}: missing ${field}`);
       if (typeof snapshot.revision !== "number" || !Number.isInteger(snapshot.revision) || snapshot.revision <= previousRevision) errors.push(`Status document ${index / 2 + 1}: revision must increase`);
