@@ -640,7 +640,7 @@ requirements:
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '36', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'End-to-end journey', invariant: 'Displayed state is checked against authoritative state'}
     acceptance: [AC-E2E-001-01]
-    gate: {cwd: ., run: 'bun test ./tests/e2e/journey.e2e.ts', proof_paths: ['tests/e2e/journey.e2e.ts']}
+    gate: {cwd: tests/e2e, run: 'bun x playwright test -c playwright.config.ts', proof_paths: ['journey.e2e.ts', 'app.ts']}
     dependencies: [CG-PRF-002, CG-COG-003, CG-RT-001]
     status: candidate
   - id: CG-ARC-001
