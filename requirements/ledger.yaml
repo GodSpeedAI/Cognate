@@ -560,7 +560,8 @@ requirements:
     acceptance: [AC-AGUI-001-01]
     gate: {cwd: ., run: 'bun test ./packages/ag-ui/test/outbound.test.ts', proof_paths: ['packages/ag-ui/test/outbound.test.ts']}
     dependencies: [AK-009, CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-AGUI-002
     title: 'Inbound AG-UI actions pass through native authorization and command handling.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -568,7 +569,8 @@ requirements:
     acceptance: [AC-AGUI-002-01]
     gate: {cwd: ., run: 'bun test ./packages/ag-ui/test/inbound.test.ts', proof_paths: ['packages/ag-ui/test/inbound.test.ts']}
     dependencies: [CG-AGUI-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-AGUI-003
     title: 'AG-UI reconnect sends snapshot then ordered deltas, or resyncs.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -576,7 +578,8 @@ requirements:
     acceptance: [AC-AGUI-003-01]
     gate: {cwd: ., run: 'bun test ./packages/ag-ui/test/reconnect.test.ts', proof_paths: ['packages/ag-ui/test/reconnect.test.ts']}
     dependencies: [CG-AGUI-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m8-wire-client.md
   - id: CG-MCP-001
     title: 'MCP adapter exposes authorized capabilities as tools.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

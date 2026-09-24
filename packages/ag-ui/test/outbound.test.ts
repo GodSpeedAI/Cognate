@@ -14,6 +14,7 @@ describe("AG-UI outbound (§24)", () => {
     expect(matrix.map((r) => r.agUiType).sort()).toEqual(all);
     for (const row of matrix) if (!row.supported) expect(row.note.length).toBeGreaterThan(0);
     expect(ignoredFrameworkEvents).toContain("run.step.completed");
+    expect(ignoredFrameworkEvents).not.toContain("run.artifact");
   });
 
   test("a run projects to a schema-valid, well-bracketed AG-UI stream mapped to durable events", async () => {
@@ -30,6 +31,7 @@ describe("AG-UI outbound (§24)", () => {
     expect(events.filter((e) => e.type === "TEXT_MESSAGE_CONTENT").map((e) => e.delta).join("")).toBe("Checking your refund");
     expect(t).toEqual(expect.arrayContaining(["STATE_SNAPSHOT", "STATE_DELTA", "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END", "TOOL_CALL_RESULT"]));
     expect(events.find((e) => e.type === "STATE_DELTA")!.delta).toEqual([{ op: "replace", path: "/refund/status", value: "awaiting-approval" }]);
+    expect(events.find((e) => e.type === "TOOL_CALL_ARGS")!.delta).toBe(JSON.stringify({ amount: 3 }));
     const durable = events.filter((e) => e.type !== "RUN_FINISHED" && e.type !== "CUSTOM");
     for (const e of durable) expect((e.rawEvent as { cognate: { eventId: string; position: number } }).cognate.eventId).toBeString();
     const finished = events.at(-1) as Event & { result: { status: string; continuations: { id: string; type: string }[] } };
@@ -48,5 +50,13 @@ describe("AG-UI outbound (§24)", () => {
     expect(seen).toContain("TEXT_MESSAGE_CONTENT");
     expect(seen.at(-1)).toBe("RUN_FINISHED");
     expect(agent.state).toMatchObject({ refund: { status: "awaiting-approval" } });
+  });
+
+  test("artifacts are projected as a CUSTOM cognate.artifact event, never dropped", async () => {
+    const { createProjector } = await import("../src/index.ts");
+    const projector = createProjector({ threadId: "t", runId: "r" });
+    const base = { streamId: "run-x", streamSequence: 2, position: 7, recordedAt: "2026-01-01T00:00:00Z", occurredAt: "2026-01-01T00:00:00Z", schemaVersion: 1, tenant: "t", correlationId: "c", causationId: null, runId: "x", scopeId: "root" };
+    const out = projector.push({ ...base, eventId: "e-art", eventType: "run.artifact", payload: { artifactId: "art-1", name: "receipt.json", mediaType: "application/json" }, metadata: { artifactId: "art-1" } } as never);
+    expect(out).toContainEqual(expect.objectContaining({ type: "CUSTOM", name: "cognate.artifact", value: expect.objectContaining({ artifactId: "art-1" }) }));
   });
 });
