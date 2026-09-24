@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/provider-local",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic offline ModelProvider for tests, demos, and fallback; scripted by rules, never a real model.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/capabilities": "workspace:*", "@cognate/events": "workspace:*", "@cognate/kernel-api": "workspace:*" }
+}

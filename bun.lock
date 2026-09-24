@@ -15,10 +15,14 @@
         "@cognate/events": "workspace:*",
         "@cognate/kernel-api": "workspace:*",
         "@cognate/kernel-cordis": "workspace:*",
+        "@cognate/profile": "workspace:*",
         "@cognate/projections": "workspace:*",
         "@cognate/proto": "workspace:*",
         "@cognate/protocol-connect": "workspace:*",
         "@cognate/protocol-connect-bun": "workspace:*",
+        "@cognate/provider-local": "workspace:*",
+        "@cognate/provider-openai-compatible": "workspace:*",
+        "@cognate/realitytrace": "workspace:*",
         "@cognate/runtime-api": "workspace:*",
         "@cognate/runtime-bun": "workspace:*",
         "@cognate/store-memory": "workspace:*",
@@ -120,6 +124,13 @@
         "cordis": "4.0.0-rc.10",
       },
     },
+    "packages/profile": {
+      "name": "@cognate/profile",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/kernel-api": "workspace:*",
+      },
+    },
     "packages/projections": {
       "name": "@cognate/projections",
       "version": "0.0.0",
@@ -169,6 +180,39 @@
       },
       "devDependencies": {
         "@cognate/runtime-bun": "workspace:*",
+      },
+    },
+    "packages/provider-local": {
+      "name": "@cognate/provider-local",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/capabilities": "workspace:*",
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+      },
+    },
+    "packages/provider-openai-compatible": {
+      "name": "@cognate/provider-openai-compatible",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/capabilities": "workspace:*",
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/provider-local": "workspace:*",
+      },
+    },
+    "packages/realitytrace": {
+      "name": "@cognate/realitytrace",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/store-memory": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
       },
     },
     "packages/runtime-api": {
@@ -257,6 +301,8 @@
 
     "@cognate/kernel-cordis": ["@cognate/kernel-cordis@workspace:packages/kernel-cordis"],
 
+    "@cognate/profile": ["@cognate/profile@workspace:packages/profile"],
+
     "@cognate/projections": ["@cognate/projections@workspace:packages/projections"],
 
     "@cognate/proto": ["@cognate/proto@workspace:packages/proto"],
@@ -264,6 +310,12 @@
     "@cognate/protocol-connect": ["@cognate/protocol-connect@workspace:packages/protocol-connect"],
 
     "@cognate/protocol-connect-bun": ["@cognate/protocol-connect-bun@workspace:packages/protocol-connect-bun"],
+
+    "@cognate/provider-local": ["@cognate/provider-local@workspace:packages/provider-local"],
+
+    "@cognate/provider-openai-compatible": ["@cognate/provider-openai-compatible@workspace:packages/provider-openai-compatible"],
+
+    "@cognate/realitytrace": ["@cognate/realitytrace@workspace:packages/realitytrace"],
 
     "@cognate/runtime-api": ["@cognate/runtime-api@workspace:packages/runtime-api"],
 

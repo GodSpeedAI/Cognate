@@ -1,0 +1,18 @@
+{
+  "name": "@cognate/provider-openai-compatible",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ModelProvider for OpenAI-compatible chat completion endpoints (llama.cpp, vLLM, Ollama's /v1, hosted APIs) over fetch; no SDK.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/capabilities": "workspace:*",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cognate/provider-local": "workspace:*"
+  }
+}
