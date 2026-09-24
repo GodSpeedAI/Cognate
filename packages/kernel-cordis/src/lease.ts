@@ -52,10 +52,12 @@ async function invoke(
 ): Promise<InvocationResult<unknown>> {
   if (!isValid()) return unavailable(provider.contract.id);
 
+  // Spec §32: authorization and handlers see the caller's tenant, not the kernel's.
+  const callerTenant = context.tenant ?? tenant;
   const request: AuthorizationRequest = {
     operation: "invoke",
     actor: context.actor,
-    tenant,
+    tenant: callerTenant,
     scopeId: provider.scopeId,
     capability: provider.contract,
     providerId: provider.providerId,
@@ -96,7 +98,7 @@ async function invoke(
     capability: provider.contract,
     providerId: provider.providerId,
     decision,
-    tenant,
+    tenant: callerTenant,
     scopeId: provider.scopeId,
     signal: controller.signal,
   };

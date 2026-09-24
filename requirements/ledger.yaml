@@ -628,7 +628,8 @@ requirements:
     acceptance: [AC-PRF-003-01]
     gate: {cwd: ., run: 'bun test ./profiles/harness/test/harness.test.ts', proof_paths: ['profiles/harness/test/harness.test.ts']}
     dependencies: [CG-PRF-001, CG-PRV-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m9-profiles.md
   - id: CG-CLI-001
     title: 'cognate create and dev generate and run a starter in a clean directory.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

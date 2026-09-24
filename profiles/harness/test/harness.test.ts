@@ -51,7 +51,7 @@ describe("Harness profile (§29.2)", () => {
   });
 
   test("agent loop over a model provider and the tool registry; sessions group runs", async () => {
-    h = await createHarness({ store: ":memory:" });
+    h = await createHarness({ store: ":memory:", caller: alice });
     await h.mount(providerComponent(toolCallingModel("model-a")));
     await h.mount(toolComponent({ name: "reverse", description: "Reverse text", inputSchema: { type: "object" }, handler: (i) => ({ reversed: [...String((i as { text: string }).text)].reverse().join("") }) }));
     const first = await h.send("s1", "please reverse this");
@@ -64,7 +64,7 @@ describe("Harness profile (§29.2)", () => {
   });
 
   test("providers are replaceable live without consumer changes", async () => {
-    h = await createHarness({ store: ":memory:" });
+    h = await createHarness({ store: ":memory:", caller: alice });
     const a = await h.mount(providerComponent(toolCallingModel("model-a")));
     expect(JSON.stringify((await waitRun(h, await h.send("s", "hello"))).output)).toContain("[model-a]");
     await a.dispose("swap");
@@ -73,7 +73,7 @@ describe("Harness profile (§29.2)", () => {
   });
 
   test("skills add tools dynamically; the loop discovers them on the next run", async () => {
-    h = await createHarness({ store: ":memory:" });
+    h = await createHarness({ store: ":memory:", caller: alice });
     await h.mount(providerComponent(toolCallingModel("m")));
     expect(JSON.stringify((await waitRun(h, await h.send("s", "shout it"))).output)).toContain("no tool");
     const skill = await h.mount(skillComponent({ name: "loud", tools: [{ name: "shout", description: "Upper-case", inputSchema: { type: "object" }, handler: (i) => String((i as { text: string }).text).toUpperCase() }] }));
@@ -83,7 +83,7 @@ describe("Harness profile (§29.2)", () => {
   });
 
   test("§35: a tool requiring storage activates, deactivates on removal, and reactivates on restore", async () => {
-    h = await createHarness({ store: ":memory:" });
+    h = await createHarness({ store: ":memory:", caller: alice });
     const memo = await h.mount(toolComponent({ name: "memo", description: "Remember text", inputSchema: { type: "object" }, requires: { kv: { capability: "storage.kv" } }, handler: (i) => i }));
     await memo.waitFor("ACTIVE");
     await h.storage.dispose("remove storage");
@@ -93,15 +93,20 @@ describe("Harness profile (§29.2)", () => {
   });
 
   test("storage.kv persists values as durable records", async () => {
-    h = await createHarness({ store: ":memory:" });
+    h = await createHarness({ store: ":memory:", caller: alice });
     const svc = h.runtime.service;
     await svc.invoke(alice, { capability: "storage.kv", input: { op: "set", key: "k", value: { n: 1 } } });
+    expect(await svc.invoke(alice, { capability: "storage.kv", input: { op: "get", key: "k" } })).toEqual({ n: 1 });
+    // Partitioned by the caller's tenant (spec §32): another tenant neither sees nor overwrites it.
+    const bob = { actor: { id: "bob", kind: "user" as const }, tenant: "tenant-b" };
+    expect(await svc.invoke(bob, { capability: "storage.kv", input: { op: "get", key: "k" } })).toBeNull();
+    await svc.invoke(bob, { capability: "storage.kv", input: { op: "set", key: "k", value: "b" } });
     expect(await svc.invoke(alice, { capability: "storage.kv", input: { op: "get", key: "k" } })).toEqual({ n: 1 });
   });
 
   test("sandbox.exec runs code in a subprocess with a timeout and no inherited secrets", async () => {
     process.env.COGNATE_TEST_SECRET = "top-secret";
-    h = await createHarness({ store: ":memory:", sandbox: { timeoutMs: 1000, maxOutputBytes: 10_000 } });
+    h = await createHarness({ store: ":memory:", caller: alice, sandbox: { timeoutMs: 1000, maxOutputBytes: 10_000 } });
     const out = (await h.runtime.service.invoke(alice, { capability: "sandbox.exec", input: { code: "console.log(1 + 1, process.env.COGNATE_TEST_SECRET ?? 'none')" } })) as { exitCode: number; stdout: string };
     expect(out).toMatchObject({ exitCode: 0, stdout: "2 none\n" });
     const slow = (await h.runtime.service.invoke(alice, { capability: "sandbox.exec", input: { code: "await Bun.sleep(5000)" } })) as { timedOut: boolean };
@@ -110,7 +115,7 @@ describe("Harness profile (§29.2)", () => {
   });
 
   test("the scheduler starts a run at its time, durably", async () => {
-    h = await createHarness({ store: ":memory:" });
+    h = await createHarness({ store: ":memory:", caller: alice });
     await h.mount(providerComponent(toolCallingModel("m")));
     const at = Date.now() + 150;
     await h.schedule(LOOP_AGENT, { message: "scheduled hello", sessionId: "cron" }, at);
@@ -125,7 +130,7 @@ describe("Harness profile (§29.2)", () => {
   test("subagent composition: a parent run durably awaits a child run's output", async () => {
     const child: AgentDefinition = { id: "agent.child", version: "1.0.0", run: async (input) => ({ doubled: (input as { n: number }).n * 2 }) };
     const parent: AgentDefinition = { id: "agent.parent", version: "1.0.0", run: async (input, ctx) => ({ fromChild: await spawnSubagent(ctx, "sub", "agent.child", input) }) };
-    h = await createHarness({ store: ":memory:", agents: [child, parent] });
+    h = await createHarness({ store: ":memory:", caller: alice, agents: [child, parent] });
     const { runId } = await h.runtime.service.startRun(alice, { agent: "agent.parent", input: { n: 21 }, idempotencyKey: "p" });
     expect((await waitRun(h, runId)).output).toEqual({ fromChild: { doubled: 42 } });
   });
