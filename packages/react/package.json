@@ -1,0 +1,11 @@
+{
+  "name": "@cognate/react",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "React 19 bindings over the headless client: runs, projections, frontend capabilities, continuations, artifacts (spec §25.2). No Astryx.",
+  "exports": { ".": "./src/index.tsx" },
+  "dependencies": { "@cognate/client": "workspace:*", "@cognate/events": "workspace:*", "@cognate/runtime-api": "workspace:*" },
+  "peerDependencies": { "react": "19.3.0" },
+  "devDependencies": { "@cognate/runtime-bun": "workspace:*", "@happy-dom/global-registrator": "20.14.5", "@testing-library/react": "16.3.3", "react": "19.3.0", "react-dom": "19.3.0", "@types/react": "19.2.2" }
+}

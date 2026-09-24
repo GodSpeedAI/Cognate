@@ -5,7 +5,8 @@ import type { ActionPolicy } from "../src/index.ts";
 export function kitPolicies(setup: KitSetup): { policy: Policy; actions: ActionPolicy; components: Component[] } {
   return {
     policy: { authorize: (r) => (r.actor.id === setup.deniedPrincipal ? { allow: false, policyId: "kit", reason: `${r.actor.id} denied` } : { allow: true, policyId: "kit", reason: "allowed" }) },
-    actions: { authorize: ({ caller }) => (caller.actor.id === setup.deniedPrincipal ? { allow: false, reason: `${caller.actor.id} denied` } : { allow: true, reason: "allowed" }) },
+    // Per KitSetup: the denied principal may start runs but may not invoke capabilities or act on continuations.
+    actions: { authorize: ({ caller, action }) => (caller.actor.id === setup.deniedPrincipal && action.startsWith("continuation.") ? { allow: false, reason: `${caller.actor.id} denied` } : { allow: true, reason: "allowed" }) },
     components: [
       {
         id: "lookup-provider",

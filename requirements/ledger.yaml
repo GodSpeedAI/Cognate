@@ -344,7 +344,9 @@ requirements:
     acceptance: [AC-SEC-001-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/erasure.test.ts', proof_paths: ['tests/integration/erasure.test.ts']}
     dependencies: [CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m5-runtime.md
+    debt: DEBT-014
   - id: CG-SEC-002
     title: 'Credentials never reach events, artifacts, traces, cognitive entries, or snapshots.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -352,7 +354,8 @@ requirements:
     acceptance: [AC-SEC-002-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/secrets.test.ts', proof_paths: ['tests/integration/secrets.test.ts']}
     dependencies: [CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m5-runtime.md
   - id: CG-OBS-001
     title: 'Causal identity chain is machine inspectable.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '33; 40.M', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -360,7 +363,8 @@ requirements:
     acceptance: [AC-OBS-001-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/causality.test.ts', proof_paths: ['tests/integration/causality.test.ts']}
     dependencies: [CG-EVT-004]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m5-runtime.md
   - id: CG-WIR-001
     title: 'Canonical proto sources with reproducible generated bindings.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '21', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -475,7 +479,8 @@ requirements:
     acceptance: [AC-COG-004-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/cognitive-rebuild.test.ts', proof_paths: ['tests/integration/cognitive-rebuild.test.ts']}
     dependencies: [CG-COG-001, CG-PRJ-002]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m5-runtime.md
   - id: CG-COG-005
     title: 'Cognitive failure falls back to deterministic behavior unless cognition is declared required.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '31.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
