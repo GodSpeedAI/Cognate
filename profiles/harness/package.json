@@ -1,0 +1,18 @@
+{
+  "name": "@cognate/profile-harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Harness reference profile: model providers, tool registry, agent loop, sessions, storage, skills, scheduler, sandbox, replaceable services, subagents (spec §29.2). No kernel additions.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@cognate/capabilities": "workspace:*",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/profile": "workspace:*",
+    "@cognate/provider-openai-compatible": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*"
+  },
+  "devDependencies": { "@cognate/provider-local": "workspace:*" }
+}
