@@ -1,0 +1,10 @@
+{
+  "name": "@cognate/continuations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Durable continuations and external commitments on the durable store (spec §9.3, §12).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/events": "workspace:*", "@cognate/kernel-api": "workspace:*" },
+  "devDependencies": { "@cognate/store-memory": "workspace:*", "@cognate/store-sqlite": "workspace:*" }
+}

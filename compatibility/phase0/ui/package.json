@@ -1,0 +1,17 @@
+{
+  "name": "phase0-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@astryxdesign/core": "0.6.3",
+    "@astryxdesign/theme-neutral": "0.6.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}
