@@ -1,6 +1,6 @@
 # Software Design Specification
 
-**Status:** Draft v0.1
+**Status:** Draft v0.2; target architecture, not an implemented product
 **Date:** 2026-09-24
 **Target runtime:** Bun 1.4.x
 **Reference UI:** React 19 + Astryx
@@ -9,9 +9,9 @@
 **Native RPC protocol:** Connect
 **Authoritative persistence:** `bun:sqlite`
 **Reference cognitive implementation:** RuVector
-**Portable cognitive format:** RVF
-**Semantic integration:** Existing DomainForge interfaces; `.sea` unchanged
-**Execution-evidence integration:** Existing RealityTrace interfaces; RealityTrace unchanged
+**Portable cognitive format:** Optional RVF adapter, gated on Bun compatibility
+**Semantic integration:** Candidate `@godspeedai/domainforge` Graph binding; `.sea` unchanged
+**Execution-evidence integration:** Optional RealityTrace CLI/CEP adapter; RealityTrace unchanged
 
 ---
 
@@ -28,7 +28,7 @@ Two initial reference profiles establish the design target:
 
 Neither CopilotKit nor DeepSeek Harness defines the Framework's ontology. They are behavioral reference points.
 
-The theoretical basis for the composition layer is the same distinction formalized by Cordis between **temporal composability**, through reversible effects, and **spatial composability**, through reactive dependencies/coeffects.
+The theoretical basis for the composition layer is the distinction formalized in [*A Programming Paradigm for Spatiotemporal Composability*](https://arxiv.org/abs/2608.25512) between **temporal composability**, through reversible effects, and **spatial composability**, through reactive coeffects. The paper supports the model; it does not prove that a particular npm release satisfies this specification under Bun.
 
 The Framework extends that execution model with:
 
@@ -37,7 +37,7 @@ The Framework extends that execution model with:
 * explicit continuations;
 * canonical cross-process Protocol Buffer contracts;
 * cognitive indexing and adaptive retrieval through RuVector;
-* portable cognitive snapshots and branches through RVF;
+* optional portable cognitive snapshots and branches through RVF after compatibility validation;
 * execution evidence through RealityTrace;
 * user-facing interaction through headless clients and optional UI/protocol adapters.
 
@@ -112,7 +112,7 @@ A new framework integration is a projection or adapter problem, not a language-d
 
 DomainForge MUST NOT depend on the Framework.
 
-The Framework integrates through an adapter against a stable interface already exposed by DomainForge.
+The Framework integrates through a version-pinned adapter against a supported DomainForge binding. The first candidate is the TypeScript/N-API `@godspeedai/domainforge` Graph API; its repository currently declares version `0.16.0` and Bun `>=1.1.0`. A Bun 1.4 load/parse fixture and package-availability check are Phase 0 gates, not established compatibility facts. The Rust, Python, and TypeScript bindings are distinct APIs; no cross-language projection protocol is assumed.
 
 Conceptually:
 
@@ -137,7 +137,7 @@ RealityTrace MUST NOT depend on the Framework.
 
 A Framework adapter translates execution observations into the form accepted by RealityTrace.
 
-RealityTrace is an evidence consumer, not an execution dependency.
+RealityTrace is a separate observation/evidence workflow, not an execution dependency. Its own rules decide whether an observation becomes evidence and whether a question can be settled.
 
 ## 3.4 Framework public APIs MUST NOT expose Cordis
 
@@ -258,7 +258,7 @@ The Framework SHALL:
 * allow agent applications to run locally with minimal infrastructure;
 * support semantic/cognitive recall across cases, traces, artifacts, events, and capabilities;
 * permit learned routing without compromising deterministic constraints;
-* provide portable cognitive snapshots and branches using RVF;
+* provide portable cognitive snapshots and branches using RVF when its optional adapter passes compatibility validation;
 * support compatibility with AG-UI, MCP, A2A and similar protocols through adapters;
 * make Copilot-like and Harness-like functionality compositions of common primitives;
 * provide sufficient runtime provenance for RealityTrace correlation;
@@ -313,6 +313,8 @@ Current Bun 1.4 releases expose the all-in-one runtime/tooling model and native 
 
 **Cordis**
 
+The candidate implementation is the [official `cordis` v4 package](https://github.com/cordiverse/cordis/blob/main/packages/core/package.json), evaluated at `4.0.0-rc.10` as of this draft. Its [package documentation](https://www.npmjs.com/package/cordis) describes the API as unstable. This prerelease is an adapter implementation candidate, not a framework public contract. The older `@cordisjs/core` v3 package is a different dependency and MUST NOT be substituted implicitly.
+
 Cordis supplies the initial implementation of:
 
 * contexts;
@@ -324,7 +326,7 @@ Cordis supplies the initial implementation of:
 * disposal;
 * dependency-driven activation.
 
-Cordis explicitly models a fiber as one live plugin instance owning its effects, with effect disposers executed in reverse order during unload.
+The Framework requires a fiber to own reversible effects and attempt disposers in reverse registration order on unload. The Cordis adapter MUST prove these behaviors, including failed and interrupted activation, against the exact selected release in Phase 0; the requirement is not inferred from the paper.
 
 ## Wire schema
 
@@ -366,7 +368,7 @@ RuVector is the reference implementation for:
 
 **RVF**
 
-RVF remains part of the initial architecture for:
+RVF remains a planned optional adapter for:
 
 * portable cognitive snapshots;
 * lineage;
@@ -374,7 +376,7 @@ RVF remains part of the initial architecture for:
 * cognitive state distribution;
 * optional witness/attestation information.
 
-RVF currently provides vector, graph, metadata, witness and copy-on-write oriented structures in a portable format.
+The [official `@ruvector/rvf` package documentation](https://www.npmjs.com/package/%40ruvector/rvf) labels Bun native support experimental as of this draft. The Bun binding, export/import fidelity, and branch isolation MUST pass Phase 0 fixtures before the reference profile claims RVF support. Failure leaves the RVF adapter unavailable while the authoritative event system remains usable.
 
 ## Reference UI
 
@@ -432,11 +434,16 @@ A `SemanticRef` identifies an existing semantic object without dictating how Dom
 At minimum it SHALL support:
 
 * namespace;
-* stable object identity;
+* DomainForge object identity;
 * semantic type when available;
-* source/projection version when available.
+* model URI and immutable source digest or SemanticPack identity/version;
+* adapter projection schema version.
 
 The adapter owns mapping between `SemanticRef` and existing DomainForge identities.
+
+DomainForge parser concept IDs derive from `namespace::name`; a rename or namespace change creates a new identity. The adapter MUST NOT imply identity continuity across such a change. An explicit migration/alias record may relate old and new refs, with an application-reviewed meaning check. Unresolved historical refs remain inspectable with their pinned source revision and produce a typed unresolved result rather than silently resolving to a same-named current object.
+
+V0 uses bare Graph parsing with a caller-supplied model URI, immutable source digest, and archived source/projection. SemanticPack ingestion is a later optional source mode after a decoder and version contract are verified; that mode MUST record pack ID, pack/meaning version, meaning fingerprint, and source graph hash. An event pins the exact `SemanticRef` used for its decision.
 
 ---
 
@@ -488,9 +495,9 @@ Responsibilities:
 * context retrieval;
 * outcome-informed ranking;
 * optional learned adaptation;
-* cognitive snapshot/branch packaging.
+* optional cognitive snapshot/branch packaging.
 
-Reference implementation: RuVector + RVF.
+Reference retrieval implementation: RuVector. RVF is an optional portability adapter.
 
 The cognitive plane MUST reference authoritative objects using stable IDs rather than duplicating authority.
 
@@ -635,17 +642,37 @@ DECLARED
 WAITING
    ↓
 ACTIVATING
-   ↓
+   ├── failure → FAILED → WAITING (retry policy)
+   ↓ success
 ACTIVE
-   ↓
+   ↓ dependency loss or disposal
 DEACTIVATING
-   ↓
-DISPOSED
+   ├── WAITING (eligible for reactivation)
+   └── DISPOSED (explicit final disposal)
 ```
 
 Loss of a required capability SHALL move affected fibers toward deactivation.
 
-Availability of all required capabilities MAY reactivate waiting components.
+Availability of all required capabilities MAY reactivate waiting components. A permanently failed component requires an explicit reset or replacement before retry.
+
+Activation is all-or-nothing for reversible effects: if setup fails, the runtime SHALL dispose every effect successfully registered during that attempt, publish no active capability from the failed fiber, and record the failure. Repeated dependency notifications or concurrent unload/activation MUST NOT produce duplicate active instances or leak effects. Retry policy SHALL distinguish transient from permanent activation failure and use bounded backoff; the state machine SHALL represent failure explicitly rather than leaving a fiber indefinitely in `ACTIVATING`.
+
+## 8.5 Minimum public kernel contract
+
+The Framework-owned API SHALL express the following operations without Cordis types. Exact TypeScript generic syntax may be refined in Phase 1, but these input/output and failure semantics are normative:
+
+```ts
+kernel.mount(component, context): Promise<ComponentHandle>
+kernel.resolve(requirement, context): CapabilityLease | Unavailable
+lease.invoke(input, invocationContext): Promise<output>
+componentHandle.dispose(reason): Promise<void>
+scope.close(reason): Promise<void>
+effects.register(disposer): EffectHandle
+```
+
+`component` declares stable identity, requirements, provided capability contracts, and an activation function. `context` carries scope and principal; `invocationContext` carries actor, authorization decision input, deadline/cancellation signal, idempotency key for durable commands, and causal IDs. A lease is valid only while its provider remains active; invocation after revocation yields a typed `CapabilityUnavailable` result. Resolution never grants invocation permission by itself.
+
+Mount returns a component handle whose observable state may be `WAITING`, `ACTIVATING`, `ACTIVE`, `FAILED`, or `DISPOSED`; it exposes an active fiber only after activation and effect registration succeed. Missing dependencies keep the component waiting. Disposal is idempotent, attempts every disposer in reverse registration order, and reports aggregated cleanup errors. Closing a parent scope closes child scopes before parent effects. The kernel serializes transitions per fiber; a concurrent dispose wins over an unfinished activation and cleans its partial effects. Durable facts and external commitments use their own APIs and MUST NOT be registered as reversible effects.
 
 ---
 
@@ -728,6 +755,8 @@ Where possible, external handlers SHOULD support:
 
 An external commitment MUST NOT be represented as an ordinary reversible effect.
 
+The commitment record SHALL identify the target operation, idempotency key, target's deduplication guarantee and retention window (if any), attempt count, last known remote reference, and state: `INTENDED`, `DISPATCHING`, `SUCCEEDED`, `FAILED`, or `UNKNOWN_RECONCILIATION_REQUIRED`. A timeout or lost response after dispatch is `UNKNOWN`, not proof of failure. If the target has no reliable idempotency contract, the dispatcher MUST NOT blindly retry an unknown attempt; it requires a target status query or explicit operator reconciliation. Compensation is a separate recorded action, never erasure of the original commitment.
+
 ---
 
 # 10. Event Model
@@ -759,6 +788,12 @@ Events MUST be replayable in stable stream order.
 
 Wall-clock timestamps MUST NOT be used as the sole ordering mechanism.
 
+Each stream append MUST use an expected stream version (or an equivalent compare-and-swap condition). The store SHALL assign the next `stream_sequence` inside the same SQLite transaction that persists the event. A conflicting writer fails explicitly and may retry after rereading state; it MUST NOT silently overwrite or reorder a decision.
+
+Command requests SHALL carry an idempotency key scoped to the caller and operation. Repeating a committed request returns its recorded result without appending another logical fact. The event, command result, continuation transition, and any outbox intent caused by one decision SHALL commit atomically. A process crash before commit leaves none of them visible; a crash after commit permits safe retry.
+
+`occurred_at` describes the source's claimed time; `recorded_at` describes store acceptance. Both are provenance, while stream sequence is the ordering authority. Cross-stream order is not inferred from either timestamp. Cross-stream projections MUST define their own checkpoint/order contract.
+
 ---
 
 # 11. Projections
@@ -782,6 +817,10 @@ events → test oracle
 Projection failures MUST NOT corrupt authoritative event history.
 
 A projection SHALL track its progress independently enough to resume or rebuild.
+
+Projection handlers MUST be idempotent with respect to event ID. A projection's output and checkpoint SHALL be committed atomically when they share a store. For external projections, delivery is at least once: the adapter stores a durable delivery cursor or outbox status, retries with bounded backoff, and deduplicates by stable event/observation ID. A checkpoint MUST NOT advance past a failed item. Poison items require an explicit error state and operator replay path; they MUST NOT be silently skipped.
+
+Replay uses pinned event schema versions and versioned projection code. Nondeterministic inputs (clock, random choice, model output, remote response) MUST be recorded as facts before a deterministic projection consumes them. Rebuilding a projection MUST NOT reissue an external commitment.
 
 ---
 
@@ -812,6 +851,10 @@ A continuation SHALL contain:
 * current status;
 * creation and resolution events.
 
+The persisted continuation record SHALL also pin the resume handler/version and semantic projection version needed to interpret its payload. It MUST NOT rely on a serialized JavaScript closure or an in-memory fiber surviving restart. A resume command must atomically compare the expected continuation status/version, authorize the actor, append the resolution event, and update state; racing resume, cancel, and expiration requests yield one terminal transition. Duplicate delivery returns the existing outcome.
+
+When a fiber unloads, its reversible effects are disposed. Durable continuations remain governed by their persisted owner/policy and can resume through a newly mounted compatible handler; unload MUST NOT silently discard pending human or external work. Unsupported handler versions enter an explicit blocked state for migration or operator resolution.
+
 Reference lifecycle:
 
 ```text
@@ -820,7 +863,8 @@ OPEN
   ├── RESUMED
   ├── CANCELLED
   ├── EXPIRED
-  └── FAILED
+  ├── FAILED
+  └── BLOCKED (migration/operator resolution)
 ```
 
 Human-in-the-loop interactions are a specialization of Continuation, not a privileged kernel primitive.
@@ -842,6 +886,10 @@ The default SQLite store SHALL persist:
 * schema migration/version information;
 * cognitive-index checkpoints/references;
 * RVF snapshot references.
+
+Durable artifacts require an authoritative artifact record with stable identity, content hash, media type, size, access policy, retention state, and a reference to durable bytes. SQLite may hold bytes directly or a durable object store may hold them; the event store MUST NOT claim an artifact is available until the bytes and record satisfy the selected crash-consistency protocol. Deleting an artifact under retention/privacy policy leaves a tombstone so replay can distinguish deliberate removal from loss.
+
+SQLite transactions are the atomic boundary for local framework state. Remote services, RealityTrace, and cognitive indexes cannot join that transaction. Their work begins from committed outbox intents and is retried and reconciled separately. Delivery is at least once unless a target offers a stronger documented contract; exactly-once external effects MUST NOT be claimed merely because the local outbox is transactional.
 
 ## 13.2 Suggested logical tables
 
@@ -869,7 +917,7 @@ DomainForge-visible semantics
 +
 Framework event store
 +
-durable artifacts
+durable artifacts and their retention/tombstone records
 ```
 
 the implementation SHOULD be able to rebuild:
@@ -879,6 +927,8 @@ the implementation SHOULD be able to rebuild:
 * graph relationships;
 * model-context projections;
 * most UI-derived state.
+
+Historical events SHALL retain the semantic source identity and version used at decision time. Rebuild MUST use a compatible archived projection or an explicit migration; interpreting old events only against the latest `.sea` projection is not valid replay. If source material is lawfully deleted, derived views record the resulting gap and do not claim complete reconstruction.
 
 ---
 
@@ -941,6 +991,8 @@ The adapter SHOULD initially index:
 
 The cognitive representation MUST preserve links back to authoritative sources.
 
+Every indexed entry SHALL identify a durable source and indexer version. Application-defined knowledge is eligible for rebuildable indexing only when its source is durably retained under the application's retention policy; ephemeral or imported detached material is labeled separately and MUST NOT be counted in the rebuildability guarantee. Outcome feedback used for adaptive ranking SHALL be recorded as a durable fact before it changes future selection, so deleting RuVector does not silently erase the authoritative learning inputs.
+
 Example derived entry:
 
 ```text
@@ -1000,7 +1052,7 @@ A retrieved cognitive item MUST NOT be treated as authoritative merely because s
 
 SONA MAY implement adaptive ranking.
 
-Current RuVector SONA describes runtime adaptation for routing/ranking without conventional retraining.
+SONA is a candidate adaptive-ranking implementation, not a verified Framework dependency. Phase 0 SHALL pin its package/API and prove that it can rank only a supplied eligible candidate set, persist feedback as durable input, and fall back to deterministic ordering when unavailable. Until those fixtures pass, no profile claims SONA support.
 
 The Framework contract SHALL constrain its use.
 
@@ -1052,11 +1104,11 @@ The Framework MUST preserve enough evidence to explain:
 
 # 18. RVF
 
-RVF is a first-class cognitive portability facility.
+RVF is a proposed optional cognitive portability facility.
 
 It is not the authoritative event store.
 
-The Framework SHALL provide an RVF adapter capable of supporting, as the underlying library permits:
+After Bun compatibility fixtures pass, the Framework MAY provide an RVF adapter capable of supporting, as the underlying library permits:
 
 * export of cognitive state;
 * import of cognitive state;
@@ -1109,6 +1161,8 @@ or
 
 **detached** — useful for retrieval/analysis but not presumed to represent current authoritative state.
 
+Snapshot export SHALL record a durable source event checkpoint and a cognitive index generation that has processed through that checkpoint. If indexing is behind, export waits, records an explicitly partial checkpoint, or fails; it MUST NOT label a mixed-time image complete. Import SHALL verify integrity, supported format/schema, declared lineage, resource/segment limits, and tenant scope before exposing entries. Embedded compute-capable segments MUST NOT execute by default. Attached classification additionally requires matching source lineage and checkpoint; otherwise import remains detached and cannot affect authorization or automatic provider selection.
+
 ---
 
 # 19. DomainForge Adapter
@@ -1121,12 +1175,16 @@ packages/domainforge
 
 Responsibilities:
 
-* invoke or consume the existing supported DomainForge interface;
+* invoke the version-pinned TypeScript Graph binding for V0; consider separately validated SemanticPack ingestion later;
 * translate existing outputs into Framework semantic projections;
 * generate `SemanticRef` mappings;
-* expose projected capability/contract information where already represented;
+* map only explicitly documented DomainForge concept/contract kinds to Framework views;
 * preserve source identity and version information;
 * remain independently replaceable.
+
+The adapter contract SHALL define a mapping table for each supported DomainForge kind, including unsupported kinds, semantic meaning, cardinality, and provenance. DomainForge's enterprise concepts MUST NOT be silently treated as agent capabilities or executable permissions. An application-defined mapping may offer a runtime capability only after explicit authorization policy and a provider implementation are attached. V0 golden fixtures SHALL cover graph parsing, rename, missing reference, and version change; a SemanticPack fixture gates that later mode.
+
+V0 mapping is deliberately narrow: `Graph.parse(source)` and its typed graph collections produce read-only semantic objects and relations; entity/resource/flow identities become `SemanticRef`s with their kind and source provenance. DomainForge contract/policy outputs become referenced constraints for an application-authored mapping, never a directly invokable tool or permission. The application manifest explicitly binds a `SemanticRef` to a Framework capability contract and provider; missing mappings produce no capability. The adapter's serialized projection schema SHALL be owned and versioned by Cognate, with fixtures generated from the pinned DomainForge binding.
 
 Forbidden:
 
@@ -1144,12 +1202,12 @@ Package:
 packages/realitytrace
 ```
 
-The runtime SHALL expose an implementation-independent observation port.
+The runtime SHALL expose an implementation-independent observation port. Its receipt means an observation was recorded or queued; it is not an evidence finding or a settled result.
 
 Conceptually:
 
 ```text
-EvidenceSink.observe(observation)
+ObservationPort.record(observation) → delivery receipt
 ```
 
 Framework observations SHOULD include where available:
@@ -1170,9 +1228,17 @@ Framework observations SHOULD include where available:
 * output reference;
 * timestamp.
 
-The adapter maps these observations onto existing RealityTrace capabilities.
+The first adapter SHALL target RealityTrace's documented CLI workflow and CEP record schema, with a pinned compatible version. No generic SXR library SDK or arbitrary-event ingestion API is assumed. SXR currently uses a Rust CLI/ledger; its local daemon only queues validated records and does not replace enrollment, run, evidence, or settlement workflows.
+
+Before submitting `observation.recorded`, the adapter MUST bind the operation to an enrolled repository, snapshot, declared question and threshold, started run, and committed plan/target according to the selected SXR workflow. It SHALL emit only schema-valid CEP fields and required `observation:`, `run:`, and `target:` subject references. Framework correlation identifiers may use documented extension/reference fields; unknown root or observation properties MUST NOT be inserted into closed schemas. The adapter SHALL persist Framework event ID ↔ SXR observation ID/receipt/ledger position and the corresponding workflow IDs.
+
+SXR's current ingest path retains input bytes but standardizes interpretation of Cargo JSON. The adapter MUST NOT imply that arbitrary Framework events become understood SXR observations by passing opaque bytes. A Phase 0 fixture SHALL prove the chosen CLI serialization, artifact media type, correlation mapping, and idempotency behavior. If that fixture fails, the integration remains an optional blocked adapter rather than a claimed working feature.
+
+Evidence derivation and settlement are separate optional operations. They require the declared question/threshold and use SXR's own rules; Cognate MUST NOT infer qualifying evidence or a capability conclusion from an observation receipt. SXR remains the authority for its evidence and settlement records.
 
 RealityTrace failure MUST NOT prevent authoritative event persistence unless an application explicitly configures strict evidence requirements.
+
+Normal mode SHALL queue observation delivery from a committed outbox, retry with stable identity and bounded backoff, record SXR receipts/failures, and expose reconciliation status. Strict mode SHALL define the particular operation it gates before any irreversible external commitment; a later SXR outage cannot retroactively roll back committed Framework history. A strict policy MUST NOT equate queued delivery with accepted evidence.
 
 ---
 
@@ -1183,6 +1249,8 @@ The Framework SHALL maintain canonical protobuf schemas under:
 ```text
 proto/
 ```
+
+The root `proto/` directory owns handwritten canonical `.proto` sources. `packages/proto/` contains generated language bindings and package exports only. Generated files MUST be reproducible from a pinned compiler/plugin configuration and MUST NOT be edited as sources.
 
 Initial schema domains SHOULD include:
 
@@ -1228,6 +1296,8 @@ The Bun implementation SHALL adapt `Bun.serve()` Request/Response handling to th
 
 A transport compatibility spike is required early because the Framework SHOULD NOT depend on assumptions about Node-only server adapters.
 
+Phase 0 SHALL pin and test the Connect server/router, protobuf code generator, and Bun runtime versions together. It SHALL verify unary, server streaming, and client streaming request/response behavior, cancellation, deadlines, error mapping, and reconnection semantics over the supported HTTP mode. Bidirectional streaming MUST NOT be advertised until an HTTP/2 path is demonstrated; the [Connect protocol](https://connectrpc.com/docs/protocol/) requires HTTP/2 for that mode. The supported mode matrix belongs in the release contract.
+
 The protocol abstraction MUST survive replacement of the initial Connect/Bun bridge.
 
 ---
@@ -1263,6 +1333,8 @@ packages/ag-ui
 
 AG-UI SHALL be a projection and interoperability layer.
 
+The compatibility target SHALL pin the `@ag-ui/core` protocol/package version and publish an event-by-event matrix for the supported subset. As of this draft, the [official package](https://www.npmjs.com/package/%40ag-ui/core) has reached 1.0.0; event families and validators are versioned upstream. Unsupported event kinds MUST be rejected or explicitly ignored according to the matrix, never silently interpreted as another native fact.
+
 Internal Framework events MUST NOT be aliases of AG-UI events.
 
 Mapping examples:
@@ -1280,6 +1352,10 @@ Framework tool execution
 Framework projected state
     → AG-UI STATE_SNAPSHOT / STATE_DELTA
 ```
+
+The adapter SHALL also define inbound mapping for user messages, frontend tool results, approval/continuation responses, run cancellation, and reconnect requests. Each inbound action must carry run/session identity, authenticated actor, idempotency key, and expected continuation or projection version where applicable. It SHALL pass through the same authorization and command handling as native clients. A native continuation with no faithful AG-UI representation returns a typed unsupported interaction instead of falsely reporting completion.
+
+Outbound event IDs SHALL map to durable Framework event IDs and a per-run cursor. Reconnect sends a current state snapshot followed by ordered deltas from a known cursor, or a full resync if the cursor is expired. State deltas follow the protocol's ordered JSON Patch semantics; a missing or out-of-order delta triggers snapshot resync. Transport disconnect does not cancel a durable run. The compatibility suite SHALL test round-trip approval, cancellation, tool results, ordered state, reconnect, and unsupported events against a pinned AG-UI consumer.
 
 AG-UI currently standardizes agent/user interaction through event-based communication, including lifecycle, messages, tools and state.
 
@@ -1432,11 +1508,16 @@ Initial repository layout:
 │   ├── realitytrace/
 │   │
 │   ├── provider-openai-compatible/
-│   └── provider-local/
+│   ├── provider-local/
+│   ├── profile/                 # defineProfile composition API
+│   └── cli/                     # create/dev commands
 │
 ├── profiles/
 │   ├── copilot/
 │   └── harness/
+│
+├── templates/
+│   └── starter/
 │
 ├── proto/
 │
@@ -1471,6 +1552,7 @@ ag-ui → events/client
 domainforge → kernel-api/projections
 realitytrace → events/evidence contracts
 profiles/* → packages/*
+profile → kernel-api (types only)
 ```
 
 Forbidden examples:
@@ -1662,7 +1744,7 @@ Reconnect/resume SHOULD use durable run/event position rather than assuming the 
 
 # 32. Security Model
 
-Capabilities SHOULD default to least authority.
+Capabilities SHALL default to no authority. A Context carries an authenticated principal and tenant/workspace scope as separate values from its capability visibility. A child Context may narrow authority but MUST NOT gain a permission by inheriting or discovering a capability. Server-side policy is checked at invocation and again before an irreversible external commitment; a client projection or model/tool declaration is never an authorization decision.
 
 Every capability invocation SHALL have access to:
 
@@ -1675,6 +1757,8 @@ Every capability invocation SHALL have access to:
 
 Sensitive cognitive retrieval SHALL enforce authorization independently of similarity.
 
+The retrieval path SHALL constrain candidates by tenant/scope before disclosing metadata where supported, and SHALL authorize each authoritative dereference before returning content. Unauthorized hits MUST NOT leak titles, embeddings, counts, or provenance that would reveal restricted objects. An imported or detached RVF remains untrusted data and cannot grant capabilities or bypass these checks.
+
 Cognitive indexes SHOULD avoid embedding unrestricted sensitive payloads when references or redacted projections are sufficient.
 
 External commitments SHOULD use idempotency identifiers when the target supports them.
@@ -1682,6 +1766,10 @@ External commitments SHOULD use idempotency identifiers when the target supports
 Protocol input MUST be schema validated.
 
 Untrusted protobuf/JSON payloads MUST NOT construct arbitrary runtime components without authorization.
+
+Each external request SHALL bind authenticated actor, requested operation, idempotency key, and causation identity. The server MUST enforce size/depth limits and deadlines on untrusted payloads and streams. Credentials SHALL remain in provider-specific secret storage and MUST NOT be serialized into events, artifacts, traces, cognitive entries, or RVF snapshots. Audit records SHALL include policy decision and principal reference without storing secret values.
+
+Applications SHALL define retention and erasure policy before storing personal or regulated content. Immutable events should carry minimal metadata and references to separately erasable encrypted payloads where deletion may be required. Erasure removes or cryptographically destroys eligible payloads, records a tombstone and legal reason, and invalidates/rebuilds derived indexes and snapshots; the remaining event envelope preserves causality without preserving erased content. Backups and exported RVF files require a documented retention/revocation policy. Replay after erasure reports a redacted gap instead of reconstructing deleted data.
 
 ---
 
@@ -1880,12 +1968,16 @@ Before implementation:
 * characterize Bun 1.4 runtime features used;
 * prove Bun + selected Cordis package compatibility;
 * prove selected RuVector bindings under Bun;
-* determine native versus WASM fallback;
-* spike Connect handling over `Bun.serve`;
+* test the selected RuVector Bun native binding and identify a documented fallback where one exists; do not assume the RVF package has a Bun WASM fallback;
+* spike Connect handling over `Bun.serve`, including the pinned `@bufbuild/protobuf` and `@connectrpc/connect` runtime plus compatible Buf/`protoc-gen-es`/Connect code-generation tuple;
 * characterize existing DomainForge integration interface;
 * characterize existing RealityTrace integration interface.
 
-No application features should be built before these uncertainties are resolved.
+Phase 0 SHALL produce an exact dependency/version matrix, runnable compatibility fixtures, and a decision record for each boundary. Core fixtures include: Cordis activation, dependency loss, partial setup failure and reverse disposal; DomainForge Graph parsing with source identity under Bun; SQLite transaction/crash and optimistic append; Connect unary and streaming over `Bun.serve`; and RuVector index rebuild and fallback. Optional adapters require their own fixtures before release: RVF Bun load/export/import/branch isolation; RealityTrace CLI enrollment-to-observation with schema-valid correlation and duplicate delivery; SONA candidate filtering, ranking, feedback persistence, and deterministic fallback; and SemanticPack decoding/version handling.
+
+If a required fixture fails, the affected adapter is blocked or replaced behind its framework-owned interface. RVF, adaptive ranking, and RealityTrace delivery are optional capabilities and SHALL NOT block a minimal kernel/event runtime. If Cordis fails its required lifecycle fixture, the reference kernel engine choice must be revised before Phase 1; the public kernel contract stays fixed. Record unsupported capabilities explicitly rather than substituting an untested API.
+
+Core application features should begin only after the core Phase 0 gates pass. Optional adapters may remain blocked and absent from the released capability matrix.
 
 ## Phase 1 — Kernel
 
@@ -1948,8 +2040,10 @@ DomainForge
 → SemanticRef
 → runtime execution
 → event
-→ RealityTrace observation
+→ queued RealityTrace observation
 ```
+
+The test SHALL also verify SXR workflow prerequisites, accepted receipt, duplicate retry behavior, and the distinction between observation, derived evidence, and settlement. A failed or unavailable SXR adapter SHALL leave the Framework event committed and expose delivery status.
 
 ## Phase 6 — Cognitive API + RuVector
 
@@ -1966,9 +2060,9 @@ Success criterion:
 
 The RuVector index can be deleted and reconstructed without changing deterministic runtime behavior.
 
-## Phase 7 — RVF
+## Phase 7 — Optional RVF
 
-Implement:
+Implement only after the Phase 0 RVF gate passes:
 
 * export;
 * snapshot;
@@ -1978,7 +2072,7 @@ Implement:
 
 Success criterion:
 
-A cognitive branch can diverge without mutating authoritative application state.
+A cognitive branch can diverge without mutating authoritative application state. If the gate fails, skip this phase and record RVF as unsupported in the release capability matrix.
 
 ## Phase 8 — Headless client + React + Astryx
 
@@ -1996,6 +2090,8 @@ Implement event mappings and demonstrate existing AG-UI interoperability.
 
 Demonstrate that both profiles are compositions rather than kernel exceptions.
 
+Implement the `@cognate/cli` `create` and `dev` commands, the starter template, package scripts, planned documentation, and runnable examples claimed by the README. The acceptance fixture generates a project in a clean directory, installs its pinned packages, runs `bun dev`, executes a semantic projection, survives restart, and passes `bun test`. The CLI MUST report unsupported optional adapters rather than generating imports for packages that failed Phase 0.
+
 ---
 
 # 38. V0 Dependency Policy
@@ -2011,12 +2107,16 @@ Cordis
 @connectrpc/connect
 ```
 
+The exact `cordis` prerelease and Connect/protobuf runtime versions SHALL be pinned only after Phase 0 fixtures pass. A runtime library alone does not supply a Bun server adapter or generated service stubs.
+
 ## Cognitive implementation
 
 ```text
 selected RuVector packages
 @ruvector/rvf / appropriate RVF binding
 ```
+
+RVF is an optional dependency. The minimal `CognitiveIndex` works without snapshot or branch support; those capabilities are discoverable only when the adapter passes its fixtures.
 
 Prefer narrow RuVector packages over the umbrella package where feasible.
 
@@ -2046,8 +2146,12 @@ provider SDKs
 ```text
 fast-check
 playwright
-protobuf/buf generation tooling
+@bufbuild/buf (or a pinned Buf CLI)
+@bufbuild/protoc-gen-es
+Connect code-generation plugin compatible with the selected runtime
 ```
+
+The Phase 0 generator fixture SHALL compile the root `proto/` sources twice to byte-identical `packages/proto/` output and verify generated client/server code against the pinned runtime. The [Connect generator documentation](https://www.npmjs.com/package/%40connectrpc/protoc-gen-connect-es) lists a Connect plugin, but its release version must be checked against the selected runtime before it is adopted.
 
 Use `bun:test` rather than introducing another general test runner unless a concrete limitation requires one.
 
@@ -2133,48 +2237,24 @@ Events, fibers, capabilities, semantic references and RealityTrace observations 
 
 The Framework can be summarized as:
 
-> A Bun-native semantic application substrate in which dynamically composed capabilities execute through scoped, reversible lifecycles; durable facts form an authoritative event history; unfinished work is represented explicitly as continuations; DomainForge projects existing `.sea` semantics into the runtime without language changes; RealityTrace receives correlated execution evidence; RuVector provides rebuildable cognitive recall and adaptive ranking; RVF provides portable cognitive state and branching; Protobuf and Connect expose typed cross-language boundaries; and headless clients, AG-UI, React and Astryx project the same underlying system into user-facing applications.
+> A Bun-native semantic application substrate in which dynamically composed capabilities execute through scoped, reversible lifecycles; durable facts form an authoritative event history; unfinished work is represented explicitly as continuations; DomainForge projects existing `.sea` semantics into the runtime without language changes; an optional RealityTrace adapter submits correlated observations into its evidence workflow; RuVector provides rebuildable cognitive recall and bounded adaptive ranking; optional RVF support provides portable cognitive state and branching after Bun compatibility is proven; Protobuf and Connect expose typed cross-language boundaries; and headless clients, AG-UI, React and Astryx project the same underlying system into user-facing applications.
 
-The central dependency chain is therefore:
+The authority and projection paths are:
 
 ```text
-                     .sea
-                      │
-                 DomainForge
-                      │
-                      ▼
-             SEMANTIC PROJECTION
-                      │
-                      ▼
-                 FRAMEWORK
-          ┌───────────┼────────────┐
-          │           │            │
-       Cordis      SQLite      RealityTrace
-     execution      truth        evidence
-          │           │
-          └─────┬─────┘
-                ▼
-             RuVector
-             cognition
-                │
-                ▼
-               RVF
-       portable cognition
-
-                │
-        ┌───────┴─────────┐
-        ▼                 ▼
- Protobuf / Connect     AG-UI
-        │                 │
-        └───────┬─────────┘
-                ▼
-         Headless Client
-                │
-             React
-                │
-             Astryx
+.sea → DomainForge Graph → versioned semantic projection
+                              │
+                              ▼
+                      Framework execution
+                              │
+                              ▼
+                    SQLite event history
+                      │       │       │
+                      │       │       └→ optional RealityTrace observations
+                      │       └→ RuVector derived cognition → optional RVF
+                      └→ client/protocol projections → React / Astryx / AG-UI / Connect
 ```
 
 The architectural rule that governs the entire design is:
 
-> **Semantics constrain execution. Events preserve truth. Cognition discovers relevance. Evidence records reality. Representations remain replaceable.**
+> **Semantics constrain execution. Events preserve framework history. Cognition discovers relevance. RealityTrace derives evidence from qualified observations. Representations remain replaceable.**
