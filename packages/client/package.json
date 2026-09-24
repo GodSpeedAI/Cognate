@@ -1,0 +1,10 @@
+{
+  "name": "@cognate/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless client: runs, reconnecting event subscriptions, derived run state, shared projections, continuations, frontend capabilities, artifacts. No React (spec §25.1).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/events": "workspace:*", "@cognate/runtime-api": "workspace:*" },
+  "devDependencies": { "@cognate/runtime-bun": "workspace:*" }
+}
