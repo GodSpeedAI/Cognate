@@ -1,119 +1,790 @@
-ledger_version: 1
+ledger_version: 2
 project: Cognate
-generated_at: 2026-09-24T00:00:00Z
+generated_at: 2026-09-24T17:45:54Z
 freeze_hash: candidate
-# Formation slice: Phase 0 only. The rest of the specification is not yet projected.
+# Candidate projection of the whole specification. Status: candidate | implemented | blocked.
+# implemented requires an evidence path; blocked requires a DEBT.md id. Gates run via `just gate <ID>`.
 requirements:
   - id: AK-001
-    title: Prove Bun SQLite transaction, rollback, optimistic append, and reopen behavior.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Authoritative event store, invariant: Confirmed transactions alone become durable facts}
+    title: 'Prove Bun SQLite transaction, rollback, optimistic append, and reopen behavior.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Authoritative event store', invariant: 'Confirmed transactions alone become durable facts'}
     acceptance: [AC-001-01]
-    proof: [just gate-ak-001]
-    mutable_surfaces: [compatibility/phase0/sqlite.test.ts]
-    frozen_surfaces: []
+    gate: {cwd: ., run: 'bun test ./compatibility/phase0/sqlite.test.ts', proof_paths: ['compatibility/phase0/sqlite.test.ts']}
     dependencies: []
-    critic_predicate: verification-quality
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/2026-09-24-substrate.md
   - id: AK-002
-    title: Characterize a pinned Cordis lifecycle under Bun.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Component fiber, invariant: Activation and dependency loss reverse owned effects without leaked capabilities}
+    title: 'Characterize a pinned Cordis lifecycle under Bun.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Component fiber', invariant: 'Activation and dependency loss reverse owned effects without leaked capabilities'}
     acceptance: [AC-002-01]
-    proof: [just gate-ak-002]
-    mutable_surfaces: [compatibility/phase0/, package.json]
-    frozen_surfaces: []
+    gate: {cwd: compatibility/phase0/cordis, run: 'bun test', proof_paths: ['cordis.test.ts']}
     dependencies: []
-    critic_predicate: verification-quality
     status: candidate
   - id: AK-003
-    title: Characterize DomainForge Graph parsing and source identity under Bun.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Semantic projection, invariant: Existing sea meaning maps to versioned framework references without grammar changes}
+    title: 'Characterize DomainForge Graph parsing and source identity under Bun.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Semantic projection', invariant: 'Existing sea meaning maps to versioned framework references without grammar changes'}
     acceptance: [AC-003-01]
-    proof: [just gate-ak-003]
-    mutable_surfaces: [compatibility/phase0/, package.json]
-    frozen_surfaces: []
+    gate: {cwd: compatibility/phase0/domainforge, run: 'bun test', proof_paths: ['domainforge.test.ts']}
     dependencies: []
-    critic_predicate: semantic-fidelity
     status: candidate
   - id: AK-004
-    title: Characterize pinned Connect and protobuf codegen over Bun serve.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Wire boundary, invariant: Generated clients use a versioned schema and real Bun transport for unary and streaming RPC}
+    title: 'Characterize pinned Connect and protobuf codegen over Bun serve.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 22; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Wire boundary', invariant: 'Generated clients use a versioned schema and real Bun transport for unary and streaming RPC'}
     acceptance: [AC-004-01]
-    proof: [just gate-ak-004]
-    mutable_surfaces: [compatibility/phase0/, package.json]
-    frozen_surfaces: []
+    gate: {cwd: compatibility/phase0/connect, run: 'bun test', proof_paths: ['connect.test.ts']}
     dependencies: []
-    critic_predicate: verification-quality
     status: candidate
   - id: AK-005
-    title: Characterize RuVector index rebuild and deterministic fallback under Bun.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Cognitive index, invariant: Loss of derived index cannot alter authoritative state or authorization}
+    title: 'Characterize RuVector index rebuild and deterministic fallback under Bun.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive index', invariant: 'Loss of derived index cannot alter authoritative state or authorization'}
     acceptance: [AC-005-01]
-    proof: [just gate-ak-005]
-    mutable_surfaces: [compatibility/phase0/, package.json]
-    frozen_surfaces: []
+    gate: {cwd: compatibility/phase0/ruvector, run: 'bun test', proof_paths: ['ruvector.test.ts']}
     dependencies: [AK-001]
-    critic_predicate: verification-quality
     status: candidate
   - id: AK-006
-    title: Characterize RealityTrace enrollment to observation and duplicate delivery.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Observation port, invariant: Correlated delivery is idempotent and distinct from evidence or settlement}
+    title: 'Characterize RealityTrace enrollment to observation and duplicate delivery.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 20', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Observation port', invariant: 'Correlated delivery is idempotent and distinct from evidence or settlement'}
     acceptance: [AC-006-01]
-    proof: [just gate-ak-006]
-    mutable_surfaces: [compatibility/phase0/]
-    frozen_surfaces: []
+    gate: {cwd: compatibility/phase0/realitytrace, run: 'bun test', proof_paths: ['realitytrace.test.ts']}
     dependencies: [AK-001]
-    critic_predicate: source-fidelity
     status: candidate
   - id: AK-007
-    title: Characterize optional RVF Bun load and cognitive branch isolation.
-    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0 — Architecture characterization', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
-    semantic_binding: {entity: Cognitive snapshot, invariant: Export and import cannot mutate authoritative history or grant authority}
+    title: 'Characterize optional RVF Bun load and cognitive branch isolation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 18', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive snapshot', invariant: 'Export and import cannot mutate authoritative history or grant authority'}
     acceptance: [AC-007-01]
-    proof: [just gate-ak-007]
-    mutable_surfaces: [compatibility/phase0/, package.json]
-    frozen_surfaces: []
+    gate: {cwd: compatibility/phase0/rvf, run: 'bun test', proof_paths: ['rvf.test.ts']}
     dependencies: [AK-005]
-    critic_predicate: verification-quality
+    status: candidate
+  - id: AK-008
+    title: 'Characterize SONA candidate-bounded ranking, durable feedback, and fallback.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '17; 37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Adaptive selector', invariant: 'Adaptive ranking cannot select outside the supplied eligible set'}
+    acceptance: [AC-008-01]
+    gate: {cwd: compatibility/phase0/sona, run: 'bun test', proof_paths: ['sona.test.ts']}
+    dependencies: [AK-005]
+    status: candidate
+  - id: AK-009
+    title: 'Characterize pinned AG-UI core schemas under Bun.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'AG-UI projection', invariant: 'Framework events are projected, never aliased, to a validated AG-UI subset'}
+    acceptance: [AC-009-01]
+    gate: {cwd: compatibility/phase0/ag-ui, run: 'bun test', proof_paths: ['ag-ui.test.ts']}
+    dependencies: []
+    status: candidate
+  - id: AK-010
+    title: 'Characterize React 19, Astryx, bundling, and Playwright under Bun.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25; 36; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Reference UI', invariant: 'The renderer is replaceable and runs on the reference platform'}
+    acceptance: [AC-010-01]
+    gate: {cwd: compatibility/phase0/ui, run: 'bun test', proof_paths: ['ui.test.tsx']}
+    dependencies: []
+    status: candidate
+  - id: AK-011
+    title: 'Characterize the MCP SDK under Bun.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'MCP adapter', invariant: 'Protocols are adapters over capabilities'}
+    acceptance: [AC-011-01]
+    gate: {cwd: compatibility/phase0/mcp, run: 'bun test', proof_paths: ['mcp.test.ts']}
+    dependencies: []
+    status: candidate
+  - id: CG-KRN-001
+    title: 'Framework-owned kernel contract: mount, resolve, invoke, dispose, scope close, effect registration.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Kernel', invariant: 'Public operations are expressed without engine types'}
+    acceptance: [AC-KRN-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-api/test/contract.test.ts', proof_paths: ['packages/kernel-api/test/contract.test.ts']}
+    dependencies: [AK-002]
+    status: candidate
+  - id: CG-KRN-002
+    title: 'Fiber lifecycle including FAILED, bounded retry, transient versus permanent failure.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.4', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Fiber', invariant: 'No fiber remains indefinitely ACTIVATING; permanent failure requires reset'}
+    acceptance: [AC-KRN-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/lifecycle.test.ts', proof_paths: ['packages/kernel-cordis/test/lifecycle.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-KRN-003
+    title: 'Reversible effects dispose idempotently in reverse order with aggregated errors.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '9.1; 31.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Reversible effect', invariant: 'Every disposer is attempted once per teardown'}
+    acceptance: [AC-KRN-003-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/effects.test.ts', proof_paths: ['packages/kernel-cordis/test/effects.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-KRN-004
+    title: 'Dependency closure with deactivation on loss and reactivation on compatible replacement.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.4; 29.2; 35', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Capability dependency', invariant: 'A component cannot remain active without its required capabilities'}
+    acceptance: [AC-KRN-004-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/dependencies.test.ts', proof_paths: ['packages/kernel-cordis/test/dependencies.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-KRN-005
+    title: 'Scope isolation and narrowing without implicit parent mutation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.1; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Context', invariant: 'Child scopes cannot leak capabilities to siblings or parents'}
+    acceptance: [AC-KRN-005-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/scopes.test.ts', proof_paths: ['packages/kernel-cordis/test/scopes.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-KRN-006
+    title: 'Resolution grants no authority; invocation is policy checked; revoked leases fail typed.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.5; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Capability lease', invariant: 'Possessing a capability reference is not permission'}
+    acceptance: [AC-KRN-006-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/authority.test.ts', proof_paths: ['packages/kernel-cordis/test/authority.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-KRN-007
+    title: 'Cordis stays behind the kernel boundary.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.4; 40.A', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Kernel engine', invariant: 'Application code imports no engine types'}
+    acceptance: [AC-KRN-007-01]
+    gate: {cwd: ., run: 'bun test ./tests/architecture/engine-boundary.test.ts', proof_paths: ['tests/architecture/engine-boundary.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-KRN-008
+    title: 'Kernel properties: reversibility, dependency closure, scope isolation, disposal idempotence.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '34.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Kernel', invariant: 'Invariants hold for arbitrary component graphs'}
+    acceptance: [AC-KRN-008-01]
+    gate: {cwd: ., run: 'bun test ./tests/properties/kernel.property.test.ts', proof_paths: ['tests/properties/kernel.property.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-EVT-001
+    title: 'Canonical event envelope with validation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Event envelope', invariant: 'Every durable fact carries causal identity and a schema version'}
+    acceptance: [AC-EVT-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/events/test/envelope.test.ts', proof_paths: ['packages/events/test/envelope.test.ts']}
+    dependencies: []
+    status: candidate
+  - id: CG-EVT-002
+    title: 'Optimistic append with expected stream version and store-assigned sequence.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Event stream', invariant: 'Stream sequence, not wall clock, orders history'}
+    acceptance: [AC-EVT-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/store-sqlite/test/conformance.test.ts', proof_paths: ['packages/store-sqlite/test/conformance.test.ts']}
+    dependencies: [AK-001, CG-EVT-001]
+    status: candidate
+  - id: CG-EVT-003
+    title: 'Idempotent commands commit event, result, continuation transition, and outbox atomically.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10; 13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Command', invariant: 'One decision commits all its consequences or none'}
+    acceptance: [AC-EVT-003-01]
+    gate: {cwd: ., run: 'bun test ./packages/store-sqlite/test/conformance.test.ts', proof_paths: ['packages/store-sqlite/test/conformance.test.ts']}
+    dependencies: [CG-EVT-002]
+    status: candidate
+  - id: CG-EVT-004
+    title: 'SQLite store persists authoritative state and fails closed.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13.1; 31.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'SQLite store', invariant: 'No durable claim before SQLite confirms'}
+    acceptance: [AC-EVT-004-01]
+    gate: {cwd: ., run: 'bun test ./packages/store-sqlite/test/conformance.test.ts', proof_paths: ['packages/store-sqlite/test/conformance.test.ts']}
+    dependencies: [CG-EVT-003]
+    status: candidate
+  - id: CG-EVT-005
+    title: 'In-memory store passes the same conformance kit.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Memory store', invariant: 'Stores are interchangeable behind the port'}
+    acceptance: [AC-EVT-005-01]
+    gate: {cwd: ., run: 'bun test ./packages/store-memory/test/conformance.test.ts', proof_paths: ['packages/store-memory/test/conformance.test.ts']}
+    dependencies: [CG-EVT-003]
+    status: candidate
+  - id: CG-EVT-006
+    title: 'Process crash before commit leaves nothing visible; after commit permits safe retry.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'SQLite store', invariant: 'Crash atomicity'}
+    acceptance: [AC-EVT-006-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/crash.test.ts', proof_paths: ['tests/integration/crash.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: candidate
+  - id: CG-PRJ-001
+    title: 'Projections are idempotent, checkpointed atomically, and never skip failures.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '11', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Projection', invariant: 'Checkpoints never advance past a failed item'}
+    acceptance: [AC-PRJ-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/projections/test/projections.test.ts', proof_paths: ['packages/projections/test/projections.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: candidate
+  - id: CG-PRJ-002
+    title: 'Delete all derived state and reconstruct it from SQLite.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13.3; 37 / Phase 2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Derived state', invariant: 'Derived state is rebuildable from authoritative history'}
+    acceptance: [AC-PRJ-002-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/rebuild.test.ts', proof_paths: ['tests/integration/rebuild.test.ts']}
+    dependencies: [CG-PRJ-001]
+    status: candidate
+  - id: CG-PRJ-003
+    title: 'Replay determinism property.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '34.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Projection', invariant: 'Same events and projection version give equivalent state'}
+    acceptance: [AC-PRJ-003-01]
+    gate: {cwd: ., run: 'bun test ./tests/properties/replay.property.test.ts', proof_paths: ['tests/properties/replay.property.test.ts']}
+    dependencies: [CG-PRJ-001]
+    status: candidate
+  - id: CG-CON-001
+    title: 'Continuation lifecycle with exactly one terminal transition under races.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '12', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Continuation', invariant: 'Racing resume, cancel, and expire yield one terminal transition'}
+    acceptance: [AC-CON-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/continuations/test/lifecycle.test.ts', proof_paths: ['packages/continuations/test/lifecycle.test.ts']}
+    dependencies: [CG-EVT-003]
+    status: candidate
+  - id: CG-CON-002
+    title: 'Continuations survive restart and resume through a newly mounted handler; unsupported versions block.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '12', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Continuation', invariant: 'Unload never discards pending external or human work'}
+    acceptance: [AC-CON-002-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/continuation-restart.test.ts', proof_paths: ['tests/integration/continuation-restart.test.ts']}
+    dependencies: [CG-CON-001]
+    status: candidate
+  - id: CG-CMT-001
+    title: 'External commitment state machine with unknown-outcome reconciliation and separate compensation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '9.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'External commitment', invariant: 'An external action is never a reversible effect'}
+    acceptance: [AC-CMT-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/continuations/test/commitments.test.ts', proof_paths: ['packages/continuations/test/commitments.test.ts']}
+    dependencies: [CG-EVT-003]
+    status: candidate
+  - id: CG-CMT-002
+    title: 'Outbox dispatch is at least once with bounded backoff and deduplication.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '11; 13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Outbox', invariant: 'Local transactions never claim exactly-once external effects'}
+    acceptance: [AC-CMT-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/continuations/test/outbox.test.ts', proof_paths: ['packages/continuations/test/outbox.test.ts']}
+    dependencies: [CG-CMT-001]
+    status: candidate
+  - id: CG-ART-001
+    title: 'Artifacts have authoritative records, content-addressed bytes, and tombstones.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Artifact', invariant: 'An artifact is not available before its bytes and record are durable'}
+    acceptance: [AC-ART-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/artifacts/test/artifacts.test.ts', proof_paths: ['packages/artifacts/test/artifacts.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: candidate
+  - id: CG-CAP-001
+    title: 'Two-phase capability matching with recorded selection explanation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.2; 17; 30', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Capability selection', invariant: 'Deterministic eligibility precedes adaptive ranking'}
+    acceptance: [AC-CAP-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/capabilities/test/selection.test.ts', proof_paths: ['packages/capabilities/test/selection.test.ts']}
+    dependencies: [CG-EVT-003]
+    status: candidate
+  - id: CG-CAP-002
+    title: 'Adaptive containment property.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.6; 34.2; 40.I', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Adaptive selector', invariant: 'Learning cannot grant authority'}
+    acceptance: [AC-CAP-002-01]
+    gate: {cwd: ., run: 'bun test ./tests/properties/containment.property.test.ts', proof_paths: ['tests/properties/containment.property.test.ts']}
+    dependencies: [CG-CAP-001]
+    status: candidate
+  - id: CG-SEC-001
+    title: 'Erasure leaves tombstones, redacted replay gaps, and invalidated derived views.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Personal data', invariant: 'Replay after erasure reports a gap instead of reconstructing deleted data'}
+    acceptance: [AC-SEC-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/erasure.test.ts', proof_paths: ['tests/integration/erasure.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: candidate
+  - id: CG-SEC-002
+    title: 'Credentials never reach events, artifacts, traces, cognitive entries, or snapshots.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Secrets', invariant: 'Credentials stay in provider secret storage'}
+    acceptance: [AC-SEC-002-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/secrets.test.ts', proof_paths: ['tests/integration/secrets.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: candidate
+  - id: CG-OBS-001
+    title: 'Causal identity chain is machine inspectable.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '33; 40.M', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Provenance', invariant: 'Events, fibers, capabilities, semantic refs and observations correlate'}
+    acceptance: [AC-OBS-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/causality.test.ts', proof_paths: ['tests/integration/causality.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: candidate
+  - id: CG-WIR-001
+    title: 'Canonical proto sources with reproducible generated bindings.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '21', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Protobuf schema', invariant: 'Wire representation does not define semantics'}
+    acceptance: [AC-WIR-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/proto/test/codegen.test.ts', proof_paths: ['packages/proto/test/codegen.test.ts']}
+    dependencies: [AK-004]
+    status: candidate
+  - id: CG-WIR-002
+    title: 'A second process observes and controls a runtime through generated clients over Connect on Bun.serve.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '22; 37 / Phase 4', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Runtime service', invariant: 'Transport exposes, never owns, runtime behavior'}
+    acceptance: [AC-WIR-002-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/second-process.test.ts', proof_paths: ['tests/integration/second-process.test.ts']}
+    dependencies: [CG-WIR-001]
+    status: candidate
+  - id: CG-WIR-003
+    title: 'The runtime service contract survives transport replacement.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '22; 40.G', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Service contract', invariant: 'Connect is replaceable'}
+    acceptance: [AC-WIR-003-01]
+    gate: {cwd: ., run: 'bun test ./packages/protocol-connect/test/service.test.ts', proof_paths: ['packages/protocol-connect/test/service.test.ts']}
+    dependencies: [CG-WIR-002]
+    status: candidate
+  - id: CG-WIR-004
+    title: 'Untrusted protocol input is validated, bounded, deadlined, and authenticated.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Protocol boundary', invariant: 'Untrusted payloads cannot construct components or exceed limits'}
+    acceptance: [AC-WIR-004-01]
+    gate: {cwd: ., run: 'bun test ./packages/protocol-connect-bun/test/limits.test.ts', proof_paths: ['packages/protocol-connect-bun/test/limits.test.ts']}
+    dependencies: [CG-WIR-002]
+    status: candidate
+  - id: CG-SEM-001
+    title: 'DomainForge adapter produces SemanticRefs with an explicit kind mapping table.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '7.1; 19', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Semantic projection', invariant: 'Enterprise concepts are never implicit capabilities or permissions'}
+    acceptance: [AC-SEM-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/domainforge/test/adapter.test.ts', proof_paths: ['packages/domainforge/test/adapter.test.ts']}
+    dependencies: [AK-003]
+    status: candidate
+  - id: CG-SEM-002
+    title: 'Semantic identity is pinned to source revision; renames are new identities; unresolved refs are typed.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '7.1; 13.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'SemanticRef', invariant: 'No identity continuity is implied across renames'}
+    acceptance: [AC-SEM-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/domainforge/test/identity.test.ts', proof_paths: ['packages/domainforge/test/identity.test.ts']}
+    dependencies: [CG-SEM-001]
+    status: candidate
+  - id: CG-RT-001
+    title: 'ObservationPort with outbox delivery; receipt is not evidence; failure keeps events committed.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '20', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Observation port', invariant: 'RealityTrace failure cannot roll back committed history'}
+    acceptance: [AC-RT-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/realitytrace/test/port.test.ts', proof_paths: ['packages/realitytrace/test/port.test.ts']}
+    dependencies: [CG-CMT-002]
+    status: candidate
+  - id: CG-RT-002
+    title: 'SXR CLI adapter delivers correlated observations after workflow prerequisites.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '20; 37 / Phase 5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'RealityTrace adapter', invariant: 'Only schema-valid CEP fields are emitted'}
+    acceptance: [AC-RT-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/realitytrace/test/sxr-cli.test.ts', proof_paths: ['packages/realitytrace/test/sxr-cli.test.ts']}
+    dependencies: [AK-006, CG-RT-001]
+    status: candidate
+  - id: CG-RT-003
+    title: 'Correlation chain DomainForge to SemanticRef to execution to event to queued observation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Provenance', invariant: 'Semantics and observed execution correlate without either project changing'}
+    acceptance: [AC-RT-003-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/semantic-to-observation.test.ts', proof_paths: ['tests/integration/semantic-to-observation.test.ts']}
+    dependencies: [CG-SEM-001, CG-RT-001]
+    status: candidate
+  - id: CG-COG-001
+    title: 'Dependency-free CognitiveIndex with discoverable capabilities and a memory implementation.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '14', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive index', invariant: 'Cognition references authority by stable id'}
+    acceptance: [AC-COG-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/cognitive-memory/test/conformance.test.ts', proof_paths: ['packages/cognitive-memory/test/conformance.test.ts']}
+    dependencies: []
+    status: candidate
+  - id: CG-COG-002
+    title: 'Retrieval filters by scope and authorizes each dereference without leaking restricted metadata.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '16; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive retrieval', invariant: 'Similarity never bypasses authorization'}
+    acceptance: [AC-COG-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/cognitive-api/test/retrieval.test.ts', proof_paths: ['packages/cognitive-api/test/retrieval.test.ts']}
+    dependencies: [CG-COG-001]
+    status: candidate
+  - id: CG-COG-003
+    title: 'RuVector adapter passes the cognitive conformance kit.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '15', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'RuVector adapter', invariant: 'RuVector types do not cross the boundary'}
+    acceptance: [AC-COG-003-01]
+    gate: {cwd: ., run: 'bun test ./packages/cognitive-ruvector/test/conformance.test.ts', proof_paths: ['packages/cognitive-ruvector/test/conformance.test.ts']}
+    dependencies: [AK-005, CG-COG-001]
+    status: candidate
+  - id: CG-COG-004
+    title: 'Deleting and rebuilding the cognitive index leaves deterministic behavior unchanged.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.5; 37 / Phase 6; 40.B', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive index', invariant: 'Cognition is derived'}
+    acceptance: [AC-COG-004-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/cognitive-rebuild.test.ts', proof_paths: ['tests/integration/cognitive-rebuild.test.ts']}
+    dependencies: [CG-COG-001, CG-PRJ-002]
+    status: candidate
+  - id: CG-COG-005
+    title: 'Cognitive failure falls back to deterministic behavior unless cognition is declared required.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '31.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive index', invariant: 'Execution continues without cognition'}
+    acceptance: [AC-COG-005-01]
+    gate: {cwd: ., run: 'bun test ./packages/cognitive-api/test/fallback.test.ts', proof_paths: ['packages/cognitive-api/test/fallback.test.ts']}
+    dependencies: [CG-COG-001]
+    status: candidate
+  - id: CG-COG-006
+    title: 'Outcome feedback is a durable fact before it affects ranking.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '15', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Adaptive feedback', invariant: 'Deleting the index does not erase learning inputs'}
+    acceptance: [AC-COG-006-01]
+    gate: {cwd: ., run: 'bun test ./packages/capabilities/test/feedback.test.ts', proof_paths: ['packages/capabilities/test/feedback.test.ts']}
+    dependencies: [CG-CAP-001, CG-COG-001]
+    status: candidate
+  - id: CG-RVF-001
+    title: 'RVF adapter snapshots, branches, and classifies imports as attached or detached.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '18', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Cognitive snapshot', invariant: 'Branches never mutate authoritative history; detached imports grant nothing'}
+    acceptance: [AC-RVF-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/cognitive-rvf/test/rvf.test.ts', proof_paths: ['packages/cognitive-rvf/test/rvf.test.ts']}
+    dependencies: [AK-007, CG-COG-001]
+    status: candidate
+  - id: CG-CLT-001
+    title: 'Headless client: subscriptions, reconnect from cursor, continuation interaction, frontend capabilities.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25.1; 31.8', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Headless client', invariant: 'Reconnect uses durable positions'}
+    acceptance: [AC-CLT-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/client/test/client.test.ts', proof_paths: ['packages/client/test/client.test.ts']}
+    dependencies: [CG-WIR-002]
+    status: candidate
+  - id: CG-UI-001
+    title: 'React bindings expose runs, projections, capabilities, continuations, and artifacts.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'React bindings', invariant: 'React depends on the client, never the reverse'}
+    acceptance: [AC-UI-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/react/test/hooks.test.tsx', proof_paths: ['packages/react/test/hooks.test.tsx']}
+    dependencies: [CG-CLT-001]
+    status: candidate
+  - id: CG-UI-002
+    title: 'Astryx reference surfaces: shell, chat, approval, artifact, run and state inspection, themes.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '25.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Reference UI', invariant: 'Astryx is a renderer, not the ontology'}
+    acceptance: [AC-UI-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/ui-astryx/test/surfaces.test.tsx', proof_paths: ['packages/ui-astryx/test/surfaces.test.tsx']}
+    dependencies: [AK-010, CG-UI-001]
+    status: candidate
+  - id: CG-UI-003
+    title: 'Astryx and React types never cross into client or react public APIs.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.8; 28; 40.F', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'UI boundary', invariant: 'UI implementation is replaceable'}
+    acceptance: [AC-UI-003-01]
+    gate: {cwd: ., run: 'bun test ./tests/architecture/dependencies.test.ts', proof_paths: ['tests/architecture/dependencies.test.ts']}
+    dependencies: [CG-UI-001]
+    status: candidate
+  - id: CG-AGUI-001
+    title: 'Outbound AG-UI mapping matrix with durable event ids and per-run cursor.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'AG-UI adapter', invariant: 'Internal events are not AG-UI aliases'}
+    acceptance: [AC-AGUI-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/ag-ui/test/outbound.test.ts', proof_paths: ['packages/ag-ui/test/outbound.test.ts']}
+    dependencies: [AK-009, CG-EVT-004]
+    status: candidate
+  - id: CG-AGUI-002
+    title: 'Inbound AG-UI actions pass through native authorization and command handling.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'AG-UI adapter', invariant: 'Protocol input never bypasses authorization'}
+    acceptance: [AC-AGUI-002-01]
+    gate: {cwd: ., run: 'bun test ./packages/ag-ui/test/inbound.test.ts', proof_paths: ['packages/ag-ui/test/inbound.test.ts']}
+    dependencies: [CG-AGUI-001]
+    status: candidate
+  - id: CG-AGUI-003
+    title: 'AG-UI reconnect sends snapshot then ordered deltas, or resyncs.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'AG-UI adapter', invariant: 'Transport disconnect does not cancel a durable run'}
+    acceptance: [AC-AGUI-003-01]
+    gate: {cwd: ., run: 'bun test ./packages/ag-ui/test/reconnect.test.ts', proof_paths: ['packages/ag-ui/test/reconnect.test.ts']}
+    dependencies: [CG-AGUI-001]
+    status: candidate
+  - id: CG-MCP-001
+    title: 'MCP adapter exposes authorized capabilities as tools.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'MCP adapter', invariant: 'Protocols are adapters over capabilities'}
+    acceptance: [AC-MCP-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/mcp/test/mcp.test.ts', proof_paths: ['packages/mcp/test/mcp.test.ts']}
+    dependencies: [AK-011, CG-KRN-006]
+    status: candidate
+  - id: CG-A2A-001
+    title: 'A2A adapter exposes a runtime agent over the A2A protocol.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'A2A adapter', invariant: 'Protocols are adapters over capabilities'}
+    acceptance: [AC-A2A-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/a2a/test/a2a.test.ts', proof_paths: ['packages/a2a/test/a2a.test.ts']}
+    dependencies: [CG-KRN-006]
+    status: candidate
+  - id: CG-PRV-001
+    title: 'Model provider contract with OpenAI-compatible and local providers.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '26', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Model provider', invariant: 'The kernel depends on no LLM SDK'}
+    acceptance: [AC-PRV-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/provider-openai-compatible/test/provider.test.ts', proof_paths: ['packages/provider-openai-compatible/test/provider.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-PRF-001
+    title: 'defineProfile composes packages without new kernel concepts.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '29; 40.J; 40.K', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Profile', invariant: 'Profiles are composition'}
+    acceptance: [AC-PRF-001-01]
+    gate: {cwd: ., run: 'bun test ./packages/profile/test/profile.test.ts', proof_paths: ['packages/profile/test/profile.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: candidate
+  - id: CG-PRF-002
+    title: 'Copilot profile acceptance behaviors.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '29.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Copilot profile', invariant: 'No Copilot-specific kernel primitives'}
+    acceptance: [AC-PRF-002-01]
+    gate: {cwd: ., run: 'bun test ./profiles/copilot/test/copilot.test.ts', proof_paths: ['profiles/copilot/test/copilot.test.ts']}
+    dependencies: [CG-PRF-001, CG-AGUI-001, CG-CON-001]
+    status: candidate
+  - id: CG-PRF-003
+    title: 'Harness profile acceptance and hot-swap behavior.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '29.2; 35', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Harness profile', invariant: 'No Harness-specific kernel primitives'}
+    acceptance: [AC-PRF-003-01]
+    gate: {cwd: ., run: 'bun test ./profiles/harness/test/harness.test.ts', proof_paths: ['profiles/harness/test/harness.test.ts']}
+    dependencies: [CG-PRF-001, CG-PRV-001]
+    status: candidate
+  - id: CG-CLI-001
+    title: 'cognate create and dev generate and run a starter in a clean directory.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'CLI', invariant: 'Unsupported optional adapters are reported, not imported'}
+    acceptance: [AC-CLI-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/cli-create.test.ts', proof_paths: ['tests/integration/cli-create.test.ts']}
+    dependencies: [CG-PRF-001]
+    status: candidate
+  - id: CG-E2E-001
+    title: 'Browser journey from semantic load to RVF snapshot, verifying authoritative state independently of the UI.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '36', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'End-to-end journey', invariant: 'Displayed state is checked against authoritative state'}
+    acceptance: [AC-E2E-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/e2e/journey.e2e.ts', proof_paths: ['tests/e2e/journey.e2e.ts']}
+    dependencies: [CG-PRF-002, CG-COG-003, CG-RT-001]
+    status: candidate
+  - id: CG-ARC-001
+    title: 'Dependency direction and cycle checks.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '28', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Package topology', invariant: 'Forbidden edges are absent'}
+    acceptance: [AC-ARC-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/architecture/dependencies.test.ts', proof_paths: ['tests/architecture/dependencies.test.ts']}
+    dependencies: []
+    status: candidate
+  - id: CG-ARC-002
+    title: 'Architectural acceptance criteria A–M are each bound to a passing gate.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '40', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Architecture', invariant: 'Validation is evidence, not assertion'}
+    acceptance: [AC-ARC-002-01]
+    gate: {cwd: ., run: 'bun test ./tests/architecture/acceptance.test.ts', proof_paths: ['tests/architecture/acceptance.test.ts']}
+    dependencies: []
     status: candidate
 acceptance_contracts:
   - id: AC-001-01
     requirement: AK-001
-    expected: A committed event survives reopen; a failed transaction leaves no event; a stale expected revision cannot append.
-    gate_command: just gate-ak-001
-    status: candidate
+    expected: 'A committed event survives reopen; a failed transaction leaves no event; a stale expected revision cannot append.'
   - id: AC-002-01
     requirement: AK-002
-    expected: The tested Cordis release activates, deactivates on dependency loss, rolls back failed setup, and disposes in reverse order under Bun.
-    gate_command: just gate-ak-002
-    status: candidate
+    expected: 'The tested Cordis release activates, deactivates on dependency loss, rolls back failed setup, and disposes in reverse order under Bun.'
   - id: AC-003-01
     requirement: AK-003
-    expected: The selected Graph binding parses a valid sea fixture under Bun and preserves stable semantic source identity.
-    gate_command: just gate-ak-003
-    status: candidate
+    expected: 'The selected Graph binding parses a valid sea fixture under Bun and preserves stable semantic source identity; rename and namespace change produce new identities; missing references are typed.'
   - id: AC-004-01
     requirement: AK-004
-    expected: A generated client performs unary and streaming RPC against a real Bun server using the selected pinned tuple.
-    gate_command: just gate-ak-004
-    status: candidate
+    expected: 'Byte-identical codegen; generated client performs unary and server-streaming RPC, cancellation, deadline and error mapping against a real Bun server; unsupported modes are recorded, not claimed.'
   - id: AC-005-01
     requirement: AK-005
-    expected: The selected RuVector binding rebuilds derived entries and an unavailable binding triggers deterministic behavior without authority changes.
-    gate_command: just gate-ak-005
-    status: candidate
+    expected: 'The selected RuVector binding rebuilds derived entries and an unavailable binding triggers deterministic behavior without authority changes.'
   - id: AC-006-01
     requirement: AK-006
-    expected: CLI prerequisites complete; a correlated observation is accepted; duplicate delivery is reconciled without claiming evidence or settlement.
-    gate_command: just gate-ak-006
-    status: candidate
+    expected: 'CLI prerequisites complete; a correlated observation is accepted; duplicate delivery is reconciled without claiming evidence or settlement.'
   - id: AC-007-01
     requirement: AK-007
-    expected: The selected RVF binding loads under Bun and export, import, and branch operations remain isolated from authoritative history.
-    gate_command: just gate-ak-007
-    status: candidate
+    expected: 'The selected RVF binding loads under Bun and export, import, and branch operations remain isolated from authoritative history.'
+  - id: AC-008-01
+    requirement: AK-008
+    expected: 'SONA ranks only a supplied candidate set, replays durable feedback deterministically, and falls back to deterministic ordering when unavailable.'
+  - id: AC-009-01
+    requirement: AK-009
+    expected: 'The pinned @ag-ui/core loads under Bun and validates and rejects the event families in the supported matrix.'
+  - id: AC-010-01
+    requirement: AK-010
+    expected: 'React 19 and Astryx render and bundle under Bun; a browser journey can be driven against a Bun server.'
+  - id: AC-011-01
+    requirement: AK-011
+    expected: 'An MCP server exposing one tool is listed and called by a linked client under Bun.'
+  - id: AC-KRN-001-01
+    requirement: CG-KRN-001
+    expected: 'The kernel conformance kit passes against the reference engine for every 8.5 operation and failure semantic.'
+  - id: AC-KRN-002-01
+    requirement: CG-KRN-002
+    expected: 'Lifecycle transitions follow 8.4 including FAILED retry with bounded backoff and explicit reset after permanent failure.'
+  - id: AC-KRN-003-01
+    requirement: CG-KRN-003
+    expected: 'Disposers run in reverse registration order, a failing disposer does not stop others, and errors are aggregated and observable.'
+  - id: AC-KRN-004-01
+    requirement: CG-KRN-004
+    expected: 'Removing a provider deactivates dependents; restoring a compatible provider reactivates them without consumer import changes.'
+  - id: AC-KRN-005-01
+    requirement: CG-KRN-005
+    expected: 'Child-provided isolated capabilities are invisible to parent and siblings; closing a parent closes children first.'
+  - id: AC-KRN-006-01
+    requirement: CG-KRN-006
+    expected: 'Invocation denied by policy returns a typed denial; a lease used after provider loss yields CapabilityUnavailable.'
+  - id: AC-KRN-007-01
+    requirement: CG-KRN-007
+    expected: 'No package other than kernel-cordis imports cordis, and kernel-api public types reference no engine type.'
+  - id: AC-KRN-008-01
+    requirement: CG-KRN-008
+    expected: 'fast-check properties over generated graphs and appearance/removal/disposal sequences hold.'
+  - id: AC-EVT-001-01
+    requirement: CG-EVT-001
+    expected: 'Envelopes missing required fields are rejected; stored envelopes carry every 10 field.'
+  - id: AC-EVT-002-01
+    requirement: CG-EVT-002
+    expected: 'A conflicting writer fails explicitly; sequences are gap-free per stream and assigned inside the append transaction.'
+  - id: AC-EVT-003-01
+    requirement: CG-EVT-003
+    expected: 'Repeating a committed idempotency key returns the recorded result without a new fact; a failure mid-decision leaves nothing visible.'
+  - id: AC-EVT-004-01
+    requirement: CG-EVT-004
+    expected: 'The store conformance kit passes on SQLite, state survives reopen, and a failed write reports failure without a claimed commit.'
+  - id: AC-EVT-005-01
+    requirement: CG-EVT-005
+    expected: 'The store conformance kit passes on the memory store.'
+  - id: AC-EVT-006-01
+    requirement: CG-EVT-006
+    expected: 'A child process killed during a decision leaves no partial state; a retried idempotent command after a committed crash returns the recorded result.'
+  - id: AC-PRJ-001-01
+    requirement: CG-PRJ-001
+    expected: 'Duplicate events are ignored by id; output and checkpoint commit together; a poison event enters an explicit error state with an operator replay path.'
+  - id: AC-PRJ-002-01
+    requirement: CG-PRJ-002
+    expected: 'After deleting projection tables and checkpoints, rebuild produces state equal to the pre-deletion state.'
+  - id: AC-PRJ-003-01
+    requirement: CG-PRJ-003
+    expected: 'fast-check generated event sequences replay to equal state across stores and repeated runs.'
+  - id: AC-CON-001-01
+    requirement: CG-CON-001
+    expected: 'Concurrent resume/cancel/expire commands produce one terminal event; duplicates return the existing outcome; resume is authorized.'
+  - id: AC-CON-002-01
+    requirement: CG-CON-002
+    expected: 'After process restart a pending continuation resumes via a new handler; an unsupported handler version enters BLOCKED.'
+  - id: AC-CMT-001-01
+    requirement: CG-CMT-001
+    expected: 'Timeouts after dispatch become UNKNOWN_RECONCILIATION_REQUIRED; targets without idempotency are not blindly retried; compensation is a new record.'
+  - id: AC-CMT-002-01
+    requirement: CG-CMT-002
+    expected: 'Outbox items dispatch after commit, retry with bounded backoff, deduplicate by stable id, and surface failed items.'
+  - id: AC-ART-001-01
+    requirement: CG-ART-001
+    expected: 'Artifacts record hash, media type, size, policy, retention; deletion leaves a tombstone distinguishable from loss.'
+  - id: AC-CAP-001-01
+    requirement: CG-CAP-001
+    expected: 'Selection records candidate set, filters, scores, selected candidate, and later outcome as durable facts.'
+  - id: AC-CAP-002-01
+    requirement: CG-CAP-002
+    expected: 'For arbitrary candidates, policies, and rankers, the selected candidate is always eligible.'
+  - id: AC-SEC-001-01
+    requirement: CG-SEC-001
+    expected: 'Erasing a payload removes its content, records a tombstone and reason, and replay/cognition report a redacted gap.'
+  - id: AC-SEC-002-01
+    requirement: CG-SEC-002
+    expected: 'A secret-bearing provider run leaves no secret bytes in the SQLite file or cognitive index.'
+  - id: AC-OBS-001-01
+    requirement: CG-OBS-001
+    expected: 'A runtime inspection query reconstructs correlation, run, event, causation, component, fiber, capability, provider, semantic ref, artifact, and observation ids.'
+  - id: AC-WIR-001-01
+    requirement: CG-WIR-001
+    expected: 'proto/ compiles twice to byte-identical packages/proto output with the pinned toolchain.'
+  - id: AC-WIR-002-01
+    requirement: CG-WIR-002
+    expected: 'A separate Bun process starts a run, streams its events, and resolves a continuation via generated clients.'
+  - id: AC-WIR-003-01
+    requirement: CG-WIR-003
+    expected: 'The same service conformance suite passes in-process and over Connect.'
+  - id: AC-WIR-004-01
+    requirement: CG-WIR-004
+    expected: 'Oversized, too-deep, unauthenticated, or deadline-exceeded requests are rejected with typed errors.'
+  - id: AC-SEM-001-01
+    requirement: CG-SEM-001
+    expected: 'Graph output maps to read-only semantic objects with provenance; unsupported kinds are listed; no capability exists without an explicit manifest binding.'
+  - id: AC-SEM-002-01
+    requirement: CG-SEM-002
+    expected: 'Rename, missing reference, and version change golden fixtures pass; historical refs resolve against archived projections.'
+  - id: AC-RT-001-01
+    requirement: CG-RT-001
+    expected: 'Observations queue from the committed outbox, retry with stable ids, expose reconciliation status, and never report evidence.'
+  - id: AC-RT-002-01
+    requirement: CG-RT-002
+    expected: 'Against the real CLI, prerequisites complete, an observation is accepted with a persisted receipt, and duplicate retry reconciles.'
+  - id: AC-RT-003-01
+    requirement: CG-RT-003
+    expected: 'One test traces a parsed semantic object through runtime execution to a committed event and a queued observation.'
+  - id: AC-COG-001-01
+    requirement: CG-COG-001
+    expected: 'The cognitive conformance kit passes for the memory implementation and flags reflect supported operations.'
+  - id: AC-COG-002-01
+    requirement: CG-COG-002
+    expected: 'Restricted hits are absent from results, counts, and provenance; returned items come from authoritative fetch.'
+  - id: AC-COG-003-01
+    requirement: CG-COG-003
+    expected: 'The cognitive conformance kit passes against the RuVector adapter.'
+  - id: AC-COG-004-01
+    requirement: CG-COG-004
+    expected: 'Authorization and deterministic outcomes are identical before deletion, after deletion, and after rebuild; recall returns after rebuild.'
+  - id: AC-COG-005-01
+    requirement: CG-COG-005
+    expected: 'With a failing index, selection and runs complete deterministically; a component declaring cognition required waits.'
+  - id: AC-COG-006-01
+    requirement: CG-COG-006
+    expected: 'Feedback appends an event before ranking changes; rebuild from events restores equivalent ranking inputs.'
+  - id: AC-RVF-001-01
+    requirement: CG-RVF-001
+    expected: 'Snapshots record checkpoint lineage; branch writes are isolated; tampered or foreign imports stay detached.'
+  - id: AC-CLT-001-01
+    requirement: CG-CLT-001
+    expected: 'The client resumes a subscription from a cursor after disconnect, resolves a continuation, and serves a frontend capability, with no React dependency.'
+  - id: AC-UI-001-01
+    requirement: CG-UI-001
+    expected: 'Hooks render projection updates and register a frontend capability in a React 19 test renderer.'
+  - id: AC-UI-002-01
+    requirement: CG-UI-002
+    expected: 'Reference surfaces render under Bun SSR and in a browser bundle with light and dark themes.'
+  - id: AC-UI-003-01
+    requirement: CG-UI-003
+    expected: 'Dependency checks and type exports show no Astryx import in client or react and no React import in client.'
+  - id: AC-AGUI-001-01
+    requirement: CG-AGUI-001
+    expected: 'Run, message, tool, and state projections emit schema-valid AG-UI events whose ids map to durable events; unsupported kinds follow the matrix.'
+  - id: AC-AGUI-002-01
+    requirement: CG-AGUI-002
+    expected: 'User messages, tool results, approvals, and cancellation carry identity and idempotency and are authorized; unfaithful interactions return typed unsupported.'
+  - id: AC-AGUI-003-01
+    requirement: CG-AGUI-003
+    expected: 'Reconnect from a known cursor yields snapshot plus ordered deltas; an expired cursor or gap triggers full resync.'
+  - id: AC-MCP-001-01
+    requirement: CG-MCP-001
+    expected: 'An MCP client lists and calls runtime capabilities through policy; denied calls return typed errors.'
+  - id: AC-A2A-001-01
+    requirement: CG-A2A-001
+    expected: 'A pinned A2A client discovers the agent card and completes a task backed by a runtime capability.'
+  - id: AC-PRV-001-01
+    requirement: CG-PRV-001
+    expected: 'Providers declare generate/stream/tool_use/structured_output flags; the OpenAI-compatible provider works against a local HTTP stub; the local provider is deterministic.'
+  - id: AC-PRF-001-01
+    requirement: CG-PRF-001
+    expected: 'Profiles resolve to component lists over existing packages; kernel-api exports are unchanged by profiles.'
+  - id: AC-PRF-002-01
+    requirement: CG-PRF-002
+    expected: 'Streamed response, frontend and backend tools, shared state, approval, artifact, generative UI, resume, and AG-UI output pass.'
+  - id: AC-PRF-003-01
+    requirement: CG-PRF-003
+    expected: 'Providers, tool registry, agent loop, sessions, storage, skills, scheduler, sandbox, subagents, and provide/remove/restore reactivation pass.'
+  - id: AC-CLI-001-01
+    requirement: CG-CLI-001
+    expected: 'In a clean directory the generated project installs pinned packages, runs dev, executes a semantic projection, survives restart, and passes bun test.'
+  - id: AC-E2E-001-01
+    requirement: CG-E2E-001
+    expected: 'The 36 journey passes in Playwright or each unmet step fails with its blocking gate.'
+  - id: AC-ARC-001-01
+    requirement: CG-ARC-001
+    expected: 'Every allowed edge is permitted, every forbidden edge is absent, and the package graph is acyclic.'
+  - id: AC-ARC-002-01
+    requirement: CG-ARC-002
+    expected: 'Each 40 criterion maps to requirement gates that pass, or the criterion is reported unmet with a debt entry.'
