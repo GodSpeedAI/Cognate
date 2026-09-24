@@ -103,9 +103,12 @@
       },
       "dependencies": {
         "@cognate/domainforge": "workspace:*",
-        "@cognate/profile": "workspace:*",
+        "@cognate/profile-copilot": "workspace:*",
+        "@cognate/profile-harness": "workspace:*",
         "@cognate/protocol-connect-bun": "workspace:*",
-        "@cognate/runtime-bun": "workspace:*",
+        "@cognate/provider-local": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@cognate/ui-astryx": "workspace:*",
       },
     },
     "packages/client": {
@@ -396,6 +399,7 @@
         "@cognate/events": "workspace:*",
         "@cognate/kernel-api": "workspace:*",
         "@cognate/profile": "workspace:*",
+        "@cognate/protocol-connect-bun": "workspace:*",
         "@cognate/provider-openai-compatible": "workspace:*",
         "@cognate/react": "workspace:*",
         "@cognate/runtime-api": "workspace:*",
@@ -405,6 +409,8 @@
       "devDependencies": {
         "@ag-ui/core": "1.0.0",
         "@cognate/provider-local": "workspace:*",
+        "@happy-dom/global-registrator": "20.14.5",
+        "@testing-library/react": "16.3.3",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.2.2",
         "react": "19.3.0",
