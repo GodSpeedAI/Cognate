@@ -281,6 +281,11 @@ export function createProjector(options: { readonly threadId: string; readonly r
   };
 }
 
+/** Correlation id grouping the Cognate runs started for one AG-UI thread (mirrors the Harness `session:<id>`). */
+export function threadCorrelationId(threadId: string): string {
+  return `agui-thread:${threadId}`;
+}
+
 export interface EndpointOptions {
   readonly service: RuntimeService;
   readonly authenticate: (headers: Headers) => Caller | undefined | Promise<Caller | undefined>;
@@ -328,10 +333,6 @@ function sseResponse(events: readonly AgUiEvent[]): Response {
  */
 export function createAgUiHandler(options: EndpointOptions): (request: Request) => Promise<Response> {
   const { service } = options;
-  // Thread -> current Cognate run mapping. AG-UI threadId/runId are client-chosen; Cognate mints its own
-  // runId in startRun (idempotent per `agui:<threadId>:<runId>`), so the adapter tracks the mapping here
-  // in-process, keyed by tenant+threadId, to route later actions (resolve/cancel/reconnect) to the right run.
-  const runByThread = new Map<string, string>();
 
   return async function handle(request: Request): Promise<Response> {
     let body: unknown;
@@ -347,12 +348,18 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
     const caller = await options.authenticate(request.headers);
     if (!caller) return new Response(null, { status: 401 });
 
-    const key = `${caller.tenant}:${input.threadId}`;
     const props = cognateProps(input);
+    const threadCorrelation = threadCorrelationId(input.threadId);
 
+    // Thread -> run mapping lives in the durable event log, not process memory: runs started for a thread carry
+    // its correlation id, so a restarted server (or another process) routes resolve/cancel/reconnect to the
+    // thread's most recent run. `service.events` is tenant-scoped, so another tenant's thread never matches.
     const resolveRunId = async (): Promise<string> => {
-      const existing = runByThread.get(key);
-      if (existing) return existing;
+      let latest: string | undefined;
+      for await (const event of service.events(caller, {})) {
+        if (event.eventType === "run.started" && event.correlationId === threadCorrelation && event.runId) latest = event.runId;
+      }
+      if (latest) return latest;
       throw new ServiceError("not_found", `no Cognate run is known for thread ${input.threadId}`);
     };
 
@@ -387,8 +394,7 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
       } else if (input.messages.some((m) => m.role === "user")) {
         const userMessage = [...input.messages].reverse().find((m) => m.role === "user")!;
         const text = typeof userMessage.content === "string" ? userMessage.content : "";
-        const view = await service.startRun(caller, { agent: props.agent ?? options.defaultAgent, input: { message: text }, idempotencyKey: `agui:${input.threadId}:${input.runId}` });
-        runByThread.set(key, view.runId);
+        const view = await service.startRun(caller, { agent: props.agent ?? options.defaultAgent, input: { message: text }, idempotencyKey: `agui:${input.threadId}:${input.runId}`, correlationId: threadCorrelation });
         cognateRunId = view.runId;
         mode = "full";
       } else {

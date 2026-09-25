@@ -22,9 +22,10 @@ export const agents: AgentDefinition[] = [
   },
 ];
 
-export async function setup() {
+/** `store` defaults to in-memory; pass a SQLite path to restart a server against the same durable history. */
+export async function setup(store = ":memory:") {
   const runtime = await createRuntime({
-    store: ":memory:",
+    store,
     policy: { authorize: (r) => (r.actor.id === "mallory" ? { allow: false, policyId: "p", reason: "denied" } : { allow: true, policyId: "p", reason: "ok" }) },
     actions: { authorize: ({ caller }) => (caller.actor.id === "mallory" ? { allow: false, reason: "denied" } : { allow: true, reason: "ok" }) },
     agents,
@@ -34,8 +35,9 @@ export async function setup() {
     service: runtime.service,
     defaultAgent: "agent.copilot",
     authenticate: (h) => {
-      const m = /^Bearer (\w+)$/.exec(h.get("authorization") ?? "");
-      return m ? { actor: { id: m[1]!, kind: "user" }, tenant: "tenant-a" } : undefined;
+      // `Bearer <actor>` or `Bearer <actor>@<tenant>` (tenant defaults to tenant-a).
+      const m = /^Bearer (\w+)(?:@([\w-]+))?$/.exec(h.get("authorization") ?? "");
+      return m ? { actor: { id: m[1]!, kind: "user" }, tenant: m[2] ?? "tenant-a" } : undefined;
     },
   });
   const server = Bun.serve({ port: 0, fetch: handler });

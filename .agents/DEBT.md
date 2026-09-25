@@ -138,3 +138,10 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed (E2E implementer, 2026-09-25):** `@ruvector/rvf` 0.3.4 native `RvfDatabase.create` intermittently throws `FsyncFailed` inside the §36 journey app (SQLite, timers, and a Connect proxy active in the same process) although it succeeds in isolation and in `packages/cognitive-rvf` tests. `tests/e2e/app.ts` retries snapshot creation up to 5 times with a fresh working path and short backoff.
 **Consequence:** RVF snapshot creation is not reliably first-try under load on this host; a production snapshot path would need the same retry or a root-cause fix. Snapshot failure never touches the active index or event store (§31.4, proven by CG-RVF-001).
 **Exit criterion:** Root cause identified (host fsync behaviour on WSL2 vs RVF native backend) and either fixed upstream, or the retry moves into `cognitive-rvf` with a test that injects `FsyncFailed`.
+
+## DEBT-019 — AG-UI thread lookup scans the tenant's event log
+**Status:** Open
+**Requirement(s):** CG-AGUI-002, CG-AGUI-003
+**Observed (2026-09-25):** The AG-UI endpoint used to keep its thread → run mapping in process memory, so after a server restart any resolve, cancel or reconnect for an existing thread failed with `not_found`. It now derives the mapping from the durable log: runs started for a thread carry correlation id `agui-thread:<threadId>` (the Harness uses `session:<id>` the same way), and the endpoint takes the thread's latest `run.started`. Regression tests: `packages/ag-ui/test/reconnect.test.ts` ("thread → run mapping is durable").
+**Consequence:** Correct across restarts, processes and tenants, but each non-message request reads the caller's whole tenant event stream: O(events per tenant).
+**Exit criterion:** A rebuildable runs-by-correlation projection (general, also serving Harness sessions) replaces the scan, with the same regression tests passing.

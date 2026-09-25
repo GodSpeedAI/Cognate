@@ -1,5 +1,8 @@
 // CG-AGUI-003 (spec §24, §31.8): reconnect sends a snapshot then ordered deltas from a cursor, or a full resync.
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { alice } from "@cognate/runtime-api/conformance";
 import { type Event, post, setup, types, valid } from "./support.ts";
 
@@ -38,5 +41,47 @@ describe("AG-UI reconnect (§24)", () => {
     const runs = (await Array.fromAsync(env.runtime.service.events(alice, {}))).map((e) => e.eventType);
     expect(runs).not.toContain("run.cancelled");
     expect(runs).toContain("run.waiting");
+  });
+
+  describe("thread → run mapping is durable, not process memory", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cognate-agui-thread-"));
+    afterAll(() => rmSync(dir, { recursive: true, force: true }));
+    const cognateRunOf = (events: Event[]) => (events.find((e) => e.type === "RUN_STARTED")?.rawEvent as { cognate?: { runId?: string } } | undefined)?.cognate?.runId;
+
+    test("after a server restart, a thread still reconnects to its run and can resolve its continuation", async () => {
+      const store = join(dir, "restart.sqlite");
+      env = await setup(store);
+      const first = await post(env.url, { messages: [{ id: "m1", role: "user", content: "refund" }] });
+      const waiting = first.events.find((e) => e.type === "RUN_FINISHED")!.result as { status: string; continuations: { id: string }[] };
+      expect(waiting.status).toBe("waiting");
+      await env.close();
+
+      env = await setup(store);
+      const resync = await post(env.url, {});
+      expect(types(resync.events)).not.toContain("RUN_ERROR");
+      expect(types(resync.events).slice(0, 3)).toEqual(["RUN_STARTED", "MESSAGES_SNAPSHOT", "STATE_SNAPSHOT"]);
+      const resolved = await post(env.url, { runId: "r-2", forwardedProps: { cognate: { resolve: { continuationId: waiting.continuations[0]!.id, action: "resume", input: { approved: true } } } } });
+      expect(types(resolved.events)).not.toContain("RUN_ERROR");
+      expect(resolved.events.some((e) => e.type === "TOOL_CALL_START" && e.toolCallName === "map.focus")).toBe(true);
+    });
+
+    test("a thread routes to its most recent run", async () => {
+      env = await setup(join(dir, "latest.sqlite"));
+      const one = await post(env.url, { runId: "r-1", messages: [{ id: "m1", role: "user", content: "refund" }] });
+      const two = await post(env.url, { runId: "r-2", messages: [{ id: "m2", role: "user", content: "refund again" }] });
+      const runs = (await Array.fromAsync(env.runtime.service.events(alice, {}))).filter((e) => e.eventType === "run.started").map((e) => e.runId!);
+      expect(runs).toHaveLength(2);
+      expect(cognateRunOf((await post(env.url, {})).events)).toBe(runs[1]);
+      expect(one.status).toBe(200);
+      expect(two.status).toBe(200);
+    });
+
+    test("another tenant cannot reach a thread by reusing its id", async () => {
+      env = await setup(join(dir, "tenant.sqlite"));
+      await post(env.url, { messages: [{ id: "m1", role: "user", content: "refund" }] });
+      const other = await post(env.url, {}, { token: "eve@tenant-b" });
+      expect(types(other.events)).toEqual(["RUN_ERROR"]);
+      expect(other.events[0]!.code).toBe("not_found");
+    });
   });
 });

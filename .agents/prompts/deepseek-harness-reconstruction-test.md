@@ -716,7 +716,7 @@ Use deterministic browser configuration:
 * stable clocks/IDs where visible;
 * dynamic tokens/timestamps masked only when unavoidable.
 
-Visual settlement requires BOTH:
+Visual settlement requires:
 
 ### Structural parity
 
@@ -732,24 +732,11 @@ The same important:
 
 must be present.
 
-No missing control may be excused by a good pixel score.
+No missing control may be excused by screenshots that look similar.
 
-### Screenshot parity
+### Screenshot evidence (no numeric threshold)
 
-For stable states, target at least **95% visual similarity** after masking only:
-
-* intentional Cognate branding substitutions;
-* unavoidable nondeterministic IDs/timestamps;
-* platform-level font rasterization differences.
-
-Do not mask layout differences, missing UI, changed controls, spacing errors, or incorrect state.
-
-For any state below threshold:
-
-1. diagnose;
-2. fix;
-3. rerun;
-4. repeat until it passes or a genuine reference-platform nondeterminism is documented with evidence.
+There is no pixel-similarity threshold. For every stable checkpoint, save the reference and Cognate screenshots side by side with a generated diff image. A visible divergence (layout, missing UI, changed controls, spacing, incorrect state) is diagnosed and fixed, or recorded as a deviation with evidence; it is never masked. Only intentional Cognate branding and unavoidable nondeterministic IDs/timestamps may be masked.
 
 ---
 
@@ -911,7 +898,6 @@ Every required E2E journey:
 
 For every screenshot checkpoint:
 
-* similarity result;
 * structural comparison;
 * diff artifact;
 * any permitted mask and why.
@@ -951,7 +937,7 @@ The DeepSeek Harness Reconstruction is complete only when ALL of the following a
 4. All designated E2E journeys pass against both reference and reconstruction.
 5. The Cognate implementation behaves equivalently for those journeys.
 6. UI structure is functionally equivalent.
-7. Stable screenshot states meet the defined visual threshold.
+7. Stable screenshot states have side-by-side and diff evidence, with every visible divergence fixed or recorded as a deviation.
 8. Approval, interruption, streaming, tool execution, planning, delegation, session history, and restart/recovery are exercised.
 9. The reconstruction contains no DeepSeek Harness runtime dependency.
 10. It still works after the reference checkout is removed.

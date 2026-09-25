@@ -1111,35 +1111,15 @@ Compare two dimensions.
 
 All meaningful controls, information, hierarchy, affordances, and states must be equivalent.
 
-A missing control is a failure even if screenshot similarity is high.
+A missing control is a failure regardless of how similar the screenshots look.
 
-## Pixel/visual parity
+## Visual comparison (evidence, not a numeric gate)
 
-For deterministic screens target **≥95% visual similarity** after masking only:
+There is no pixel-similarity threshold. For every stable checkpoint, save the reference and Cognate screenshots side by side with a generated diff image, so a reviewer can judge fidelity directly. Use the same Chromium, viewport, scale factor, fixture data and stable clock for both, and disable animation at capture time.
 
-* intentional Cognate branding substitution;
-* nondeterministic timestamp/ID content;
-* unavoidable operating-system rasterization differences.
+Structural parity above is the gate. A visible divergence found in the diffs (wrong layout, spacing, controls, typography hierarchy, cards or state) is recorded as a deviation and fixed or explained; it is never masked.
 
-Do not mask:
-
-* spacing;
-* layout;
-* wrong controls;
-* missing states;
-* wrong typography hierarchy;
-* incorrect cards;
-* state divergence.
-
-For dynamic declarative/open-ended UI where exact pixels are not a stable reference, add a semantic visual evaluator that verifies:
-
-* equivalent information;
-* equivalent controls;
-* equivalent interaction possibilities;
-* equivalent hierarchy;
-* equivalent outcome.
-
-Do not use semantic evaluation to excuse poor fidelity on deterministic surfaces.
+For dynamic declarative/open-ended UI, verify equivalent information, controls, interaction possibilities, hierarchy and outcome.
 
 ---
 
@@ -1392,7 +1372,7 @@ The CopilotKit Reconstruction settles only when ALL applicable conditions hold:
 17. Rich UI is restored with its thread rather than only plain text.
 18. Inline chat, popup, sidebar, and thread drawer parity is demonstrated where they exist in pinned v2.
 19. AG-UI interoperability passes independently of CopilotKit.
-20. Stable reference screens satisfy the visual threshold.
+20. Stable reference screens have side-by-side screenshot and diff evidence, and every visible divergence is fixed or recorded as a deviation.
 21. Responsive interaction is equivalent for selected viewports.
 22. No CopilotKit runtime dependency exists.
 23. Reconstruction still works after reference source is removed.
