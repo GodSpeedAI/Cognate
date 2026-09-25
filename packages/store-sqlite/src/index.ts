@@ -60,6 +60,43 @@ function mapRecordRow(row: Row): StoredRecord {
   return { collection: row.collection, id: row.id, version: row.version, value: JSON.parse(row.value as string) };
 }
 
+// Priority order, most to least selective: a correlationId (one thread/session) or agent narrows to a small
+// slice of the tenant's runs; tenant alone is the least selective (every run of that tenant), so it is only
+// picked when nothing more selective was asked for. Field iteration order in `where` must not decide this —
+// runtime-bun always builds `{ tenant, correlationId?, agent? }` with tenant first.
+const RUNS_INDEX_PRIORITY: readonly (readonly [string, string])[] = [
+  ["correlationId", "records_runs_correlation_idx"],
+  ["agent", "records_runs_agent_idx"],
+  ["tenant", "records_runs_tenant_idx"],
+];
+
+/**
+ * Builds the exact SQL `listRecords` executes (exported so tests can prove, via `EXPLAIN QUERY PLAN` on this
+ * same text, which index the real code path chooses — not a hand-written approximation of it).
+ *
+ * Equality filters push down as `json_extract(value, '$.<field>')` so a matching field can be served by an
+ * expression index (schema.ts migration 3) instead of loading every row in the collection and filtering in
+ * JS. The partial indexes are conditioned on a literal `collection = 'runs'`, which SQLite only matches
+ * against a literal in the query (a bound `?` parameter defeats partial-index selection even when its value
+ * happens to be "runs"), so a collection name safe to embed literally is inlined. Without an `INDEXED BY`
+ * hint, SQLite's planner may still favor the always-present `(collection, id)` primary key over a selective
+ * partial index on a small table (no `ANALYZE` statistics); the hint keeps the lookup scoped to the matching
+ * slice of runs regardless of table size, which is the DEBT-019 concern.
+ */
+export function buildListRecordsQuery(collection: string, where?: { readonly [field: string]: string | number | boolean | null }): { readonly sql: string; readonly params: readonly unknown[] } {
+  if (!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(collection)) throw new Error(`listRecords: invalid collection name "${collection}"`);
+  const indexHint = collection === "runs" && where ? RUNS_INDEX_PRIORITY.find(([f]) => f in where)?.[1] : undefined;
+  let sql = `SELECT * FROM records${indexHint ? ` INDEXED BY ${indexHint}` : ""} WHERE collection = '${collection}'`;
+  const params: unknown[] = [];
+  for (const [field, value] of Object.entries(where ?? {})) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(field)) throw new Error(`listRecords: invalid field name "${field}"`);
+    sql += value === null ? ` AND json_extract(value, '$.${field}') IS NULL` : ` AND json_extract(value, '$.${field}') = ?`;
+    if (value !== null) params.push(value);
+  }
+  sql += " ORDER BY id";
+  return { sql, params };
+}
+
 function mapOutboxRow(row: Row): OutboxItem {
   return {
     id: row.id,
@@ -366,12 +403,9 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
 
     async listRecords(collection: string, where?: { readonly [field: string]: string | number | boolean | null }): Promise<StoredRecord[]> {
       assertOpen();
-      const rows = db.query("SELECT * FROM records WHERE collection = ?").all(collection) as Row[];
-      let records = rows.map(mapRecordRow);
-      if (where) {
-        records = records.filter((record) => Object.entries(where).every(([key, value]) => (record.value as Row)[key] === value));
-      }
-      return records;
+      const { sql, params } = buildListRecordsQuery(collection, where);
+      const rows = db.query(sql).all(...(params as [])) as Row[];
+      return rows.map(mapRecordRow);
     },
 
     async claimOutbox(options: { readonly topic: string; readonly now: number; readonly limit: number; readonly leaseMs: number }): Promise<OutboxItem[]> {

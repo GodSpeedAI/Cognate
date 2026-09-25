@@ -114,6 +114,17 @@ export const MIGRATIONS: readonly Migration[] = [
       BEGIN SELECT RAISE(ABORT, 'events are append-only (spec §9.2)'); END;
     `,
   },
+  {
+    // DurableStore.listRecords (spec §22, DEBT-019) pushes equality filters down as json_extract expressions;
+    // these partial expression indexes let SQLite serve `runtime-bun`'s listRuns query (collection = 'runs',
+    // filtered by tenant/correlationId/agent) as an index search instead of scanning every run record.
+    version: 3,
+    sql: `
+      CREATE INDEX records_runs_tenant_idx ON records (json_extract(value, '$.tenant')) WHERE collection = 'runs';
+      CREATE INDEX records_runs_correlation_idx ON records (json_extract(value, '$.correlationId')) WHERE collection = 'runs';
+      CREATE INDEX records_runs_agent_idx ON records (json_extract(value, '$.agent')) WHERE collection = 'runs';
+    `,
+  },
 ];
 
 /** Apply any migration not yet recorded in `schema_versions`, inside one transaction. */

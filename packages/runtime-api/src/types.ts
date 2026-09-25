@@ -1,6 +1,7 @@
 // Transport-independent runtime service and agent authoring contract (spec §8, §10, §12, §22, §32; ADR-0011).
 import type { Json, StoredEvent } from "@cognate/events";
 import type { Principal, SemanticRef } from "@cognate/kernel-api";
+import type { StateUpdate } from "./state.ts";
 
 // ── Agent authoring ────────────────────────────────────────────────────────────
 
@@ -55,6 +56,12 @@ export interface RunContext {
    * is deterministic. Returns `{ status: "degraded" }` when cognition is unavailable or not configured.
    */
   recall(id: string, query: { readonly text: string; readonly k: number }): Promise<{ readonly status: "ok" | "degraded"; readonly items: readonly { readonly sourceRef: string; readonly score: number; readonly value: Json }[] }>;
+  /**
+   * The run's current shared state: the fold of every `state.changed` event for this run, whether emitted by the
+   * agent or written by a caller through `RuntimeService.updateState`. Recorded as a step under `id`, so replay
+   * returns the value that was read rather than re-reading state that may have changed since.
+   */
+  state(id: string): Promise<Json>;
 }
 
 export interface AgentDefinition {
@@ -128,7 +135,8 @@ export interface Caller {
 }
 
 export interface RuntimeService {
-  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string }): Promise<RunView>;
+  /** `state` seeds the run's shared state (a caller-sourced `state.changed` snapshot committed with `run.started`). */
+  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json }): Promise<RunView>;
   getRun(caller: Caller, request: { readonly runId: string }): Promise<RunView>;
   cancelRun(caller: Caller, request: { readonly runId: string; readonly reason: string; readonly idempotencyKey: string }): Promise<RunView>;
   /**
@@ -144,4 +152,20 @@ export interface RuntimeService {
   invoke(caller: Caller, request: { readonly capability: string; readonly input: Json; readonly correlationId?: string; readonly idempotencyKey?: string; readonly deadline?: number }): Promise<Json>;
   getArtifact(caller: Caller, request: { readonly artifactId: string; readonly representation?: string }): Promise<{ readonly id: string; readonly name: string; readonly mediaType: string; readonly contentHash: string; readonly bytes: Uint8Array }>;
   readProjection(caller: Caller, request: { readonly name: string }): Promise<readonly { readonly key: string; readonly value: Json }[]>;
+  /**
+   * Write a non-terminal run's shared state as the caller: appends a caller-sourced `state.changed` event that the
+   * agent observes through `RunContext.state`. Validated against the current state (`invalid_argument` if a patch
+   * does not apply), authorized as `run.state.update`, idempotent by key, and optionally guarded by
+   * `expectedVersion` — the count of caller writes so far (`failed_precondition` on mismatch or on a terminal run).
+   */
+  /**
+   * Runs of the caller's tenant, oldest first by start, optionally narrowed to one correlation id (e.g. a Harness
+   * `session:<id>` or an AG-UI `agui-thread:<id>`) and/or agent. Served from an index maintained atomically with
+   * `run.started`, never by scanning the event log.
+   */
+  listRuns(caller: Caller, request: { readonly correlationId?: string; readonly agent?: string }): Promise<RunView[]>;
+  updateState(
+    caller: Caller,
+    request: { readonly runId: string; readonly update: StateUpdate; readonly idempotencyKey: string; readonly expectedVersion?: number },
+  ): Promise<{ readonly state: Json; readonly version: number }>;
 }

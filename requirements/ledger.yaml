@@ -576,6 +576,15 @@ requirements:
     dependencies: [CG-AGUI-001]
     status: implemented
     evidence: .agents/evidence/m8-wire-client.md
+  - id: CG-STA-001
+    title: 'Shared application state is bidirectional: a caller writes it and a waiting agent reads it, and vice versa.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '29.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Shared run state', invariant: 'State is the fold of state.changed events regardless of writer; the client and RunContext.state observe the same value'}
+    acceptance: [AC-STA-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/shared-state.test.ts', proof_paths: ['tests/integration/shared-state.test.ts']}
+    dependencies: [CG-CLT-001, CG-AGUI-002]
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-shared-state.md
   - id: CG-MCP-001
     title: 'MCP adapter exposes authorized capabilities as tools.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '6 / Optional protocols; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -906,6 +915,9 @@ acceptance_contracts:
   - id: AC-AGUI-003-01
     requirement: CG-AGUI-003
     expected: 'Reconnect from a known cursor yields snapshot plus ordered deltas; an expired cursor or gap triggers full resync.'
+  - id: AC-STA-001-01
+    requirement: CG-STA-001
+    expected: 'An agent-written state.changed is visible through the client; client.updateState is read by a waiting agent via ctx.state after resume; startRun(state) seeds the run before the agent runs; AG-UI RunAgentInput.state seeds the run and the client default {} does not.'
   - id: AC-MCP-001-01
     requirement: CG-MCP-001
     expected: 'An MCP client lists and calls runtime capabilities through policy; denied calls return typed errors.'

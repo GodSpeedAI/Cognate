@@ -294,7 +294,7 @@ export interface EndpointOptions {
 }
 
 type Message = { readonly id: string; readonly role: string; readonly content?: unknown; readonly toolCallId?: string };
-type RunAgentInput = { readonly threadId: string; readonly runId: string; readonly messages: readonly Message[]; readonly forwardedProps?: Record<string, unknown> };
+type RunAgentInput = { readonly threadId: string; readonly runId: string; readonly messages: readonly Message[]; readonly forwardedProps?: Record<string, unknown>; readonly state?: Record<string, unknown> };
 type CognateProps = { readonly agent?: string; readonly cancel?: { readonly reason?: string }; readonly resolve?: { readonly continuationId: string; readonly action: "resume" | "cancel"; readonly input?: Json; readonly expectedVersion?: number }; readonly cursor?: number };
 
 function cognateProps(input: RunAgentInput): CognateProps {
@@ -351,15 +351,14 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
     const props = cognateProps(input);
     const threadCorrelation = threadCorrelationId(input.threadId);
 
-    // Thread -> run mapping lives in the durable event log, not process memory: runs started for a thread carry
-    // its correlation id, so a restarted server (or another process) routes resolve/cancel/reconnect to the
-    // thread's most recent run. `service.events` is tenant-scoped, so another tenant's thread never matches.
+    // Thread -> run mapping is served by the runtime's run index (DEBT-019), maintained atomically with
+    // run.started, not by scanning the event log: runs started for a thread carry its correlation id, so a
+    // restarted server (or another process) routes resolve/cancel/reconnect to the thread's most recent run.
+    // `listRuns` is tenant-scoped, so another tenant's thread never matches.
     const resolveRunId = async (): Promise<string> => {
-      let latest: string | undefined;
-      for await (const event of service.events(caller, {})) {
-        if (event.eventType === "run.started" && event.correlationId === threadCorrelation && event.runId) latest = event.runId;
-      }
-      if (latest) return latest;
+      const runs = await service.listRuns(caller, { correlationId: threadCorrelation });
+      const latest = runs.at(-1);
+      if (latest) return latest.runId;
       throw new ServiceError("not_found", `no Cognate run is known for thread ${input.threadId}`);
     };
 
@@ -394,7 +393,15 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
       } else if (input.messages.some((m) => m.role === "user")) {
         const userMessage = [...input.messages].reverse().find((m) => m.role === "user")!;
         const text = typeof userMessage.content === "string" ? userMessage.content : "";
-        const view = await service.startRun(caller, { agent: props.agent ?? options.defaultAgent, input: { message: text }, idempotencyKey: `agui:${input.threadId}:${input.runId}`, correlationId: threadCorrelation });
+        // AG-UI clients send `state: {}` by default; only a non-empty object is a real seed (spec §29.1).
+        const seedState = input.state && typeof input.state === "object" && Object.keys(input.state).length > 0 ? (input.state as Json) : undefined;
+        const view = await service.startRun(caller, {
+          agent: props.agent ?? options.defaultAgent,
+          input: { message: text },
+          idempotencyKey: `agui:${input.threadId}:${input.runId}`,
+          correlationId: threadCorrelation,
+          ...(seedState !== undefined ? { state: seedState } : {}),
+        });
         cognateRunId = view.runId;
         mode = "full";
       } else {

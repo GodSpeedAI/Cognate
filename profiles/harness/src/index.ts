@@ -1,6 +1,6 @@
 import { modelContract } from "@cognate/capabilities";
 import type { ModelMessage, ModelProvider, ModelResponse } from "@cognate/capabilities";
-import type { DurableStore, Json, StoredEvent } from "@cognate/events";
+import type { DurableStore, Json } from "@cognate/events";
 import { isUnavailable, rulePolicy } from "@cognate/kernel-api";
 import type { Component, ComponentHandle, Policy } from "@cognate/kernel-api";
 import { defineProfile } from "@cognate/profile";
@@ -312,15 +312,9 @@ export async function createHarness(options: HarnessOptions): Promise<Harness> {
   }
 
   async function session(sessionId: string): Promise<readonly { readonly runId: string; readonly status: string; readonly output: Json }[]> {
-    const events: StoredEvent[] = [];
-    for await (const event of runtime.service.events(HARNESS_USER, {})) events.push(event);
-    const runIds = events.filter((event) => event.eventType === "run.started" && event.correlationId === `session:${sessionId}`).map((event) => event.runId!);
-    const runs: { readonly runId: string; readonly status: string; readonly output: Json }[] = [];
-    for (const runId of runIds) {
-      const view = await runtime.service.getRun(HARNESS_USER, { runId });
-      runs.push({ runId: view.runId, status: view.status, output: view.output });
-    }
-    return runs;
+    // Served by the runtime's run index (DEBT-019), not an event-log scan.
+    const runs = await runtime.service.listRuns(HARNESS_USER, { correlationId: `session:${sessionId}` });
+    return runs.map((view) => ({ runId: view.runId, status: view.status, output: view.output }));
   }
 
   async function schedule(agent: string, input: Json, at: number): Promise<string> {

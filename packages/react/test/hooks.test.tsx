@@ -9,7 +9,7 @@ import { type AgentDefinition, invokeFrontend } from "@cognate/runtime-api";
 import { alice } from "@cognate/runtime-api/conformance";
 import { createRuntime, type Runtime } from "@cognate/runtime-bun";
 import type { Projection } from "@cognate/projections";
-import { CognateProvider, useAgent, useArtifact, useCapability, useContinuations, useProjection } from "../src/index.tsx";
+import { CognateProvider, useAgent, useArtifact, useCapability, useContinuations, useProjection, useSharedState } from "../src/index.tsx";
 
 const agents: AgentDefinition[] = [
   {
@@ -21,6 +21,14 @@ const agents: AgentDefinition[] = [
       const place = await invokeFrontend(ctx, "focus", "map.focus", { city: "Lisbon" });
       const artifactId = await ctx.artifact({ name: "summary.md", mediaType: "text/markdown", bytes: new TextEncoder().encode("# Summary") });
       return { ok: ok.approved, place, artifactId };
+    },
+  },
+  {
+    id: "agent.sharedState",
+    version: "1.0.0",
+    async run(_input, ctx) {
+      await ctx.waitFor("go", { type: "state-check", condition: {}, payload: {} });
+      return { seen: await ctx.state("seen") };
     },
   },
 ];
@@ -90,6 +98,36 @@ describe("React bindings (§25.2)", () => {
     await waitFor(async () => expect((await runtime.service.listContinuations(alice, { runId, status: "OPEN" })).map((x) => x.type)).toEqual(["frontend:map.focus"]), { timeout: 5000 });
     await Bun.sleep(100);
     expect((await runtime.service.getRun(alice, { runId })).status).toBe("waiting");
+    await client.close();
+  });
+
+  test("useSharedState reads live shared state and writes it back for a waiting agent to read", async () => {
+    runtime = await createRuntime({ store: ":memory:", policy: { authorize: () => ({ allow: true, policyId: "p", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) }, agents });
+    const client = createClient({ service: runtime.service, caller: alice });
+    function SharedStateApp() {
+      const { start, runId, state } = useAgent("agent.sharedState");
+      const { state: shared, update } = useSharedState(runId);
+      const { open, resolve } = useContinuations(runId);
+      return (
+        <main>
+          <button onClick={() => void start(null)}>start</button>
+          <button onClick={() => void update({ snapshot: { flag: true } })}>write</button>
+          <p aria-label="shared">{JSON.stringify(shared)}</p>
+          <p aria-label="status">{state?.status ?? "none"}</p>
+          {open.map((c) => (
+            <button key={c.id} onClick={() => void resolve(c.id, "resume")}>go</button>
+          ))}
+          <p aria-label="output">{JSON.stringify(state?.output ?? null)}</p>
+        </main>
+      );
+    }
+    const screen = render(<CognateProvider client={client}><SharedStateApp /></CognateProvider>);
+    await act(async () => screen.getByText("start").click());
+    await waitFor(() => expect(screen.getByLabelText("status").textContent).toBe("waiting"), { timeout: 5000 });
+    await act(async () => screen.getByText("write").click());
+    await waitFor(() => expect(screen.getByLabelText("shared").textContent).toBe(JSON.stringify({ flag: true })), { timeout: 5000 });
+    await act(async () => (await screen.findByText("go", {}, { timeout: 5000 })).click());
+    await waitFor(() => expect(screen.getByLabelText("output").textContent).toBe(JSON.stringify({ seen: { flag: true } })), { timeout: 5000 });
     await client.close();
   });
 

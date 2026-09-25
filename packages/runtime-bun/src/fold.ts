@@ -8,6 +8,9 @@ export const RESUME_HANDLER = { id: "run.resume", version: "1" } as const;
 export const RUNS = "runs";
 
 export const runStream = (runId: string) => `run-${runId}`;
+/** Caller-sourced state writes land here, never on the run stream (spec §29.1): a foreign append to the run
+ * stream would race the executor's own `expectedVersion` and cause spurious ConcurrencyError/halt churn. */
+export const runStateStream = (runId: string) => `run-state-${runId}`;
 
 export type Meta = { readonly [key: string]: Json };
 

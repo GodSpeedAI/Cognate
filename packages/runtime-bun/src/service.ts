@@ -1,17 +1,17 @@
 // In-process RuntimeService (ADR-0011): authorization, tenancy, and typed errors over the durable core.
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@cognate/continuations";
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type StoredEvent } from "@cognate/events";
-import { type Caller, type ContinuationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode } from "@cognate/runtime-api";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@cognate/events";
+import { applyStateUpdate, type Caller, type ContinuationView, foldState, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@cognate/runtime-api";
 import type { Core } from "./core.ts";
-import { foldRun, isTerminal, RUN_EXECUTE_TOPIC, RUNS, runStream } from "./fold.ts";
+import { foldRun, isTerminal, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, toJson } from "./fold.ts";
 
 const PAGE = 500;
 
 export function createService(core: Core, publicProjections: ReadonlySet<string>): RuntimeService {
   const { store } = core;
 
-  const authorize = (caller: Caller, action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel", resource: string) => {
+  const authorize = (caller: Caller, action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update", resource: string) => {
     const decision = core.actions.authorize({ caller, action, resource });
     if (!decision.allow) throw new ServiceError("permission_denied", decision.reason);
   };
@@ -36,12 +36,14 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       if (!agent) throw new ServiceError("not_found", `agent ${request.agent} not found`);
       const runId = randomUUID();
       const correlationId = request.correlationId ?? randomUUID();
+      const occurredAt = new Date().toISOString();
       try {
         const outcome = await store.commit({
           idempotency: {
             scope: `${caller.tenant}:${caller.actor.id}:run.start`,
             key: request.idempotencyKey,
-            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null }),
+            // `state` is part of the fingerprint: reusing a key with a different seed is a different request.
+            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null }),
           },
           appends: [
             {
@@ -51,7 +53,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
                 {
                   eventType: "run.started",
                   schemaVersion: 1,
-                  occurredAt: new Date().toISOString(),
+                  occurredAt,
                   tenant: caller.tenant,
                   correlationId,
                   causationId: null,
@@ -62,6 +64,30 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
                 },
               ],
             },
+            // Caller-seeded state, committed atomically with `run.started` on the state stream so the
+            // agent's first `ctx.state()` read (even before suspending) always sees it (spec §29.1).
+            ...(request.state !== undefined
+              ? [
+                  {
+                    streamId: runStateStream(runId),
+                    expectedVersion: 0,
+                    events: [
+                      {
+                        eventType: "state.changed",
+                        schemaVersion: 1,
+                        occurredAt,
+                        tenant: caller.tenant,
+                        correlationId,
+                        causationId: null,
+                        runId,
+                        scopeId: core.scopeId,
+                        payload: { snapshot: request.state },
+                        metadata: { source: "caller", actor: caller.actor.id },
+                      },
+                    ],
+                  },
+                ]
+              : []),
           ],
           records: [{ collection: RUNS, id: runId, expectedVersion: 0, value: { tenant: caller.tenant, agent: agent.id, correlationId, startedBy: caller.actor.id, scopeId: core.scopeId } }],
           outbox: [{ id: `${RUN_EXECUTE_TOPIC}:${runId}`, topic: RUN_EXECUTE_TOPIC, payload: { runId } }],
@@ -194,6 +220,84 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       // partition is [] so the caller cannot tell whether other tenants have data.
       const prefix = `${caller.tenant}/`;
       return (await store.listProjection(request.name)).filter((e) => e.key.startsWith(prefix)).map((e) => ({ key: e.key.slice(prefix.length), value: e.value }));
+    },
+
+    async listRuns(caller, request) {
+      const where: { [field: string]: string } = { tenant: caller.tenant };
+      if (request.correlationId !== undefined) where.correlationId = request.correlationId;
+      if (request.agent !== undefined) where.agent = request.agent;
+      const records = await store.listRecords(RUNS, where);
+      // Ordered by each run's `run.started` store position (the store-wide commit order, spec §10) — exact
+      // and contention-free, unlike a counter bumped on every startRun. One indexed stream read per matched
+      // run (not an event-log scan): `readStream(..., { limit: 1 })` reads only the first event.
+      const withPosition = await Promise.all(
+        records.map(async (record) => {
+          const [started] = await store.readStream(runStream(record.id), { limit: 1 });
+          return { runId: record.id, position: started?.position ?? 0 };
+        }),
+      );
+      withPosition.sort((a, b) => a.position - b.position);
+      const views: RunView[] = [];
+      for (const { runId } of withPosition) views.push((await readRun(caller, runId)).view);
+      return views;
+    },
+
+    async updateState(caller, request) {
+      authorize(caller, "run.state.update", request.runId);
+      const stateStreamId = runStateStream(request.runId);
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { view, events } = await readRun(caller, request.runId);
+        if (isTerminal(view)) throw new ServiceError("failed_precondition", `run ${request.runId} is terminal`);
+        const stateEvents = await store.readStream(stateStreamId);
+        const currentVersion = stateEvents.length;
+        if (request.expectedVersion !== undefined && request.expectedVersion !== currentVersion) {
+          throw new ServiceError("failed_precondition", `run ${request.runId} state is at version ${currentVersion}`);
+        }
+        const currentState = foldState([...events, ...stateEvents]);
+        let nextState: Json;
+        try {
+          nextState = applyStateUpdate(currentState, request.update);
+        } catch (error) {
+          if (error instanceof StatePatchError) throw new ServiceError("invalid_argument", error.message);
+          throw error;
+        }
+        try {
+          const outcome = await store.commit({
+            idempotency: {
+              scope: `${caller.tenant}:${caller.actor.id}:run.state.update`,
+              key: request.idempotencyKey,
+              fingerprint: fingerprint({ runId: request.runId, update: toJson(request.update), expectedVersion: request.expectedVersion ?? null }),
+            },
+            appends: [
+              {
+                streamId: stateStreamId,
+                expectedVersion: currentVersion,
+                events: [
+                  {
+                    eventType: "state.changed",
+                    schemaVersion: 1,
+                    occurredAt: new Date().toISOString(),
+                    tenant: view.tenant,
+                    correlationId: view.correlationId,
+                    causationId: stateEvents.at(-1)?.eventId ?? events.at(-1)!.eventId,
+                    runId: request.runId,
+                    scopeId: events[0]!.scopeId,
+                    payload: toJson(request.update),
+                    metadata: { source: "caller", actor: caller.actor.id },
+                  },
+                ],
+              },
+            ],
+            result: { state: nextState, version: currentVersion + 1 },
+          });
+          return outcome.result as { state: Json; version: number };
+        } catch (error) {
+          if (error instanceof ConcurrencyError) continue;
+          if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
+          throw error;
+        }
+      }
+      throw new ServiceError("unavailable", `too much contention updating state for run ${request.runId}`);
     },
   };
 }

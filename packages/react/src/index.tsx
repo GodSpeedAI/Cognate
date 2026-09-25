@@ -2,7 +2,7 @@
 // adapters over the client's framework-neutral Readables; the client remains the single source of truth.
 import type { CognateClient, ConnectionStatus, FrontendHandler, RunState } from "@cognate/client";
 import type { Json } from "@cognate/events";
-import type { ContinuationView, RunView } from "@cognate/runtime-api";
+import type { ContinuationView, RunView, StateUpdate } from "@cognate/runtime-api";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 const CognateContext = createContext<CognateClient | undefined>(undefined);
@@ -41,6 +41,24 @@ export function useAgent(agent: string): { readonly start: (input: Json) => Prom
   );
   const state = useRun(runId);
   return { start, runId, state };
+}
+
+/**
+ * The run's live shared state (spec §29.1), and a writer that appends a caller-sourced `state.changed` event
+ * the agent observes through `RunContext.state`. `state` follows `useRun`'s derived value; `update` resolves
+ * once the write is durable.
+ */
+export function useSharedState(runId: string | undefined): { readonly state: Json; readonly update: (update: StateUpdate, options?: { readonly expectedVersion?: number }) => Promise<{ readonly state: Json; readonly version: number }> } {
+  const client = useCognate();
+  const run = useRun(runId);
+  const update = useCallback(
+    (stateUpdate: StateUpdate, options?: { readonly expectedVersion?: number }) => {
+      if (runId === undefined) throw new Error("useSharedState: no run id");
+      return client.updateState(runId, stateUpdate, options);
+    },
+    [client, runId],
+  );
+  return { state: run?.state ?? null, update };
 }
 
 export function useProjection(name: string): readonly { readonly key: string; readonly value: Json }[] | undefined {
