@@ -1,0 +1,33 @@
+{
+  "name": "@cognate/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The spec \u00a736 end-to-end journey: a Bun app plus a Playwright spec that verifies authoritative state independently of the UI.",
+  "dependencies": {
+    "@cognate/client": "workspace:*",
+    "@cognate/cognitive-api": "workspace:*",
+    "@cognate/cognitive-memory": "workspace:*",
+    "@cognate/cognitive-ruvector": "workspace:*",
+    "@cognate/cognitive-rvf": "workspace:*",
+    "@cognate/domainforge": "workspace:*",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/projections": "workspace:*",
+    "@cognate/protocol-connect": "workspace:*",
+    "@cognate/protocol-connect-bun": "workspace:*",
+    "@cognate/react": "workspace:*",
+    "@cognate/realitytrace": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*",
+    "@cognate/store-sqlite": "workspace:*",
+    "@cognate/ui-astryx": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.2"
+  }
+}

@@ -11,7 +11,10 @@ const runs = await Promise.all(
       runId,
       types: events.map((e) => e.eventType),
       invocations: events.filter((e) => e.eventType === "run.invocation").map((e) => ({ eventId: e.eventId, semanticRef: e.semanticRef ?? null })),
-      output: events.find((e) => e.eventType === "run.completed")?.payload ?? null,
+      // run.completed's payload wraps the agent's return value as `{ output: <value> }` (runtime-bun
+      // executor.ts); unwrap it so callers see the agent's output directly, as elsewhere in the
+      // framework (e.g. runtime-bun/cognition.ts's `field(event.payload, "output")`).
+      output: (events.find((e) => e.eventType === "run.completed")?.payload as { readonly output?: unknown } | null)?.output ?? null,
     };
   }),
 );
