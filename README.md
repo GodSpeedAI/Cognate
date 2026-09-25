@@ -2,9 +2,9 @@
 
 **Define meaning once. Project it everywhere.**
 
-> **Status: design proposal with a Phase 0 substrate.** This repository now contains project routing, a candidate Phase 0 requirement ledger, and Bun SQLite compatibility tests. Cognate runtime packages, CLI, UI, examples, and the product commands shown below do not exist yet. Present-tense feature descriptions state intended behavior. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the implementation contract; [current status](.agents/CURRENT_STATUS.md) records what has actually been verified.
+> **Status: v0 build, unreleased.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented and verified against a candidate requirement ledger ([current status](.agents/CURRENT_STATUS.md), [ledger](requirements/ledger.yaml), [evidence](.agents/evidence/)). Nothing is published to a package registry yet ([DEBT-016](.agents/DEBT.md)), and known gaps are tracked in the [debt register](.agents/DEBT.md) — for example RealityTrace structured correlation and SONA adaptive ranking remain blocked. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
 
-Cognate is a proposed open-source semantic application framework for building agent-native software.
+Cognate is an open-source semantic application framework for building agent-native software.
 
 Define your application's domain in `.sea`. Cognate turns those semantics into a live, composable system of agents, tools, state, workflows, UI, memory, protocols, and evidence — without making any one agent framework, frontend library, model provider, or transport the center of your architecture.
 
@@ -61,15 +61,15 @@ Representations remain replaceable.**
 
 ## Quick Start
 
-Cognate targets Bun. The following is the intended quick start once the CLI and starter exist; it is not runnable from this repository today.
+Cognate targets Bun. Packages are not on npm yet ([DEBT-016](.agents/DEBT.md)), so create apps from a local checkout; `cognate create` packs and vendors the packages into the new app:
 
 ```bash
-bunx cognate create my-app
-cd my-app
-bun dev
+git clone <repository> cognate && (cd cognate && bun install)
+bun cognate/packages/cli/src/bin.ts create my-app --profile copilot --source ./cognate
+cd my-app && bun install
 ```
 
-The planned starter layout is:
+Use `--profile harness` for an autonomous agent harness. The starter layout is:
 
 ```text
 my-app/
@@ -90,11 +90,11 @@ Start the development runtime:
 bun dev
 ```
 
-The planned starter launches the application runtime, loads a compatible DomainForge projection, restores durable state, initializes cognition, mounts configured components, and serves the reference UI.
+`bun dev` runs `cognate dev`: it loads the `domain/*.sea` semantic projection through DomainForge, restores durable state from `.cognate/app.sqlite`, mounts the profile's components, and serves `/health`, the Connect runtime service, AG-UI (copilot), and the Astryx reference UI. Proven end to end by `tests/integration/cli-create.test.ts`.
 
 No Redis. No external database. No separate vector service. No mandatory cloud runtime.
 
-The proposed local stack uses Bun and SQLite. RuVector is a derived cognitive index; RVF is an optional snapshot and portability format, not a required live database.
+The local stack uses Bun and SQLite. RuVector is a derived cognitive index; RVF is an optional snapshot and portability format, not a required live database.
 
 ---
 
@@ -161,7 +161,7 @@ Cognate applications can recall relevant:
 
 RuVector provides the reference cognitive implementation.
 
-RVF is the proposed format for portable and branchable cognition, subject to a Bun compatibility gate.
+RVF provides portable and branchable cognition through the `@cognate/cognitive-rvf` adapter, with Cognate-owned integrity manifests because RVF 0.3.4 does not verify files on open ([ADR-0006](docs/decisions/ADR-0006-portable-cognition-rvf.md)).
 
 ### Governed systems
 
@@ -169,7 +169,7 @@ Cognate preserves the semantic identity and causal provenance needed for externa
 
 Because Cognate applications are grounded in `.sea`, existing SEA-Forge governance can operate over their semantics without becoming a Cognate dependency.
 
-The proposed RealityTrace adapter would submit correlated observations and leave evidence derivation and settlement to RealityTrace.
+The RealityTrace adapter submits observations through RealityTrace's CLI and leaves evidence derivation and settlement to RealityTrace. Correlation ids stay in Cognate's receipt mapping until RealityTrace exposes a structured correlation field ([DEBT-009](.agents/DEBT.md)).
 
 ---
 
@@ -593,23 +593,16 @@ An RVF can carry cognitive state such as:
 * lineage;
 * witness information.
 
-Cognition can be snapshotted:
+Cognition can be snapshotted, exported with a Cognate integrity manifest, imported, and branched through `@cognate/cognitive-rvf` (runnable: `bun run example:rvf-branching`):
 
-```bash
-cognate cognition snapshot
+```ts
+const index = await createRvfIndex({ path: "./cognition.rvf", dimension: 384 });
+const manifest = await index.snapshot(store, { dir: "./snapshots", name: "base", lineage: "my-app", indexedThrough, storeHead, onBehind: "fail", frameworkVersion: "0.0.0" });
+const experiment = await index.branch("./experiment-a.rvf");
+const imported = await importSnapshot(store, "./snapshots/base.manifest.json", { lineage: "my-app", storeHead, allowedTenants: ["tenant-a"], maxEntries: 100_000, maxBytes: 1 << 30 });
 ```
 
-Exported:
-
-```bash
-cognate cognition export ./project.rvf
-```
-
-Or branched:
-
-```bash
-cognate cognition branch experiment-a
-```
+The CLI does not expose cognition commands yet; use the API above.
 
 This enables inexpensive cognitive forks for:
 
@@ -637,9 +630,9 @@ Imported cognition is tracked with lineage and can remain detached until its rel
 
 # RealityTrace Observations and Evidence
 
-Cognate plans a version-pinned adapter for RealityTrace without changing RealityTrace.
+Cognate provides a version-pinned adapter for RealityTrace (v0.2.0) without changing RealityTrace.
 
-The adapter will record correlated observations through RealityTrace's supported CLI and CEP workflow. RealityTrace currently requires repository enrollment, a snapshot, a declared question and threshold, a run, and a committed plan before the relevant observation can be recorded. An observation receipt alone is neither qualifying evidence nor a settled result.
+The adapter records observations through RealityTrace's supported CLI and CEP workflow. RealityTrace currently requires repository enrollment, a snapshot, a declared question and threshold, a run, and a committed plan before the relevant observation can be recorded. An observation receipt alone is neither qualifying evidence nor a settled result.
 
 Where available, an observation carries:
 
@@ -685,12 +678,11 @@ Sometimes valid execution cannot continue yet.
 Cognate represents that directly.
 
 ```ts
-const approval = await ctx.waitFor(
-  continuation("refund-approval", {
-    amount,
-    account,
-  }),
-);
+const approval = await ctx.waitFor("approval", {
+  type: "refund-approval",
+  condition: { kind: "human_approval" },
+  payload: { amount, account },
+});
 ```
 
 A continuation can wait for:
@@ -795,7 +787,8 @@ Application state is derived from semantic events and projections.
 Agents and UI can participate in the same state without maintaining unrelated copies of reality.
 
 ```ts
-const order = useProjection("order.current");
+const entries = useProjection("orders"); // tenant-partitioned key/value entries
+const order = entries?.find((entry) => entry.key === "current")?.value;
 
 return <OrderCard order={order} />;
 ```
@@ -951,7 +944,6 @@ Typical development is intentionally boring:
 bun install
 bun dev
 bun test
-bun run build
 ```
 
 A local Cognate application does not require an infrastructure diagram before it can say hello.
@@ -975,11 +967,14 @@ Use:
 * your own provider.
 
 ```ts
-providers: [
-  openAICompatible({
-    id: "local",
-    baseURL: "http://localhost:8080/v1",
-  }),
+components: [
+  modelComponent(
+    openAICompatible({
+      id: "local",
+      baseURL: "http://localhost:8080/v1",
+      model: "qwen2.5-7b-instruct",
+    }),
+  ),
 ];
 ```
 
@@ -1022,7 +1017,7 @@ The design calls for two reference profiles.
 ## Copilot
 
 ```bash
-cognate create my-app --profile copilot
+cognate create my-app --profile copilot --source ./cognate
 ```
 
 Includes:
@@ -1043,7 +1038,7 @@ Includes:
 ## Harness
 
 ```bash
-cognate create my-agent --profile harness
+cognate create my-agent --profile harness --source ./cognate
 ```
 
 Includes:
@@ -1098,7 +1093,7 @@ They do not create privileged runtime features.
 
 # Packages
 
-Cognate is planned as a modular workspace. These are target package names; none is published by this repository yet.
+Cognate is a modular workspace. Every package below exists in `packages/` with its own README and AGENTS guide; none is published to a registry yet ([DEBT-016](.agents/DEBT.md)).
 
 ```text
 @cognate/kernel-api
@@ -1148,7 +1143,7 @@ Profiles select the packages they need.
 
 # Built In, Not Locked In
 
-The proposed packages provide strong defaults while keeping implementation boundaries explicit.
+The packages provide strong defaults while keeping implementation boundaries explicit.
 
 | Concern                   | Reference implementation | Cognate boundary    |
 | ------------------------- | ------------------------ | ------------------- |
@@ -1227,7 +1222,7 @@ Sensitive cognitive entries can store references or redacted projections instead
 
 # Testing the Substrate
 
-The planned test suite will exercise the invariants underneath applications.
+The test suite exercises the invariants underneath applications (`tests/properties`, the kernel and store conformance kits, and `tests/integration`).
 
 Examples:
 
@@ -1273,7 +1268,7 @@ These tests are part of Cognate's compatibility contract.
 
 Cognate is designed to be built by people and coding agents using the same contracts.
 
-The planned repository will include:
+The repository includes:
 
 * machine-readable package boundaries;
 * architecture documentation;
@@ -1301,7 +1296,7 @@ without reverse-engineering the entire repository first.
 
 # Examples
 
-The planned examples will demonstrate:
+The examples demonstrate:
 
 ```text
 examples/
@@ -1322,7 +1317,7 @@ examples/
 └── connect/
 ```
 
-Each example is intended to be runnable independently once implemented.
+Each example runs independently and verifies its own outcome (`tests/examples.test.ts`).
 
 ```bash
 bun run example:generative-ui
@@ -1406,7 +1401,7 @@ That rule keeps Cognate small even as the ecosystem around it grows.
 
 # Documentation
 
-Planned documentation map (these pages do not exist yet):
+Documentation map:
 
 * `docs/getting-started.md` — build your first Cognate application
 * `docs/concepts.md` — contexts, capabilities, components, effects, events, and continuations
@@ -1420,13 +1415,11 @@ Planned documentation map (these pages do not exist yet):
 * `docs/extensions.md` — capabilities, components, adapters, providers, and profiles
 * `docs/security.md` — authority, retrieval, boundaries, and external commitments
 
-For implementation work today, start with the [agent operating guide](AGENTS.md), [current status](.agents/CURRENT_STATUS.md), and [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd). Package-specific guidance will be added as packages are created.
+For implementation work today, start with the [agent operating guide](AGENTS.md), [current status](.agents/CURRENT_STATUS.md), and [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd). Each package and profile has its own `README.md` and `AGENTS.md`.
 
 ---
 
 # Development
-
-The current repository supports `just --list`, `just verify`, and the narrow `just gate-ak-001` SQLite fixture. `bun test` also runs the current Phase 0 and substrate tests. The remaining commands below are the target workflow after runtime packages and scripts are implemented.
 
 Clone Cognate and install with Bun:
 
@@ -1436,35 +1429,19 @@ cd cognate
 bun install
 ```
 
-Run the full test suite:
+| Command | What it runs |
+| --- | --- |
+| `just verify` | Regression baseline: ledger/substrate check, typecheck, and every gate marked implemented |
+| `just gates` | Every ledger gate with PASS/FAIL and status drift |
+| `just gate <ID>` | One requirement's proof, e.g. `just gate CG-KRN-001` |
+| `bun run test` | All workspace tests (packages, profiles, integration, architecture, properties, examples) |
+| `bun run test:properties` | fast-check invariant properties (`tests/properties`) |
+| `bun run test:e2e` | The §36 Playwright journey (`tests/e2e`) |
+| `bun run example:<name>` | One README example (see [examples/](examples/README.md)) |
+| `bun run typecheck` | TypeScript across packages, profiles, tests, and scripts |
+| `just setup-realitytrace` | Install the pinned RealityTrace CLI used by the RealityTrace gates |
 
-```bash
-bun test
-```
-
-Run invariant/property tests:
-
-```bash
-bun run test:properties
-```
-
-Run browser integration tests:
-
-```bash
-bun run test:e2e
-```
-
-Run the development environment:
-
-```bash
-bun dev
-```
-
-Build all packages:
-
-```bash
-bun run build
-```
+Packages ship TypeScript source executed directly by Bun; there is no separate build step. Applications run with `cognate dev` (see Quick Start).
 
 ---
 
@@ -1472,7 +1449,7 @@ bun run build
 
 Cognate is being designed around explicit architectural boundaries.
 
-Before contributing to a future package, read its available contracts. The following project guidance is planned and must be created with the packages:
+Before contributing to a package, read its available contracts:
 
 1. the root `AGENTS.md`;
 2. the package README;

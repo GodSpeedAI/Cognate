@@ -27,7 +27,9 @@
     "example:realitytrace": "bun examples/realitytrace/index.ts",
     "example:ag-ui": "bun examples/ag-ui/index.ts",
     "example:mcp": "bun examples/mcp/index.ts",
-    "example:connect": "bun examples/connect/index.ts"
+    "example:connect": "bun examples/connect/index.ts",
+    "test:properties": "bun test ./tests/properties",
+    "test:e2e": "cd tests/e2e && bun x playwright test -c playwright.config.ts"
   },
   "devDependencies": {
     "@cognate/a2a": "workspace:*",
