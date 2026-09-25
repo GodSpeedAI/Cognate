@@ -7,9 +7,9 @@
 // Spec anchors: software-design-spec-cognate.-frameworkmd §3.3, §20, §31.6,
 // §37 Phase 0 / Phase 5.
 //
-// The sxr checkout at /home/sprime01/projects/sxr is NEVER modified by this
-// fixture. The binary is built out-of-tree via
-// CARGO_TARGET_DIR=<cognate>/.tmp/sxr-target (gitignored). All SXR runtime
+// The RealityTrace source is NEVER modified by this
+// fixture.
+// Uses the pinned released CLI from `just setup-realitytrace` (.tmp/realitytrace, gitignored). All SXR runtime
 // state (XDG_DATA_HOME / XDG_STATE_HOME) lives in per-test temp directories.
 //
 // This file MUST NOT skip on a missing binary: every test calls
@@ -25,20 +25,18 @@ import { join } from "node:path";
 // Binary discovery — never invented, always the real local build output.
 // ---------------------------------------------------------------------------
 
+// Pinned released CLI installed by `just setup-realitytrace` (RealityTrace v0.2.0; DEBT-010).
 const DEFAULT_SXR_BIN = join(
   import.meta.dir,
-  "..", "..", "..", ".tmp", "sxr-target", "release", "sxr",
+  "..", "..", "..", ".tmp", "realitytrace", "bin", "realitytrace",
 );
 const SXR_BIN = process.env.SXR_BIN ?? DEFAULT_SXR_BIN;
-const SXR_CHECKOUT = "/home/sprime01/projects/sxr";
 
 function requireBinary(): void {
   if (!existsSync(SXR_BIN)) {
     throw new Error(
-      `sxr binary not found at ${SXR_BIN}. Build it out-of-tree first:\n` +
-        `  CARGO_TARGET_DIR=${join(import.meta.dir, "..", "..", "..", ".tmp", "sxr-target")} ` +
-        `cargo build --release -p sxr-cli --manifest-path ${SXR_CHECKOUT}/Cargo.toml\n` +
-        `or set SXR_BIN to an already-built binary. This test intentionally FAILS ` +
+      `RealityTrace CLI not found at ${SXR_BIN}. Install the pinned release with \`just setup-realitytrace\` ` +
+        `or set SXR_BIN to an installed binary. This test intentionally FAILS ` +
         `(not skips) when the binary is unavailable, per the Phase 0 fixture contract.`,
     );
   }
@@ -184,7 +182,8 @@ async function bootstrapRun(home: string, repoPath: string) {
 // ---------------------------------------------------------------------------
 
 function loadCepSchema(): any {
-  const path = join(SXR_CHECKOUT, "schemas", "cep-semantic-envelope.schema.json");
+  // Vendored from realitytrace-v0.2.0 (fixtures/PROVENANCE.md) so no local checkout is needed.
+  const path = join(import.meta.dir, "fixtures", "cep-semantic-envelope.schema.json");
   if (!existsSync(path)) {
     throw new Error(`CEP schema not found at ${path}; the sxr checkout may have moved or been reorganized.`);
   }

@@ -1,9 +1,12 @@
 # RealityTrace (SXR) CLI + CEP schema — Phase 0 API notes
 
-Source: read-only checkout `/home/sprime01/projects/sxr`, commit
-`f7fb1c307e1f7ceb15468986330e5ca8c9248d19`. Built out-of-tree:
-`CARGO_TARGET_DIR=<cognate>/.tmp/sxr-target cargo build --release -p sxr-cli`
-(workspace requires rust-version 1.92; built with rustc/cargo 1.98.0). See
+Characterized first against a local RealityTrace checkout at commit
+`f7fb1c307e1f7ceb15468986330e5ca8c9248d19` (binary `sxr`), then re-run on
+2026-09-25 against the released `realitytrace` 0.2.0 CLI (tag
+`realitytrace-v0.2.0`, commit 6966fa4), installed with
+`just setup-realitytrace` (`cargo install --git … --tag realitytrace-v0.2.0 --locked`).
+v0.2.0 renames the binary `sxr` → `realitytrace`; the commands, flags, JSON
+shapes, and idempotency behaviour below are unchanged. See
 `.agents/evidence/phase0-realitytrace.md` for transcripts.
 
 ## Prerequisite command order (docs/tutorials/quickstart.md; executed live)

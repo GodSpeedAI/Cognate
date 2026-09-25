@@ -5,11 +5,11 @@
     "": {
       "name": "cognate-phase0-domainforge",
       "dependencies": {
-        "@godspeedai/domainforge": "0.16.0",
+        "@godspeedai/domainforge": "0.17.0",
       },
     },
   },
   "packages": {
-    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.16.0", "", {}, "sha512-yEq/hCAA7FyUT40OdNBkS4KIghIIuZyMTS5cZVAsrR86ySm1oDOVWzFc1M9aryXI6OhUQhmRxTZ9Rl4esptUaw=="],
+    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.17.0", "", {}, "sha512-k2VhXy2BojdTae7/WuIlos1R7tjZz/+IvJG9ucNlfUPoOky7WwEJIJgCfc5cu+nydl8pinSCcgT0OpwmDV1bBA=="],
   }
 }

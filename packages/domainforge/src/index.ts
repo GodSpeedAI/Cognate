@@ -55,9 +55,15 @@ export const mappingTable: readonly MappingRow[] = [
 
 const sha256 = (source: string): string => `sha256:${createHash("sha256").update(source, "utf8").digest("hex")}`;
 
-function classifyError(err: unknown): SemanticError {
+/**
+ * Classify a Graph.parse failure. The binding reports every failure as `GenericFailure` (DEBT-002), so this matches
+ * message shapes pinned by test/diagnostics.test.ts; anything unrecognized stays `unknown` with its text.
+ */
+export function classifyParseError(err: unknown): SemanticError {
   if (err instanceof AmbiguousIdentityError) return { kind: "ambiguous_identity", id: err.id };
   const message = err instanceof Error ? err.message : String(err);
+  const duplicate = /Duplicate declaration: \w+ '([^']+)' already declared in namespace '([^']+)'/.exec(message);
+  if (duplicate) return { kind: "ambiguous_identity", id: `${duplicate[2]}::${duplicate[1]}` };
   if (/undefined\s+\w+/i.test(message)) return { kind: "unresolved_reference", message };
   if (/syntax error/i.test(message)) return { kind: "syntax", message };
   if (/binding|dlopen|native module|cannot find module|failed to load/i.test(message)) return { kind: "binding_unavailable", message };
@@ -199,7 +205,7 @@ export function loadSemanticProjection(source: string, options: { readonly uri: 
 
     return { ok: true, projection };
   } catch (err) {
-    return { ok: false, error: classifyError(err) };
+    return { ok: false, error: classifyParseError(err) };
   }
 }
 

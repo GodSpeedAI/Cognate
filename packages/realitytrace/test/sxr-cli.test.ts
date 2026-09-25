@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createSxrCliPort, type Observation, type SxrWorkflow } from "../src/index.ts";
 
-const bin = process.env.SXR_BIN ?? resolve(import.meta.dir, "../../../.tmp/sxr-target/release/sxr");
+const bin = process.env.SXR_BIN ?? resolve(import.meta.dir, "../../../.tmp/realitytrace/bin/realitytrace");
 const dir = mkdtempSync(join(tmpdir(), "cognate-sxr-"));
 let port: ReturnType<typeof createSxrCliPort>;
 let workflow: SxrWorkflow;
 
 beforeAll(async () => {
-  if (!existsSync(bin)) throw new Error(`SXR binary not found at ${bin}; build it per DEBT-010 (this gate fails, it does not skip)`);
+  if (!existsSync(bin)) throw new Error(`SXR binary not found at ${bin}; run "just setup-realitytrace" (DEBT-010) (this gate fails, it does not skip)`);
   const repoDir = join(dir, "repo");
   port = createSxrCliPort({ bin, repoDir, env: { HOME: dir, SXR_HOME: join(dir, "sxr-home") } });
   workflow = await port.prepare({ title: "Does the refund flow execute as declared?" });
