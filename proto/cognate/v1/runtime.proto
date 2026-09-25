@@ -20,6 +20,8 @@ service RuntimeService {
   rpc Invoke(InvokeRequest) returns (InvokeResponse);
   rpc GetArtifact(GetArtifactRequest) returns (Artifact);
   rpc ReadProjection(ReadProjectionRequest) returns (ReadProjectionResponse);
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+  rpc UpdateState(UpdateStateRequest) returns (UpdateStateResponse);
 }
 
 message StreamEventsRequest {

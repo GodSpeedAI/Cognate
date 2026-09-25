@@ -18,7 +18,7 @@ export interface KitSetup {
   readonly agents: readonly AgentDefinition[];
   /** A capability `tool.lookup` v1 the runtime must mount as a component. */
   readonly lookup: (input: { key: string }) => { key: string; value: string };
-  /** Policy: allow invocations by anyone except principal `mallory`; continuation actions likewise. */
+  /** Policy: allow invocations by anyone except principal `mallory`; continuation and `run.state.*` actions likewise. */
   readonly deniedPrincipal: Principal["id"];
 }
 
@@ -59,6 +59,16 @@ export function kitAgents(counters: Counters): AgentDefinition[] {
       version: "1.0.0",
       async run() {
         throw new Error("model provider exploded");
+      },
+    },
+    {
+      id: "agent.stateReader",
+      version: "1.0.0",
+      async run(_input, ctx): Promise<Json> {
+        const before = await ctx.state("before");
+        await ctx.waitFor("go", { type: "state-check", condition: {}, payload: {} });
+        const after = await ctx.state("after");
+        return { before, after };
       },
     },
   ];
@@ -217,6 +227,106 @@ export function runtimeServiceConformance(name: string, factory: RuntimeFactory,
       await Promise.race([reader, Bun.sleep(5000).then(() => { throw new Error("stream did not deliver"); })]);
       expect(seen).toContain("run.started");
       expect(seen).toContain("run.completed");
+    });
+
+    test("a caller updates a waiting run's state and the agent reads it after resume", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st1" });
+      await until(service, alice, runId, "waiting");
+      const updated = await service.updateState(alice, { runId, update: { snapshot: { count: 1 } }, idempotencyKey: "u1" });
+      expect(updated).toEqual({ state: { count: 1 }, version: 1 });
+      const [c] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      await service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: {}, idempotencyKey: "go1" });
+      const done = await until(service, alice, runId, "completed");
+      expect(done.output).toEqual({ before: {}, after: { count: 1 } });
+    });
+
+    test("startRun seeds shared state that the agent reads via ctx.state", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st2", state: { seeded: true } });
+      await until(service, alice, runId, "waiting");
+      const [c] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      await service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: {}, idempotencyKey: "go2" });
+      const done = await until(service, alice, runId, "completed");
+      expect(done.output).toEqual({ before: { seeded: true }, after: { seeded: true } });
+    });
+
+    test("updateState is idempotent by key", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st3" });
+      await until(service, alice, runId, "waiting");
+      const a = await service.updateState(alice, { runId, update: { snapshot: { n: 1 } }, idempotencyKey: "same-u" });
+      const b = await service.updateState(alice, { runId, update: { snapshot: { n: 1 } }, idempotencyKey: "same-u" });
+      expect(b).toEqual(a);
+    });
+
+    test("updateState enforces expectedVersion", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st4" });
+      await until(service, alice, runId, "waiting");
+      await service.updateState(alice, { runId, update: { snapshot: { n: 1 } }, idempotencyKey: "u4a" });
+      expect(await code(service.updateState(alice, { runId, update: { snapshot: { n: 2 } }, idempotencyKey: "u4b", expectedVersion: 0 }))).toBe("failed_precondition");
+      const ok = await service.updateState(alice, { runId, update: { snapshot: { n: 2 } }, idempotencyKey: "u4c", expectedVersion: 1 });
+      expect(ok).toEqual({ state: { n: 2 }, version: 2 });
+    });
+
+    test("updateState rejects a patch that does not apply", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st5" });
+      await until(service, alice, runId, "waiting");
+      expect(await code(service.updateState(alice, { runId, update: { patch: [{ op: "replace", path: "/missing", value: 1 }] }, idempotencyKey: "u5" }))).toBe("invalid_argument");
+    });
+
+    test("updateState rejects a terminal run", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.echo", input: {}, idempotencyKey: "st6" });
+      await until(service, alice, runId, "completed");
+      expect(await code(service.updateState(alice, { runId, update: { snapshot: {} }, idempotencyKey: "u6" }))).toBe("failed_precondition");
+    });
+
+    test("updateState is tenant-isolated", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st7" });
+      await until(service, alice, runId, "waiting");
+      expect(await code(service.updateState(bob, { runId, update: { snapshot: {} }, idempotencyKey: "u7" }))).toBe("not_found");
+    });
+
+    test("updateState is authorized: mallory is denied", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st8" });
+      await until(service, alice, runId, "waiting");
+      expect(await code(service.updateState(mallory, { runId, update: { snapshot: {} }, idempotencyKey: "u8" }))).toBe("permission_denied");
+    });
+
+    test("listRuns returns the caller's tenant runs oldest-first, filterable by correlationId and agent", async () => {
+      const { service } = await open();
+      const a = await service.startRun(alice, { agent: "agent.echo", input: 1, idempotencyKey: "l1", correlationId: "corr-x" });
+      await until(service, alice, a.runId, "completed");
+      const b = await service.startRun(alice, { agent: "agent.tooluser", input: { key: "k" }, idempotencyKey: "l2", correlationId: "corr-x" });
+      await until(service, alice, b.runId, "completed");
+      const c = await service.startRun(alice, { agent: "agent.echo", input: 2, idempotencyKey: "l3", correlationId: "corr-y" });
+      await until(service, alice, c.runId, "completed");
+      const all = await service.listRuns(alice, {});
+      expect(all.map((r) => r.runId)).toEqual([a.runId, b.runId, c.runId]);
+      expect((await service.listRuns(alice, { correlationId: "corr-x" })).map((r) => r.runId)).toEqual([a.runId, b.runId]);
+      expect((await service.listRuns(alice, { agent: "agent.echo" })).map((r) => r.runId)).toEqual([a.runId, c.runId]);
+      expect(await service.listRuns(bob, {})).toEqual([]);
+    });
+
+    test("50 concurrent startRun calls all succeed and listRuns returns them in start order", async () => {
+      const { service } = await open();
+      const correlationId = "corr-concurrent";
+      const started = await Promise.all(
+        Array.from({ length: 50 }, (_, i) => service.startRun(alice, { agent: "agent.echo", input: i, idempotencyKey: `concurrent-${i}`, correlationId })),
+      );
+      const positions = new Map<string, number>();
+      for (const event of await collect(service.events(alice, {}))) {
+        if (event.eventType === "run.started" && event.runId) positions.set(event.runId, event.position);
+      }
+      const expectedOrder = [...new Set(started.map((r) => r.runId))].sort((a, b) => positions.get(a)! - positions.get(b)!);
+      const listed = await service.listRuns(alice, { correlationId });
+      expect(listed.map((r) => r.runId)).toEqual(expectedOrder);
+      expect(listed).toHaveLength(50);
     });
 
     test("unknown agents and unknown runs are typed errors", async () => {

@@ -3,9 +3,9 @@
 // RunContext call that already has a recorded result from the stream instead of repeating it.
 import { ConcurrencyError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
 import type { Principal, SemanticRef } from "@cognate/kernel-api";
-import { type ArtifactInput, ContinuationClosedError, InvocationFailedError, type RunContext, type WaitSpec } from "@cognate/runtime-api";
+import { type ArtifactInput, ContinuationClosedError, foldState, InvocationFailedError, type RunContext, type WaitSpec } from "@cognate/runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
-import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStream, toJson } from "./fold.ts";
+import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, toJson } from "./fold.ts";
 
 /** Internal control flow: the execution stops here (suspended, cancelled, or lost a write race). */
 class Halt {
@@ -221,6 +221,19 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       if (done) return (field(done.payload, "result") as unknown as RecallResultJson | null) ?? { status: "degraded", items: [] };
       const result = await core.recall({ text: query.text, k: query.k, actor: context.actor, tenant: view.tenant });
       await append({ eventType: "run.recall", payload: { result: result as unknown as Json }, metadata: { stepId } });
+      return result;
+    },
+
+    async state(id: string): Promise<Json> {
+      guard();
+      const stepId = `state:${id}`;
+      const done = find(stepId);
+      if (done) return field(done.payload, "result") as Json;
+      // Fold this run's own stream as committed so far this execution plus the separate caller-write stream
+      // (spec §29.1); re-read both fresh so a caller write landed after this execution started is still seen.
+      const [runEvents, stateEvents] = await Promise.all([core.store.readStream(streamId), core.store.readStream(runStateStream(runId))]);
+      const result = foldState([...runEvents, ...stateEvents]);
+      await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId } });
       return result;
     },
   };

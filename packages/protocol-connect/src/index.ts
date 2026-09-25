@@ -10,15 +10,17 @@ import {
   ContinuationAction as PbContinuationAction,
   ContinuationStatus as PbContinuationStatus,
   type Event as PbEvent,
+  type JsonPatchOp as PbJsonPatchOp,
   ResolveOutcome as PbResolveOutcome,
   type Run,
   RunStatus as PbRunStatus,
   RuntimeService as RuntimeServiceDesc,
   type SemanticRef as PbSemanticRef,
+  type StateUpdate as PbStateUpdate,
 } from "@cognate/proto";
 import type { Json, StoredEvent } from "@cognate/events";
 import type { SemanticRef } from "@cognate/kernel-api";
-import type { Caller, ContinuationView, RunView, RuntimeService, ServiceErrorCode } from "@cognate/runtime-api";
+import type { Caller, ContinuationView, JsonPatchOp, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@cognate/runtime-api";
 import { ServiceError } from "@cognate/runtime-api";
 
 export interface HandlerOptions {
@@ -252,6 +254,47 @@ function eventFromWire(e: PbEvent): StoredEvent {
   };
 }
 
+// ── shared state (spec §29.1) ───────────────────────────────────────────────────────
+
+function jsonPatchOpInit(op: JsonPatchOp) {
+  return {
+    op: op.op,
+    path: op.path,
+    from: "from" in op ? op.from : undefined,
+    value: jsonToValue("value" in op ? op.value : null),
+  };
+}
+
+function jsonPatchOpFromWire(op: PbJsonPatchOp): JsonPatchOp {
+  const value = valueToJson(op.value);
+  switch (op.op) {
+    case "add":
+      return { op: "add", path: op.path, value };
+    case "replace":
+      return { op: "replace", path: op.path, value };
+    case "remove":
+      return { op: "remove", path: op.path };
+    case "move":
+      return { op: "move", from: op.from ?? "", path: op.path };
+    case "copy":
+      return { op: "copy", from: op.from ?? "", path: op.path };
+    case "test":
+      return { op: "test", path: op.path, value };
+    default:
+      throw new ConnectError(`unknown JSON Patch op "${op.op}"`, Code.InvalidArgument);
+  }
+}
+
+function stateUpdateFieldInit(update: StateUpdate) {
+  if ("snapshot" in update) return { kind: { case: "snapshot" as const, value: jsonToValue(update.snapshot) } };
+  return { kind: { case: "patch" as const, value: { ops: update.patch.map(jsonPatchOpInit) } } };
+}
+
+function stateUpdateFromWire(update: PbStateUpdate | undefined): StateUpdate {
+  if (update?.kind.case === "patch") return { patch: update.kind.value.ops.map(jsonPatchOpFromWire) };
+  return { snapshot: valueToJson(update?.kind.case === "snapshot" ? update.kind.value : undefined) };
+}
+
 // ── error mapping ─────────────────────────────────────────────────────────────────
 
 function throwConnectError(e: unknown): never {
@@ -305,7 +348,13 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
         const caller = await requireCaller(options, context);
         const run = await withDeadline(
           context,
-          service.startRun(caller, { agent: req.agent, input: decodeValue(req.input, depth), idempotencyKey: req.idempotencyKey, correlationId: req.correlationId }),
+          service.startRun(caller, {
+            agent: req.agent,
+            input: decodeValue(req.input, depth),
+            idempotencyKey: req.idempotencyKey,
+            correlationId: req.correlationId,
+            state: req.state !== undefined ? decodeValue(req.state, depth) : undefined,
+          }),
         );
         return runInit(run);
       } catch (e) {
@@ -406,6 +455,27 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
         throwConnectError(e);
       }
     },
+    async listRuns(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const runs = await withDeadline(context, service.listRuns(caller, { correlationId: req.correlationId, agent: req.agent }));
+        return { runs: runs.map(runInit) };
+      } catch (e) {
+        throwConnectError(e);
+      }
+    },
+    async updateState(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const result = await withDeadline(
+          context,
+          service.updateState(caller, { runId: req.runId, update: stateUpdateFromWire(req.update), idempotencyKey: req.idempotencyKey, expectedVersion: toNumber(req.expectedVersion) }),
+        );
+        return { state: jsonToValue(result.state), version: BigInt(result.version) };
+      } catch (e) {
+        throwConnectError(e);
+      }
+    },
   });
 }
 
@@ -418,7 +488,13 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
     async startRun(caller, request) {
       try {
         const run = await client.startRun(
-          { agent: request.agent, input: jsonToValue(request.input), idempotencyKey: request.idempotencyKey, correlationId: request.correlationId },
+          {
+            agent: request.agent,
+            input: jsonToValue(request.input),
+            idempotencyKey: request.idempotencyKey,
+            correlationId: request.correlationId,
+            state: request.state !== undefined ? jsonToValue(request.state) : undefined,
+          },
           { headers: headersFor(caller) },
         );
         return runFromWire(run);
@@ -512,6 +588,25 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
       try {
         const response = await client.readProjection({ name: request.name }, { headers: headersFor(caller) });
         return response.entries.map((entry) => ({ key: entry.key, value: valueToJson(entry.value) }));
+      } catch (e) {
+        throwServiceError(e);
+      }
+    },
+    async listRuns(caller, request) {
+      try {
+        const response = await client.listRuns({ correlationId: request.correlationId, agent: request.agent }, { headers: headersFor(caller) });
+        return response.runs.map(runFromWire);
+      } catch (e) {
+        throwServiceError(e);
+      }
+    },
+    async updateState(caller, request) {
+      try {
+        const response = await client.updateState(
+          { runId: request.runId, update: stateUpdateFieldInit(request.update), idempotencyKey: request.idempotencyKey, expectedVersion: toBigInt(request.expectedVersion) },
+          { headers: headersFor(caller) },
+        );
+        return { state: valueToJson(response.state), version: Number(response.version) };
       } catch (e) {
         throwServiceError(e);
       }

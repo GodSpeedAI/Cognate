@@ -31,6 +31,8 @@ message StartRunRequest {
   google.protobuf.Value input = 2;
   string idempotency_key = 3;
   optional string correlation_id = 4;
+  // Seeds the run's shared state (spec §29.1): a caller-sourced state.changed snapshot committed with run.started.
+  optional google.protobuf.Value state = 5;
 }
 
 message GetRunRequest {
@@ -41,4 +43,45 @@ message CancelRunRequest {
   string run_id = 1;
   string reason = 2;
   string idempotency_key = 3;
+}
+
+message ListRunsRequest {
+  optional string correlation_id = 1;
+  optional string agent = 2;
+}
+
+message ListRunsResponse {
+  repeated Run runs = 1;
+}
+
+// One RFC 6902 JSON Patch operation (spec §29.1).
+message JsonPatchOp {
+  string op = 1;
+  string path = 2;
+  optional string from = 3;
+  google.protobuf.Value value = 4;
+}
+
+message JsonPatchOps {
+  repeated JsonPatchOp ops = 1;
+}
+
+// A caller's state write: replace the whole state, or apply an RFC 6902 patch to it.
+message StateUpdate {
+  oneof kind {
+    google.protobuf.Value snapshot = 1;
+    JsonPatchOps patch = 2;
+  }
+}
+
+message UpdateStateRequest {
+  string run_id = 1;
+  StateUpdate update = 2;
+  string idempotency_key = 3;
+  optional uint64 expected_version = 4;
+}
+
+message UpdateStateResponse {
+  google.protobuf.Value state = 1;
+  uint64 version = 2;
 }

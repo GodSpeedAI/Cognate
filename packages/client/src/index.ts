@@ -2,7 +2,7 @@
 // All exposed state is DERIVED from durable events -- nothing here is authoritative, everything can be rebuilt
 // by replaying the tenant's event stream from position 0. No React import (framework-neutral).
 import type { Json, StoredEvent } from "@cognate/events";
-import type { Caller, ContinuationView, RunView, RuntimeService } from "@cognate/runtime-api";
+import { applyStateUpdate, type Caller, type ContinuationView, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@cognate/runtime-api";
 
 /** A minimal observable value, framework-neutral (React bindings adapt it with useSyncExternalStore). */
 export interface Readable<T> {
@@ -39,8 +39,10 @@ export type FrontendHandler = (input: Json, context: { readonly runId: string; r
 
 export interface CognateClient {
   readonly status: Readable<ConnectionStatus>;
-  startRun(agent: string, input: Json, options?: { readonly idempotencyKey?: string; readonly correlationId?: string }): Promise<RunView>;
+  startRun(agent: string, input: Json, options?: { readonly idempotencyKey?: string; readonly correlationId?: string; readonly state?: Json }): Promise<RunView>;
   cancelRun(runId: string, reason: string): Promise<RunView>;
+  /** Write a non-terminal run's shared state as the caller; the agent observes it through `RunContext.state` (spec §29.1). */
+  updateState(runId: string, update: StateUpdate, options?: { readonly idempotencyKey?: string; readonly expectedVersion?: number }): Promise<{ readonly state: Json; readonly version: number }>;
   /** Live, reconnecting, derived state of one run. */
   run(runId: string): Readable<RunState>;
   /** Subscribe to tenant events from a position with automatic resume after disconnect; no gaps, no duplicates. */
@@ -57,98 +59,6 @@ export interface CognateClient {
   invoke(capability: string, input: Json): Promise<Json>;
   artifact(artifactId: string, representation?: string): Promise<{ readonly name: string; readonly mediaType: string; readonly bytes: Uint8Array }>;
   close(): Promise<void>;
-}
-
-// ── JSON Patch (RFC 6902): add, remove, replace, move, copy, test ──────────────────
-
-type JsonPatchOp =
-  | { readonly op: "add"; readonly path: string; readonly value: Json }
-  | { readonly op: "remove"; readonly path: string }
-  | { readonly op: "replace"; readonly path: string; readonly value: Json }
-  | { readonly op: "move"; readonly from: string; readonly path: string }
-  | { readonly op: "copy"; readonly from: string; readonly path: string }
-  | { readonly op: "test"; readonly path: string; readonly value: Json };
-
-function parsePointer(pointer: string): readonly string[] {
-  if (pointer === "") return [];
-  if (!pointer.startsWith("/")) throw new Error(`invalid JSON pointer: ${pointer}`);
-  return pointer
-    .slice(1)
-    .split("/")
-    .map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
-}
-
-function cloneJson(value: Json): Json {
-  return value === null ? null : (JSON.parse(JSON.stringify(value)) as Json);
-}
-
-function getIn(doc: Json, path: readonly string[]): Json {
-  let cursor: Json = doc;
-  for (const segment of path) {
-    if (Array.isArray(cursor)) cursor = cursor[segment === "-" ? cursor.length - 1 : Number(segment)] ?? null;
-    else if (cursor && typeof cursor === "object") cursor = (cursor as { [key: string]: Json })[segment] ?? null;
-    else return null;
-  }
-  return cursor;
-}
-
-function setIn(doc: Json, path: readonly string[], value: Json, mode: "add" | "replace" | "remove"): Json {
-  if (path.length === 0) return mode === "remove" ? null : value;
-  const result = cloneJson(doc);
-  // biome-ignore-start: mutation is local to the freshly cloned tree
-  let cursor: Json = result;
-  for (let i = 0; i < path.length - 1; i++) {
-    const segment = path[i]!;
-    if (Array.isArray(cursor)) cursor = cursor[segment === "-" ? cursor.length - 1 : Number(segment)]!;
-    else if (cursor && typeof cursor === "object") cursor = (cursor as { [key: string]: Json })[segment]!;
-  }
-  const last = path[path.length - 1]!;
-  if (Array.isArray(cursor)) {
-    const index = last === "-" ? cursor.length : Number(last);
-    if (mode === "remove") cursor.splice(index, 1);
-    else if (mode === "add") cursor.splice(index, 0, value);
-    else cursor[index] = value;
-  } else if (cursor && typeof cursor === "object") {
-    const record = cursor as { [key: string]: Json };
-    if (mode === "remove") delete record[last];
-    else record[last] = value;
-  }
-  // biome-ignore-end
-  return result;
-}
-
-function applyJsonPatch(doc: Json, ops: readonly JsonPatchOp[]): Json {
-  let result = doc;
-  for (const op of ops) {
-    switch (op.op) {
-      case "add":
-        result = setIn(result, parsePointer(op.path), op.value, "add");
-        break;
-      case "replace":
-        result = setIn(result, parsePointer(op.path), op.value, "replace");
-        break;
-      case "remove":
-        result = setIn(result, parsePointer(op.path), null, "remove");
-        break;
-      case "move": {
-        const value = getIn(result, parsePointer(op.from));
-        result = setIn(result, parsePointer(op.from), null, "remove");
-        result = setIn(result, parsePointer(op.path), value, "add");
-        break;
-      }
-      case "copy": {
-        const value = getIn(result, parsePointer(op.from));
-        result = setIn(result, parsePointer(op.path), cloneJson(value), "add");
-        break;
-      }
-      case "test": {
-        const value = getIn(result, parsePointer(op.path));
-        if (JSON.stringify(value) !== JSON.stringify(op.value)) throw new Error(`JSON Patch test failed at ${op.path}`);
-        break;
-      }
-    }
-  }
-  return result;
 }
 
 // ── Small helpers over the wire shapes ──────────────────────────────────────────
@@ -275,11 +185,16 @@ class RunStore implements Readable<RunState> {
         return;
       }
       case "state.changed": {
+        // Same fold semantics as the runtime and `foldState`: a snapshot replaces, a patch applies to the
+        // current state, and a patch that does not apply is skipped rather than aborting the client's view
+        // (one bad agent-emitted patch cannot hide later, well-formed updates).
         const snapshot = payloadField<Json>(event, "snapshot");
-        if (snapshot !== undefined) this.stateJson = snapshot;
-        else {
-          const patch = payloadField<readonly JsonPatchOp[]>(event, "patch");
-          if (patch) this.stateJson = applyJsonPatch(this.stateJson, patch);
+        const patch = payloadField<StateUpdate extends { patch: infer P } ? P : never>(event, "patch");
+        try {
+          if (snapshot !== undefined) this.stateJson = applyStateUpdate(this.stateJson, { snapshot });
+          else if (patch !== undefined) this.stateJson = applyStateUpdate(this.stateJson, { patch });
+        } catch (error) {
+          if (!(error instanceof StatePatchError)) throw error;
         }
         this.publish();
         return;
@@ -568,11 +483,21 @@ export function createClient(options: ClientOptions): CognateClient {
         input,
         idempotencyKey: requestOptions?.idempotencyKey ?? crypto.randomUUID(),
         ...(requestOptions?.correlationId !== undefined ? { correlationId: requestOptions.correlationId } : {}),
+        ...(requestOptions?.state !== undefined ? { state: requestOptions.state } : {}),
       });
     },
 
     async cancelRun(runId, reason) {
       return service.cancelRun(caller, { runId, reason, idempotencyKey: crypto.randomUUID() });
+    },
+
+    async updateState(runId, update, updateOptions) {
+      return service.updateState(caller, {
+        runId,
+        update,
+        idempotencyKey: updateOptions?.idempotencyKey ?? crypto.randomUUID(),
+        ...(updateOptions?.expectedVersion !== undefined ? { expectedVersion: updateOptions.expectedVersion } : {}),
+      });
     },
 
     run(runId) {

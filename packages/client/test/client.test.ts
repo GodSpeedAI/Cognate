@@ -17,7 +17,16 @@ const agents: AgentDefinition[] = [
       const approval = (await ctx.waitFor("approve", { type: "refund-approval", condition: { kind: "human_approval" }, payload: input })) as { approved: boolean };
       const focus = await invokeFrontend(ctx, "focus", "map.focus", { lat: 51.5, lng: -0.12 });
       const artifactId = await ctx.artifact({ name: "note.txt", mediaType: "text/plain", bytes: new TextEncoder().encode("done") });
-      return { approved: approval.approved, focus, artifactId };
+      const readBack = await ctx.state("readBack");
+      return { approved: approval.approved, focus, artifactId, readBack };
+    },
+  },
+  {
+    id: "agent.waitsForCallerState",
+    version: "1.0.0",
+    async run(_input, ctx) {
+      await ctx.waitFor("go", { type: "state-check", condition: {}, payload: {} });
+      return { seen: await ctx.state("seen") };
     },
   },
 ];
@@ -79,6 +88,19 @@ describe("headless client (§25.1)", () => {
     expect(waiting.text).toBe("Looking into it");
     expect(waiting.state).toEqual({ order: { id: "o-1", status: "refunding" } });
     expect(waiting.openContinuations.map((c) => c.type)).toEqual(["refund-approval"]);
+  });
+
+  test("client.updateState writes shared state a waiting agent reads via ctx.state, and the client observes the write", async () => {
+    await setup();
+    const { runId } = await client.startRun("agent.waitsForCallerState", null);
+    const state = client.run(runId);
+    await until(() => state.get(), (s) => s.openContinuations.length === 1, "waiting for go");
+    const updated = await client.updateState(runId, { snapshot: { flag: true } });
+    expect(updated).toEqual({ state: { flag: true }, version: 1 });
+    await until(() => state.get(), (s) => (s.state as { flag?: boolean } | null)?.flag === true, "client observes caller state write");
+    await client.resolveContinuation(state.get().openContinuations[0]!.id, "resume");
+    const done = await until(() => state.get(), (s) => s.status === "completed", "completed");
+    expect(done.output).toEqual({ seen: { flag: true } });
   });
 
   test("frontend capabilities are served by the client and the run resumes; unregistered ones stay open", async () => {
