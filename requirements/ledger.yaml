@@ -55,15 +55,14 @@ requirements:
     evidence: .agents/evidence/phase0-ruvector.md
     debt: DEBT-007
   - id: AK-006
-    title: 'Characterize RealityTrace enrollment to observation and duplicate delivery.'
+    title: 'Characterize RealityTrace enrollment to observation, structured correlation, and duplicate delivery.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 20', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'Observation port', invariant: 'Correlated delivery is idempotent and distinct from evidence or settlement'}
     acceptance: [AC-006-01]
     gate: {cwd: compatibility/phase0/realitytrace, run: 'bun test', proof_paths: ['realitytrace.test.ts']}
     dependencies: [AK-001]
-    status: blocked
-    evidence: .agents/evidence/phase0-realitytrace.md
-    debt: DEBT-009
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-realitytrace-correlation.md
   - id: AK-007
     title: 'Characterize optional RVF Bun load and cognitive branch isolation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 0; 18', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -75,15 +74,14 @@ requirements:
     evidence: .agents/evidence/phase0-rvf.md
     debt: DEBT-006
   - id: AK-008
-    title: 'Characterize SONA candidate-bounded ranking, durable feedback, and fallback.'
+    title: 'Characterize the adaptive ranker (Cognate-owned UCB1; SONA rejected per ADR-0005): candidate-bounded ranking, durable feedback, and fallback.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '17; 37 / Phase 0', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'Adaptive selector', invariant: 'Adaptive ranking cannot select outside the supplied eligible set'}
     acceptance: [AC-008-01]
-    gate: {cwd: compatibility/phase0/sona, run: 'bun test', proof_paths: ['sona.test.ts']}
+    gate: {cwd: ., run: 'bun test ./packages/capabilities/test/adaptive-ranker.test.ts', proof_paths: ['packages/capabilities/test/adaptive-ranker.test.ts']}
     dependencies: [AK-005]
-    status: blocked
-    evidence: .agents/evidence/phase0-sona.md
-    debt: DEBT-008
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-ucb1-ranker.md
   - id: AK-009
     title: 'Characterize pinned AG-UI core schemas under Bun.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '24; 38', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -439,8 +437,7 @@ requirements:
     gate: {cwd: ., run: 'bun test ./packages/realitytrace/test/sxr-cli.test.ts', proof_paths: ['packages/realitytrace/test/sxr-cli.test.ts']}
     dependencies: [AK-006, CG-RT-001]
     status: implemented
-    evidence: .agents/evidence/m6-semantics-evidence.md
-    debt: DEBT-009
+    evidence: .agents/evidence/2026-09-25-realitytrace-correlation.md
   - id: CG-RT-003
     title: 'Correlation chain DomainForge to SemanticRef to execution to event to queued observation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 5', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -450,7 +447,6 @@ requirements:
     dependencies: [CG-SEM-001, CG-RT-001]
     status: implemented
     evidence: .agents/evidence/m6-semantics-evidence.md
-    debt: DEBT-009
   - id: CG-COG-001
     title: 'Dependency-free CognitiveIndex with discoverable capabilities and a memory implementation.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '14', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -744,13 +740,13 @@ acceptance_contracts:
     expected: 'The selected RuVector binding rebuilds derived entries and an unavailable binding triggers deterministic behavior without authority changes.'
   - id: AC-006-01
     requirement: AK-006
-    expected: 'CLI prerequisites complete; a correlated observation is accepted; duplicate delivery is reconciled without claiming evidence or settlement.'
+    expected: 'CLI prerequisites complete; a correlated observation is accepted; its correlation ids read back from the committed record; duplicate delivery is reconciled at the same ledger position without rewriting them or claiming evidence or settlement.'
   - id: AC-007-01
     requirement: AK-007
     expected: 'The selected RVF binding loads under Bun and export, import, and branch operations remain isolated from authoritative history.'
   - id: AC-008-01
     requirement: AK-008
-    expected: 'SONA ranks only a supplied candidate set, replays durable feedback deterministically, and falls back to deterministic ordering when unavailable.'
+    expected: 'The adaptive ranker ranks only the supplied eligible set, explores under-observed providers (UCB1), replays durable feedback deterministically, and falls back to deterministic ordering when unavailable.'
   - id: AC-009-01
     requirement: AK-009
     expected: 'The pinned @ag-ui/core loads under Bun and validates and rejects the event families in the supported matrix.'

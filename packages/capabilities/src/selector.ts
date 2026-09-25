@@ -179,8 +179,8 @@ interface OutcomeStats {
 }
 
 /**
- * Cognate-owned outcome ranker (SONA was rejected, DEBT-008): a rebuildable projection over `capability.outcome`
- * events giving each provider a Laplace-smoothed success rate for a capability id.
+ * Cognate-owned outcome ranker (SONA was rejected, ADR-0005): a rebuildable projection over `capability.outcome`
+ * events counting each provider's successes and outcomes for a capability id.
  */
 export function outcomeProjection(): Projection {
   return {
@@ -208,18 +208,28 @@ export function outcomeProjection(): Projection {
   };
 }
 
+/**
+ * UCB1 over the eligible set (Auer et al., 2002): `successRate + sqrt(2 ln N / n)`, where `n` is a provider's recorded
+ * outcomes and `N` the total across the eligible providers. Untried providers score `Number.MAX_VALUE` (finite, so the
+ * selector accepts it) and are tried first; ties fall to provider-id order. Deterministic: a pure function of the
+ * projection, so replaying the same outcomes yields the same ranking.
+ */
 export function createOutcomeRanker(store: DurableStore): Ranker {
   return {
     id: "outcome-ranker",
     async rank(eligible: readonly Candidate[], request: SelectionRequest) {
       const capability = request.requirement.capability;
-      return Promise.all(
+      const stats = await Promise.all(
         eligible.map(async (candidate) => {
-          const stats = (await store.readProjection(OUTCOME_PROJECTION_NAME, `stats:${capability}:${candidate.providerId}`)) as unknown as OutcomeStats | undefined;
-          const score = stats ? (stats.successes + 1) / (stats.total + 2) : 0.5;
-          return { providerId: candidate.providerId, score };
+          const read = (await store.readProjection(OUTCOME_PROJECTION_NAME, `stats:${capability}:${candidate.providerId}`)) as unknown as OutcomeStats | undefined;
+          return { providerId: candidate.providerId, successes: read?.successes ?? 0, total: read?.total ?? 0 };
         }),
       );
+      const plays = stats.reduce((sum, s) => sum + s.total, 0);
+      return stats.map(({ providerId, successes, total }) => ({
+        providerId,
+        score: total === 0 ? Number.MAX_VALUE : successes / total + Math.sqrt((2 * Math.log(plays)) / total),
+      }));
     },
   };
 }

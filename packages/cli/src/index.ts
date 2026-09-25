@@ -28,7 +28,7 @@ export interface CreateReport {
 
 /** `--with` names the starter cannot yet wire up, with a specific reason where one is known. */
 const KNOWN_UNSUPPORTED: Readonly<Record<string, string>> = {
-  sona: "adaptive ranking (Sona) is blocked pending AK-008 (DEBT-008); not available via --with",
+  sona: "SONA was rejected as a ranker (ADR-0005); adaptive ranking is built in via @cognate/capabilities createOutcomeRanker (UCB1)",
 };
 
 /** Root `@cognate/*` package names a generated app's own package.json depends on, per profile. */

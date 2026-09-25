@@ -58,14 +58,16 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Exit criterion:** A fixture proves a working metadata filter or graph package, and the adapter's capability flags are extended with tests.
 
 ## DEBT-008 — SONA is not an adaptive ranker
-**Status:** Open (AK-008 blocked)
+**Status:** Closed (2026-09-25) — operator chose a Cognate-owned UCB1 ranker instead of an external library; AK-008 revised to characterize it and its gate (`packages/capabilities/test/adaptive-ranker.test.ts`) passes. SONA stays rejected (ADR-0005 addendum).
+**Original status:** Open (AK-008 blocked)
 **Requirement(s):** AK-008, CG-CAP-001
 **Observed:** `@ruvector/sona` 0.1.8 exposes trajectory/LoRA learning (`applyMicroLora`, `findPatterns`), no rank/score/select API; its README `TrajectoryBuilder` API does not match the shipped binding.
 **Consequence:** No profile claims SONA-backed `adaptive_ranking`. Adaptive ranking is a Cognate-owned outcome-based ranker behind the capabilities selector contract, contained by deterministic eligibility.
 **Exit criterion:** A SONA release (or another adaptive library) passes a candidate-bounded ranking fixture.
 
 ## DEBT-009 — RealityTrace CLI cannot carry Cognate correlation ids
-**Status:** Open (AK-006 blocked; CG-RT-002 implemented with a narrower CLI proof)
+**Status:** Closed (2026-09-25) — RealityTrace 0.3.0 adds `ingest --extensions`; the adapter sends Cognate's ids as CEP `extensions.cognate` and reads them back via `ledger export`. AK-006 proves the live round-trip and duplicate delivery at the same ledger position.
+**Original status:** Open (AK-006 blocked; CG-RT-002 implemented with a narrower CLI proof)
 **Requirement(s):** AK-006, CG-RT-002, CG-RT-003
 **Observed:** sxr @ f7fb1c3 (built out-of-tree) completes the enrollment → question → threshold → run → plan → ingest → evidence → settlement workflow. `sxr ingest` accepts observation bytes on stdin and retains Cognate's correlation fields as uninterpreted verifier output, but exposes no documented input for the CEP `extensions` / `representations[].inline_content` fields. CG-RT-002's real CLI test passed in the M6 evidence; it proves delivery and duplicate reconciliation, not a structured correlation round-trip. Ingest deduplicates by run+verifier. A duplicate response has a fresh, never-committed `observation_id`; `already_committed` and unchanged `ledger_position` identify the duplicate.
 **Consequence:** The spec §20 promise of correlation in documented SXR extension/reference fields remains unproven. Cognate keeps event → observation → receipt correlation in its own store, using the committed ledger position for target reconciliation; it must not infer identity from SXR's duplicate `observation_id`.
