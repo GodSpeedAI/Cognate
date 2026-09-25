@@ -1,5 +1,7 @@
 # Build plan — Cognate v0 (full build-out)
 
+**Outcome (2026-09-25):** M0–M11 complete. See [current status](../CURRENT_STATUS.md). Deviations recorded in ADR-0011 (runtime-api package), ADR-0001/0002/0006 addenda, and DEBT-001..018.
+
 Owner: acting agent (orchestrator) with delegated subagents. Branch: `build/cognate-v0`.
 Normative source: [spec](../specs/software-design-spec-cognate.-frameworkmd). Sequencing parent: [implementation route](implementation.md). This plan is the execution route for building every spec phase (0–10); it does not restate requirements.
 
