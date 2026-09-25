@@ -651,7 +651,9 @@ requirements:
     acceptance: [AC-E2E-001-01]
     gate: {cwd: tests/e2e, run: 'bun x playwright test -c playwright.config.ts', proof_paths: ['journey.e2e.ts', 'app.ts']}
     dependencies: [CG-PRF-002, CG-COG-003, CG-RT-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m9-profiles.md
+    debt: DEBT-018
   - id: CG-ARC-001
     title: 'Dependency direction and cycle checks.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '28', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -668,7 +670,8 @@ requirements:
     acceptance: [AC-ARC-002-01]
     gate: {cwd: ., run: 'bun test ./tests/architecture/acceptance.test.ts', proof_paths: ['tests/architecture/acceptance.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m9-profiles.md
   - id: CG-EXM-001
     title: 'Every example claimed by the README runs independently.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}

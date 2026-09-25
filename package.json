@@ -6,7 +6,8 @@
   "packageManager": "bun@1.4.0",
   "workspaces": [
     "packages/*",
-    "profiles/*"
+    "profiles/*",
+    "tests/e2e"
   ],
   "scripts": {
     "check": "bun scripts/check-substrate.ts",

@@ -442,6 +442,36 @@
         "@cognate/provider-local": "workspace:*",
       },
     },
+    "tests/e2e": {
+      "name": "@cognate/e2e",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/client": "workspace:*",
+        "@cognate/cognitive-api": "workspace:*",
+        "@cognate/cognitive-memory": "workspace:*",
+        "@cognate/cognitive-ruvector": "workspace:*",
+        "@cognate/cognitive-rvf": "workspace:*",
+        "@cognate/domainforge": "workspace:*",
+        "@cognate/events": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/projections": "workspace:*",
+        "@cognate/protocol-connect": "workspace:*",
+        "@cognate/protocol-connect-bun": "workspace:*",
+        "@cognate/react": "workspace:*",
+        "@cognate/realitytrace": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@cognate/runtime-bun": "workspace:*",
+        "@cognate/store-sqlite": "workspace:*",
+        "@cognate/ui-astryx": "workspace:*",
+        "react": "19.3.0",
+        "react-dom": "19.3.0",
+      },
+      "devDependencies": {
+        "@playwright/test": "1.63.0",
+        "@types/react": "19.3.0",
+        "@types/react-dom": "19.2.2",
+      },
+    },
   },
   "packages": {
     "@a2a-js/sdk": ["@a2a-js/sdk@1.2.1", "", { "dependencies": { "jose": "^6.2.3" }, "peerDependencies": { "@bufbuild/protobuf": "^2.10.2", "@grpc/grpc-js": "^1.11.0", "express": "^4.21.2 || ^5.1.0" }, "optionalPeers": ["@bufbuild/protobuf", "@grpc/grpc-js", "express"] }, "sha512-czCgk8Hw5TKgL0y9peDcxhHV3gGlVE8cHwPMhDOKoGM1QMsDCP1G8Fma6Snnpnr7Ci/U/1f0bFHnCyd7YnmioA=="],
@@ -509,6 +539,8 @@
     "@cognate/continuations": ["@cognate/continuations@workspace:packages/continuations"],
 
     "@cognate/domainforge": ["@cognate/domainforge@workspace:packages/domainforge"],
+
+    "@cognate/e2e": ["@cognate/e2e@workspace:tests/e2e"],
 
     "@cognate/events": ["@cognate/events@workspace:packages/events"],
 

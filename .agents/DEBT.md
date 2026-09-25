@@ -129,3 +129,10 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed:** `expect(actual).toMatchObject({ x: expect.any(Number) })` passes and then leaves `actual.x` as `{}` (also with `expect.stringMatching`). Reproduced in isolation on Bun 1.4.0 (`.agents/evidence/2026-09-25-releases.md`).
 **Consequence:** A later assertion on the same object fails spuriously (or, in the worst case, compares mutated values). Tests must match a `structuredClone` of the value when using asymmetric matchers and reading the value afterwards. A single-line heuristic scan of all tests and kits (2026-09-25) found no other read-after-match; multi-line matches were not scanned.
 **Exit criterion:** A Bun release without the defect is pinned and the isolated repro passes, or all such matches are audited to use clones.
+
+## DEBT-018 — RVF `create` intermittently fails with `FsyncFailed` under concurrent I/O
+**Status:** Open (worked around by retry in the E2E app)
+**Requirement(s):** CG-E2E-001, CG-RVF-001
+**Observed (E2E implementer, 2026-09-25):** `@ruvector/rvf` 0.3.4 native `RvfDatabase.create` intermittently throws `FsyncFailed` inside the §36 journey app (SQLite, timers, and a Connect proxy active in the same process) although it succeeds in isolation and in `packages/cognitive-rvf` tests. `tests/e2e/app.ts` retries snapshot creation up to 5 times with a fresh working path and short backoff.
+**Consequence:** RVF snapshot creation is not reliably first-try under load on this host; a production snapshot path would need the same retry or a root-cause fix. Snapshot failure never touches the active index or event store (§31.4, proven by CG-RVF-001).
+**Exit criterion:** Root cause identified (host fsync behaviour on WSL2 vs RVF native backend) and either fixed upstream, or the retry moves into `cognitive-rvf` with a test that injects `FsyncFailed`.
