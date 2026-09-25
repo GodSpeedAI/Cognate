@@ -41,7 +41,7 @@ Connect     future
 
 ## AG-UI: `@cognate/ag-ui`
 
-[`@cognate/ag-ui`](../packages/ag-ui/src/index.ts) ([ADR-0008](decisions/ADR-0008-ag-ui.md)) is a projection and interoperability layer over `@ag-ui/core` 1.0.0, publishing an event-by-event compatibility matrix (`MatrixRow[]`, one row per AG-UI `EventType`, all 31) rather than assuming full parity. Unsupported event kinds are rejected or explicitly ignored per the matrix, never silently reinterpreted.
+[`@cognate/ag-ui`](../packages/ag-ui/README.md) ([ADR-0008](decisions/ADR-0008-ag-ui.md)) is a projection and interoperability layer over `@ag-ui/core` 1.0.0, publishing an event-by-event compatibility matrix (`MatrixRow[]`, one row per AG-UI `EventType`, all 31) rather than assuming full parity. Unsupported event kinds are rejected or explicitly ignored per the matrix, never silently reinterpreted.
 
 ```text
 Framework run lifecycle       → AG-UI RUN_* events
@@ -50,19 +50,19 @@ Framework tool execution      → AG-UI TOOL_CALL_* events
 Framework projected state     → AG-UI STATE_SNAPSHOT / STATE_DELTA
 ```
 
-`createProjector({ threadId, runId })` is a stateful per-run projector: feed it durable events in order, get schema-valid AG-UI events (`rawEvent.cognate` carries `{ eventId, position }` of the source). `createAgUiHandler(options)` is an HTTP endpoint: POST `RunAgentInput` → SSE stream of AG-UI events. Inbound actions (user message, frontend-tool results, continuation responses, cancellation) go through `RuntimeService` with the authenticated caller — the same authorization path as native clients (spec §32). `forwardedProps.cognate.cursor` resumes from a durable position; an invalid cursor triggers a full resync. Disconnecting never cancels the durable run.
+`createProjector({ threadId, runId })` is a stateful per-run projector: feed it durable events in order, get schema-valid AG-UI events (`rawEvent.cognate` carries `{ eventId, position }` of the source). The recorded run invocation input (`run.invocation`, an erasable payload) is what `TOOL_CALL_ARGS` carries — the projector never emits `{}` for a tool call it has real input for. `run.artifact` events project to a `CUSTOM cognate.artifact` event. `createAgUiHandler(options)` is an HTTP endpoint: POST `RunAgentInput` → SSE stream of AG-UI events. Inbound actions (user message, frontend-tool results, continuation responses, cancellation) go through `RuntimeService` with the authenticated caller — the same authorization path as native clients (spec §32). `forwardedProps.cognate.cursor` resumes from a durable position (sending a snapshot then only newer events); an unknown cursor triggers a full resync. Disconnecting never cancels the durable run.
 
-**In progress**: `CG-AGUI-001..003` are `candidate` in [`requirements/ledger.yaml`](../requirements/ledger.yaml) — both exported functions currently throw `"ag-ui: not implemented"`.
+`CG-AGUI-001..003` are `implemented`: `bun test ./packages/ag-ui ./packages/runtime-bun ./tests/integration/{causality,erasure}.test.ts` proves the outbound matrix over all 31 AG-UI 1.0.0 event types against a real `@ag-ui/client` `HttpAgent` consumer, inbound actions through native auth/authorization/idempotency (approvals, frontend tool results, cancellation, unsupported interactions reported), and cursor reconnect/resync semantics (`.agents/evidence/m8-wire-client.md`).
 
 ## MCP: `@cognate/mcp`
 
-[`@cognate/mcp`](../packages/mcp/README.md) ([ADR-0010](decisions/ADR-0010-mcp.md)) exposes runtime capabilities as MCP tools via `@modelcontextprotocol/sdk` 1.30.1. `createMcpServer({ service, caller, tools })` registers one tool per binding (name defaults to the capability id with `.` → `_`), advertising the binding's JSON Schema. Every call goes through `RuntimeService.invoke` as the connection's authenticated caller, so kernel policy applies (spec §32); a `ServiceError` returns `isError: true` with `<code>: <message>`, never a partial success.
+[`@cognate/mcp`](../packages/mcp/README.md) ([ADR-0010](decisions/ADR-0010-mcp.md)) exposes runtime capabilities as MCP tools via `@modelcontextprotocol/sdk` 1.30.1. `createMcpServer({ service, caller, tools })` registers one tool per binding (name defaults to the capability id with `.` → `_`), advertising the binding's JSON Schema. Every call goes through `RuntimeService.invoke` as the connection's authenticated caller, so kernel policy applies (spec §32); a `ServiceError` returns `isError: true` with `<code>: <message>`, never a partial success. Tools are proven both over the in-memory transport and, from a separate process, over stdio.
 
 `CG-MCP-001` is `implemented`. [DEBT-013](../.agents/DEBT.md) (MCP proven only over the in-memory transport) is **closed**: `packages/mcp/test/mcp.test.ts` now drives the adapter over stdio from a separate process.
 
 ## A2A: `@cognate/a2a`
 
-[`@cognate/a2a`](../packages/a2a/README.md) exposes a runtime agent over the [A2A protocol](https://github.com/a2aproject/A2A). `createA2AHandler(options)` serves the agent card at `/.well-known/agent-card.json` and JSON-RPC at `/a2a`. `message/send` starts (or, with a `taskId`, resumes) a durable run: the A2A task id equals the Cognate run id; an open continuation surfaces as `input-required`; completion returns the run output as an artifact/message.
+[`@cognate/a2a`](../packages/a2a/README.md) exposes a runtime agent over the [A2A protocol](https://github.com/a2aproject/A2A) v1.0 via `@a2a-js/sdk` 1.2.1 (proto-JSON). `createA2AHandler(options)` serves the agent card at `/.well-known/agent-card.json` and JSON-RPC at `/a2a`. `message/send` starts (or, with a `taskId`, resumes) a durable run: the A2A task id equals the Cognate run id; an open continuation surfaces as `TASK_STATE_INPUT_REQUIRED`; completion returns `TASK_STATE_COMPLETED` with the run output in artifacts.
 
 ```ts
 interface A2AAdapterOptions {
@@ -74,16 +74,16 @@ interface A2AAdapterOptions {
 }
 ```
 
-**In progress**: `CG-A2A-001` is `candidate` — `createA2AHandler` currently throws `"a2a: not implemented"`.
+`CG-A2A-001` is `implemented`: `bun test ./packages/a2a` proves the SDK `ClientFactory` + `JsonRpcTransportFactory` client sees `TASK_STATE_INPUT_REQUIRED` on the first `SendMessage`, `TASK_STATE_COMPLETED` with "approved" in artifacts on the follow-up, and a 401 for an unauthenticated request; a resume race (a run still `waiting` on a continuation that was just resolved) is handled (`.agents/evidence/m8-wire-client.md`).
 
 ## Status summary
 
 | Protocol | Ledger status |
 |---|---|
 | Protobuf / Connect (`CG-WIR-001..004`) | implemented ([DEBT-004](../.agents/DEBT.md) on `CG-WIR-002`) |
-| AG-UI (`CG-AGUI-001..003`) | candidate — in progress |
+| AG-UI (`CG-AGUI-001..003`) | implemented |
 | MCP (`CG-MCP-001`) | implemented |
-| A2A (`CG-A2A-001`) | candidate — in progress |
+| A2A (`CG-A2A-001`) | implemented |
 
 ## Related
 

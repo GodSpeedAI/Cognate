@@ -19,7 +19,7 @@ A `DeliveryReceipt` (`accepted`/`duplicate`) means SXR's ledger recorded, or had
 
 Where available, an observation includes trace ID, event ID, causation ID, correlation ID, run ID, scope ID, component ID, fiber ID, capability ID, continuation ID, semantic reference, operation classification, input/output reference, and timestamp. Before submitting `observation.recorded`, the adapter binds the operation to an enrolled repository, snapshot, declared question and threshold, started run, and committed plan/target according to SXR's own workflow — it emits only schema-valid CEP fields and never inserts unknown properties into SXR's closed schemas.
 
-## Adapter target: `sxr ingest` ([ADR-0007](decisions/ADR-0007-observations-realitytrace.md))
+## Adapter target: `realitytrace ingest` (formerly `sxr ingest`; [ADR-0007](decisions/ADR-0007-observations-realitytrace.md))
 
 The first adapter targets RealityTrace's documented CLI workflow and CEP record schema at a pinned compatible commit — no generic SXR SDK or arbitrary-event ingestion API is assumed. The submission path is `sxr repo enroll → sxr question declare → sxr threshold declare → sxr run begin → sxr plan create → sxr ingest`; the daemon's Unix-socket wire format only queues the exact envelope the CLI itself would build, so it is not treated as a separate integration surface.
 
@@ -34,6 +34,10 @@ The first adapter targets RealityTrace's documented CLI workflow and CEP record 
 ## Status
 
 Per [`requirements/ledger.yaml`](../requirements/ledger.yaml): `CG-RT-001` (ObservationPort with outbox delivery; receipt is not evidence) is `implemented` with no debt. `CG-RT-002` (SXR CLI adapter delivers correlated observations after workflow prerequisites) and `CG-RT-003` (correlation chain from DomainForge/SemanticRef through execution/event to queued observation) are `implemented`, both carrying [DEBT-009](../.agents/DEBT.md) — read that entry before relying on end-to-end correlation inside SXR's own ledger.
+
+## Running the RealityTrace gates
+
+`just setup-realitytrace` installs the pinned CLI (RealityTrace v0.2.0, tag `realitytrace-v0.2.0`, binary `realitytrace`) into `.tmp/realitytrace/`; AK-006 and CG-RT-002 use it by default, or `SXR_BIN` when set. The release has no binary assets and is not on crates.io, so the recipe builds from the tag with cargo ([`.agents/evidence/2026-09-25-releases.md`](../.agents/evidence/2026-09-25-releases.md); DEBT-010 closed).
 
 ## Related
 

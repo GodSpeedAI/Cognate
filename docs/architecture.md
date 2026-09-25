@@ -37,10 +37,10 @@ Cognate separates six concerns that a monolithic agent framework usually conflat
 |---|---|---|
 | Semantic | `.sea` meaning, DomainForge projection into `SemanticRef` | [`@cognate/domainforge`](../packages/domainforge/README.md) — see [semantics.md](semantics.md) |
 | Execution | contexts, scopes, capabilities, components, fibers, dependencies, reversible effects, continuations, event emission, boundary classification | [`@cognate/kernel-api`](../packages/kernel-api/README.md) + [`@cognate/kernel-cordis`](../packages/kernel-cordis/README.md) |
-| Durable state | authoritative event log, idempotency, outbox, projections | [`@cognate/events`](../packages/events/src/index.ts), [`@cognate/store-sqlite`](../packages/store-sqlite/README.md), [`@cognate/projections`](../packages/projections/README.md) |
+| Durable state | authoritative event log, idempotency, outbox, projections | [`@cognate/events`](../packages/events/README.md), [`@cognate/store-sqlite`](../packages/store-sqlite/README.md), [`@cognate/projections`](../packages/projections/README.md) |
 | Cognitive | recall, ranking, portable snapshots | [`@cognate/cognitive-api`](../packages/cognitive-api/README.md), [`@cognate/cognitive-ruvector`](../packages/cognitive-ruvector/README.md), [`@cognate/cognitive-rvf`](../packages/cognitive-rvf/README.md) — see [cognition.md](cognition.md), [rvf.md](rvf.md) |
-| Wire/interop | Protobuf schema, Connect RPC, AG-UI, MCP, A2A | [`@cognate/proto`](../packages/proto/README.md), [`@cognate/protocol-connect`](../packages/protocol-connect/README.md), [`@cognate/ag-ui`](../packages/ag-ui/src/index.ts), [`@cognate/mcp`](../packages/mcp/README.md), [`@cognate/a2a`](../packages/a2a/README.md) — see [protocols.md](protocols.md) |
-| Presentation | headless client, React bindings, Astryx renderer | [`@cognate/client`](../packages/client/README.md), [`@cognate/react`](../packages/react/README.md), [`@cognate/ui-astryx`](../packages/ui-astryx/src/index.tsx) — see [ui.md](ui.md) |
+| Wire/interop | Protobuf schema, Connect RPC, AG-UI, MCP, A2A | [`@cognate/proto`](../packages/proto/README.md), [`@cognate/protocol-connect`](../packages/protocol-connect/README.md), [`@cognate/ag-ui`](../packages/ag-ui/README.md), [`@cognate/mcp`](../packages/mcp/README.md), [`@cognate/a2a`](../packages/a2a/README.md) — see [protocols.md](protocols.md) |
+| Presentation | headless client, React bindings, Astryx renderer | [`@cognate/client`](../packages/client/README.md), [`@cognate/react`](../packages/react/README.md), [`@cognate/ui-astryx`](../packages/ui-astryx/README.md) — see [ui.md](ui.md) |
 
 No layer's public API leaks another layer's engine types: framework public APIs never expose Cordis (spec §3.4), `@cognate/react`/`@cognate/client` never expose Astryx types (`CG-UI-003`), and wire representation is not semantic ontology (spec §3.7).
 
@@ -111,7 +111,7 @@ Framework-owned packages (`kernel-api`, `events`, `runtime-api`, `cognitive-api`
 |---|---|---|
 | [kernel-api](../packages/kernel-api/README.md) | Framework-owned kernel contract | implemented (`CG-KRN-001..008`; [DEBT-005](../.agents/DEBT.md)) |
 | [kernel-cordis](../packages/kernel-cordis/README.md) | Cordis-backed kernel engine | implemented |
-| [events](../packages/events/src/index.ts) | Canonical event envelope, append store contract | implemented (`CG-EVT-001..006`) |
+| [events](../packages/events/README.md) | Canonical event envelope, append store contract | implemented (`CG-EVT-001..006`) |
 | [store-sqlite](../packages/store-sqlite/README.md) | Authoritative SQLite event/record store | implemented ([DEBT-011](../.agents/DEBT.md)) |
 | [store-memory](../packages/store-memory/README.md) | In-memory store for tests | implemented |
 | [projections](../packages/projections/README.md) | Checkpointed, rebuildable projections | implemented |
@@ -131,15 +131,15 @@ Framework-owned packages (`kernel-api`, `events`, `runtime-api`, `cognitive-api`
 | [protocol-connect-bun](../packages/protocol-connect-bun/README.md) | `Bun.serve()` Connect bridge | implemented |
 | [client](../packages/client/README.md) | Headless transport-agnostic client | implemented |
 | [react](../packages/react/README.md) | React 19 bindings | implemented (`CG-UI-001/003`) |
-| [ui-astryx](../packages/ui-astryx/src/index.tsx) | Reference UI surfaces | in progress (`CG-UI-002`, candidate) |
-| [ag-ui](../packages/ag-ui/src/index.ts) | AG-UI interoperability | in progress (`CG-AGUI-001..003`, candidate) |
-| [mcp](../packages/mcp/README.md) | MCP tool adapter | implemented (`CG-MCP-001`; [DEBT-013](../.agents/DEBT.md)) |
-| [a2a](../packages/a2a/README.md) | A2A protocol adapter | in progress (`CG-A2A-001`, candidate) |
+| [ui-astryx](../packages/ui-astryx/README.md) | Reference UI surfaces | implemented (`CG-UI-002`) |
+| [ag-ui](../packages/ag-ui/README.md) | AG-UI interoperability | implemented (`CG-AGUI-001..003`) |
+| [mcp](../packages/mcp/README.md) | MCP tool adapter | implemented (`CG-MCP-001`; [DEBT-013](../.agents/DEBT.md) closed) |
+| [a2a](../packages/a2a/README.md) | A2A protocol adapter | implemented (`CG-A2A-001`) |
 | [provider-local](../packages/provider-local/README.md) | Local model provider | implemented |
 | [provider-openai-compatible](../packages/provider-openai-compatible/README.md) | OpenAI-compatible provider | implemented |
 | [profile](../packages/profile/README.md) | `defineProfile` composition API | implemented (`CG-PRF-001`) |
-| [cli](../packages/cli/src/index.ts) | `cognate create`/`dev` | not implemented (`CG-CLI-001`, candidate; [DEBT-016](../.agents/DEBT.md)) |
-| [profiles/copilot](../profiles/copilot/src/index.tsx) | Reference copilot application | in progress (`CG-PRF-002`, candidate) |
-| [profiles/harness](../profiles/harness/src/index.ts) | Reference autonomous harness | in progress (`CG-PRF-003`, candidate) |
+| [cli](../packages/cli/README.md) | `cognate create`/`dev` | implemented (`CG-CLI-001`; [DEBT-016](../.agents/DEBT.md)) |
+| [profiles/copilot](../profiles/copilot/README.md) | Reference copilot application | implemented (`CG-PRF-002`) |
+| [profiles/harness](../profiles/harness/README.md) | Reference autonomous harness | implemented (`CG-PRF-003`) |
 
 Status reflects [`requirements/ledger.yaml`](../requirements/ledger.yaml) as of this writing; run `just gates` for the current, authoritative view.

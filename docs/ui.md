@@ -32,7 +32,7 @@ Proven by `test/client.test.ts` (`CG-CLT-001`).
 
 ## Reference renderer: `@cognate/ui-astryx`
 
-[`@cognate/ui-astryx`](../packages/ui-astryx/src/index.tsx) is Astryx's reference application shell: chat/agent surfaces, artifact surfaces, continuation/approval surfaces, run and state inspection, accessible controls, and theme/dark mode (spec §25.3). Its contract, from [`packages/ui-astryx/src/index.tsx`](../packages/ui-astryx/src/index.tsx):
+[`@cognate/ui-astryx`](../packages/ui-astryx/README.md) is Astryx's reference application shell: chat/agent surfaces, artifact surfaces, continuation/approval surfaces, run and state inspection, accessible controls, and theme/dark mode (spec §25.3). Its contract, from [`packages/ui-astryx/src/index.tsx`](../packages/ui-astryx/src/index.tsx):
 
 ```tsx
 type ThemeMode = "light" | "dark";
@@ -45,15 +45,17 @@ function RunInspector(props: { runId: string | undefined }): ReactNode;
 function StateInspector(props: { runId: string | undefined }): ReactNode; // the run's derived state as formatted JSON
 ```
 
-**In progress**: every exported function currently `throw`s `"ui-astryx: not implemented"`. `CG-UI-002` is `candidate` in [`requirements/ledger.yaml`](../requirements/ledger.yaml) — treat the signatures above as the contract, not as working behavior yet. Astryx implementation types must not cross into `@cognate/client` or `@cognate/react` once implemented.
+`CG-UI-002` is `implemented`: `bun test ./packages/ui-astryx` proves Astryx 0.6.3 surfaces (Theme, Heading, Card, TextInput, Button, CodeBlock, Table) over `@cognate/react` — SSR in light and dark (`data-cognate-theme`), a hydrated chat that streams text, an Approve action that completes a continuation, and a JSON artifact rendered as a table, all against a real runtime; a `Bun.build` browser bundle stays within budget and Astryx CSS paths resolve (`.agents/evidence/m8-wire-client.md`). Astryx implementation types never cross into `@cognate/client` or `@cognate/react`.
 
 ## E2E testing note
 
-End-to-end UI suites (`AK-010`, `CG-E2E-001`) hit [DEBT-012](../.agents/DEBT.md): Playwright's `webServer` TCP readiness probe hangs indefinitely on this WSL2 host, so fixtures use a `globalSetup` that spawns `bun run` and waits on stdout instead. Playwright workers run under Node, so `Bun` globals are unavailable inside specs — servers run as separate Bun processes.
+End-to-end UI suites (`AK-010`) hit [DEBT-012](../.agents/DEBT.md): Playwright's `webServer` TCP readiness probe hangs indefinitely on this WSL2 host, so fixtures use a `globalSetup` that spawns `bun run` and waits on stdout instead. Playwright workers run under Node, so `Bun` globals are unavailable inside specs — servers run as separate Bun processes.
+
+The full browser journey from semantic load to RVF snapshot (spec §36) is still in progress: `CG-E2E-001`'s status in [`requirements/ledger.yaml`](../requirements/ledger.yaml) is `candidate`.
 
 ## Status
 
-`CG-UI-001` (React bindings) and `CG-UI-003` (no Astryx type leakage) are `implemented`. `CG-UI-002` (Astryx reference surfaces) is `candidate` — in progress. `CG-CLT-001` (headless client) proves the layer everything above depends on.
+`CG-UI-001` (React bindings), `CG-UI-002` (Astryx reference surfaces), and `CG-UI-003` (no Astryx type leakage) are all `implemented`. `CG-CLT-001` (headless client) proves the layer everything above depends on.
 
 ## Related
 

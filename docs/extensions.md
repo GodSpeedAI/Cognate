@@ -49,7 +49,7 @@ export default defineProfile({
 
 ### Reference profile: Copilot (spec §29.1)
 
-[`profiles/copilot`](../profiles/copilot/src/index.tsx) composes runtime + runs + continuations + frontend capabilities + state/artifact projections + AG-UI + React bindings + Astryx UI, to demonstrate common Copilot-style behavior needs no profile-specific kernel primitive. Its contract ([`profiles/copilot/src/index.tsx`](../profiles/copilot/src/index.tsx)):
+[`profiles/copilot`](../profiles/copilot/README.md) composes runtime + runs + continuations + frontend capabilities + state/artifact projections + AG-UI + React bindings + Astryx UI, to demonstrate common Copilot-style behavior needs no profile-specific kernel primitive. Its contract ([`profiles/copilot/src/index.tsx`](../profiles/copilot/src/index.tsx)):
 
 ```tsx
 interface BackendTool {
@@ -64,11 +64,11 @@ createCopilotApp(options: CopilotAppOptions): Promise<CopilotApp>;
 GenerativeSurface(props: { runId: string; components: Record<string, (props: Json) => ReactNode> }): ReactNode;
 ```
 
-The copilot agent loops model → tool calls → backend tools (optionally approved) or frontend tools (client-served continuations) → model, streaming text as `message.delta`, publishing shared state as `state.changed`, and generative UI as `ui.render {component, props}`. **In progress**: `CG-PRF-002` is `candidate`; `createCopilotApp` and `GenerativeSurface` currently throw `"profile-copilot: not implemented"`.
+The copilot agent loops model → tool calls → backend tools (optionally approved) or frontend tools (client-served continuations) → model, streaming text as `message.delta`, publishing shared state as `state.changed`, and generative UI as `ui.render {component, props}`. `CG-PRF-002` is `implemented`: `bun test ./profiles/copilot` proves the streamed response as ordered deltas, a backend tool, a frontend tool served by the client, an approval continuation, a whole-app restart while a continuation is open followed by resume, shared state from `state.changed`, an artifact receipt rendered by the Astryx viewer, generative UI via `ui.render`, and an AG-UI stream schema-valid with a frontend tool call (`.agents/evidence/m9-profiles.md`).
 
 ### Reference profile: Harness (spec §29.2)
 
-[`profiles/harness`](../profiles/harness/src/index.ts) composes model providers, a tool registry, an agent loop, sessions, storage, skills/extensions, a scheduler, sandbox adapters, and subagent composition, to demonstrate dynamic activation/deactivation and hot-swappable services. Its contract ([`profiles/harness/src/index.ts`](../profiles/harness/src/index.ts)):
+[`profiles/harness`](../profiles/harness/README.md) composes model providers, a tool registry, an agent loop, sessions, storage, skills/extensions, a scheduler, sandbox adapters, and subagent composition, to demonstrate dynamic activation/deactivation and hot-swappable services. Its contract ([`profiles/harness/src/index.ts`](../profiles/harness/src/index.ts)):
 
 ```ts
 interface Harness {
@@ -83,15 +83,15 @@ createHarness(options: HarnessOptions): Promise<Harness>;
 spawnSubagent(ctx: RunContext, id: string, agent: string, input: Json): Promise<Json>; // durable, resumes across restarts
 ```
 
-**In progress**: `CG-PRF-003` is `candidate`.
+`HarnessOptions.caller` (default `LOCAL_OPERATOR`) names the identity handlers see for `send`/session operations, `storage.kv` keys are partitioned by `HandlerContext.tenant` (so the caller's tenant, not a hardcoded one, scopes stored data), and `subagent.start` derives its tenant from the handler context rather than from caller input. `CG-PRF-003` is `implemented`: `bun test ./profiles/harness` proves pure composition (no kernel/runtime edits), the agent loop over a provider plus discovered tools, sessions, a live provider swap, dynamic skills with reversible registration, activate → deactivate on storage removal → reactivate on restore (spec §35), tenant-partitioned durable `storage.kv`, a sandbox with scrubbed env and a timeout, a durable scheduler, and subagent composition (`.agents/evidence/m9-profiles.md`).
 
 ## Status
 
 | Requirement | Status |
 |---|---|
 | `CG-PRF-001` (`defineProfile`) | implemented |
-| `CG-PRF-002` (Copilot profile) | candidate — in progress |
-| `CG-PRF-003` (Harness profile) | candidate — in progress |
+| `CG-PRF-002` (Copilot profile) | implemented |
+| `CG-PRF-003` (Harness profile) | implemented |
 
 ## Related
 
