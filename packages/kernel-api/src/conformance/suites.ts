@@ -178,6 +178,35 @@ export function contractSuite(name: string, factory: KernelFactory): void {
       expect(h.log).toEqual(["a:up", "a:down"]);
     });
 
+    test("a component definition is independent of its occurrences (§8.3)", async () => {
+      const h1 = await make();
+      const h2 = await make();
+      const registry: string[] = [];
+      let activations = 0;
+      const definition: import("../types.ts").Component = {
+        id: "shared-definition",
+        provides: [contract("x.shared")],
+        activate(fiber) {
+          activations++;
+          registry.push(fiber.fiberId);
+          fiber.effects.register(() => void registry.splice(registry.indexOf(fiber.fiberId), 1), "entry");
+          fiber.provide(contract("x.shared"), () => fiber.fiberId);
+        },
+      };
+      const a = h1.kernel.root.child({ id: "a" });
+      const b = h1.kernel.root.child({ id: "b" });
+      const occurrences = [await h1.kernel.mount(definition, a), await h1.kernel.mount(definition, b), await h2.kernel.mount(definition)];
+      for (const o of occurrences) await o.waitFor("ACTIVE");
+      expect(activations).toBe(3);
+      expect(new Set(occurrences.map((o) => o.fiberId)).size).toBe(3);
+      await occurrences[0]!.dispose("one occurrence");
+      expect(occurrences.slice(1).map((o) => o.state)).toEqual(["ACTIVE", "ACTIVE"]);
+      expect(registry).toEqual([occurrences[1]!.fiberId!, occurrences[2]!.fiberId!]);
+      const fromB = lease(h1.kernel.resolve({ capability: "x.shared" }, b));
+      expect(await fromB.invoke(null, invocation())).toEqual({ ok: true, value: occurrences[1]!.fiberId });
+      expect(isUnavailable(h1.kernel.resolve({ capability: "x.shared" }, a))).toBe(true);
+    });
+
     test("mounting into a closed scope is rejected", async () => {
       const h = await make();
       const scope = h.kernel.root.child();

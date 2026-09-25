@@ -690,6 +690,42 @@ requirements:
     dependencies: []
     status: implemented
     evidence: .agents/evidence/m9-profiles.md
+  - id: CG-EVT-007
+    title: 'Durable facts are append-only; correction is a later fact; storage refuses deletion and rewrites.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '9.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Durable fact', invariant: 'Durable facts are never undone by deleting history'}
+    acceptance: [AC-EVT-007-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/append-only.test.ts', proof_paths: ['tests/integration/append-only.test.ts']}
+    dependencies: [CG-EVT-004]
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-audit-closure.md
+  - id: CG-KRN-009
+    title: 'A component definition is independent of its runtime occurrences.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Component', invariant: 'Definitions are reusable across scopes and kernels without shared state'}
+    acceptance: [AC-KRN-009-01]
+    gate: {cwd: ., run: 'bun test ./packages/kernel-cordis/test/contract.test.ts', proof_paths: ['packages/kernel-cordis/test/contract.test.ts']}
+    dependencies: [CG-KRN-001]
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-audit-closure.md
+  - id: CG-FAIL-001
+    title: 'Adapter and UI failures never corrupt authoritative state or stop unrelated execution.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '31.4; 31.5; 31.6; 31.7', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Failure isolation', invariant: 'Failures stay inside their plane'}
+    acceptance: [AC-FAIL-001-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/failure-isolation.test.tsx', proof_paths: ['tests/integration/failure-isolation.test.tsx']}
+    dependencies: [CG-RVF-001, CG-SEM-001, CG-RT-001, CG-UI-001]
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-audit-closure.md
+  - id: CG-ARC-003
+    title: 'Structural invariants: no sea grammar, pinned upstream releases, framework-only wire schema, no RxJS.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '3.1; 3.2; 3.3; 3.7; 23', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Architecture', invariant: 'Upstream projects stay independent and the kernel stays Web-standard'}
+    acceptance: [AC-ARC-003-01]
+    gate: {cwd: ., run: 'bun test ./tests/architecture/invariants.test.ts', proof_paths: ['tests/architecture/invariants.test.ts']}
+    dependencies: []
+    status: implemented
+    evidence: .agents/evidence/2026-09-25-audit-closure.md
 acceptance_contracts:
   - id: AC-001-01
     requirement: AK-001
@@ -910,3 +946,15 @@ acceptance_contracts:
   - id: AC-DOC-001-01
     requirement: CG-DOC-001
     expected: 'docs/ contains every page in the README documentation map; each package and profile has README.md and AGENTS.md; relative links resolve.'
+  - id: AC-EVT-007-01
+    requirement: CG-EVT-007
+    expected: 'No store operation deletes or rewrites events; committed envelopes never change; raw SQL DELETE/UPDATE on events is refused by the SQLite file; erasure removes payload content only.'
+  - id: AC-KRN-009-01
+    requirement: CG-KRN-009
+    expected: 'One definition mounted in two scopes and a second kernel yields independent fibers, effects, and capabilities; disposing one occurrence leaves the others active.'
+  - id: AC-FAIL-001-01
+    requirement: CG-FAIL-001
+    expected: 'A failed RVF snapshot leaves the active index and event store unchanged; an unavailable semantic projection leaves dependents waiting without fallback while other runs complete; RealityTrace outage leaves runs completed and events committed with delivery surfaced for reconciliation; a UI render failure mutates no authoritative state.'
+  - id: AC-ARC-003-01
+    requirement: CG-ARC-003
+    expected: 'No package requires RxJS; the repository defines no sea grammar; DomainForge and RealityTrace are consumed as pinned releases or an external CLI tag; proto messages carry no domain ontology.'
