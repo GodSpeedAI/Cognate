@@ -59,8 +59,11 @@ cd my-app && bun install && bun dev --port N
 
 ## Where to go next
 
+- [README.md](README.md) — the documentation home, with navigation by intent.
 - [concepts.md](concepts.md) — the vocabulary (contexts, capabilities, components, effects, events, continuations).
 - [architecture.md](architecture.md) — planes, package topology, and dependency rules.
+- [tutorials/run-your-first-agent.md](tutorials/run-your-first-agent.md) — build a runtime, an agent, and a capability by hand.
+- [tutorials/start-an-app-from-a-checkout.md](tutorials/start-an-app-from-a-checkout.md) — the CLI path, end to end.
 - [../AGENTS.md](../AGENTS.md) — the agent operating guide, if you are automating changes to this repository.
 - [../.agents/CURRENT_STATUS.md](../.agents/CURRENT_STATUS.md) — current build stage.
 - [../requirements/ledger.yaml](../requirements/ledger.yaml) — the authoritative status of every requirement.

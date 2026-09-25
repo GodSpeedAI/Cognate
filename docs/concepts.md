@@ -2,6 +2,11 @@
 
 The vocabulary below is framework-owned (spec §8–§12): no engine type (Cordis, RuVector, Astryx, ...) is exposed through it. All of it is implemented and proven by [`@cognate/kernel-api`](../packages/kernel-api/README.md)'s conformance kit unless noted otherwise.
 
+This page is the canonical owner of the vocabulary. For the conceptual structure these terms
+compose into, read [mental-model.md](mental-model.md); for the architecture they sit in, read
+[architecture.md](architecture.md); for what happens when one of them is used at runtime, read the
+matching page in [workflows/](workflows/).
+
 ## Contexts and scopes
 
 A `Context` carries an authenticated principal and a tenant/workspace scope, kept separate from capability visibility (spec §32, [security.md](security.md)). A `Scope` is the unit of capability visibility and lifecycle: a provider is visible in its scope and descendants only, and closing a parent scope closes child scopes before parent effects (spec §8.5). Scope isolation and narrowing are proven properties — a child scope can restrict but never gain authority by inheriting or discovering a capability.

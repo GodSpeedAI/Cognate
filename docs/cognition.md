@@ -51,3 +51,6 @@ eligible providers → rank by historical outcome (UCB1)    # the implemented sh
 - [rvf.md](rvf.md) — portable snapshots of cognitive state.
 - [security.md](security.md) — retrieval authorization in detail.
 - [concepts.md](concepts.md) — capabilities, eligibility, and selection.
+- [subsystems/capabilities-and-cognition.md](subsystems/capabilities-and-cognition.md) — the subsystem page: selection, the index contract, and the adapters.
+- [workflows/evidence-and-observation.md](workflows/evidence-and-observation.md) — how observations and cognitive entries are indexed from the same events.
+- [explanation/authority-and-learning.md](explanation/authority-and-learning.md) — why ranking sits after eligibility.

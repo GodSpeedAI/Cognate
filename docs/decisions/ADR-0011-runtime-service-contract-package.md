@@ -1,5 +1,7 @@
 # ADR-0011 — `@cognate/runtime-api`: a transport-independent runtime service contract
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 **Status:** Accepted (2026-09-24)
 
 ## Context

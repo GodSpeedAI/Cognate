@@ -1,5 +1,7 @@
 # ADR-0006: Portable cognition — RVF adapter
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 ## Status
 
 **Blocked / unsupported** (Phase 0). Not adopted for the reference profile.

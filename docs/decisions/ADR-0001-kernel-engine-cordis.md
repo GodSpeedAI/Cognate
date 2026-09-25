@@ -1,5 +1,7 @@
 # ADR-0001: Cordis as the reference kernel composition engine
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 ## Status
 
 Accepted-with-mitigations

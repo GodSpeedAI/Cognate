@@ -1,5 +1,7 @@
 # ADR-0007: Observation adapter target — RealityTrace (SXR) CLI + CEP schema
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 ## Status
 
 Accepted (Phase 0 characterization complete). The adapter itself is

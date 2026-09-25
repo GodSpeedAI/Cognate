@@ -1,5 +1,7 @@
 # ADR-0003: Wire format and RPC — Protobuf + Connect over Bun.serve()
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 Status: Accepted for Phase 0 (fixture-scoped). Not yet a repository-wide dependency pin.
 
 ## Context

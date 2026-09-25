@@ -89,3 +89,6 @@ interface A2AAdapterOptions {
 
 - [security.md](security.md) — every protocol adapter authenticates and authorizes exactly like a native caller.
 - [ui.md](ui.md) — the headless client AG-UI and native clients both sit above.
+- [subsystems/wire-and-protocols.md](subsystems/wire-and-protocols.md) — the subsystem page, with the internal operation and failure modes of each adapter.
+- [how-to/add-a-protocol-adapter.md](how-to/add-a-protocol-adapter.md) — extending the wire without letting a protocol define semantics.
+- [reference/runtime-service-and-agents.md](reference/runtime-service-and-agents.md) — the contract every adapter maps.

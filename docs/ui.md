@@ -29,7 +29,7 @@ Proven by `test/client.test.ts` (`CG-CLT-001`).
 
 ## React bindings: `@cognate/react`
 
-[`@cognate/react`](../packages/react/README.md) wraps `@cognate/client` for React 19 via `useSyncExternalStore` (spec §25.2): `CognateProvider`, `useCognate`, `useRun`, `useAgent`, `useProjection`, `useCapability` (registers a frontend capability for the component's lifetime, unregistered on unmount), `useContinuations`, `useArtifact`, `useConnectionStatus`. No Astryx dependency — renderers such as `@cognate/ui-astryx` sit above this package. Proven by `test/hooks.test.tsx` (`CG-UI-001`); tests register `happy-dom` through `test/setup-dom.ts`.
+[`@cognate/react`](../packages/react/README.md) wraps `@cognate/client` for React 19 via `useSyncExternalStore` (spec §25.2): `CognateProvider`, `useCognate`, `useRun`, `useAgent`, `useProjection`, `useCapability` (registers a frontend capability for the component's lifetime, unregistered on unmount), `useSharedState` (the read/write pair for a run's shared state, spec §29.1), `useContinuations`, `useArtifact`, `useConnectionStatus`. No Astryx dependency — renderers such as `@cognate/ui-astryx` sit above this package. Proven by `test/hooks.test.tsx` (`CG-UI-001`); tests register `happy-dom` through `test/setup-dom.ts`.
 
 ## Reference renderer: `@cognate/ui-astryx`
 
@@ -52,7 +52,7 @@ function StateInspector(props: { runId: string | undefined }): ReactNode; // the
 
 End-to-end UI suites (`AK-010`) hit [DEBT-012](../.agents/DEBT.md): Playwright's `webServer` TCP readiness probe hangs indefinitely on this WSL2 host, so fixtures use a `globalSetup` that spawns `bun run` and waits on stdout instead. Playwright workers run under Node, so `Bun` globals are unavailable inside specs — servers run as separate Bun processes.
 
-The full browser journey from semantic load to RVF snapshot (spec §36) is still in progress: `CG-E2E-001`'s status in [`requirements/ledger.yaml`](../requirements/ledger.yaml) is `candidate`.
+The full browser journey from semantic load to RVF snapshot (spec §36) passes: `CG-E2E-001` is `implemented` in [`requirements/ledger.yaml`](../requirements/ledger.yaml), and `just gate CG-E2E-001` re-proves it. It drives the Astryx UI, resolves an approval continuation in the browser, opens a JSON artifact as a table, recalls a prior run in a second run, and takes an RVF snapshot to the store head — then verifies all of it from the SQLite file in a separate process rather than from the UI. `DEBT-018` (RVF `FsyncFailed` under concurrent I/O) remains open and is worked around by a retry in the E2E app.
 
 ## Status
 
@@ -60,5 +60,8 @@ The full browser journey from semantic load to RVF snapshot (spec §36) is still
 
 ## Related
 
+- [subsystems/presentation.md](subsystems/presentation.md) — the subsystem page for this plane, with its state and failure modes.
+- [workflows/client-and-ui-session.md](workflows/client-and-ui-session.md) — what a live client session actually does, including reconnect.
+- [workflows/shared-state.md](workflows/shared-state.md) — the two writers behind `RunState.state` and `updateState`.
 - [protocols.md](protocols.md) — AG-UI's compatibility with this client, for third-party frontends.
 - [extensions.md](extensions.md) — how `profiles/copilot` composes these into a full application.

@@ -143,3 +143,13 @@ Framework-owned packages (`kernel-api`, `events`, `runtime-api`, `cognitive-api`
 | [profiles/harness](../profiles/harness/README.md) | Reference autonomous harness | implemented (`CG-PRF-003`) |
 
 Status reflects [`requirements/ledger.yaml`](../requirements/ledger.yaml) as of this writing; run `just gates` for the current, authoritative view.
+
+The dependency table above is explicitly "by example". The complete internal graph, computed from every manifest, is in [source-map.md](source-map.md#the-full-internal-dependency-graph); the machine-checked rules are in [reference/capability-and-architecture-contracts.md](reference/capability-and-architecture-contracts.md).
+
+## Deeper
+
+- [mental-model.md](mental-model.md) — the conceptual structure behind these planes.
+- [subsystems/](subsystems/) — one page per subsystem, with its responsibilities, state, lifecycle, failure modes, and extension points.
+- [workflows/](workflows/) — what actually happens at runtime.
+- [explanation/](explanation/) — why the structure is this way.
+- [source-map.md](source-map.md) — every concept mapped to its implementation.

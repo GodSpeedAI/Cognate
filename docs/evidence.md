@@ -43,3 +43,6 @@ Per [`requirements/ledger.yaml`](../requirements/ledger.yaml): `CG-RT-001` (Obse
 
 - [semantics.md](semantics.md) — where the correlated `SemanticRef` comes from.
 - [security.md](security.md) — observation payloads must not carry credentials or unredacted personal data.
+- [workflows/evidence-and-observation.md](workflows/evidence-and-observation.md) — the full trace, from `observationIntent` to the CLI receipt.
+- [subsystems/capabilities-and-cognition.md](subsystems/capabilities-and-cognition.md) — the adapter among the others.
+- [troubleshooting.md](troubleshooting.md) — poisoned deliveries and a missing binary.

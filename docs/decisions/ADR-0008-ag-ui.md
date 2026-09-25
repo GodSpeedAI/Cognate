@@ -1,5 +1,7 @@
 # ADR-0008: AG-UI as an optional interoperability adapter
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 ## Status
 
 Accepted (Phase 0 characterization complete; no adapter code built yet).

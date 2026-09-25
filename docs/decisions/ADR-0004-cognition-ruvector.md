@@ -1,5 +1,7 @@
 # ADR-0004: RuVector as the reference CognitiveIndex implementation
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 - Status: Accepted (partial capability — see Consequences)
 - Date: 2026-09-24
 - Related: software-design-spec-cognate §3.5, §3.6, §14, §15, §16, §31.3, §37, §38

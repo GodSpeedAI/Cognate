@@ -1,5 +1,7 @@
 # ADR-0005: SONA does not satisfy the adaptive-ranking contract (Phase 0)
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 - Status: Accepted — SONA rejected as an adaptive-ranking backend for v0
 - Date: 2026-09-24
 - Related: software-design-spec-cognate §3.6, §17, §31.3, §37, §38

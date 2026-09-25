@@ -97,3 +97,8 @@ spawnSubagent(ctx: RunContext, id: string, agent: string, input: Json): Promise<
 
 - [architecture.md](architecture.md) — dependency rules governing where a new package may sit.
 - [security.md](security.md) — every capability invocation is policy-checked regardless of which layer added it.
+- [how-to/add-a-capability.md](how-to/add-a-capability.md) — the guided version of the first section.
+- [how-to/add-a-projection.md](how-to/add-a-projection.md) — the other main extension move.
+- [how-to/add-a-protocol-adapter.md](how-to/add-a-protocol-adapter.md) — the adapter row of the table above.
+- [subsystems/application-composition.md](subsystems/application-composition.md) — profiles, the CLI, and the starter in depth.
+- [explanation/why-adapters.md](explanation/why-adapters.md) — the rule that decides whether a feature is a capability, a profile, or a kernel change.
