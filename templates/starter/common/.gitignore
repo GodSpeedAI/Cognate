@@ -1,0 +1,3 @@
+node_modules
+.cognate/app.sqlite*
+.cognate/dist

@@ -1,0 +1,4 @@
+Entity "Customer" in support
+Entity "SupportDesk" in support
+Resource "Ticket" units in support
+Flow "Ticket" from "Customer" to "SupportDesk" quantity 1

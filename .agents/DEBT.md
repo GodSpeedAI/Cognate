@@ -122,3 +122,10 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed:** All `@cognate/*` packages are private workspace packages with internal `workspace:*` dependencies; `bunx cognate create` from npm (README Quick Start) cannot work. `cognate create --source <checkout>` packs the packages (`bun pm pack`) into the generated app and pins them with `overrides`.
 **Consequence:** The Quick Start requires a local checkout. Versions are `0.0.0`; no release, changelog, or provenance process exists.
 **Exit criterion:** A release process publishes versioned packages (with provenance) and `bunx cognate create my-app` works from a clean machine.
+
+## DEBT-017 — Bun 1.4.0 `toMatchObject` mutates the received object
+**Status:** Open (worked around in tests)
+**Requirement(s):** CG-CLI-001 (observed); any test that reads an object after matching it
+**Observed:** `expect(actual).toMatchObject({ x: expect.any(Number) })` passes and then leaves `actual.x` as `{}` (also with `expect.stringMatching`). Reproduced in isolation on Bun 1.4.0 (`.agents/evidence/2026-09-25-releases.md`).
+**Consequence:** A later assertion on the same object fails spuriously (or, in the worst case, compares mutated values). Tests must match a `structuredClone` of the value when using asymmetric matchers and reading the value afterwards. A single-line heuristic scan of all tests and kits (2026-09-25) found no other read-after-match; multi-line matches were not scanned.
+**Exit criterion:** A Bun release without the defect is pinned and the isolated repro passes, or all such matches are audited to use clones.
