@@ -7,9 +7,17 @@
   "bin": { "cognate": "./src/bin.ts" },
   "exports": { ".": "./src/index.ts" },
   "dependencies": {
+    "@cognate/client": "workspace:*",
     "@cognate/domainforge": "workspace:*",
-    "@cognate/profile": "workspace:*",
+    "@cognate/profile-copilot": "workspace:*",
+    "@cognate/profile-harness": "workspace:*",
+    "@cognate/protocol-connect": "workspace:*",
     "@cognate/protocol-connect-bun": "workspace:*",
-    "@cognate/runtime-bun": "workspace:*"
+    "@cognate/provider-local": "workspace:*",
+    "@cognate/react": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/ui-astryx": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

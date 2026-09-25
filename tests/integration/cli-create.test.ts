@@ -54,7 +54,8 @@ describe("cognate create / dev (Phase 10)", () => {
     const port = 43_000 + Math.floor(Math.random() * 1000);
     let server = await devServer(app, port);
     const health = await (await fetch(`http://127.0.0.1:${port}/health`)).json();
-    expect(health).toMatchObject({ ok: true, semantic: { objects: expect.any(Number), digest: expect.stringMatching(/^sha256:/) } });
+    // Match a clone: Bun 1.4.0's toMatchObject with asymmetric matchers overwrites matched fields of the received object (DEBT-017).
+    expect(structuredClone(health)).toMatchObject({ ok: true, semantic: { objects: expect.any(Number), digest: expect.stringMatching(/^sha256:/) } });
     expect(health.semantic.objects).toBeGreaterThan(0);
     const call = (method: string, body: unknown) => fetch(`http://127.0.0.1:${port}/cognate.v1.RuntimeService/${method}`, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer tenant-a:alice" }, body: JSON.stringify(body) }).then((r) => r.json());
     const started = await call("StartRun", { agent: health.agents[0], input: { message: "hello" }, idempotencyKey: "cli-1" });

@@ -1,0 +1,16 @@
+{
+  "name": "my-cognate-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cognate dev",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@cognate/cli": "workspace:*",
+    "@cognate/profile-harness": "workspace:*",
+    "@cognate/domainforge": "workspace:*",
+    "@cognate/provider-local": "workspace:*"
+  }
+}

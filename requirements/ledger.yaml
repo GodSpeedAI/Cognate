@@ -641,7 +641,9 @@ requirements:
     acceptance: [AC-CLI-001-01]
     gate: {cwd: ., run: 'bun test ./tests/integration/cli-create.test.ts', proof_paths: ['tests/integration/cli-create.test.ts']}
     dependencies: [CG-PRF-001]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m9-profiles.md
+    debt: DEBT-016
   - id: CG-E2E-001
     title: 'Browser journey from semantic load to RVF snapshot, verifying authoritative state independently of the UI.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '36', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
