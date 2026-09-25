@@ -1,7 +1,7 @@
 # Phase 0 Connect/protobuf/Bun compatibility fixture — evidence
 
 Date: 2026-09-24
-Environment: Bun 1.4.0, Linux (WSL2), repo `/home/sprime01/projects/cognate`, fixture at
+Environment: Bun 1.4.0, Linux (WSL2), repo `~/projects/cognate`, fixture at
 `compatibility/phase0/connect/`.
 
 ## Pinned tuple (installed via `bun install` inside the fixture directory)

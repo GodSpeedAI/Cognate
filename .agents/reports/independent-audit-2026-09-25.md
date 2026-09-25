@@ -1,6 +1,6 @@
 # Independent Adversarial Audit — Cognate — 2026-09-25
 
-Auditor: independent read-only review, no prior authorship. Verified by running commands, not by trusting prose. Repo: /home/sprime01/projects/cognate, branch `build/cognate-v0`, HEAD `5e6690a`.
+Auditor: independent read-only review, no prior authorship. Verified by running commands, not by trusting prose. Repo: ~/projects/cognate, branch `build/cognate-v0`, HEAD `5e6690a`.
 
 ## Summary verdict
 

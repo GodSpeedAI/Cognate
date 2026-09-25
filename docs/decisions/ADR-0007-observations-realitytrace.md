@@ -17,7 +17,7 @@ serialization, artifact media type, correlation mapping, and idempotency
 behavior" before any adapter can be claimed working; if the fixture fails,
 the integration remains an optional, blocked adapter.
 
-A read-only checkout of the SXR Rust CLI/ledger (`/home/sprime01/projects/sxr`,
+A read-only checkout of the SXR Rust CLI/ledger (`~/projects/sxr`,
 commit `f7fb1c307e1f7ceb15468986330e5ca8c9248d19`) and its CEP-0008 Semantic
 Envelope schema were built and exercised out-of-tree (see
 `compatibility/phase0/realitytrace/` and

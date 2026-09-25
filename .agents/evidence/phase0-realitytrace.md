@@ -2,15 +2,15 @@
 
 Date: 2026-09-24
 Environment: Bun 1.4.0, Linux (WSL2), rustc/cargo 1.98.0, repo
-`/home/sprime01/projects/cognate`, fixture at
+`~/projects/cognate`, fixture at
 `compatibility/phase0/realitytrace/`.
 
 ## Source checkout (read-only; never modified)
 
-- `/home/sprime01/projects/sxr` at commit
+- `~/projects/sxr` at commit
   `f7fb1c307e1f7ceb15468986330e5ca8c9248d19`
-  (`git -C /home/sprime01/projects/sxr rev-parse HEAD`).
-- `/home/sprime01/projects/cep` and `/home/sprime01/projects/sxr-exec006-recovery`
+  (`git -C ~/projects/sxr rev-parse HEAD`).
+- `~/projects/cep` and `~/projects/sxr-exec006-recovery`
   were listed as available checkouts; the CEP schema actually enforced by the
   running binary lives inside the sxr checkout itself
   (`sxr/schemas/cep-semantic-envelope.schema.json`), which is what this
@@ -21,15 +21,15 @@ Environment: Bun 1.4.0, Linux (WSL2), rustc/cargo 1.98.0, repo
 ## Build
 
 ```
-CARGO_TARGET_DIR=/home/sprime01/projects/cognate/.tmp/sxr-target \
-  cargo build --release -p sxr-cli --manifest-path /home/sprime01/projects/sxr/Cargo.toml
+CARGO_TARGET_DIR=~/projects/cognate/.tmp/sxr-target \
+  cargo build --release -p sxr-cli --manifest-path ~/projects/sxr/Cargo.toml
 ```
 
 - Result: **succeeded**. `Finished \`release\` profile [optimized] target(s) in 6m 59s`.
 - Output binary: `.tmp/sxr-target/release/sxr` (10,128,552 bytes, verified
   executable; `.tmp/` is gitignored).
 - `sxr --version` → `sxr 0.1.0`.
-- The sxr working tree (`git -C /home/sprime01/projects/sxr status --porcelain`)
+- The sxr working tree (`git -C ~/projects/sxr status --porcelain`)
   was not touched by the build (`CARGO_TARGET_DIR` redirected all build
   output out-of-tree); pre-existing local changes in that checkout
   (`.jolli/...` bookkeeping files) predate this fixture and were left alone.
@@ -108,8 +108,8 @@ store, keyed by `ledger_position`/`already_committed`, not by
   envelope on drain — not independently verified here.
 - Only one toy Cargo repo (a single passing test) was used; failing-test
   and crashing-verifier observation shapes were not exercised live.
-- The separate `/home/sprime01/projects/cep` and
-  `/home/sprime01/projects/sxr-exec006-recovery` checkouts were inventoried
+- The separate `~/projects/cep` and
+  `~/projects/sxr-exec006-recovery` checkouts were inventoried
   but not separately built/run; the schema enforced by the actual sxr binary
   (embedded in the sxr checkout) was treated as authoritative for this
   fixture, per the task's framing of sxr as the adapter target.

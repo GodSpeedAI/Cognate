@@ -1,7 +1,7 @@
 # Phase 0 evidence — DomainForge TypeScript/N-API Graph binding — 2026-09-24
 
 Scope: `compatibility/phase0/domainforge/` only. Read-only reference reads
-against `/home/sprime01/projects/domainforge` (also `domainforge-slice0b`,
+against `~/projects/domainforge` (also `domainforge-slice0b`,
 `sea-rs`, `tree-sitter-sea`) — none of those checkouts were modified or
 built. No root package.json/bun.lock/justfile/ledger file was touched, and
 nothing was committed.
