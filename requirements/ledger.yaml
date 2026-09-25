@@ -674,7 +674,8 @@ requirements:
     acceptance: [AC-EXM-001-01]
     gate: {cwd: ., run: 'bun test ./tests/examples.test.ts', proof_paths: ['tests/examples.test.ts']}
     dependencies: [CG-PRF-002, CG-PRF-003]
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m9-profiles.md
   - id: CG-DOC-001
     title: 'The planned documentation map exists and every package has README and AGENTS guidance.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '37 / Phase 10', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
