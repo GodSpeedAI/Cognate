@@ -33,3 +33,7 @@ gate id:
 # Report every ledger gate (PASS/FAIL) and status drift; exits non-zero while any gate is unmet
 gates:
     bun scripts/gate.ts --all
+
+# Install the pinned RealityTrace CLI release (v0.2.0) used by AK-006 and CG-RT-002 (no local checkout needed)
+setup-realitytrace:
+    cargo install --git https://github.com/GodSpeedAI/RealityTrace --tag realitytrace-v0.2.0 realitytrace --locked --root .tmp/realitytrace

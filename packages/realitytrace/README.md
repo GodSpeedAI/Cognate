@@ -33,7 +33,10 @@ on the same `ledger_position` and report `already_committed`.
 ## DEBT-009: correlation limit
 
 `sxr ingest` has no flag for caller-supplied correlation data (run id,
-event id, correlation id) — verified via `--help`. Cognate's correlation
-mapping (event → observation → receipt) is therefore kept entirely in
-Cognate's own `observations` store, keyed by `eventId`, never inferred from
-SXR's response fields.
+event id, correlation id) in documented CEP extension/reference fields —
+verified via `--help`. SXR retains the submitted observation JSON as
+uninterpreted verifier output, which does not prove a structured CEP
+correlation round-trip. Cognate keeps the authoritative event → observation →
+receipt mapping in its `observations` store, keyed by `eventId`, and uses the
+committed ledger position to reconcile target delivery. It never treats a
+duplicate response's newly minted SXR `observation_id` as the committed id.

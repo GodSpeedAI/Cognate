@@ -5,24 +5,28 @@ Every known gap, shortcut, or blocked requirement has an entry here. A ledger re
 Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed**, **Consequence**, **Exit criterion**.
 
 ## DEBT-001 — DomainForge Flow ids are random per parse
-**Status:** Open (mitigation required in adapter)
+**Status:** Closed (2026-09-24) — adapter mitigation in `19615f4`; CG-SEM-002 passed again on 2026-09-25 (7 tests). The pinned upstream binding still assigns random native Flow ids.
+**Original status:** Open
 **Requirement(s):** AK-003, CG-SEM-001, CG-SEM-002
 **Observed:** `@godspeedai/domainforge` 0.16.0 assigns a fresh v4-shaped UUID to each Flow on every `Graph.parse`; Entity/Resource ids are stable (`compatibility/phase0/domainforge/domainforge.test.ts`, "observed: Flow identity is NOT stable").
-**Consequence:** A native Flow id cannot be a `SemanticRef` identity. The adapter must derive Flow identity from (resource, from, to) plus source digest.
+**Consequence:** A native Flow id cannot be a `SemanticRef` identity. The adapter derives Flow identity from (resource, from, to) and pins the ref to a source digest; the identity test proves stability across parses (`.agents/evidence/m6-semantics-evidence.md`).
 **Exit criterion:** CG-SEM-002 proves derived Flow identity is stable across parses, or upstream publishes stable Flow ids and AK-003 is re-run.
 
 ## DEBT-002 — DomainForge errors share one code
 **Status:** Open
 **Requirement(s):** AK-003, CG-SEM-001
 **Observed:** Missing-reference and syntax errors both throw `Error` with `code: "GenericFailure"`; only `.message` differs. `hasEntity`/`getEntity` throw on non-UUID input.
-**Consequence:** The adapter classifies failures by message text, which is fragile across DomainForge releases.
-**Exit criterion:** Upstream typed diagnostics, or a pinned-version golden test of every message the adapter classifies (part of CG-SEM-002).
+**Consequence:** The adapter returns typed results, but classifies upstream failures by message regexes. CG-SEM-002 tests one missing-reference and one syntax case; it does not pin every message shape used by the classifier. A DomainForge update could silently turn a known failure into `unknown` or misclassify it.
+**Recommended action:** Keep the binding pinned. Add golden fixtures for each classified upstream diagnostic and an unknown-message fallback; re-run them before any version bump. Prefer upstream typed diagnostics when available.
+**Progress (2026-09-25):** `packages/domainforge/test/diagnostics.test.ts` pins every classified message shape (undefined entity/resource, syntax, duplicate declaration → `ambiguous_identity`, empty source, unknown fallback) and passed on 0.16.0 and 0.17.0 before the pin moved (`.agents/evidence/2026-09-25-releases.md`). Upstream still reports one `GenericFailure` code, so the entry stays open.
+**Exit criterion:** Upstream typed diagnostics replace message matching, or pinned-version golden tests cover every classified message shape and version upgrades fail on drift.
 
 ## DEBT-003 — DomainForge kinds without a V0 Graph accessor
-**Status:** Open (by design for V0)
+**Status:** Accepted V0 scope limit (open for a later binding)
 **Requirement(s):** CG-SEM-001
 **Observed:** ConceptKind has 9 kinds; the Graph binding exposes collections for Entity, Resource, Flow, Instance, Role, Relation only. Policy is add/evaluate JSON only; Metric, Dimension, Unit, Mapping, Projection, External have no Graph accessor.
 **Consequence:** The adapter's mapping table marks these unmapped in V0; they never become capabilities.
+**Recommended action:** Keep the explicit unmapped rows. Extend the adapter only when an application requirement needs one of these kinds and a pinned binding exposes a read accessor; prove the new mapping with a golden fixture.
 **Exit criterion:** A later binding exposes them and the mapping table plus golden fixtures are extended.
 
 ## DEBT-004 — Connect client and bidirectional streaming unsupported on Bun
@@ -61,18 +65,20 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Exit criterion:** A SONA release (or another adaptive library) passes a candidate-bounded ranking fixture.
 
 ## DEBT-009 — RealityTrace CLI cannot carry Cognate correlation ids
-**Status:** Open (AK-006 blocked; CG-RT-002 blocked)
+**Status:** Open (AK-006 blocked; CG-RT-002 implemented with a narrower CLI proof)
 **Requirement(s):** AK-006, CG-RT-002, CG-RT-003
-**Observed:** sxr @ f7fb1c3 (built out-of-tree): the full enrollment → question → threshold → run → plan → ingest → evidence → settlement workflow runs, and `sxr ingest` returns a receipt; but `ingest` accepts only `--run/--verifier/--stdin-format/--spool/--async-mode`. The CEP schema has open `extensions` / `representations[].inline_content` fields, yet no CLI surface submits a raw envelope, so correlation ids cannot be attached to a live record. Duplicate ingest is keyed on run+verifier, and the duplicate response reports a fresh, never-committed `observation_id`; only `already_committed` plus an unchanged `ledger_position` reveal the dedup.
-**Consequence:** Spec §20 correlated delivery cannot be claimed. Cognate's observation port, outbox delivery, and receipt persistence can be built and tested against the real CLI, but correlation lives only in Cognate's own mapping (keyed by `ledger_position`), not inside SXR records.
-**Exit criterion:** SXR exposes a documented envelope/extension submission path and AK-006 proves a correlated record round-trips.
+**Observed:** sxr @ f7fb1c3 (built out-of-tree) completes the enrollment → question → threshold → run → plan → ingest → evidence → settlement workflow. `sxr ingest` accepts observation bytes on stdin and retains Cognate's correlation fields as uninterpreted verifier output, but exposes no documented input for the CEP `extensions` / `representations[].inline_content` fields. CG-RT-002's real CLI test passed in the M6 evidence; it proves delivery and duplicate reconciliation, not a structured correlation round-trip. Ingest deduplicates by run+verifier. A duplicate response has a fresh, never-committed `observation_id`; `already_committed` and unchanged `ledger_position` identify the duplicate.
+**Consequence:** The spec §20 promise of correlation in documented SXR extension/reference fields remains unproven. Cognate keeps event → observation → receipt correlation in its own store, using the committed ledger position for target reconciliation; it must not infer identity from SXR's duplicate `observation_id`.
+**Recommended action:** Add or request a documented SXR ingest surface for caller-supplied CEP extension/reference fields and a read path for the committed record. Test a live write/read round-trip of event, observation, and correlation ids, including duplicate delivery at the same ledger position. Keep Cognate's local mapping until that test passes.
+**Exit criterion:** SXR exposes the documented submission and read paths, and AK-006 proves structured correlation survives a live round-trip and duplicate delivery.
 
 ## DEBT-010 — RealityTrace gate depends on a locally built binary
-**Status:** Open
+**Status:** Closed (2026-09-25) — `just setup-realitytrace` installs the released CLI pinned to tag `realitytrace-v0.2.0` (commit 6966fa4) from the public repository; AK-006 and CG-RT-002 default to it and passed 3×; the fixture no longer reads a local checkout (vendored schema with provenance). Evidence: `.agents/evidence/2026-09-25-releases.md`.
+**Original status:** Open
 **Requirement(s):** AK-006, CG-RT-002
-**Observed:** The fixture spawns `SXR_BIN` (default `.tmp/sxr-target/release/sxr`, built from the local sxr checkout in ~7 min). No published binary or pinned release artifact exists.
-**Consequence:** The gate fails on a machine without that build; it does not skip.
-**Exit criterion:** A pinned, downloadable SXR release artifact, fetched by a setup recipe.
+**Observed:** The fixture spawned `SXR_BIN` (default `.tmp/sxr-target/release/sxr`, built from a local checkout) and read the CEP schema from a machine-specific checkout path. RealityTrace v0.2.0 is released on GitHub (no binary assets) but its crates are **not** on crates.io (`cargo install realitytrace --version 0.2.0` fails).
+**Consequence:** Clean workers now need Rust/cargo and network access to GitHub to install the pinned tag (~minutes of compilation). Installation from crates.io or a prebuilt asset would be faster; neither exists yet.
+**Exit criterion:** Met. A follow-up improvement (not blocking): switch the recipe to the crates.io release or a checksummed binary asset once published.
 
 ## DEBT-011 — SQLite store assumes a single writer process
 **Status:** Open

@@ -109,3 +109,9 @@ following adapter-owned constraints derived from this Phase 0 evidence:
   codes, per-behaviour results, limits, open questions.
 * Spec: `.agents/specs/software-design-spec-cognate.-frameworkmd` §3.2, §7.1,
   §19, §37.
+
+## Addendum (2026-09-25): pin moved to 0.17.0
+
+The operator published `@godspeedai/domainforge` 0.17.0. Before changing the pin, diagnostic goldens were added (`packages/domainforge/test/diagnostics.test.ts`, DEBT-002 recommended action) covering every message shape the adapter classifies: undefined entity, undefined resource, syntax error, duplicate declaration (now classified as `ambiguous_identity` instead of falling through to `unknown`), empty source, and the unknown fallback. A side-by-side probe of 0.16.0 and 0.17.0 showed identical messages, the same single `GenericFailure` code, and still-random native Flow ids (so DEBT-001's derived identity remains required).
+
+With the pin at 0.17.0: AK-003 fixture 9/9, adapter + goldens + semantic-to-observation 19/19, three consecutive runs each; `example:domainforge` passes. Projections now record `binding: "@godspeedai/domainforge@0.17.0"`. Historical projections archived under 0.16.0 keep their recorded binding; resolution is by source digest, so they remain resolvable.
