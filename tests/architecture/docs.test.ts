@@ -30,3 +30,19 @@ test("relative markdown links in README, docs, and package guides resolve", () =
   }
   expect(broken).toEqual([]);
 });
+
+test("docs never describe an implemented requirement as candidate, in progress, or unimplemented", () => {
+  const ledger = Bun.YAML.parse(readFileSync("requirements/ledger.yaml", "utf8")) as { requirements: { id: string; status: string }[] };
+  const status = new Map(ledger.requirements.map((r) => [r.id, r.status]));
+  const stale: string[] = [];
+  for (const page of pages) {
+    readFileSync(`docs/${page}.md`, "utf8").split("\n").forEach((line, index) => {
+      // Status phrasing only ("candidate" also names candidate providers in selection docs).
+      if (!/`candidate`|\bcandidate\s*[—)–-]|status:?\s*`?candidate|in progress|not implemented|currently throws|unimplemented/i.test(line)) return;
+      for (const [id] of line.matchAll(/\b(?:AK|CG)-[A-Z]*-?\d{3}\b/g)) if (status.get(id) === "implemented") stale.push(`docs/${page}.md:${index + 1} ${id}`);
+      const range = /\b(CG-[A-Z]+)-(\d{3})\.\.(\d{3})\b/.exec(line);
+      if (range) for (let n = Number(range[2]); n <= Number(range[3]); n++) { const id = `${range[1]}-${String(n).padStart(3, "0")}`; if (status.get(id) === "implemented") stale.push(`docs/${page}.md:${index + 1} ${id}`); }
+    });
+  }
+  expect(stale).toEqual([]);
+});

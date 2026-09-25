@@ -685,7 +685,8 @@ requirements:
     acceptance: [AC-DOC-001-01]
     gate: {cwd: ., run: 'bun test ./tests/architecture/docs.test.ts', proof_paths: ['tests/architecture/docs.test.ts']}
     dependencies: []
-    status: candidate
+    status: implemented
+    evidence: .agents/evidence/m9-profiles.md
 acceptance_contracts:
   - id: AC-001-01
     requirement: AK-001
