@@ -50,3 +50,5 @@ The full row data (meaning, cardinality, provenance, reason) is in `mappingTable
 - [concepts.md](concepts.md) — how a `SemanticRef` flows into a `CapabilityContract`.
 - [evidence.md](evidence.md) — how a semantic operation correlates to a RealityTrace observation.
 - [architecture.md](architecture.md) — where the semantic plane sits relative to execution.
+- [workflows/startup-and-the-background-loop.md](workflows/startup-and-the-background-loop.md) — where `domain/*.sea` is parsed at startup and its digest is computed.
+- [explanation/why-adapters.md](explanation/why-adapters.md) — why DomainForge is pinned and unchanged.

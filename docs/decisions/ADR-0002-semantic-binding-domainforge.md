@@ -1,5 +1,7 @@
 # ADR-0002: Semantic binding — DomainForge TypeScript/N-API Graph API
 
+<!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
+-->
 ## Status
 
 Proposed (Phase 0 characterization complete; not yet adopted for Phase 5

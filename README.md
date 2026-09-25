@@ -2,7 +2,7 @@
 
 **Define meaning once. Project it everywhere.**
 
-> **Status: v0 build, unreleased.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented and verified against a candidate requirement ledger ([current status](.agents/CURRENT_STATUS.md), [ledger](requirements/ledger.yaml), [evidence](.agents/evidence/)). Nothing is published to a package registry yet ([DEBT-016](.agents/DEBT.md)), and known gaps are tracked in the [debt register](.agents/DEBT.md) — for example RealityTrace structured correlation and SONA adaptive ranking remain blocked. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
+> **Status: v0 build, unreleased.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented and verified against a candidate requirement ledger ([current status](.agents/CURRENT_STATUS.md), [ledger](requirements/ledger.yaml), [evidence](.agents/evidence/)). `just gates` currently reports every ledger requirement passing, and `bun run test` passes across all 76 test files. Nothing is published to a package registry yet ([DEBT-016](.agents/DEBT.md)), the ledger is a *candidate* rather than a frozen contract, and the known gaps are tracked in the [debt register](.agents/DEBT.md) — for example erasure does not yet reach every derived copy ([DEBT-014](.agents/DEBT.md)), Connect supports unary and server-streaming only ([DEBT-004](.agents/DEBT.md)), and runs execute serially in a polling loop ([DEBT-015](.agents/DEBT.md)). The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
 
 Cognate is an open-source semantic application framework for building agent-native software.
 
@@ -1401,19 +1401,21 @@ That rule keeps Cognate small even as the ecosystem around it grows.
 
 # Documentation
 
-Documentation map:
+Start at **[docs/README.md](docs/README.md)** — it is the documentation home and navigates by intent
+(learn the system, get something done, understand why, look something up, follow execution, find the
+implementation).
 
-* `docs/getting-started.md` — build your first Cognate application
-* `docs/concepts.md` — contexts, capabilities, components, effects, events, and continuations
-* `docs/architecture.md` — complete system architecture
-* `docs/semantics.md` — `.sea` and DomainForge integration
-* `docs/cognition.md` — RuVector, recall, ranking, and cognitive safety
-* `docs/rvf.md` — snapshots, branches, and portable cognition
-* `docs/evidence.md` — RealityTrace integration
-* `docs/ui.md` — headless client, React, and Astryx
-* `docs/protocols.md` — Protobuf, Connect, AG-UI, MCP, and A2A
-* `docs/extensions.md` — capabilities, components, adapters, providers, and profiles
-* `docs/security.md` — authority, retrieval, boundaries, and external commitments
+| Layer | Pages |
+| --- | --- |
+| Orientation and model | [docs/README.md](docs/README.md) · [docs/getting-started.md](docs/getting-started.md) · [docs/mental-model.md](docs/mental-model.md) · [docs/concepts.md](docs/concepts.md) · [docs/architecture.md](docs/architecture.md) |
+| Subsystems | [docs/subsystems/](docs/subsystems/) — kernel, durable state, runtime, continuations and commitments, capabilities and cognition, wire and protocols, presentation, application composition |
+| Workflows | [docs/workflows/](docs/workflows/) — startup and the background loop, run execution, capability invocation, continuation and resume, shared state, evidence and observation, client and UI session |
+| Explanation | [docs/explanation/](docs/explanation/) — why replay, why projection, why learning cannot grant authority, why adapters · [docs/decisions/](docs/decisions/) — ADR-0001..0011 |
+| Plane pages | [docs/semantics.md](docs/semantics.md) · [docs/cognition.md](docs/cognition.md) · [docs/rvf.md](docs/rvf.md) · [docs/evidence.md](docs/evidence.md) · [docs/ui.md](docs/ui.md) · [docs/protocols.md](docs/protocols.md) · [docs/security.md](docs/security.md) · [docs/extensions.md](docs/extensions.md) |
+| Tutorials | [docs/tutorials/](docs/tutorials/) — run your first agent, a human in the loop, start an app from a checkout |
+| How-to | [docs/how-to/](docs/how-to/) — add a capability, add a projection, add a protocol adapter, verify a change |
+| Reference | [docs/reference/](docs/reference/) — commands and configuration, the runtime service and agent surface, events and stores, capability and architecture contracts, the ledger and evidence model · [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Maps | [docs/documentation-map.md](docs/documentation-map.md) — what every page is for and which concepts it owns · [docs/source-map.md](docs/source-map.md) — concept to implementation |
 
 For implementation work today, start with the [agent operating guide](AGENTS.md), [current status](.agents/CURRENT_STATUS.md), and [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd). Each package and profile has its own `README.md` and `AGENTS.md`.
 

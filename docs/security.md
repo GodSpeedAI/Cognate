@@ -12,6 +12,20 @@ A `Context` carries an authenticated principal and tenant/workspace scope as val
 
 Server-side policy is checked **at invocation, and again before an irreversible external commitment** — never earlier and never assumed from a client projection or a model/tool declaration, which are never an authorization decision. Every capability invocation carries: caller identity/context, scope, capability identity, selected provider, applicable policy information, and trace/correlation identity (`HandlerContext`, [`packages/kernel-api/src/types.ts`](../packages/kernel-api/src/types.ts)). Invocation never throws for a denial: it returns a typed `InvocationResult` (`unavailable | denied | deadline_exceeded | cancelled | failed`), and every invocation emits an `invocation` audit event (spec §32, §33).
 
+## The service boundary is a separate gate
+
+A `RuntimeService` applies a second, independent `ActionPolicy` to the actions that are not
+capability invocations — `run.start`, `run.cancel`, `continuation.resume`, `continuation.cancel`,
+and `run.state.update` (the bidirectional shared-state write, `CG-STA-001`). It defaults to deny and
+is configured on `createRuntime` as `actions`; see
+[subsystems/runtime.md](subsystems/runtime.md#core-abstractions). A caller that may invoke every
+capability still cannot start someone else's run.
+
+Inside a runtime, `ContinuationService` is constructed with an always-allow policy because it is
+only reachable through that service ([`packages/runtime-bun/src/runtime.ts`](../packages/runtime-bun/src/runtime.ts)).
+A `ContinuationService` you construct and use directly bypasses this check; supply a real
+`ContinuationPolicy` if it is reachable from anything but the service.
+
 ## Tenant isolation
 
 Framework observations, events, and cognitive entries carry `scope_id`/tenant identity, and a policy decision is scoped to `tenant` + `scopeId` (`AuthorizationRequest`). `@cognate/cognitive-ruvector`'s `similar` filters by tenant/scope before disclosure and never discloses another tenant's id, compensating for RuVector's own `filter` option not actually filtering ([DEBT-007](../.agents/DEBT.md); see [cognition.md](cognition.md)).
@@ -51,4 +65,7 @@ Protocol input is schema validated; untrusted protobuf/JSON payloads must not co
 
 - [concepts.md](concepts.md) — capabilities, scopes, and the eligibility/policy split this page assumes.
 - [cognition.md](cognition.md) and [rvf.md](rvf.md) — retrieval authorization and untrusted snapshot handling in depth.
+- [workflows/capability-invocation.md](workflows/capability-invocation.md) — the exact path where authorization happens, and where it does not.
+- [subsystems/wire-and-protocols.md](subsystems/wire-and-protocols.md) — the trust boundary each protocol adapter must hold.
+- [troubleshooting.md](troubleshooting.md) — the symptom view of every rule on this page.
 - [../.agents/DEBT.md](../.agents/DEBT.md) — the full debt register.

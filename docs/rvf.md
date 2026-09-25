@@ -54,3 +54,5 @@ RVF 0.3.4's `open()` has no integrity check (a 50%-truncated file, or a flipped 
 
 - [cognition.md](cognition.md) — the `CognitiveIndex` contract RVF snapshots.
 - [security.md](security.md) — tenant scope enforcement, which RVF import must also respect.
+- [subsystems/capabilities-and-cognition.md](subsystems/capabilities-and-cognition.md) — the adapter, its options, and its failure modes.
+- [decisions/ADR-0006-portable-cognition-rvf.md](decisions/ADR-0006-portable-cognition-rvf.md) — the decision and the rejected alternative.
