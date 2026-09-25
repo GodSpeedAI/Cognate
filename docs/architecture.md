@@ -125,7 +125,7 @@ Framework-owned packages (`kernel-api`, `events`, `runtime-api`, `cognitive-api`
 | [cognitive-ruvector](../packages/cognitive-ruvector/README.md) | RuVector-backed index | implemented ([DEBT-007](../.agents/DEBT.md)) |
 | [cognitive-rvf](../packages/cognitive-rvf/README.md) | Portable cognitive snapshots | implemented ([DEBT-006](../.agents/DEBT.md)) |
 | [domainforge](../packages/domainforge/README.md) | Semantic adapter to `.sea`/DomainForge | implemented (`CG-SEM-001/002`; [DEBT-001](../.agents/DEBT.md)–[003](../.agents/DEBT.md)) |
-| [realitytrace](../packages/realitytrace/README.md) | Execution evidence adapter to SXR | implemented (`CG-RT-001..003`; [DEBT-009](../.agents/DEBT.md)) |
+| [realitytrace](../packages/realitytrace/README.md) | Execution evidence adapter to SXR | implemented (`AK-006`, `CG-RT-001..003`) |
 | [proto](../packages/proto/README.md) | Canonical protobuf sources | implemented |
 | [protocol-connect](../packages/protocol-connect/README.md) | Connect RPC mapping | implemented ([DEBT-004](../.agents/DEBT.md)) |
 | [protocol-connect-bun](../packages/protocol-connect-bun/README.md) | `Bun.serve()` Connect bridge | implemented |

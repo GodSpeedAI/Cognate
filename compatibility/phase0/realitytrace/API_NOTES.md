@@ -6,7 +6,12 @@ Characterized first against a local RealityTrace checkout at commit
 `realitytrace-v0.2.0`, commit 6966fa4), installed with
 `just setup-realitytrace` (`cargo install --git … --tag realitytrace-v0.2.0 --locked`).
 v0.2.0 renames the binary `sxr` → `realitytrace`; the commands, flags, JSON
-shapes, and idempotency behaviour below are unchanged. See
+shapes, and idempotency behaviour below are unchanged. v0.3.0 (tag
+`realitytrace-v0.3.0`, commit dfadf6a; pinned since 2026-09-25) adds
+`ingest --extensions <json-object>`: the object becomes the record's CEP §39
+`extensions` section, read back with `ledger export --repo <id>`; it is not
+part of the idempotency key, so a duplicate keeps the first record's value;
+non-objects and the reserved `domainforge` key are rejected. See
 `.agents/evidence/phase0-realitytrace.md` for transcripts.
 
 ## Prerequisite command order (docs/tutorials/quickstart.md; executed live)
@@ -17,7 +22,7 @@ sxr question declare --repo <id> --file <q.json> --json                  → que
 sxr threshold declare --repo <id> --question <qid> --file <t.json> --json → threshold_id
 sxr run begin --repo <id> --snapshot <snap> --question <qid> --threshold <tid> --json → run_id
 sxr plan create --run <id> --verifier <v> --target <target> --json       → plan_id
-sxr ingest --run <id> --verifier <v> --stdin-format <fmt> [--spool] [--async-mode] --json < bytes
+sxr ingest --run <id> --verifier <v> --stdin-format <fmt> [--spool] [--async-mode] [--extensions <json>] --json < bytes
 ```
 
 - `--snapshot` accepts the literal `snapshot:genesis` without calling `sxr

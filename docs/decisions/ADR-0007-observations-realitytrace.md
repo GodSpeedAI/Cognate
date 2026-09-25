@@ -112,5 +112,15 @@ Envelope schema were built and exercised out-of-tree (see
 - `compatibility/phase0/realitytrace/realitytrace.test.ts`
 - `compatibility/phase0/realitytrace/API_NOTES.md`
 - `.agents/evidence/phase0-realitytrace.md`
-- sxr checkout: `/home/sprime01/projects/sxr` @
+- RealityTrace repository (https://github.com/GodSpeedAI/RealityTrace) @
   `f7fb1c307e1f7ceb15468986330e5ca8c9248d19`
+
+## Addendum (2026-09-25): structured correlation via `--extensions`
+
+RealityTrace 0.3.0 (tag `realitytrace-v0.3.0`) added `ingest --extensions`,
+the documented submission path this ADR found missing, and `ledger export`
+already served as the read path. The adapter now takes option (a): Cognate's
+correlation ids go in the committed record's CEP `extensions.cognate`, and
+`readCorrelation(targetRef)` reads them back. Reconciliation still uses
+`ledger_position`/`already_committed`, never `observation_id`. AK-006 is
+implemented and DEBT-009 is closed.

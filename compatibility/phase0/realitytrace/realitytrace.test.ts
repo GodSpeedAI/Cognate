@@ -25,7 +25,7 @@ import { join } from "node:path";
 // Binary discovery — never invented, always the real local build output.
 // ---------------------------------------------------------------------------
 
-// Pinned released CLI installed by `just setup-realitytrace` (RealityTrace v0.2.0; DEBT-010).
+// Pinned released CLI installed by `just setup-realitytrace` (RealityTrace v0.3.0).
 const DEFAULT_SXR_BIN = join(
   import.meta.dir,
   "..", "..", "..", ".tmp", "realitytrace", "bin", "realitytrace",
@@ -182,7 +182,7 @@ async function bootstrapRun(home: string, repoPath: string) {
 // ---------------------------------------------------------------------------
 
 function loadCepSchema(): any {
-  // Vendored from realitytrace-v0.2.0 (fixtures/PROVENANCE.md) so no local checkout is needed.
+  // Vendored from RealityTrace (unchanged v0.2.0 → v0.3.0; fixtures/PROVENANCE.md) so no local checkout is needed.
   const path = join(import.meta.dir, "fixtures", "cep-semantic-envelope.schema.json");
   if (!existsSync(path)) {
     throw new Error(`CEP schema not found at ${path}; the sxr checkout may have moved or been reorganized.`);
@@ -244,22 +244,11 @@ describe("prerequisites workflow", () => {
 // ids, ONLY in documented extension/reference fields, is accepted with a
 // receipt.
 //
-// IMPORTANT, characterized finding: the real `sxr ingest` CLI (the only
-// documented entry point that produces an `observation.recorded` record from
-// externally-supplied bytes) does NOT expose a flag to attach caller-supplied
-// correlation data to the envelope. It mints the entire envelope itself from
-// --run/--verifier/stdin bytes (sxr-cli/src/commands.rs build_ingest_envelope).
-// So this behaviour is proven in two parts:
-//   (a) against the REAL binary: `sxr ingest` accepts an arbitrary verifier
-//       stream and returns a receipt (ledger position + observation_id) for
-//       an `observation.recorded` record — the actual, exercisable path.
-//   (b) against the REAL schema file: a hand-built envelope shaped exactly
-//       like the one `sxr ingest` builds, but with a Cognate correlation
-//       payload added under the documented `extensions` object (CEP-0008
-//       §39) and under `representations[].inline_content` (open per the
-//       schema, `inline_content: {}`), validates as schema-valid.
-// The gap between (a) and (b) — no CLI flag bridges them — is the Phase 0
-// finding recorded in the ADR and API_NOTES.
+// v0.2.0 had no CLI input for caller correlation data (DEBT-009). v0.3.0 adds
+// `ingest --extensions <json-object>`, which stores the object verbatim as the
+// record's CEP-0008 §39 `extensions` section; `ledger export` reads the
+// committed record back. Proven here against the REAL binary (live round-trip,
+// including duplicate delivery) and against the REAL schema file.
 // ---------------------------------------------------------------------------
 
 describe("observation ingestion + correlation-id schema validity", () => {
@@ -280,20 +269,56 @@ describe("observation ingestion + correlation-id schema validity", () => {
     expect(ingest.json.already_committed).toBe(false);
   });
 
-  test("observed: sxr ingest has no flag to attach caller-supplied correlation data to the envelope", async () => {
+  test("observed: v0.3.0 sxr ingest documents --extensions for caller-supplied data", async () => {
     requireBinary();
     const home = freshHome();
-    // `--help` is the documented way to discover the real flag surface; we
-    // assert against it rather than assuming, per "discover before inventing".
+    // `--help` is the documented way to discover the real flag surface.
     const help = await runSxr(home, ["ingest", "--help"]);
     expect(help.exitCode).toBe(0);
-    for (const flag of ["--correlation", "--extension", "--reference", "--metadata", "--extra"]) {
-      expect(help.stdout).not.toContain(flag);
-    }
-    // Only these flags are documented (docs/reference/cli.md + main.rs IngestCmd).
-    for (const flag of ["--run", "--verifier", "--stdin-format", "--spool", "--async-mode"]) {
+    for (const flag of ["--run", "--verifier", "--stdin-format", "--spool", "--async-mode", "--extensions"]) {
       expect(help.stdout).toContain(flag);
     }
+  });
+
+  test("structured correlation survives a live round-trip and duplicate delivery at the same ledger position", async () => {
+    requireBinary();
+    const home = freshHome();
+    const repo = makeToyRepo();
+    const { repoId, runId } = await bootstrapRun(home, repo);
+    const stream = new TextEncoder().encode("test result: ok. 1 passed; 0 failed; 0 ignored\n");
+    const correlation = { cognate: { eventId: "evt-123", observationId: "obs-456", correlationId: "corr-789", causationId: "cause-1" } };
+    const ingest = (extensions: unknown) =>
+      runSxr(home, ["ingest", "--run", runId, "--verifier", "cognate.obs-456", "--stdin-format", "json", "--extensions", JSON.stringify(extensions), "--json"], stream);
+
+    const first = await ingest(correlation);
+    expect(first.exitCode).toBe(0);
+    expect(first.json.already_committed).toBe(false);
+    // Duplicate delivery, even with different extensions, keeps the first committed record.
+    const second = await ingest({ cognate: { ...correlation.cognate, eventId: "evt-other" } });
+    expect(second.exitCode).toBe(0);
+    expect(second.json.already_committed).toBe(true);
+    expect(second.json.ledger_position).toEqual(first.json.ledger_position);
+
+    const exported = await runSxr(home, ["ledger", "export", "--repo", repoId]);
+    expect(exported.exitCode).toBe(0);
+    const observations = (exported.json as any[]).filter((row) => row.record_kind === "observation.recorded");
+    expect(observations).toHaveLength(1);
+    expect(observations[0].append_ordinal).toBe(first.json.ledger_position.append_ordinal);
+    expect(observations[0].payload.extensions).toEqual(correlation);
+    expect(checkClosedShape(loadCepSchema(), observations[0].payload)).toEqual([]);
+  });
+
+  test("--extensions rejects non-objects and the reserved domainforge key without committing", async () => {
+    requireBinary();
+    const home = freshHome();
+    const repo = makeToyRepo();
+    const { repoId, runId } = await bootstrapRun(home, repo);
+    for (const bad of ["[1]", "not json", JSON.stringify({ domainforge: {} })]) {
+      const result = await runSxr(home, ["ingest", "--run", runId, "--verifier", "v", "--stdin-format", "json", "--extensions", bad, "--json"], "{}");
+      expect(result.exitCode).not.toBe(0);
+    }
+    const exported = await runSxr(home, ["ledger", "export", "--repo", repoId]);
+    expect((exported.json as any[]).filter((row) => row.record_kind === "observation.recorded")).toEqual([]);
   });
 
   test("a hand-built observation.recorded envelope with Cognate correlation ids in extensions/inline_content is schema-valid", () => {

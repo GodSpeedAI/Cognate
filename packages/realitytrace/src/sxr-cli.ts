@@ -64,10 +64,14 @@ function requireOk(result: SxrResult, description: string): any {
 /**
  * ObservationPort over the documented SXR CLI. `prepare()` completes the prerequisite workflow; `record()` creates a
  * plan with verifier `cognate.<observationId>` and ingests the observation JSON on stdin. SXR deduplicates by
- * (run, verifier), so retries of one observation reconcile as `duplicate` with the same ledger position. SXR retains
- * the bytes but does not interpret Cognate fields; correlation lives in Cognate's receipts (DEBT-009).
+ * (run, verifier), so retries of one observation reconcile as `duplicate` with the same ledger position. Cognate's
+ * correlation ids travel as the record's CEP `extensions.cognate` (`ingest --extensions`, RealityTrace ≥ 0.3.0) and
+ * are read back from the committed record with `readCorrelation(targetRef)`. SXR keeps the first committed record, so a
+ * duplicate delivery never rewrites them.
  */
-export function createSxrCliPort(options: SxrCliOptions): ObservationPort & { prepare(question: { readonly title: string }): Promise<SxrWorkflow> } {
+export function createSxrCliPort(
+  options: SxrCliOptions,
+): ObservationPort & { prepare(question: { readonly title: string }): Promise<SxrWorkflow>; readCorrelation(targetRef: string): Promise<Json | null> } {
   const env: Record<string, string | undefined> = { ...process.env, ...options.env };
   let workflow: SxrWorkflow | undefined;
 
@@ -115,7 +119,8 @@ export function createSxrCliPort(options: SxrCliOptions): ObservationPort & { pr
         throw new Error(`realitytrace: sxr plan create failed (exit ${plan.exitCode}): ${plan.stderr || plan.stdout}`);
       }
 
-      const ingest = await sxr(["ingest", "--run", workflow.runId, "--verifier", verifier, "--stdin-format", "json", "--json"], JSON.stringify(observation));
+      const extensions = JSON.stringify({ cognate: correlationOf(observation) });
+      const ingest = await sxr(["ingest", "--run", workflow.runId, "--verifier", verifier, "--stdin-format", "json", "--extensions", extensions, "--json"], JSON.stringify(observation));
       if (ingest.exitCode !== 0) {
         throw new Error(`realitytrace: sxr ingest failed (exit ${ingest.exitCode}): ${ingest.stderr || ingest.stdout}`);
       }
@@ -125,5 +130,21 @@ export function createSxrCliPort(options: SxrCliOptions): ObservationPort & { pr
       const status: "accepted" | "duplicate" = receipt.already_committed ? "duplicate" : "accepted";
       return { status, observationId: observation.observationId, targetRef, detail: receipt as Json };
     },
+
+    async readCorrelation(targetRef) {
+      if (!workflow) throw new Error("realitytrace: sxr-cli port used before prepare()");
+      const split = targetRef.lastIndexOf(":");
+      const ledgerId = targetRef.slice(0, split);
+      const ordinal = Number(targetRef.slice(split + 1));
+      const rows = requireOk(await sxr(["ledger", "export", "--repo", workflow.repoId]), "ledger export") as { ledger_id: string; append_ordinal: number; payload: { extensions?: { cognate?: Json } } }[];
+      const row = rows.find((r) => r.ledger_id === ledgerId && r.append_ordinal === ordinal);
+      return row?.payload.extensions?.cognate ?? null;
+    },
   };
+}
+
+/** Cognate's correlation fields for `extensions.cognate`; undefined optional fields are omitted. */
+function correlationOf(observation: Observation): Json {
+  const { observationId, eventId, tenant, correlationId, causationId, runId, scopeId, componentId, fiberId, capabilityId, continuationId, semanticRef } = observation;
+  return JSON.parse(JSON.stringify({ observationId, eventId, tenant, correlationId, causationId, runId, scopeId, componentId, fiberId, capabilityId, continuationId, semanticRef })) as Json;
 }

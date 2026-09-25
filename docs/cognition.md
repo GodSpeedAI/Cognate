@@ -33,18 +33,18 @@ Filtering happens as early as the implementation safely permits. `CG-COG-002` pr
 
 ## Adaptive selection
 
-[`@cognate/capabilities`](../packages/capabilities/README.md) implements the two-phase selection model (spec §17, §30): every eligibility rule filters first; only the eligible set reaches an adaptive `Ranker`, which can narrow but never widen it (`CG-CAP-002`, proven adaptive-containment property). `recordSelection`/`recordOutcome` make a selection and its outcome durable facts; `outcomeProjection()` derives a Laplace-smoothed success rate per `(capability, provider)`, and `createOutcomeRanker(store)` turns that into a `Ranker` — feedback changes ranking only after it is committed and projected, never in-flight.
+[`@cognate/capabilities`](../packages/capabilities/README.md) implements the two-phase selection model (spec §17, §30): every eligibility rule filters first; only the eligible set reaches an adaptive `Ranker`, which can narrow but never widen it (`CG-CAP-002`, proven adaptive-containment property). `recordSelection`/`recordOutcome` make a selection and its outcome durable facts; `outcomeProjection()` counts successes and outcomes per `(capability, provider)`, and `createOutcomeRanker(store)` turns them into a UCB1 `Ranker`: `successRate + sqrt(2 ln N / n)` over the eligible providers, with untried providers first and ties in provider-id order. The exploration term keeps re-trying a provider that failed early instead of abandoning it. Feedback changes ranking only after it is committed and projected, never in-flight (`AK-008`).
 
-**SONA is not currently a usable adaptive ranker** ([ADR-0005](decisions/ADR-0005-adaptive-ranking-sona.md), [DEBT-008](../.agents/DEBT.md)). Phase 0 characterization (`compatibility/phase0/sona/sona.test.ts`) found `SonaEngine`'s full public surface (`addTrajectoryContext`, `addTrajectoryStep`, `applyBaseLora`, `applyMicroLora`, `beginTrajectory`, `endTrajectory`, `findPatterns`, `flush`, `forceLearn`, `getStats`, `isEnabled`, `setEnabled`, `setTrajectoryRoute`, `tick`) has no candidate-ranking method at all. No profile claims SONA support. The forbidden pattern the spec explicitly rules out either way:
+**SONA was rejected as the adaptive ranker** ([ADR-0005](decisions/ADR-0005-adaptive-ranking-sona.md)); the UCB1 ranker above replaces it. Phase 0 characterization (`compatibility/phase0/sona/sona.test.ts`) found `SonaEngine`'s full public surface (`addTrajectoryContext`, `addTrajectoryStep`, `applyBaseLora`, `applyMicroLora`, `beginTrajectory`, `endTrajectory`, `findPatterns`, `flush`, `forceLearn`, `getStats`, `isEnabled`, `setEnabled`, `setTrajectoryRoute`, `tick`) has no candidate-ranking method at all. No profile claims SONA support. The forbidden pattern the spec explicitly rules out either way:
 
 ```text
 all providers → SONA chooses one → skip policy check     # forbidden
-eligible providers → rank by historical outcome           # allowed shape, once a ranker exists
+eligible providers → rank by historical outcome (UCB1)    # the implemented shape
 ```
 
 ## Status
 
-`CG-COG-001` through `CG-COG-005` are `implemented` per [`requirements/ledger.yaml`](../requirements/ledger.yaml). `CG-COG-003` (RuVector passes the conformance kit) carries [DEBT-007](../.agents/DEBT.md). Adaptive ranking beyond outcome-based `createOutcomeRanker` (i.e. SONA) remains blocked by [DEBT-008](../.agents/DEBT.md).
+`CG-COG-001` through `CG-COG-005` are `implemented` per [`requirements/ledger.yaml`](../requirements/ledger.yaml). `CG-COG-003` (RuVector passes the conformance kit) carries [DEBT-007](../.agents/DEBT.md). Adaptive ranking (`AK-008`) is implemented by the Cognate-owned UCB1 ranker; [DEBT-008](../.agents/DEBT.md) is closed.
 
 ## Related
 

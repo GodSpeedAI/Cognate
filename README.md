@@ -169,7 +169,7 @@ Cognate preserves the semantic identity and causal provenance needed for externa
 
 Because Cognate applications are grounded in `.sea`, existing SEA-Forge governance can operate over their semantics without becoming a Cognate dependency.
 
-The RealityTrace adapter submits observations through RealityTrace's CLI and leaves evidence derivation and settlement to RealityTrace. Correlation ids stay in Cognate's receipt mapping until RealityTrace exposes a structured correlation field ([DEBT-009](.agents/DEBT.md)).
+The RealityTrace adapter submits observations through RealityTrace's CLI and leaves evidence derivation and settlement to RealityTrace. Each observation carries Cognate's correlation ids in the committed record's CEP `extensions.cognate` field, and the adapter reads them back by ledger position (`AK-006`).
 
 ---
 
@@ -630,7 +630,7 @@ Imported cognition is tracked with lineage and can remain detached until its rel
 
 # RealityTrace Observations and Evidence
 
-Cognate provides a version-pinned adapter for RealityTrace (v0.2.0) without changing RealityTrace.
+Cognate provides a version-pinned adapter for RealityTrace (v0.3.0) without changing RealityTrace.
 
 The adapter records observations through RealityTrace's supported CLI and CEP workflow. RealityTrace currently requires repository enrollment, a snapshot, a declared question and threshold, a run, and a committed plan before the relevant observation can be recorded. An observation receipt alone is neither qualifying evidence nor a settled result.
 

@@ -109,3 +109,22 @@ found:
   Phase 0 to pin and prove or disprove SONA's fit before any profile may
   claim support, and the spec anticipates exactly this outcome via its
   "record precisely" escape valve.
+
+## Addendum (2026-09-25): UCB1 replaces SONA
+
+The operator chose not to wait for an adaptive library. `createOutcomeRanker`
+in `@cognate/capabilities` is now UCB1 (Auer, Cesa-Bianchi & Fischer, 2002)
+over the eligible providers: `successRate + sqrt(2 ln N / n)`, untried providers
+first, ties in provider-id order. It replaced a greedy Laplace-smoothed success
+rate that never re-tried a provider that failed early.
+
+- UCB1 needs no randomness, so a replay of the same durable outcomes yields the
+  same ranking without seeding.
+- It sits after deterministic eligibility like any `Ranker`; containment
+  (`CG-CAP-002`) is unchanged.
+- AK-008 was revised from "characterize SONA" to "characterize the adaptive
+  ranker"; its gate is `packages/capabilities/test/adaptive-ranker.test.ts`.
+  The SONA fixture under `compatibility/phase0/sona/` is kept as the evidence
+  for this rejection.
+- DEBT-008 is closed. A seeded Thompson-sampling ranker is the alternative if
+  randomised exploration is ever wanted.
