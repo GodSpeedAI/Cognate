@@ -43,6 +43,19 @@ describe("protocol limits (§32)", () => {
     expect(await errorCode(response)).toBe("resource_exhausted");
   });
 
+  test("the size limit is exact: maxBodyBytes is accepted, one byte more is rejected (audit F-08)", async () => {
+    const sized = (bytes: number, key: string) => {
+      const base = JSON.stringify({ agent: "agent.echo", input: "", idempotencyKey: key });
+      return JSON.stringify({ agent: "agent.echo", input: "x".repeat(bytes - base.length), idempotencyKey: key });
+    };
+    const exact = sized(4096, "exact");
+    expect(new TextEncoder().encode(exact).byteLength).toBe(4096);
+    expect((await call("StartRun", exact)).status).toBe(200);
+    const over = sized(4097, "over");
+    expect(new TextEncoder().encode(over).byteLength).toBe(4097);
+    expect(await errorCode(await call("StartRun", over))).toBe("resource_exhausted");
+  });
+
   test("over-deep JSON values are rejected", async () => {
     let deep: unknown = "leaf";
     for (let i = 0; i < 20; i++) deep = { d: deep };

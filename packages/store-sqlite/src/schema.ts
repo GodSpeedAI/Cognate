@@ -101,6 +101,19 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    // Spec §9.2: durable facts are never undone by deleting or rewriting history. Enforced in the file itself,
+    // so raw SQL cannot bypass the store API. Only a single erasure (§32) may set the erasure columns.
+    version: 2,
+    sql: `
+      CREATE TRIGGER events_append_only_delete BEFORE DELETE ON events
+      BEGIN SELECT RAISE(ABORT, 'events are append-only (spec §9.2)'); END;
+
+      CREATE TRIGGER events_append_only_update BEFORE UPDATE ON events
+      WHEN NEW.position IS NOT OLD.position OR NEW.event_id IS NOT OLD.event_id OR NEW.stream_id IS NOT OLD.stream_id OR NEW.stream_sequence IS NOT OLD.stream_sequence OR NEW.event_type IS NOT OLD.event_type OR NEW.schema_version IS NOT OLD.schema_version OR NEW.occurred_at IS NOT OLD.occurred_at OR NEW.recorded_at IS NOT OLD.recorded_at OR NEW.tenant IS NOT OLD.tenant OR NEW.correlation_id IS NOT OLD.correlation_id OR NEW.causation_id IS NOT OLD.causation_id OR NEW.run_id IS NOT OLD.run_id OR NEW.scope_id IS NOT OLD.scope_id OR NEW.component_id IS NOT OLD.component_id OR NEW.fiber_id IS NOT OLD.fiber_id OR NEW.semantic_ref IS NOT OLD.semantic_ref OR NEW.metadata IS NOT OLD.metadata OR OLD.erasure_reason IS NOT NULL
+      BEGIN SELECT RAISE(ABORT, 'events are append-only (spec §9.2)'); END;
+    `,
+  },
 ];
 
 /** Apply any migration not yet recorded in `schema_versions`, inside one transaction. */

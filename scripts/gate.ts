@@ -1,6 +1,6 @@
 // Runs one requirement's proof gate from requirements/ledger.yaml, or every gate with --all.
 // A gate whose proof paths do not exist yet is an unmet gate (exit 1), never a skip.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export interface Gate {
@@ -44,7 +44,36 @@ async function runGate(requirement: Requirement, quiet: boolean): Promise<{ exit
 }
 
 const arg = process.argv[2];
+/**
+ * Whole-ledger runs share SQLite files, temp dirs, and ports; two at once produce spurious drift (audit F-06).
+ * Take an exclusive lock; a lock held by a dead process is stale and taken over.
+ */
+function acquireLock(): () => void {
+  const path = ".tmp/gates.lock";
+  mkdirSync(".tmp", { recursive: true });
+  for (;;) {
+    try {
+      writeFileSync(path, String(process.pid), { flag: "wx" });
+      return () => rmSync(path, { force: true });
+    } catch {
+      const holder = Number(readFileSync(path, "utf8"));
+      let alive = false;
+      try {
+        process.kill(holder, 0);
+        alive = true;
+      } catch {}
+      if (alive) {
+        console.error(`another gate run is in progress (pid ${holder}); run just verify / just gates sequentially`);
+        process.exit(3);
+      }
+      rmSync(path, { force: true });
+    }
+  }
+}
+
 if (arg === "--all" || arg === "--implemented") {
+  const release = acquireLock();
+  process.on("exit", release);
   // --implemented is the regression mode: every requirement claimed implemented must still pass.
   const selected = arg === "--all" ? ledger.requirements : ledger.requirements.filter((entry) => entry.status === "implemented");
   let failures = 0;

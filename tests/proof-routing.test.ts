@@ -48,3 +48,19 @@ test("an unknown requirement id is rejected", async () => {
   expect(exit).toBe(2);
   expect(stderr).toContain("Unknown requirement");
 });
+
+test("concurrent whole-ledger runs are refused instead of corrupting each other (audit F-06)", async () => {
+  const { mkdirSync, writeFileSync: write, rmSync: rm } = await import("node:fs");
+  mkdirSync(".tmp", { recursive: true });
+  write(".tmp/gates.lock", String(process.pid)); // a live pid holds the lock
+  try {
+    const { exit, stderr } = await gate("--all");
+    expect(exit).toBe(3);
+    expect(stderr).toContain("another gate run is in progress");
+  } finally {
+    rm(".tmp/gates.lock", { force: true });
+  }
+  write(".tmp/gates.lock", "999999999"); // a dead pid is a stale lock and is taken over
+  expect((await gate("--all")).exit).toBe(1);
+  expect(await Bun.file(".tmp/gates.lock").exists()).toBe(false);
+});
