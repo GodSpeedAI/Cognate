@@ -1,9 +1,14 @@
 import type { CapabilityContract, SemanticRef } from "@cognate/kernel-api";
 
 export const PROJECTION_SCHEMA = "cognate.semantic.v1";
-export const BINDING = "@godspeedai/domainforge@0.17.0";
+export const BINDING = "@godspeedai/domainforge@0.18.1";
 
-export type SemanticKind = "Entity" | "Resource" | "Flow" | "Role" | "Relation" | "Instance";
+export type SemanticKind =
+  | "Entity" | "Resource" | "Flow" | "Role" | "Relation" | "Instance"
+  | "EntityInstance" | "Pattern" | "ConceptChange" | "Policy" | "Metric"
+  | "Dimension" | "Unit" | "Mapping" | "Projection";
+
+export type SemanticValue = string | number | boolean | null | readonly SemanticValue[] | { readonly [key: string]: SemanticValue };
 
 /** A read-only semantic object with provenance. Never an executable capability by itself (spec §19). */
 export interface SemanticObject {
@@ -11,8 +16,8 @@ export interface SemanticObject {
   readonly kind: SemanticKind;
   readonly name: string;
   readonly namespace: string;
-  /** Kind-specific fields with references expressed as SemanticRef ids (e.g. a Flow's resource/from/to). */
-  readonly fields: { readonly [key: string]: string | number | boolean | null };
+  /** Kind-specific values; semantic references are expressed as SemanticRef ids where applicable. */
+  readonly fields: { readonly [key: string]: SemanticValue };
 }
 
 export interface SemanticRelation {

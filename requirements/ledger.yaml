@@ -408,7 +408,7 @@ requirements:
     gate: {cwd: ., run: 'bun test ./packages/domainforge/test/adapter.test.ts', proof_paths: ['packages/domainforge/test/adapter.test.ts']}
     dependencies: [AK-003]
     status: implemented
-    evidence: .agents/evidence/m6-semantics-evidence.md
+    evidence: .agents/evidence/2026-09-26-debt-003-close.md
     debt: DEBT-003
   - id: CG-SEM-002
     title: 'Semantic identity is pinned to source revision; renames are new identities; unresolved refs are typed.'

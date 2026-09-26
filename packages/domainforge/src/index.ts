@@ -14,6 +14,7 @@ import {
   type SemanticObject,
   type SemanticProjection,
   type SemanticRelation,
+  type SemanticValue,
 } from "./types.ts";
 
 /** Internal signal for a computed-id collision, classified before the generic error mapper. */
@@ -23,15 +24,9 @@ class AmbiguousIdentityError extends Error {
   }
 }
 
-/** Unsupported-in-V0 kinds, with the reason recorded once and reused in both the mapping table and `unmapped` (DEBT-003). */
+/** Kinds with no SEA declaration/Graph accessor. Keep each reason explicit and source-backed. */
 const UNSUPPORTED_KINDS: readonly { readonly kind: string; readonly reason: string }[] = [
-  { kind: "Policy", reason: "add/evaluate-only via JSON string in 0.16.0; never a capability or permission, only a referenced constraint (spec §19)" },
-  { kind: "Metric", reason: "standalone value class with no Graph.addX/allX accessor in 0.16.0 (DEBT-003)" },
-  { kind: "Dimension", reason: "standalone value class with no Graph.addX/allX accessor in 0.16.0 (DEBT-003)" },
-  { kind: "Unit", reason: "standalone value class with no Graph.addX/allX accessor in 0.16.0 (DEBT-003)" },
-  { kind: "Mapping", reason: "standalone value class with no Graph.addX/allX accessor in 0.16.0 (DEBT-003)" },
-  { kind: "Projection", reason: "standalone value class with no Graph.addX/allX accessor in 0.16.0 (DEBT-003)" },
-  { kind: "External", reason: "no discovered constructor or Graph accessor at all in 0.16.0 (DEBT-003)" },
+  { kind: "External", reason: "not a SEA grammar, AST, or Graph declaration; it exists only as a semantic-pack enum variant" },
 ];
 
 /** The explicit mapping table for every DomainForge kind, including unsupported ones (spec §19). */
@@ -41,14 +36,23 @@ export const mappingTable: readonly MappingRow[] = [
   { kind: "Flow", supported: true, view: "read-only semantic object", meaning: "a quantified movement of a resource between two entities", cardinality: "many, unordered", provenance: "Graph.allFlows()" },
   { kind: "Role", supported: true, view: "read-only semantic object", meaning: "a named participant role in a relation", cardinality: "many per namespace, unique by name", provenance: "Graph.allRoles()" },
   { kind: "Relation", supported: true, view: "read-only semantic object", meaning: "a named predicate edge between two roles", cardinality: "many per namespace, unique by name", provenance: "Graph.allRelations()" },
-  { kind: "Instance", supported: true, view: "read-only semantic object", meaning: "an entity-typed or resource-located instance", cardinality: "many, unordered", provenance: "Graph.allInstances()" },
+  { kind: "Instance", supported: true, view: "read-only semantic object", meaning: "a resource instance created through the Graph API; no SEA declaration", cardinality: "many, declaration order", provenance: "Graph.allInstances()" },
+  { kind: "EntityInstance", supported: true, view: "read-only semantic object", meaning: "an entity-typed instance declared in SEA", cardinality: "many, declaration order", provenance: "Graph.allEntityInstances()" },
+  { kind: "Pattern", supported: true, view: "read-only semantic object", meaning: "a named matching pattern", cardinality: "many per namespace, unique by name", provenance: "Graph.allPatterns()" },
+  { kind: "ConceptChange", supported: true, view: "read-only semantic object", meaning: "a declared concept version change", cardinality: "many per namespace, unique by name", provenance: "Graph.allConceptChanges()" },
+  { kind: "Policy", supported: true, view: "read-only semantic object; referenced constraint only", meaning: "a governance constraint declared in the semantic model", cardinality: "many per namespace, unique by name", provenance: "Graph.allPolicies()" },
+  { kind: "Metric", supported: true, view: "read-only semantic object", meaning: "a named expression and its unit", cardinality: "many per namespace, unique by name", provenance: "Graph.allMetrics()" },
+  { kind: "Dimension", supported: true, view: "read-only semantic object", meaning: "a unit dimension", cardinality: "many per namespace, unique by name", provenance: "Graph.allDimensions()" },
+  { kind: "Unit", supported: true, view: "read-only semantic object", meaning: "a declared unit and base conversion factor", cardinality: "many per namespace, unique by name", provenance: "Graph.allUnits()" },
+  { kind: "Mapping", supported: true, view: "read-only semantic object", meaning: "a source mapping for a target format", cardinality: "many per namespace, unique by name", provenance: "Graph.allMappings()" },
+  { kind: "Projection", supported: true, view: "read-only semantic object", meaning: "a source projection for a target format", cardinality: "many per namespace, unique by name", provenance: "Graph.allProjections()" },
   ...UNSUPPORTED_KINDS.map((u) => ({
     kind: u.kind,
     supported: false,
-    view: "referenced constraint only",
-    meaning: u.kind === "Policy" ? "a governance constraint evaluated against the graph" : `a ${u.kind.toLowerCase()} concept declared in DomainForge`,
-    cardinality: "unknown (no V0 accessor)",
-    provenance: "none (unmapped in V0)",
+    view: "unmapped",
+    meaning: `a ${u.kind.toLowerCase()} enum value without a SEA declaration`,
+    cardinality: "not applicable (not declared in SEA)",
+    provenance: "none (no Graph declaration)",
     reason: u.reason,
   })),
 ];
@@ -172,26 +176,56 @@ export function loadSemanticProjection(source: string, options: { readonly uri: 
 
     // ResourceInstance (Graph's typed "Instance" collection). Named when a `name` is exposed;
     // otherwise identity is derived from its resource/entity references (no native name field).
-    for (const inst of graph.allInstances() as unknown as Array<
-      { readonly id: string; readonly namespace: string | null; readonly name?: string; readonly resourceId?: string; readonly entityId?: string; readonly entityType?: string }
-    >) {
-      const hasName = typeof inst.name === "string";
+    for (const inst of graph.allInstances()) {
       let namespace = inst.namespace ?? "default";
-      let id: string;
-      let fields: Record<string, string | number | boolean | null>;
-      if (hasName) {
-        id = `${namespace}::${inst.name}`;
-        fields = { entityType: inst.entityType ?? null };
-      } else {
-        const resourceRef = inst.resourceId ? resourceByNativeId.get(inst.resourceId) : undefined;
-        const entityRef = inst.entityId ? entityByNativeId.get(inst.entityId) : undefined;
-        namespace = entityRef?.namespace ?? resourceRef?.namespace ?? namespace;
-        id = `${namespace}::instance(${resourceRef?.id ?? inst.resourceId ?? ""}|${entityRef?.id ?? inst.entityId ?? ""})`;
-        fields = { resource: resourceRef?.id ?? null, entity: entityRef?.id ?? null };
-      }
+      const resourceRef = resourceByNativeId.get(inst.resourceId);
+      const entityRef = entityByNativeId.get(inst.entityId);
+      namespace = entityRef?.namespace ?? resourceRef?.namespace ?? namespace;
+      const id = `${namespace}::instance(${resourceRef?.id ?? inst.resourceId}|${entityRef?.id ?? inst.entityId})`;
+      const fields = { resource: resourceRef?.id ?? null, entity: entityRef?.id ?? null };
       claim(id, inst.id);
       const ref = makeRef(namespace, id, "Instance");
-      objects.push({ ref, kind: "Instance", name: hasName ? (inst.name as string) : id, namespace, fields });
+      objects.push({ ref, kind: "Instance", name: id, namespace, fields });
+    }
+
+    const addNamed = (kind: SemanticKind, value: { readonly id: string; readonly name: string; readonly namespace: string | null }, fields: SemanticObject["fields"]): void => {
+      const namespace = value.namespace ?? "default";
+      const id = `${namespace}::${value.name}`;
+      claim(id, value.id);
+      const ref = makeRef(namespace, id, kind);
+      objects.push({ ref, kind, name: value.name, namespace, fields });
+    };
+
+    for (const policy of graph.allPolicies()) {
+      addNamed("Policy", policy, {
+        expression: policy.expression,
+        modality: policy.modality,
+        policyKind: policy.kind,
+        priority: policy.priority,
+        rationale: policy.rationale,
+        tags: [...policy.tags],
+      });
+    }
+    for (const metric of graph.allMetrics()) addNamed("Metric", metric, { expression: metric.expression, unit: metric.unit });
+    for (const dimension of graph.allDimensions()) addNamed("Dimension", dimension, {});
+    for (const unit of graph.allUnits()) addNamed("Unit", unit, { dimension: unit.dimension, baseFactor: unit.baseFactor, baseUnit: unit.baseUnit });
+    for (const mapping of graph.allMappings()) {
+      addNamed("Mapping", mapping, { target: mapping.targetFormat, source: JSON.parse(mapping.rulesJson) as SemanticValue });
+    }
+    for (const projection of graph.allProjections()) {
+      addNamed("Projection", projection, { target: projection.targetFormat, source: JSON.parse(projection.overridesJson) as SemanticValue });
+    }
+    for (const pattern of graph.allPatterns()) addNamed("Pattern", pattern, { regex: pattern.regex });
+    for (const change of graph.allConceptChanges()) {
+      addNamed("ConceptChange", change, {
+        fromVersion: change.fromVersion,
+        toVersion: change.toVersion,
+        migrationPolicy: change.migrationPolicy,
+        breakingChange: change.breakingChange,
+      });
+    }
+    for (const instance of graph.allEntityInstances()) {
+      addNamed("EntityInstance", instance, { entityType: instance.entityType, fields: JSON.parse(instance.fieldsJson) as SemanticValue });
     }
 
     const projection: SemanticProjection = {
@@ -280,6 +314,7 @@ export function bindCapabilities(projection: SemanticProjection, bindings: reado
   return bindings.map((binding) => {
     const object = projection.objects.find((o) => o.ref.id === binding.semanticId);
     if (!object) throw new Error(`domainforge: unknown semantic id "${binding.semanticId}"`);
+    if (object.kind === "Policy") throw new Error(`domainforge: Policy "${binding.semanticId}" is a referenced constraint and cannot be bound as a capability`);
     return { ...binding.capability, semanticRef: object.ref };
   });
 }

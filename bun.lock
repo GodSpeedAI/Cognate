@@ -187,7 +187,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cognate/kernel-api": "workspace:*",
-        "@godspeedai/domainforge": "0.17.0",
+        "@godspeedai/domainforge": "0.18.1",
       },
     },
     "packages/events": {
@@ -598,7 +598,7 @@
 
     "@formatjs/icu-skeleton-parser": ["@formatjs/icu-skeleton-parser@2.1.11", "", {}, "sha512-j8cUmOJzVgkHuS0QiQ6ga76UIoLOFSAMWhs7aZJztH3aAdCOAE6vpC8KVvFB4cU10ON0y2/5oOVmPJ43s2lTwA=="],
 
-    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.17.0", "", {}, "sha512-k2VhXy2BojdTae7/WuIlos1R7tjZz/+IvJG9ucNlfUPoOky7WwEJIJgCfc5cu+nydl8pinSCcgT0OpwmDV1bBA=="],
+    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.18.1", "", {}, "sha512-BFxu8TPeUq+UErv1Zl0YNL5N3iZMzcjyggNSf+XzKH2BeB9OHTBzN+mQMOx//00I/OnLutGAZaxAs87Lt/e09g=="],
 
     "@happy-dom/global-registrator": ["@happy-dom/global-registrator@20.14.5", "", { "dependencies": { "@types/node": ">=20.0.0", "happy-dom": "^20.14.5" } }, "sha512-B05ID9DhSwLs6mlm1fzlkAtTIvB3duCvjJjfr19LBrlTK7VZtRjDqoTRIVv13GuYuNdhByu8LSZgThwV3Rkj7g=="],
 
