@@ -1,0 +1,10 @@
+{
+  "name": "@deepseek-harness-recon/tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable Playwright capture/parity suite for the DeepSeek Harness reconstruction test (T2). Drives either the pinned reference or the Cognate reconstruction through a shared Driver interface.",
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
