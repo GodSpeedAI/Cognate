@@ -90,13 +90,31 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     actor: { id: view.startedBy, kind: (field<string>(meta(started), "startedByKind") ?? "user") as Principal["kind"] },
     signal: controller.signal,
 
+    // D1: fn may itself call emit/invoke/artifact. Those calls draw ids from the shared `counters`
+    // object; when a step is replayed, fn is never re-run, so the drift it originally caused must be
+    // replayed onto `counters` too, or every id born after this step collides with an id already
+    // recorded (and is silently dropped — see emit()). We record the net drift in the completion
+    // event and, on replay, advance `counters` by it before returning the cached result.
+    // Assumption: agent code drives one step/emit/invoke/artifact call at a time (spec's sequential
+    // execution model) — concurrent sibling steps racing on the same shared counters can misattribute
+    // drift between them and are not supported.
     async step<T extends Json>(id: string, fn: () => T | Promise<T>): Promise<T> {
       guard();
       const stepId = `step:${id}`;
       const done = find(stepId);
-      if (done) return field(done.payload, "result") as T;
+      if (done) {
+        const drift = field<{ readonly emit?: number; readonly invoke?: number; readonly artifact?: number }>(meta(done), "counters");
+        if (drift) {
+          counters.emit += drift.emit ?? 0;
+          counters.invoke += drift.invoke ?? 0;
+          counters.artifact += drift.artifact ?? 0;
+        }
+        return field(done.payload, "result") as T;
+      }
+      const before = { ...counters };
       const result = toJson(await fn());
-      await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId } });
+      const drift = { emit: counters.emit - before.emit, invoke: counters.invoke - before.invoke, artifact: counters.artifact - before.artifact };
+      await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId, counters: drift } });
       return result as T;
     },
 
@@ -111,14 +129,28 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     async invoke(capability: string, input: Json, options?: { readonly version?: string }): Promise<Json> {
       guard();
       const stepId = `invoke:${++counters.invoke}`;
-      let done = find(stepId);
+      // G1: progress events share this stepId (so a replayed invoke advances past them like any other
+      // recorded event) but are a distinct event type, so the completion check must name it explicitly.
+      let done = find(stepId, "run.invocation");
       if (!done) {
+        // A crash between a progress call and the final run.invocation event leaves partial progress
+        // recorded for this stepId with no completion; re-executing calls the handler again under a
+        // fresh attempt number so consumers can discard the earlier partial attempt.
+        const priorAttempts = (recorded.get(stepId) ?? [])
+          .filter((e) => e.eventType === "run.invocation.progress")
+          .map((e) => field<number>(meta(e), "attempt") ?? 0);
+        const attempt = priorAttempts.length ? Math.max(...priorAttempts) + 1 : 0;
+        let seq = 0;
+        const progress = async (payload: Json): Promise<void> => {
+          guard();
+          await append({ eventType: "run.invocation.progress", payload: toJson(payload), metadata: { stepId, attempt, seq: seq++ } });
+        };
         const outcome = await core.invoker.invoke({
           capability,
           ...(options?.version ? { version: options.version } : {}),
           input: toJson(input),
           tenant: view.tenant,
-          context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal },
+          context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal, progress },
         });
         guard();
         done = await append({

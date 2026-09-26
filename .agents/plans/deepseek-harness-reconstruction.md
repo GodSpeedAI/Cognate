@@ -30,3 +30,22 @@ Each tranche: builder subagent (Sonnet; Haiku for tightly local edits) → orche
 - **D1 (defect, existing primitive):** `RunContext.emit` called inside `RunContext.step` shifts `emit:<n>` counters on replay (the replayed step skips its inner emits), so later emits can collide with recorded ones. `packages/runtime-bun/src/executor.ts` `emit`/`step`. Domain-independent; repair with a regression test.
 - **D2 (defect, existing primitive):** `provider-openai-compatible` advertises `stream: true` but implements no `stream()`.
 - **G1 (candidate gap):** a capability handler cannot publish progress (e.g. model token deltas) into the invoking run: `HandlerContext` has no emit/progress channel. Streaming through a policy-gated, hot-swappable `model.*` capability is therefore not expressible today. Decision pending (see status).
+
+G1 decision (operator, 2026-09-26): repair D1/D2 and add the domain-independent invocation progress channel with conformance tests; record G1 in the parity report as a finding the reconstruction surfaced.
+
+## Reconstruction architecture (`R/cognate/`)
+
+Scaffold with `cognate create --profile harness`, then add the app. One Bun process (single SQLite writer): runtime + Connect `RuntimeService` + static React/Astryx bundle. Browser talks only through `@cognate/client` over Connect (`connectTransport` + `createRemoteRuntimeService`). Data dir from `COGNATE_HARNESS_HOME` (tests use isolated dirs).
+
+| Reference concept | Cognate composition |
+|---|---|
+| Model provider / Settings → Models | `providerComponent`-style component per configured provider publishing `model.generate`; hot-swap = dispose + mount. Config changes are runs of `agent.config` emitting `model.configured` (no secret in payload); a public projection `model-config` folds them. API keys live in a write-only secret file outside the event log; events carry only `credential: "set"`. |
+| Workspace | `agent.config` emits `workspace.added` / `workspace.selected`; public projection `workspaces`. Tool capabilities take the workspace root from the run input and enforce path containment (scoped capability). |
+| Session | correlation `session:<id>`; each user turn is one run of `agent.coding` with `{ sessionId, workspaceId, message }`. Public projection `sessions` (title from first message, workspace, last status). |
+| History | capability `session.history` (component closing over `runtime.service`) folds prior runs' events into model messages; invoked via `ctx.invoke`, so it is recorded. |
+| Streaming | model component handler calls `provider.stream` and forwards deltas via `HandlerContext.progress` → `run.invocation.progress`; the UI folds them per run. The final response is the recorded invocation result. |
+| Tools | `tool.read`, `tool.edit`, `tool.bash`, `tool.run_code`, `tool.todo_write`, `tool.exit_plan_mode`, `tool.subagent` (model-facing names match the reference). |
+| Approval | agent gate named after the `.sea` Policy: gated calls `ctx.waitFor("approve:<callId>", { type: "tool-approval", condition: { kind: "human_approval" }, payload })`; UI resolves with `{ approved }`. Kernel policy grants tools to operator/system only. |
+| Plan | `todo_write` / `exit_plan_mode` emit `plan.updated`; `exit_plan_mode` waits on a continuation; projection `plans`. |
+| Subagent | `spawnSubagent` (profile-harness) → child run of `agent.coding` with its own correlation `subagent:<parentRun>:<id>`; parent tool card links to child activity. |
+| Cancel / error / retry | `cancelRun` (signal reaches provider); a failed/cancelled run is terminal; retry = new run in the same session. |

@@ -79,6 +79,23 @@ type InvocationFailure =
 
 Invocation never throws for a denial.
 
+### `HandlerContext.progress`
+
+```ts
+interface HandlerContext extends InvocationContext {
+  // ...
+  readonly progress?: (payload: Json) => Promise<void>;
+}
+```
+
+An optional, durable channel a handler can use to publish incremental progress into the invoking
+run (e.g. streamed model token deltas) while the invocation is still executing. It is always
+callable — no-op when the invocation is not inside a run (e.g. a direct `RuntimeService.invoke`
+from a client or over Connect). Inside a run, each call appends a `run.invocation.progress` event;
+see [reference/events-and-stores.md](events-and-stores.md) for its shape. Progress calls never
+affect step/emit/artifact replay counters, and are not repeated when a completed invocation is
+replayed.
+
 ### Errors
 
 `CleanupError` (an `AggregateError` of disposer failures), `PermanentActivationError`,

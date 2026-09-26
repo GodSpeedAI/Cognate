@@ -158,7 +158,15 @@ export function openAICompatible(options: OpenAICompatibleOptions): ModelProvide
     const toolCallAcc = new Map<number, { id?: string; name?: string; arguments: string }>();
 
     outer: while (true) {
-      const { value, done } = await reader.read();
+      let value: Uint8Array | undefined;
+      let done: boolean;
+      try {
+        ({ value, done } = await reader.read());
+      } catch (err) {
+        // D2: mid-stream abort/timeout/network failure must surface as the provider's typed error,
+        // same as a failure before the first byte, not the raw fetch/reader exception.
+        throw mapAbortOrNetworkError(err, signal, timeoutSignal);
+      }
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       let boundary: number;

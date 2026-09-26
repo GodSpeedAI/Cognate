@@ -18,6 +18,15 @@ export function kitPolicies(setup: KitSetup): { policy: Policy; actions: ActionP
         provides: [{ id: "tool.lookup", version: "1.0.0" }],
         activate: (fiber) => fiber.provide({ id: "tool.lookup", version: "1.0.0" }, (input) => setup.lookup(input as { key: string })),
       },
+      {
+        id: "progress-provider",
+        provides: [{ id: "tool.progress", version: "1.0.0" }],
+        activate: (fiber) =>
+          fiber.provide({ id: "tool.progress", version: "1.0.0" }, async (input, ctx) => {
+            for (let i = 0; i < 3; i++) await ctx.progress?.({ i });
+            return { input };
+          }),
+      },
     ],
   };
 }
