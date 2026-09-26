@@ -1,0 +1,25 @@
+errors: 0
+Total objects: 51
+By kind: {
+  "Entity": 14,
+  "Resource": 11,
+  "Role": 2,
+  "Flow": 11,
+  "Relation": 1,
+  "Policy": 1,
+  "Metric": 1,
+  "EntityInstance": 10
+}
+Relations (edges): 35
+Journey ids (10 expected): [
+  "J-A-first-use",
+  "J-B-basic-session",
+  "J-C-tool-execution",
+  "J-CFG-model-provider",
+  "J-D-approval",
+  "J-E-plan",
+  "J-F-delegation",
+  "J-G-persistence",
+  "J-H-cancellation",
+  "J-WS-select"
+]

@@ -1,0 +1,223 @@
+@namespace "deepseek-harness.interaction"
+@version "1.0.0"
+@owner "cognate-reconstruction"
+@profile "default"
+
+Entity "User"
+
+Entity "OperatorAgent"
+
+Entity "ApprovalAuthority"
+
+Entity "ChildAgent"
+
+Entity "WorkspaceRecord"
+
+Entity "Session"
+
+Entity "ModelProvider"
+
+Entity "Tool"
+
+Entity "ApprovalGate"
+
+Entity "PlanMode"
+
+Entity "Goal"
+
+Entity "Subagent"
+
+Entity "Composer"
+
+Entity "CanonicalJourney"
+
+Resource "ModelConfig" units
+
+Resource "WorkspaceSelection" units
+
+Resource "ComposerAvailability" units
+
+Resource "SessionEvent" units
+
+Resource "ToolCallEvidence" units
+
+Resource "WorkspaceMutation" units
+
+Resource "ApprovalDecision" units
+
+Resource "PlanArtifact" units
+
+Resource "SubagentResult" units
+
+Resource "DurableSnapshot" units
+
+Resource "CancellationEvidence" units
+
+Role "Approver"
+
+Role "Operator"
+
+Relation "ApprovalAuthorization"
+    subject: "Approver"
+    predicate: "authorizes"
+    object: "Operator"
+    via: flow "ApprovalDecision"
+
+Flow "ModelConfig" from "User" to "ModelProvider" quantity 1
+
+Flow "WorkspaceSelection" from "User" to "WorkspaceRecord" quantity 1
+
+Flow "ComposerAvailability" from "WorkspaceRecord" to "Composer" quantity 1
+
+Flow "SessionEvent" from "User" to "Session" quantity 1
+
+Flow "ToolCallEvidence" from "OperatorAgent" to "Tool" quantity 1
+
+Flow "WorkspaceMutation" from "Tool" to "WorkspaceRecord" quantity 1
+
+Flow "ApprovalDecision" from "ApprovalAuthority" to "ApprovalGate" quantity 1
+
+Flow "PlanArtifact" from "OperatorAgent" to "PlanMode" quantity 1
+
+Flow "SubagentResult" from "ChildAgent" to "Subagent" quantity 1
+
+Flow "DurableSnapshot" from "Session" to "WorkspaceRecord" quantity 1
+
+Flow "CancellationEvidence" from "User" to "Session" quantity 1
+
+Instance j_a_first_use of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "model.configure, workspace.select, composer.enable",
+    evidence_class: "declared",
+    initiating_condition: "User launches dsh web / opens the Cognate reconstruction for the first time",
+    journey_id: "J-A-first-use",
+    precondition: "No workspace selected yet; default workspace init may fail",
+    purpose: "Get a first-time user from a cold launch to a usable composer",
+    settlement: "Composer is enabled (no longer disabled-pending-workspace) and a routable model exists",
+    steps: "launch -> initial UI renders -> user configures a model provider (Settings -> Models) -> user chooses a workspace -> composer becomes available",
+    variants: "default-workspace auto-init succeeds (skips explicit Choose workspace step); default-workspace auto-init fails and shows defaultWorkspace.failed copy directing the user to Choose workspace"
+}
+
+Instance j_cfg_model_provider of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "model.configure, credentials.set, model.catalog",
+    evidence_class: "declared",
+    initiating_condition: "User opens Settings -> Models with no usable provider configured, or wants to add/change one",
+    journey_id: "J-CFG-model-provider",
+    precondition: "Settings surface is reachable regardless of workspace/session state",
+    purpose: "Configure a usable model route (provider + credentials) so sessions can generate",
+    settlement: "modelCatalog() lists the new route as usable; next request uses it (hot-apply, no restart)",
+    steps: "open Settings -> Models -> select provider (DeepSeek, third-party, or Custom model API) -> enter credentials/base URL/protocol/model list -> save -> route becomes usable without server restart",
+    variants: "DeepSeek credential-only onboarding mode (restricted ProviderEditor) vs full custom-provider editor (base URL, API protocol, model list)"
+}
+
+Instance j_ws_select of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "workspace.select, workspace.create, composer.enable",
+    evidence_class: "declared",
+    initiating_condition: "No workspace is selected, or user wants to add/switch a workspace",
+    journey_id: "J-WS-select",
+    precondition: "Directory picker capability is available (native or browse variant)",
+    purpose: "Bind the session to a working directory so the composer and file/shell tools have a scope",
+    settlement: "A WorkspaceRecord exists (stable id over canonical path, display title) and the composer is enabled",
+    steps: "click Choose workspace -> pick a project directory -> workspace record is created/adopted -> composer unlocks",
+    variants: "default workspace auto-created at boot (no explicit user action) vs manual Choose workspace after auto-init failure"
+}
+
+Instance j_b_basic_session of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "session.create, session.send, session.stream, session.list",
+    evidence_class: "declared",
+    initiating_condition: "Workspace selected, model configured, composer available",
+    journey_id: "J-B-basic-session",
+    precondition: "At least one routable model exists",
+    purpose: "Run one complete request/response turn and see it durably represented in session history",
+    settlement: "Session log contains the completed turn; sidebar list (activity-ordered) shows the session with a generated title after switching away and back",
+    steps: "create session -> send deterministic prompt -> streamed assistant response -> turn completes -> session appears in sidebar history -> switch away -> switch back and see the same state",
+    variants: "first-prompt vs all-prompts automatic title generation cadence"
+}
+
+Instance j_c_tool_execution of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "tool.read, tool.bash, tool.edit, tool.fs_search",
+    evidence_class: "declared",
+    initiating_condition: "User sends a coding task inside an active session with a selected workspace",
+    journey_id: "J-C-tool-execution",
+    precondition: "Workspace selected; fs/bash tools available and not sandbox-denied for the requested scope",
+    purpose: "Let the agent read, execute, and edit within the workspace, with visible tool-call state",
+    settlement: "The edited file's on-disk content reflects the tool call, and the read-before-mutation observation policy was satisfied for every write/edit",
+    steps: "agent calls read tool -> agent calls bash/shell tool -> agent calls edit tool (gated by prior read of the unchanged file: fs_not_observed / fs_stale_version if violated) -> tool cards render pending/success/fail -> final answer -> workspace file is actually mutated on disk",
+    variants: "write to a new file (no prior read required) vs write/edit to an existing file (prior read of the unchanged version required)"
+}
+
+Instance j_d_approval of "CanonicalJourney" {
+    actor: "ApprovalAuthority",
+    capabilities: "approval.request, approval.decide, tool.execute",
+    evidence_class: "declared",
+    initiating_condition: "A tool call requests an operation outside its default sandbox/authority (e.g. bash sandbox escalation, exit_plan_mode)",
+    journey_id: "J-D-approval",
+    precondition: "An approval answerer is attached to the session (fail-closed 'unavailable' if not)",
+    purpose: "Gate a privileged/escalated tool action behind an explicit human decision, fail-closed by default",
+    settlement: "Exactly one approval/decided event per approval/asked id; the gated action's execution state (proceeded vs failed) matches the decision, and completion is persisted",
+    steps: "tool requests approval with a justification -> UI shows the waiting banner ('Waiting for approval') and escalation notice -> execution remains pending -> user decides Reject or Allow once -> approval/decided is logged -> on allowed-once the tool call proceeds and the run resumes; on Reject the tool call fails and the run continues without the privileged effect",
+    variants: "Allow once (execution proceeds) vs Reject (execution fails, denial rendered generically without raw arguments); default-deny 'unavailable' outcome when no answerer responds (e.g. across reload/disconnect)"
+}
+
+Instance j_e_plan of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "plan.set, plan.exit, plan.review",
+    evidence_class: "declared",
+    initiating_condition: "User requests a multi-step task, or invokes /plan",
+    journey_id: "J-E-plan",
+    precondition: "Plan mode is the effective target for the session (queued if toggled mid-turn)",
+    purpose: "Let the agent draft, revise, and get explicit sign-off on a multi-step plan before acting on it",
+    settlement: "plan/mode reaches a terminal, explicitly-decided state (approved-and-exited or still-active-after-revision) with a legible plan-review record",
+    steps: "plan mode activates (badge renders) -> composer placeholder switches to plan-specific prompt -> agent calls exit_plan_mode with a markdown plan -> plan is presented for user review -> user approves (carried out from next step) or requests changes (feedback returned as a failed tool call, agent revises and re-presents) -> plan mode exits on approval",
+    variants: "bare /plan (enable only) vs /plan <message> (enable and steer next step); mid-turn toggle queued vs applied immediately at next accepted pre-step"
+}
+
+Instance j_f_delegation of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "subagent.start, subagent.send_message, subagent.interrupt, subagent.result",
+    evidence_class: "declared",
+    initiating_condition: "A task requires isolated/parallel or continuable execution the parent delegates rather than performs directly",
+    journey_id: "J-F-delegation",
+    precondition: "A SubagentProvider is registered for the requested kind (one-shot or continuable)",
+    purpose: "Delegate part of a task to a subagent and fold its terminal result back into the parent's work",
+    settlement: "SubagentResult is recorded in the parent's durable subagentCatalog projection and the parent's completed turn reflects the delegated outcome",
+    steps: "parent starts/delegates a subagent -> child appears in the sidebar subagent activity view (live-pushed catalog, not polled) -> child performs its work (interruptible even while parent is offline) -> child reaches a terminal SubagentResult -> result is consumed by the parent's run and rendered inline in the parent's tool-call/tool-result card -> parent's turn completes",
+    variants: "one-shot SubagentRun vs continuable (resident, addressable, interruptible) child; queue vs steer delivery of a browser-authored message to a continuable child"
+}
+
+Instance j_g_persistence of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "session.inspect, workspace.reopen, session.reopen",
+    evidence_class: "declared",
+    initiating_condition: "A multi-step session has produced durable events (turns, tool calls, approvals, etc.)",
+    journey_id: "J-G-persistence",
+    precondition: "Session/workspace state was written through the durable Host Session log, not held only in memory",
+    purpose: "Prove that session/workspace state survives a full process restart, not just an in-memory reload",
+    settlement: "The reopened session's visible state (history, title, status) matches what was durably recorded before termination",
+    steps: "perform a multi-step session -> terminate the Web/runtime process -> restart it -> reopen the workspace -> reopen the session -> observe the same durable visible state (SessionInspection can show status without resuming the Agent)",
+    variants: "session viewed via SessionInspection (attached-or-persisted, non-activating) vs fully resumed Agent"
+}
+
+Instance j_h_cancellation of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "session.steer, session.interrupt, session.retry",
+    evidence_class: "inferred",
+    initiating_condition: "A streaming turn or tool run is in progress, or a deterministic provider error is injected",
+    journey_id: "J-H-cancellation",
+    precondition: "A cancel/steer affordance is reachable during the running turn",
+    purpose: "Let a user interrupt an in-flight turn or tool run, and separately verify deterministic provider-error handling",
+    settlement: "The turn reaches an explicit interrupted or failed state (not silently hung), and a retried/resumed turn completes normally where the reference allows it",
+    steps: "begin a streaming/tool run -> user cancels/interrupts (steer/interruptByParent) -> UI reflects the interrupted state -> user retries or resumes where the reference allows -> separately: inject a deterministic provider error (e.g. mock server connection_reset/stream_disconnect/server_error) -> compare failure/recovery behavior",
+    variants: "user-initiated cancel vs injected provider-side failure (connection_reset, stream_disconnect, partial_disconnect, server_error, script_exhausted)"
+}
+
+Policy every_canonical_flow_recorded as:
+    forall f in flows: (f.quantity > 0)
+
+Metric "canonical_journey_count" as:
+    count(instances)
+    @unit "count"
