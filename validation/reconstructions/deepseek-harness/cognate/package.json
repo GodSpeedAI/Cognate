@@ -1,0 +1,35 @@
+{
+  "name": "deepseek-harness-reconstruction",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "PORT=3180 bun src/server.ts",
+    "start": "bun src/server.ts",
+    "test": "bun test test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "2.2.0",
+    "@cognate/capabilities": "workspace:*",
+    "@cognate/cli": "workspace:*",
+    "@cognate/client": "workspace:*",
+    "@cognate/domainforge": "workspace:*",
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/projections": "workspace:*",
+    "@cognate/protocol-connect": "workspace:*",
+    "@cognate/protocol-connect-bun": "workspace:*",
+    "@cognate/provider-openai-compatible": "workspace:*",
+    "@cognate/react": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*",
+    "@cognate/ui-astryx": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.2"
+  }
+}
