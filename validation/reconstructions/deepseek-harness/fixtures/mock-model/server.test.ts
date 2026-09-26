@@ -253,3 +253,15 @@ describe("determinism", () => {
     expect(a.choices[0].message.tool_calls[0].function.name).toBe(b.choices[0].message.tool_calls[0].function.name);
   });
 });
+
+describe("scenario marker with trailing synthetic user messages", () => {
+  test("marker in an earlier user message (string or content parts) still selects the scenario", async () => {
+    const messages = [
+      { role: "user", content: [{ type: "text", text: "Do the thing. [[scenario:read]]" }] },
+      { role: "user", content: "<runtime-context>cwd=/ws</runtime-context>" },
+      { role: "user", content: "<reminder>skills available</reminder>" },
+    ];
+    const body = await (await handleRequest(chatReq(messages, false))).json();
+    expect(body.choices[0].message.tool_calls[0].function.name).toBe("read");
+  });
+});

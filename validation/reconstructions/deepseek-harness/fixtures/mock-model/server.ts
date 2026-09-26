@@ -214,9 +214,24 @@ function lastUserMessageIndex(messages: ChatMessage[]): number {
   return -1;
 }
 
+function textOf(content: unknown): string {
+  if (Array.isArray(content)) return content.map((part) => (typeof part === "string" ? part : String((part as { text?: unknown })?.text ?? ""))).join("");
+  return String(content ?? "");
+}
+
+const MARKER = /\[\[scenario:([a-zA-Z0-9_-]+)\]\]/;
+
+// Clients may append synthetic user messages (context snapshots, reminders) after the human
+// one, so the scenario comes from the last user message that carries a marker.
 function extractScenario(messages: ChatMessage[]): { name: string; step: number } {
-  const idx = lastUserMessageIndex(messages);
-  const marker = idx >= 0 ? String(messages[idx].content ?? "").match(/\[\[scenario:([a-zA-Z0-9_-]+)\]\]/) : null;
+  let idx = -1;
+  let marker: RegExpMatchArray | null = null;
+  for (let i = messages.length - 1; i >= 0 && !marker; i--) {
+    if (messages[i].role !== "user") continue;
+    marker = textOf(messages[i].content).match(MARKER);
+    if (marker) idx = i;
+  }
+  if (idx < 0) idx = lastUserMessageIndex(messages);
   const name = marker ? marker[1] : "plain";
   let step = 0;
   if (idx >= 0) {
@@ -338,7 +353,9 @@ function streamText(controller: ReadableStreamDefaultController, id: string, tex
     controller.enqueue(new TextEncoder().encode(sseChunk(baseChunk(id, {}, "stop"))));
     controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
     controller.close();
-  })();
+  })().catch(() => {
+    // Client aborted the stream (e.g. UI Stop); nothing left to send.
+  });
 }
 
 function streamToolCalls(controller: ReadableStreamDefaultController, id: string, calls: ToolCallSpec[], seed: string, delayMs: number) {
@@ -372,7 +389,9 @@ function streamToolCalls(controller: ReadableStreamDefaultController, id: string
     controller.enqueue(new TextEncoder().encode(sseChunk(baseChunk(id, {}, "tool_calls"))));
     controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
     controller.close();
-  })();
+  })().catch(() => {
+    // Client aborted the stream (e.g. UI Stop); nothing left to send.
+  });
 }
 
 async function streamInterrupt(controller: ReadableStreamDefaultController, id: string) {
