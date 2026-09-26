@@ -22,12 +22,13 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Exit criterion:** Upstream typed diagnostics replace message matching, or pinned-version golden tests cover every classified message shape and version upgrades fail on drift.
 
 ## DEBT-003 — DomainForge kinds without a V0 Graph accessor
-**Status:** Accepted V0 scope limit (open for a later binding)
+**Status:** Closed 2026-09-26 — a later binding exposes them and the mapping table plus golden fixtures are extended.
 **Requirement(s):** CG-SEM-001
 **Observed:** ConceptKind has 9 kinds; the Graph binding exposes collections for Entity, Resource, Flow, Instance, Role, Relation only. Policy is add/evaluate JSON only; Metric, Dimension, Unit, Mapping, Projection, External have no Graph accessor.
 **Consequence:** The adapter's mapping table marks these unmapped in V0; they never become capabilities.
 **Recommended action:** Keep the explicit unmapped rows. Extend the adapter only when an application requirement needs one of these kinds and a pinned binding exposes a read accessor; prove the new mapping with a golden fixture.
 **Exit criterion:** A later binding exposes them and the mapping table plus golden fixtures are extended.
+**Closing evidence:** `@godspeedai/domainforge` 0.18.1 exposes `allPolicies`, `allMetrics`, `allMappings`, `allProjections`, `allDimensions`, `allUnits`, `allPatterns`, `allConceptChanges`, `allEntityInstances` (verified present as functions post-install). Pin + `BINDING` moved to 0.18.1 with no adapter logic change; `just verify` and `just gates` pass 78/78, including the byte-identical golden projection (`all-kinds.projection.json`, 17 objects) across two loads and the architecture test forbidding implicit capabilities. Policy stays a read-only referenced constraint (`bindCapabilities` rejects Policy ids). `External` remains unmapped: SEA has no grammar, AST, or Graph declaration for it (only a semantic-pack enum variant), so there is nothing to map. Evidence record: `.agents/evidence/2026-09-26-debt-003-close.md`.
 
 ## DEBT-004 — Connect client and bidirectional streaming unsupported on Bun
 **Status:** Open

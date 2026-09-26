@@ -133,7 +133,7 @@ Dev authentication: `Authorization: Bearer <tenant>:<principalId>` via
 | Playwright | `1.63.0` | `tests/e2e` |
 | happy-dom | `20.14.5` | DOM in component tests |
 
-Upstream engine pins (exact): `cordis@4.0.0-rc.10`, `@godspeedai/domainforge@0.17.0`,
+Upstream engine pins (exact): `cordis@4.0.0-rc.10`, `@godspeedai/domainforge@0.18.1`,
 `@ruvector/core@0.1.32`, `@ruvector/rvf@0.3.4`, `@ag-ui/*@1.0.0`, `@connectrpc/*@2.2.0`,
 `@bufbuild/protobuf@2.15.0`, `@modelcontextprotocol/sdk@1.30.1`, `@a2a-js/sdk@1.2.1`,
 `@astryxdesign/*@0.6.3`, `zod@3.25.76`.

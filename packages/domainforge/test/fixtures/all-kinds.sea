@@ -1,0 +1,41 @@
+@namespace "debt003"
+@version "1.0.0"
+
+Dimension "Currency"
+Unit "USD" of "Currency" factor 1 base "USD"
+
+Entity "Buyer"
+Entity "Seller" v1.0.0
+Entity "SellerV2" v2.0.0
+    @replaces "Seller" v1.0.0
+    @changes ["renamed seller"]
+Resource "Money" USD
+Flow "Money" from "Buyer" to "Seller" quantity 25
+Role "Payer"
+Role "Payee"
+Pattern "CurrencyCode" matches "^[A-Z]{3}$"
+Relation "Payment"
+    subject: "Payer"
+    predicate: "pays"
+    object: "Payee"
+Instance buyer_one of "Buyer" {
+    name: "Example Buyer"
+}
+ConceptChange "Seller_v2_migration"
+    @from_version v1.0.0
+    @to_version v2.0.0
+    @migration_policy mandatory
+    @breaking_change true
+Policy positive_payment as:
+    forall f in flows: (f.quantity > 0)
+Metric "payment_count" as:
+    count(flows)
+    @unit "count"
+Mapping "buyer_mapping" for calm {
+    Entity "Buyer" -> Node { id: "buyer" }
+}
+Projection "buyer_projection" for calm {
+    Entity "Buyer" {
+        name: "buyer"
+    }
+}
