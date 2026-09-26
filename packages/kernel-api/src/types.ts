@@ -1,5 +1,12 @@
 // Framework-owned kernel contract (spec §8, §8.5, §9.1, §32). No engine types may appear here.
 
+/**
+ * Structurally identical to `@cognate/events`' `Json`, declared locally: `@cognate/events` itself
+ * depends on this package (for `SemanticRef`), so importing it here would cycle the package graph
+ * (spec §28). Any JSON value satisfies both structurally.
+ */
+export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
+
 /** Opaque reference to an existing semantic object (spec §7.1). Produced by semantic adapters. */
 export interface SemanticRef {
   readonly namespace: string;
@@ -51,6 +58,12 @@ export interface InvocationContext {
   /** Absolute deadline in epoch milliseconds. */
   readonly deadline?: number;
   readonly signal?: AbortSignal;
+  /**
+   * Durable progress channel into the invoking run, when there is one (e.g. streamed model token
+   * deltas). Absent, or a no-op, outside a run — e.g. `RuntimeService.invoke` from a client. Never
+   * affects step/emit/artifact replay accounting.
+   */
+  readonly progress?: (payload: Json) => Promise<void>;
 }
 
 export interface AuthorizationRequest {

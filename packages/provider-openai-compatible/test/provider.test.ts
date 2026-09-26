@@ -18,6 +18,33 @@ beforeAll(() => {
       if (last === "unauthorized") return Response.json({ error: { message: "bad key" } }, { status: 401 });
       if (last === "slow") await Bun.sleep(2000);
       if (body.stream) {
+        const last2 = (body.messages as { content: string }[]).at(-1)!.content;
+        if (last2 === "server-error") return new Response("boom", { status: 500 });
+        if (last2 === "slow-stream") {
+          return new Response(
+            new ReadableStream({
+              async start(c) {
+                c.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "partial" } }] })}\n\n`));
+                await Bun.sleep(2000);
+                c.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+                c.close();
+              },
+            }),
+            { headers: { "content-type": "text/event-stream" } },
+          );
+        }
+        if (body.tools) {
+          // Tool call split across chunks: id+name arrive first, arguments trickle in split mid-token.
+          const chunks = [
+            { choices: [{ delta: { tool_calls: [{ index: 0, id: "call_9", type: "function", function: { name: "lookup" } }] } }] },
+            { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: '{"ke' } }] } }] },
+            { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: 'y":"a' } }] } }] },
+            { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: 'bc"}' } }] } }] },
+            { choices: [{ delta: {}, finish_reason: "tool_calls" }] },
+          ].map((e) => `data: ${JSON.stringify(e)}\n\n`);
+          chunks.push("data: [DONE]\n\n");
+          return new Response(new ReadableStream({ start(c) { for (const ch of chunks) c.enqueue(new TextEncoder().encode(ch)); c.close(); } }), { headers: { "content-type": "text/event-stream" } });
+        }
         const chunks = ["Hel", "lo", "!"].map((t) => `data: ${JSON.stringify({ choices: [{ delta: { content: t } }] })}\n\n`);
         chunks.push(`data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}\n\n`, "data: [DONE]\n\n");
         return new Response(new ReadableStream({ start(c) { for (const ch of chunks) c.enqueue(new TextEncoder().encode(ch)); c.close(); } }), { headers: { "content-type": "text/event-stream" } });
@@ -50,6 +77,38 @@ describe("OpenAI-compatible provider (§26)", () => {
     for await (const d of provider().stream({ messages: [{ role: "user", content: "hi" }] })) deltas.push(d);
     expect(deltas.filter((d) => d.type === "text").map((d) => (d as { text: string }).text).join("")).toBe("Hello!");
     expect(deltas.at(-1)).toMatchObject({ type: "done", response: { message: { content: "Hello!" }, finishReason: "stop" } });
+  });
+
+  test("stream accumulates a tool call whose id, name, and arguments arrive split across chunks", async () => {
+    const deltas: ModelDelta[] = [];
+    for await (const d of provider().stream({ messages: [{ role: "user", content: "find" }], tools: [{ name: "lookup", description: "look up", inputSchema: { type: "object" } }] })) deltas.push(d);
+    const toolCall = deltas.find((d) => d.type === "tool_call");
+    expect(toolCall).toMatchObject({ type: "tool_call", call: { id: "call_9", name: "lookup", arguments: { key: "abc" } } });
+    expect(deltas.at(-1)).toMatchObject({ type: "done", response: { toolCalls: [{ id: "call_9", name: "lookup", arguments: { key: "abc" } }], finishReason: "tool_calls" } });
+  });
+
+  test("stream aborts on the caller's signal without hanging", async () => {
+    const controller = new AbortController();
+    const iterate = async () => {
+      for await (const _d of provider().stream({ messages: [{ role: "user", content: "slow-stream" }] }, controller.signal)) controller.abort();
+    };
+    const err = await iterate().catch((e) => e);
+    expect(err).toBeInstanceOf(ModelProviderError);
+    expect(err).toMatchObject({ kind: "cancelled" });
+  });
+
+  test("stream surfaces an HTTP error before any bytes are read, typed and without the credential", async () => {
+    const err = await (async () => {
+      try {
+        for await (const _d of provider().stream({ messages: [{ role: "user", content: "server-error" }] })) void 0;
+        return undefined;
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(err).toBeInstanceOf(ModelProviderError);
+    expect(err).toMatchObject({ kind: "unavailable", status: 500 });
+    expect(JSON.stringify({ ...(err as ModelProviderError), message: (err as ModelProviderError).message })).not.toContain(SECRET);
   });
 
   test("HTTP errors and timeouts are typed and never echo the credential", async () => {
