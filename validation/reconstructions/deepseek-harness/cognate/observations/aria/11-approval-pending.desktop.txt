@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cog-ws2 Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cog-ws2
+    - treeitem "r7w Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: r7w
       - treeitem "Waiting for approval [[scenario:approval]] run something risky Approval now" [selected]
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
@@ -27,7 +27,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 05:43 PM
+  - text: 06:29 PM
   - status: Deep diving for 7s
   - status: Deep diving for 7s
   - button "Running code · Clear stale scratch cache outside the workspace" [disabled]

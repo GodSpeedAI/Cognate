@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cog-ws2 [[scenario:multi]] do the multi-step task now now [[scenario:multi]] do the multi-step task now now [[scenario:multi]] do the multi-step task now now [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now 1m /plan make a plan now [[scenario:plan]] 1m [[scenario:approval]] run something risky 1m [[scenario:approval]] run something risky 1m [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 2m" [expanded]:
-      - text: cog-ws2
+    - treeitem "r7w [[scenario:multi]] do the multi-step task now now [[scenario:multi]] do the multi-step task now now [[scenario:multi]] do the multi-step task now now [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now 1m /plan make a plan now [[scenario:plan]] 1m [[scenario:approval]] run something risky 1m [[scenario:approval]] run something risky 1m [[scenario:multi]] do the multi-step task now 2m [[scenario:plain]] hello there 2m" [expanded]:
+      - text: r7w
       - treeitem "[[scenario:multi]] do the multi-step task now now" [selected]
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
@@ -20,7 +20,7 @@
       - treeitem "/plan make a plan now [[scenario:plan]] 1m"
       - treeitem "[[scenario:approval]] run something risky 1m"
       - treeitem "[[scenario:approval]] run something risky 1m"
-      - treeitem "[[scenario:multi]] do the multi-step task now 1m"
+      - treeitem "[[scenario:multi]] do the multi-step task now 2m"
       - treeitem "[[scenario:plain]] hello there 2m"
   - button "Settings"
 - main:
@@ -35,7 +35,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:multi]] do the multi-step task now"
   - button "Copy"
-  - text: 05:45 PM
+  - text: 06:30 PM
   - status: Worked
   - button "Took 9s" [disabled]
   - paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
@@ -43,7 +43,7 @@
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 05:45 PM
+  - text: Usage 0 tok 06:31 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

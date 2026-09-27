@@ -118,6 +118,11 @@ try {
   await page.waitForTimeout(200);
   await checkpoint(page, "02d-model-settings-redacted-key");
   await driver.dismiss(page, "Cancel");
+
+  // 22 - settings general: Settings modal, General tab with Work details dropdown menu.
+  await page.getByRole("button", { name: "General" }).click();
+  await page.waitForTimeout(200);
+  await checkpoint(page, "22-settings-general", { aria: true });
   await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await page.waitForTimeout(200);
 
@@ -349,7 +354,11 @@ try {
   await page.waitForTimeout(150);
   for (const mode of ["Compact", "Standard", "Detailed", "Verbose"] as const) {
     await driver.openSettingsGeneral(page);
-    await page.getByRole("button", { name: mode, exact: true }).click();
+    // Click the work details dropdown button to open the menu
+    await page.getByRole("button", { name: /^(Compact|Standard|Detailed|Verbose)$/ }).click();
+    await page.waitForTimeout(100);
+    // Click the menu item for the desired mode
+    await page.getByRole("menuitem", { name: mode, exact: true }).click();
     await page.waitForTimeout(200);
     await page.getByRole("button", { name: "Close settings", exact: true }).click();
     await page.waitForTimeout(150);
