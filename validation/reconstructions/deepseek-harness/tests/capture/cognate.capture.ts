@@ -87,14 +87,16 @@ try {
   await driver.authenticateRaw(page);
   await checkpoint(page, "01-first-launch");
 
-  await driver.dismiss(page, "Continue");
-
-  // 03 - no workspace: reference/observations/aria/03-no-workspace.desktop.txt confirms the
-  // reference still has its own second onboarding dialog ("Internal Testing Notice"'s follow-up)
-  // open on top of the no-workspace shell at this checkpoint — only the *first* dialog has been
-  // dismissed. Mirror that sequencing (critic round-2 capture-script fault: dismissing both dialogs
-  // before this screenshot showed the fully-unblocked shell instead of the still-gated one).
+  // 03 - no workspace: reference/observations/aria/03-no-workspace.desktop.txt AND the reference
+  // screenshot both show the *first* onboarding dialog ("Internal Testing Notice") still open at
+  // this checkpoint, same frame as `01-first-launch` (reference.capture.ts's own `03` checkpoint
+  // runs right after `authenticateRaw` + one no-op `dismiss(page, "Continue")` attempt against a
+  // disabled button — nothing is actually dismissed before that screenshot). Critic round-3 P1-1:
+  // round-2's fix dismissed dialog 1 *before* this checkpoint, which only advanced Cognate to its
+  // *second* dialog ("Add an API key to get started") — the wrong stage. Take 03 before either
+  // dialog is dismissed, matching reference's still-gated state, then dismiss both afterward.
   await checkpoint(page, "03-no-workspace");
+  await driver.dismiss(page, "Continue");
   await driver.dismiss(page, "Configure later");
 
   // 02 - model settings: Settings modal, provider list (empty — no provider configured yet).

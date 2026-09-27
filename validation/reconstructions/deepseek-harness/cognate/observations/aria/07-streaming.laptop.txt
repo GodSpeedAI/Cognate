@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ck-cog-laptop-ws [[scenario:plain]] hello there now" [expanded]:
-      - text: ck-cog-laptop-ws
+    - treeitem "ws [[scenario:plain]] hello there now" [expanded]:
+      - text: ws
       - treeitem "[[scenario:plain]] hello there now" [selected]
   - button "Settings"
 - main:
@@ -25,7 +25,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 01:10 PM
+  - text: 01:36 PM
   - status: Deep diving for 1s
   - heading "Summary" [level=1]
   - textbox "Message or run a task, / commands, @ files or sessions"

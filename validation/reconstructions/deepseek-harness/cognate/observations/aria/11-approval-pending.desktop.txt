@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ck-cog-desktop-ws Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: ck-cog-desktop-ws
+    - treeitem "ws Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: ws
       - treeitem "Waiting for approval [[scenario:approval]] run something risky Approval now" [selected]
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
@@ -27,7 +27,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 01:09 PM
+  - text: 01:34 PM
   - status: Deep diving for 7s
   - status: Deep diving for 7s
   - button "Running code · Clear stale scratch cache outside the workspace" [disabled]
@@ -41,11 +41,16 @@
       - text: Review · turn 2
       - button "Close": ×
     - button "Add tab" [disabled]
+    - button "Split" [disabled]
+    - button "Fullscreen" [disabled]
+    - button "Collapse right sidebar" [disabled]
   - toolbar "Review view":
     - button "List view"
     - button "Split view" [pressed]
     - button "Code view" [disabled]
     - text: src/greet.ts +1 -1
     - button "Line wrap"
-    - button "Open greet.ts in sidebar" [disabled]
+    - button "Open greet.ts in sidebar"
+    - button "Show file location" [disabled]
+    - button "More ways to open" [disabled]
   - text: "@@ -1,4 +1,4 @@ 1 export function greet(name: string): string { 2 return `Hello, ${name}!`; 3 } 4 1 export function greet(name: string): string { 2 return `Howdy, ${name}!`; 3 } 4"

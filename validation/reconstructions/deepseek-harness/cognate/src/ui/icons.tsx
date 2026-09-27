@@ -205,3 +205,14 @@ export const CodeViewIcon = (props: IconProps) =>
     </>,
     props,
   );
+
+/** Review panel tab-strip layout controls (critic round-3 P1 — `10-file-change-expanded`'s
+ *  reference ARIA also lists "Split"/"Fullscreen"/"Collapse right sidebar" at the tab-strip level,
+ *  distinct from the toolbar's list/split/code *view* toggles below it). */
+export const FullscreenIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M5.5 2H2v3.5M10.5 2H14v3.5M5.5 14H2v-3.5M10.5 14H14v-3.5" />
+    </>,
+    props,
+  );

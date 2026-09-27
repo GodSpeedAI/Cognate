@@ -23,6 +23,20 @@
   --cg-text-faint: #9aa0ab;
   --cg-accent: #1b1d22;
   --cg-accent-contrast: #ffffff;
+  /* Round-3 audit (P0/P1): the reference does NOT use one accent hue everywhere. Near-black
+   * (`--cg-accent` above) is only the modal/approval CTA color ("Continue", "Apply", "Allow once" —
+   * reference/screenshots/desktop/{01-first-launch,02-model-settings,11-approval-pending}.png).
+   * The composer send/stop button and the active-tab underline are a separate BLUE
+   * (`reference/screenshots/desktop/{07-streaming,15-completed-session}.png` sample to `#4176e6`) —
+   * given its own token so it doesn't get pulled along by a future accent retone. */
+  --cg-accent-interactive: #4176e6;
+  --cg-accent-interactive-contrast: #ffffff;
+  /* The user-message bubble is its own light lavender/blue-gray fill with dark text, NOT the
+   * near-black `--cg-accent` (critic round-3 P0/P1: `--cg-accent` was pulled onto the bubble by the
+   * round-2 retone, but reference/screenshots/{desktop,laptop}/15-completed-session.png samples the
+   * bubble fill to `#edf3fe` with dark text, distinct from the near-black button/active-row color). */
+  --cg-message-bubble-bg: #edf3fe;
+  --cg-message-bubble-text: #1b1d22;
   --cg-danger: #d93025;
   --cg-danger-bg: #fdecea;
   --cg-success: #1a7f37;
@@ -62,6 +76,10 @@
     --cg-text-faint: #767c88;
     --cg-accent: #ececee;
     --cg-accent-contrast: #17181b;
+    --cg-accent-interactive: #6f92ef;
+    --cg-accent-interactive-contrast: #0c1220;
+    --cg-message-bubble-bg: #2a3350;
+    --cg-message-bubble-text: #ececee;
     --cg-danger: #ff6b6b;
     --cg-danger-bg: #3a1f1f;
     --cg-success: #4ade80;
@@ -85,6 +103,10 @@
   --cg-text-faint: #767c88;
   --cg-accent: #ececee;
   --cg-accent-contrast: #17181b;
+  --cg-accent-interactive: #6f92ef;
+  --cg-accent-interactive-contrast: #0c1220;
+  --cg-message-bubble-bg: #2a3350;
+  --cg-message-bubble-text: #ececee;
   --cg-danger: #ff6b6b;
   --cg-danger-bg: #3a1f1f;
   --cg-success: #4ade80;
@@ -589,7 +611,7 @@ input:focus-visible {
 
 .tab.active {
   color: var(--cg-text);
-  border-bottom-color: var(--cg-accent);
+  border-bottom-color: var(--cg-accent-interactive);
   font-weight: 600;
 }
 
@@ -636,8 +658,8 @@ input:focus-visible {
 }
 
 .message-bubble {
-  background: var(--cg-accent);
-  color: var(--cg-accent-contrast);
+  background: var(--cg-message-bubble-bg);
+  color: var(--cg-message-bubble-text);
   border-radius: var(--cg-radius-xl);
   padding: 10px 14px;
 }
@@ -699,6 +721,12 @@ input:focus-visible {
 
 .status-pill.status-streaming {
   background: var(--cg-text-faint, #999);
+}
+
+.status-pill.status-cancelled {
+  background: transparent;
+  width: 0;
+  height: 0;
 }
 
 .sr-only {
@@ -1051,6 +1079,45 @@ input:focus-visible {
   font-size: 12px;
 }
 
+/* File-icon card layout (critic round-3 P1): icon + filename heading + "+N -M" stat line, matching
+ * reference/screenshots/*​/10-file-change-expanded.png instead of the old single-line text pill. */
+.edit-diff-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.edit-diff-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--cg-radius-xs);
+  background: var(--cg-surface-raised);
+  color: var(--cg-accent);
+}
+
+.edit-diff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.3;
+}
+
+.edit-diff-heading {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.edit-diff-stat {
+  font-size: 12px;
+  color: var(--cg-text-muted);
+}
+
 .edit-diff-body {
   margin-top: 6px;
   padding: 8px;
@@ -1202,8 +1269,8 @@ input:focus-visible {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: var(--cg-accent);
-  color: var(--cg-accent-contrast);
+  background: var(--cg-accent-interactive);
+  color: var(--cg-accent-interactive-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1642,7 +1709,7 @@ input:focus-visible {
 
 .add-provider-tabs .tab.active {
   color: var(--cg-text);
-  border-bottom-color: var(--cg-accent);
+  border-bottom-color: var(--cg-accent-interactive);
   font-weight: 600;
 }
 

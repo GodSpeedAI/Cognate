@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ck-cog-laptop-ws [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
-      - text: ck-cog-laptop-ws
+    - treeitem "ws [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
+      - text: ws
       - treeitem "[[scenario:error]] trigger a provider error now" [selected]
       - treeitem "[[scenario:plain]] cancel me please now"
       - treeitem "[[scenario:delegate]] delegate this now now"
@@ -32,7 +32,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:error]] trigger a provider error"
   - button "Copy"
-  - text: 01:11 PM
+  - text: 01:37 PM
   - status: Failed
   - button "Took 2s" [disabled]
   - button "Retried model request (5/5) · 2s"
@@ -45,4 +45,4 @@
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
-  - text: 1 turns 0 steps · 0 tok/s 0% of context used
+  - text: 1 turns 1 steps · 0 tok/s 0% of context used

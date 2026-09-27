@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ck-cog-desktop-ws [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: ck-cog-desktop-ws
+    - treeitem "ws [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: ws
       - treeitem "[[scenario:multi]] do the multi-step task now now" [selected]
       - treeitem "[[scenario:plain]] hello there now"
   - button "Settings"
@@ -26,33 +26,38 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:multi]] do the multi-step task now"
   - button "Copy"
-  - text: 01:09 PM
+  - text: 01:34 PM
   - status: Worked
   - button "Took 14s" [disabled]
   - paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
-  - 'button "View changes to src/greet.ts: Edited greet.ts +1 -1"'
+  - 'button "View changes to src/greet.ts: Edited greet.ts +1 -1"': Edited greet.ts +1 -1
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 01:09 PM
+  - text: Usage 0 tok 01:34 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
-  - text: 1 turns 3 steps · 0 tok/s 0% of context used
+  - text: 1 turns 4 steps · 0 tok/s 0% of context used
 - tabpanel "Review · turn 2":
   - tablist:
     - tab "Review · turn 2 Close" [selected]:
       - text: Review · turn 2
       - button "Close": ×
     - button "Add tab" [disabled]
+    - button "Split" [disabled]
+    - button "Fullscreen" [disabled]
+    - button "Collapse right sidebar" [disabled]
   - toolbar "Review view":
     - button "List view"
     - button "Split view" [pressed]
     - button "Code view" [disabled]
     - text: src/greet.ts +1 -1
     - button "Line wrap"
-    - button "Open greet.ts in sidebar" [disabled]
+    - button "Open greet.ts in sidebar"
+    - button "Show file location" [disabled]
+    - button "More ways to open" [disabled]
   - text: "@@ -1,4 +1,4 @@ 1 export function greet(name: string): string { 2 return `Hello, ${name}!`; 3 } 4 1 export function greet(name: string): string { 2 return `Howdy, ${name}!`; 3 } 4"
