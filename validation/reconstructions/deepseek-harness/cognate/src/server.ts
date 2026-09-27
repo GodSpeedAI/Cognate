@@ -27,6 +27,7 @@ import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
 import { planStateComponent } from "./capabilities/planState.ts";
 import { subagentStartComponent } from "./capabilities/subagentStart.ts";
 import { onboardingDismissComponent } from "./capabilities/onboardingDismiss.ts";
+import { settingsChangeWorkDetailsComponent } from "./capabilities/settingsChange.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
@@ -34,6 +35,7 @@ import { sessionsProjection } from "./projections/sessions.ts";
 import { plansProjection } from "./projections/plans.ts";
 import { subagentsProjection } from "./projections/subagents.ts";
 import { onboardingProjection } from "./projections/onboarding.ts";
+import { settingsProjection } from "./projections/settings.ts";
 import { secretStore } from "./secrets.ts";
 
 export const LOCAL_OPERATOR = { actor: { id: "operator", kind: "user" as const }, tenant: "local" };
@@ -64,6 +66,7 @@ const GRANTED_CAPABILITIES = [
   "plan.state",
   "subagent.start",
   "onboarding.dismiss",
+  "settings.changeWorkDetails",
 ];
 
 function buildPolicy(): Policy {
@@ -158,6 +161,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       planStateComponent(getService, planBindings.planState.semanticRef),
       subagentStartComponent({ getService, systemActor: SYSTEM_CALLER.actor, semanticRef: subagentBindings.subagentStart.semanticRef }),
       onboardingDismissComponent({ getService, systemCaller: SYSTEM_CALLER }),
+      settingsChangeWorkDetailsComponent({ getService, systemCaller: SYSTEM_CALLER }),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
@@ -166,6 +170,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       { projection: plansProjection, public: true },
       { projection: subagentsProjection, public: true },
       { projection: onboardingProjection, public: true },
+      { projection: settingsProjection, public: true },
     ],
     system: SYSTEM_CALLER.actor,
   });

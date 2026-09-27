@@ -387,13 +387,48 @@ variants tested):
 Permission (default permission mode for new sessions, default
 **"Workspace Write"**), Language (**English**), Font size (px stepper,
 default 14), **Work details** — "Choose how much detail to show for tool
-calls" (default **"Standard"** — directly relevant to tool-card capture once
-§0 is fixed; P1), Performance & usage detail level (default **"Detailed"**),
+calls" (default **"Standard"** — P1, RESOLVED, see §10a), Performance & usage detail level (default **"Detailed"**),
 **Coding Tools** toggle ("Shows trajectory, code diffs, and Agent preset
 switching in new chats", default **on**) — this is what exposes the
 **"Trajectory"** tab next to **"Chat"** on a session (seen in every session
 capture this pass; its content was not explored — unresolved), Keyboard
 shortcuts editor, **Send behavior while busy** (default **"Queue"**).
+
+## 10a. Work details (RESOLVED — P1 closed)
+
+Settings → General → **"Work details"** — "Choose how much detail to show for tool calls". A
+dropdown selector (`button[aria-haspopup="menu"]` whose accessible name is the currently-selected
+label, not a fixed name — confirmed against
+`.tmp/ref/deepseek-harness/packages/client/ui-chat/src/client/settings/PreferenceRow.tsx`), opening
+a menu of four `menuitem`s.
+
+| Option | Label | Effect on the `multi` scenario's (read → bash → edit → final answer) completed turn |
+|---|---|---|
+| 1 | **Compact** | Folded: only the "Took Ns" duration line + final answer text. No per-step detail visible by default. |
+| 2 | **Standard** (default) | Same folded rendering as Compact at this depth (a single turn, no prior turns to distinguish "collapsed" vs "history" grouping). |
+| 3 | **Detailed** | Same folded rendering as Compact/Standard at this depth — the reference's own `stepGrouping` distinction ("collapsed" vs "history") only affects multi-turn session history, not a single turn's own steps (source: `.tmp/ref/deepseek-harness/packages/client/ui-chat/src/client/presentation-policy.ts`'s `POLICIES` table — `foldCompletedTurns: true` for compact/standard/detailed). |
+| 4 | **Verbose** | Unfolded: every tool call renders as its own ungrouped line ("Read · `<path>`", "Bash · `<description>`", "Edit · `<path>`", each on its own row, in order), no "Took Ns" fold at all — `foldCompletedTurns: false`. A failed step (observed: an `edit` reusing a workspace that no longer had the target `old_string`) renders its line in red with the raw error message inline. |
+
+Screenshots: `reference/screenshots/desktop/21-work-details-{compact,standard,detailed,verbose}.png`
++ matching `reference/observations/aria/21-work-details-*.desktop.txt`, captured via
+`tests/capture/reference.capture-workdetails.ts` (one fresh `multi`-scenario session per option,
+same recipe as `reference.capture.ts`'s other checkpoints). Compact/Standard/Detailed are visually
+identical at this single-turn depth (confirmed by inspection, not just table lookup); Verbose is the
+one visually distinct option.
+
+**Persistence (both explicitly re-verified this pass, resolving §9's "not explicitly re-verified"
+flag for Theme too):**
+- Work details: setting it to "Verbose" then reloading the page (`page.reload`) — the dropdown still
+  reads "Verbose" afterward. **Persists across a reload.**
+- Theme: clicking "Dark" (`aria-pressed="true"` immediately), then reloading — still
+  `aria-pressed="true"` afterward. **Persists across a reload.** (§9's "flagged unresolved" note is
+  now resolved: yes, it persists.)
+
+Not re-verified: persistence across a full reference process restart (only a page reload was
+checked, mirroring how Theme was originally scoped in §9) — out of scope for this P1 (the reference
+runs `dsh web` as an external pinned process this suite does not own the persistence layer of); the
+Cognate side is asserted durable across a full runtime restart instead (`cognate/test/
+J-I-work-details.test.ts`), which is the stronger guarantee.
 
 ---
 

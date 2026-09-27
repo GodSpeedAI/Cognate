@@ -3,6 +3,14 @@ import type { Json } from "@cognate/events";
 import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
 import {
+  DEFAULT_WORK_DETAILS_MODE,
+  WORK_DETAILS_LABELS,
+  WORK_DETAILS_MODES,
+  isWorkDetailsMode,
+  showsLiveProcessDetail,
+  type WorkDetailsMode,
+} from "../workDetails.ts";
+import {
   BranchIcon,
   CheckIcon,
   ChevronDownIcon,
@@ -87,6 +95,13 @@ interface ChatMessage {
    *  in the parity-capture suite keys off of — a status row on a still-streaming bubble made it
    *  detect "idle" far too early for a multi-step tool turn; see `tests/drivers/cognate.ts`). */
   readonly streaming?: boolean;
+  /** Snapshot of this turn's `useToolTimeline(activeRunId)` entries at finalize time — only used by
+   *  the "Verbose" Work details mode (reference-behavior-matrix.md §10a: `foldCompletedTurns: false`
+   *  — every step stays visible individually instead of folding behind the "Took Ns" disclosure).
+   *  Not persisted across a reload/session-switch (this app's `session.history` only returns
+   *  `stepCount`, not per-step detail — see APP/DEVIATIONS.md); a reloaded historical turn falls
+   *  back to the folded view even under Verbose. */
+  readonly steps?: readonly ToolEntry[];
 }
 
 interface ToolEntry {
@@ -200,6 +215,19 @@ function useModelConfig(): ModelConfigRow | undefined {
   const rows = useProjection("model-config");
   const current = rows?.find((r) => r.key === "current");
   return current ? (current.value as unknown as ModelConfigRow) : undefined;
+}
+
+/** Settings -> General -> "Work details" (reference-behavior-matrix.md §10 — "Choose how much
+ *  detail to show for tool calls", default "Standard"): the current mode, folded from durable
+ *  `settings.changed` events (`settings` projection's "current" row), defaulting to "standard"
+ *  before any preference has ever been saved for this `COGNATE_HARNESS_HOME` — same durability as
+ *  every other setting in this app (model-config, onboarding), so it survives both a reload and a
+ *  full runtime restart. */
+function useWorkDetails(): WorkDetailsMode {
+  const rows = useProjection("settings");
+  const current = rows?.find((r) => r.key === "current");
+  const value = (current?.value as { readonly workDetails?: unknown } | undefined)?.workDetails;
+  return isWorkDetailsMode(value) ? value : DEFAULT_WORK_DETAILS_MODE;
 }
 
 /** Whether the given first-run step (`"notice"` | `"apikey"`) has already been dismissed for this
@@ -407,6 +435,7 @@ function SettingsModels({
   onClose,
   theme,
   onToggleTheme,
+  workDetails,
 }: {
   readonly onClose: () => void;
   /** Appearance section (critic round-2 batch A cross-cutting P2 — reference switches theme via
@@ -414,9 +443,18 @@ function SettingsModels({
    *  tests/capture/reference.capture.ts's 20-theme-variant step). */
   readonly theme: string;
   readonly onToggleTheme: () => void;
+  /** Work details section (reference-behavior-matrix.md §10a — "Choose how much detail to show for
+   *  tool calls", default "Standard"), folded from durable `settings.changed` events. */
+  readonly workDetails: WorkDetailsMode;
 }) {
   const client = useCognate();
   const config = useModelConfig();
+  const setWorkDetails = useCallback(
+    (mode: WorkDetailsMode) => {
+      if (mode !== workDetails) void client.invoke("settings.changeWorkDetails", { workDetails: mode });
+    },
+    [client, workDetails],
+  );
   const [section, setSection] = useState<"general" | "models">("models");
   const [view, setView] = useState<"list" | "wizard">("list");
   const [addTab, setAddTab] = useState<"third-party" | "custom">("custom");
@@ -595,6 +633,20 @@ function SettingsModels({
                   <button type="button" aria-pressed={theme === "dark"} onClick={() => theme !== "dark" && onToggleTheme()}>
                     Dark
                   </button>
+                </div>
+                <p className="settings-subtitle">Work details</p>
+                <p className="settings-description">Choose how much detail to show for tool calls</p>
+                <div role="group" aria-label="Work details" className="work-details-group">
+                  {WORK_DETAILS_MODES.map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-pressed={workDetails === mode}
+                      onClick={() => setWorkDetails(mode)}
+                    >
+                      {WORK_DETAILS_LABELS[mode]}
+                    </button>
+                  ))}
                 </div>
               </>
             ) : view === "list" ? (
@@ -940,20 +992,25 @@ function useToolTimeline(runId: string | undefined): readonly ToolEntry[] {
 }
 
 /** The current/latest tool action's accessible label, matching the reference's single running-tool
- *  button (`08-tool-running`: `button "Reading files · src/greet.ts"` / `"Running code · ..."`). */
-function toolActionLabel(entry: ToolEntry): string {
+ *  button (`08-tool-running`: `button "Reading files · src/greet.ts"` / `"Running code · ..."`).
+ *  The "· <detail>" suffix is gated on `showsLiveProcessDetail(mode)` (Settings -> General -> "Work
+ *  details" — reference-behavior-matrix.md §10a): shown for "standard"/"detailed" (the default),
+ *  hidden for "compact"/"verbose", exactly the reference's own `liveProcessDetail` table. */
+function toolActionLabel(entry: ToolEntry, mode: WorkDetailsMode = DEFAULT_WORK_DETAILS_MODE): string {
   const args = entry.args;
-  if (entry.tool === "read") return `Reading files · ${String(args.file_path ?? "")}`;
-  if (entry.tool === "edit") return `Editing files · ${String(args.file_path ?? "")}`;
-  if (entry.tool === "bash") return `Running commands · ${String(args.description ?? args.command ?? "")}`;
-  if (entry.tool === "run_code") return `Running code · ${String(args.description ?? "")}`;
+  const detail = showsLiveProcessDetail(mode);
+  if (entry.tool === "read") return detail ? `Reading files · ${String(args.file_path ?? "")}` : "Reading files";
+  if (entry.tool === "edit") return detail ? `Editing files · ${String(args.file_path ?? "")}` : "Editing files";
+  if (entry.tool === "bash") return detail ? `Running commands · ${String(args.description ?? args.command ?? "")}` : "Running commands";
+  if (entry.tool === "run_code") return detail ? `Running code · ${String(args.description ?? "")}` : "Running code";
   // reference-behavior-matrix.md §6.3: `13-plan-active` shows "Updating the plan · todo_write",
-  // `13b-plan-review-prompt` shows "Calling tools · exit_plan_mode".
+  // `13b-plan-review-prompt` shows "Calling tools · exit_plan_mode". These carry no variable detail
+  // (the tool name itself is the detail), so the work-details mode does not change them.
   if (entry.tool === "todo_write") return "Updating the plan · todo_write";
   if (entry.tool === "exit_plan_mode") return "Calling tools · exit_plan_mode";
   // reference-behavior-matrix.md §6.4: `14-subagent-active` shows "Coordinating subagents ·
   // <description>".
-  if (entry.tool === "subagent") return `Coordinating subagents · ${String(args.description ?? "")}`;
+  if (entry.tool === "subagent") return detail ? `Coordinating subagents · ${String(args.description ?? "")}` : "Coordinating subagents";
   return `Running ${entry.tool}`;
 }
 
@@ -961,7 +1018,15 @@ function toolActionLabel(entry: ToolEntry): string {
  *  the reference's `08-tool-running` (`status: Deep diving...`, `button "Reading files · ..."` is
  *  read here as a plain row, not a modal card — the card only appears once approval is pending, see
  *  `ApprovalBar` below, which replaces the composer the way the reference's does). */
-function ToolActivity({ entries, elapsedSeconds }: { readonly entries: readonly ToolEntry[]; readonly elapsedSeconds: number }) {
+function ToolActivity({
+  entries,
+  elapsedSeconds,
+  workDetails,
+}: {
+  readonly entries: readonly ToolEntry[];
+  readonly elapsedSeconds: number;
+  readonly workDetails?: WorkDetailsMode;
+}) {
   const current = entries.length > 0 ? entries[entries.length - 1] : undefined;
   if (!current || current.status !== "running") return null;
   return (
@@ -974,7 +1039,7 @@ function ToolActivity({ entries, elapsedSeconds }: { readonly entries: readonly 
         <span className="sr-only">Deep diving for {elapsedSeconds}s</span>
       </span>
       <button type="button" className="tool-activity-btn" disabled title={`Deep diving for ${elapsedSeconds}s`}>
-        {toolActionLabel(current)}
+        {toolActionLabel(current, workDetails)}
       </button>
     </div>
   );
@@ -1543,16 +1608,33 @@ function Composer({
   );
 }
 
+/** A settled turn's individual-step line for "Verbose" Work details (reference-behavior-matrix.md
+ *  §10a) — short noun label + "· <detail>", matching the reference's own ungrouped verbose list
+ *  (`21-work-details-verbose`: "Read · <path>", "Bash · <description>", "Edit · <path>"). */
+function verboseStepLabel(entry: ToolEntry): string {
+  const args = entry.args;
+  if (entry.tool === "read") return `Read · ${String(args.file_path ?? "")}`;
+  if (entry.tool === "edit") return `Edit · ${String(args.file_path ?? "")}`;
+  if (entry.tool === "bash") return `Bash · ${String(args.description ?? args.command ?? "")}`;
+  if (entry.tool === "run_code") return `Run code · ${String(args.description ?? "")}`;
+  if (entry.tool === "todo_write") return "To-dos · todo_write";
+  if (entry.tool === "exit_plan_mode") return "Plan review · exit_plan_mode";
+  if (entry.tool === "subagent") return `Subagent · ${String(args.description ?? "")}`;
+  return entry.tool;
+}
+
 function MessageBubble({
   message,
   elapsedSeconds,
   turnNumber,
   onOpenReview,
+  workDetails,
 }: {
   readonly message: ChatMessage;
   readonly elapsedSeconds?: number;
   readonly turnNumber?: number;
   readonly onOpenReview?: (summary: EditSummary, turnNumber: number) => void;
+  readonly workDetails?: WorkDetailsMode;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -1615,6 +1697,21 @@ function MessageBubble({
         />
       )}
       <div className="message-divider" />
+      {/* "Verbose" Work details (reference-behavior-matrix.md §10a): every step stays visible
+       *  individually instead of folding behind the "Took Ns" line above (foldCompletedTurns: false
+       *  — see `21-work-details-verbose` vs. `21-work-details-{compact,standard,detailed}`, which all
+       *  fold identically at this default single-turn depth). Only available for the turn that just
+       *  finished in this browser session (`message.steps`) — see the ChatMessage.steps doc comment. */}
+      {workDetails === "verbose" && message.steps && message.steps.length > 0 && (
+        <ul className="verbose-step-list" aria-label="Tool call steps">
+          {message.steps.map((entry) => (
+            <li key={entry.toolCallId} className={entry.status === "failed" ? "verbose-step-failed" : undefined}>
+              {verboseStepLabel(entry)}
+              {entry.status === "failed" && entry.error && <span className="verbose-step-error"> · Error: {entry.error}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="message-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
       <CodeBlocks containerRef={bodyRef} />
       {message.editSummary && onOpenReview && (
@@ -1707,6 +1804,7 @@ export function App() {
   const modelConfig = useModelConfig();
   const currentWorkspaceId = useCurrentWorkspaceId();
   const [theme, toggleTheme] = useTheme();
+  const workDetails = useWorkDetails();
 
   const [collapsed, setCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1895,13 +1993,13 @@ export function App() {
       // The last successful `edit` this turn made, if any (`10-file-change-collapsed`/`-expanded`).
       const lastEdit = [...toolEntries].reverse().find((e) => e.tool === "edit" && e.status === "success");
       const editSummary = lastEdit ? (lastEdit.result as EditSummary | undefined) : undefined;
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary, stepCount: toolEntries.length + 1 }]);
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary, stepCount: toolEntries.length + 1, steps: toolEntries }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "cancelled") {
       // T11 (J-H-cancellation): the partial streamed text is kept, not discarded, with a "Stopped"
       // status pill and no duration badge (reference-behavior-matrix.md §7).
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true, stepCount: toolEntries.length + 1 }]);
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true, stepCount: toolEntries.length + 1, steps: toolEntries }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "failed") {
       // T11 (J-H-provider-error): "This turn failed" / message / CODE, plus the settled retry
@@ -1919,6 +2017,7 @@ export function App() {
           failureCode: streaming.failure?.code,
           failureMessage: streaming.failure?.message,
           stepCount: toolEntries.length + 1,
+          steps: toolEntries,
         },
       ]);
       setActiveRunId(undefined);
@@ -2120,13 +2219,13 @@ export function App() {
             <div className="messages">
               {transcript.length === 0 && streaming.status === "idle" && <p className="empty-state">Start the conversation below.</p>}
               {transcript.map((message, index) => (
-                <MessageBubble key={index} message={message} turnNumber={index + 1} onOpenReview={openReviewPanel} />
+                <MessageBubble key={index} message={message} turnNumber={index + 1} onOpenReview={openReviewPanel} workDetails={workDetails} />
               ))}
               {streaming.status === "streaming" && (
                 <>
                   <MessageBubble message={{ role: "assistant", content: streaming.text, streaming: true }} elapsedSeconds={elapsedSeconds} />
                   {streaming.retries.length > 0 && <RetryDisclosure retries={streaming.retries} elapsedSeconds={elapsedSeconds} />}
-                  <ToolActivity entries={toolEntries} elapsedSeconds={elapsedSeconds} />
+                  <ToolActivity entries={toolEntries} elapsedSeconds={elapsedSeconds} workDetails={workDetails} />
                 </>
               )}
             </div>
@@ -2160,7 +2259,7 @@ export function App() {
       ) : (
         openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />
       )}
-      {showSettings && <SettingsModels onClose={() => setShowSettings(false)} theme={theme} onToggleTheme={toggleTheme} />}
+      {showSettings && <SettingsModels onClose={() => setShowSettings(false)} theme={theme} onToggleTheme={toggleTheme} workDetails={workDetails} />}
       <FirstRunDialogs />
     </div>
   );
