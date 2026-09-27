@@ -9,14 +9,14 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-desktop [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cg-ws-desktop
+    - treeitem "cap-ws-d [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
+      - text: cap-ws-d
       - treeitem "[[scenario:delegate]] delegate this now now" [selected]
       - treeitem "/plan make a plan now [[scenario:plan]] now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
-      - treeitem "[[scenario:plain]] hello there now"
+      - treeitem "[[scenario:plain]] hello there 1m"
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
@@ -32,15 +32,15 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 08:22 AM
+  - text: 12:24 PM
   - status: Worked
-  - button "Took 1s" [disabled]
-  - paragraph: "Tool result: started subagent c0f0b778-2144-4239-87c2-d87f4414b3e2"
+  - button "Took 5s" [disabled]
+  - paragraph: "Tool result: started subagent 1fa3252f-2654-40a0-b8ee-dbdc12f2e805"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 08:22 AM
+  - text: Usage 0 tok 12:24 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
@@ -48,6 +48,6 @@
   - button "Send message" [disabled]
   - text: 0 turns 0 steps · 0 tok/s 0% of context used
   - tree "Subagent sessions":
-    - treeitem "Summarize project status · Summarize the current state of the fixtu · continuable · completed · 0 tok · 0s Open Summarize project status in sidebar":
-      - text: Summarize project status · Summarize the current state of the fixtu · continuable · completed · 0 tok · 0s
+    - treeitem "Summarize project status · Summarize the current state of the fixtu · continuable · running · 0 tok · 0s Open Summarize project status in sidebar":
+      - text: Summarize project status · Summarize the current state of the fixtu · continuable · running · 0 tok · 0s
       - button "Open Summarize project status in sidebar"
