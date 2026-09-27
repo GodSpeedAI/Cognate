@@ -1,0 +1,128 @@
+[
+  {
+    "journeyId": "A-first-use",
+    "title": "launch shows initial UI with no workspace yet, then model config + workspace selection enable the composer",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 3675,
+    "evidence": [
+      "test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/01-initial-ui-d0aa3519c5215b2d94faf2458a665c77a2ae4711.png",
+      "test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/02-no-workspace-shell-97ad33e50b3c51472275f5976f7f95c0deb8f2ad.png",
+      "test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/03-model-configured-dd5ef2b9fe9be1d6e7dc4739605717e49ea58e1d.png",
+      "test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/04-workspace-chosen-f20d90a9fd24c3cb677dbc3bc3f7fbb337de23a4.png"
+    ]
+  },
+  {
+    "journeyId": "B-basic-session",
+    "title": "send a deterministic prompt, see it stream to completion, then find it in history and switch back to it",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 7000,
+    "evidence": [
+      "test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/01-sent-88c1cb44c9f831a61045a56847d661e58ea10833.png",
+      "test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/02-complete-6febabb698286422c6e3564f07e3e91f396adcf5.png",
+      "test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/03-second-session-c78946e5e2ac6da223552b2dcf162dcfd75e580a.png",
+      "test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/04-switched-back-7114f0b9aef89ef4eb9833572f8bf4cc45e5f6a8.png"
+    ]
+  },
+  {
+    "journeyId": "C-tool-execution",
+    "title": "a multi-step coding task shows tool activity, produces a final answer, and actually mutates the workspace file on disk",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 13990,
+    "evidence": [
+      "test-results/journeys-C-tool-execution--3050d--the-workspace-file-on-disk/attachments/01-tool-activity-1c52bfa6f081bb5b353f40be2fc8d68885601aec.png",
+      "test-results/journeys-C-tool-execution--3050d--the-workspace-file-on-disk/attachments/02-final-answer-653075f3663059aeddb88a151375d1bd9f954b9e.png"
+    ]
+  },
+  {
+    "journeyId": "D-approval",
+    "title": "allow branch: approving a pending approval lets the run resume and complete",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 9738,
+    "evidence": [
+      "test-results/journeys-D-approval-Journe-26dfd-the-run-resume-and-complete/attachments/01-pending-b10f990eeac59a2d7a1679e6b0f74f565e458700.png",
+      "test-results/journeys-D-approval-Journe-26dfd-the-run-resume-and-complete/attachments/02-approved-completed-732de617e5023d9dbaaf16f2d5b20fc490955a63.png"
+    ]
+  },
+  {
+    "journeyId": "D-approval",
+    "title": "deny branch: denying a pending approval leaves the action un-executed and the workspace unchanged",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 6253,
+    "evidence": [
+      "test-results/journeys-D-approval-Journe-376ed-and-the-workspace-unchanged/attachments/01-pending-2294f8c3b448ab4297054fb60a1ad69f028ecfd3.png",
+      "test-results/journeys-D-approval-Journe-376ed-and-the-workspace-unchanged/attachments/02-denied-completed-d0eff63c5d392240a0d3cee15efe797fbca025cb.png"
+    ]
+  },
+  {
+    "journeyId": "E-plan",
+    "title": "a plan-mode task shows a plan review card and, once approved, a persisted to-dos state",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 6006,
+    "evidence": [
+      "test-results/journeys-E-plan-Journey-E--73d4f-ed-a-persisted-to-dos-state/attachments/01-plan-review-13f375eb515e1145ad00f0ec97fd85dac9b7a134.png",
+      "test-results/journeys-E-plan-Journey-E--73d4f-ed-a-persisted-to-dos-state/attachments/02-plan-completed-9fa6f6cda76c58e106fa003bcbdab1bc3a5a893d.png"
+    ]
+  },
+  {
+    "journeyId": "F-delegation",
+    "title": "delegating a task shows the subagent as active, then completed, with the parent completing too",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 4866,
+    "evidence": [
+      "test-results/journeys-F-delegation-Jour-d1850-h-the-parent-completing-too/attachments/01-subagent-active-b1940da5b3b146a031766f1d85e3498c57360dae.png",
+      "test-results/journeys-F-delegation-Jour-d1850-h-the-parent-completing-too/attachments/02-parent-completed-fa3e1841c721d1a07ed0eaecf1ed4e4e724e7952.png",
+      "test-results/journeys-F-delegation-Jour-d1850-h-the-parent-completing-too/attachments/03-subagent-panel-96b3ea57d90f5cc3b1d7bb4adb58cc6cf522c43b.png"
+    ]
+  },
+  {
+    "journeyId": "G-persistence",
+    "title": "a completed multi-step session survives a real process kill + restart",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 7131,
+    "evidence": [
+      "test-results/journeys-G-persistence-Jou-1a2a8-a-real-process-kill-restart/attachments/01-before-restart-467736772f6a2a61d5665c3c3919da26693eda28.png",
+      "test-results/journeys-G-persistence-Jou-1a2a8-a-real-process-kill-restart/attachments/02-after-restart-035e738cd66b553f5808fd503c18386e582a1e36.png"
+    ]
+  },
+  {
+    "journeyId": "G-persistence",
+    "title": "documented difference: pending-approval survival across a full process restart",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 6956,
+    "evidence": [
+      "test-results/journeys-G-persistence-Jou-a4aa7-ross-a-full-process-restart/attachments/01-pending-before-restart-4dd0473a632dfa2de3bf36c1af73a1aeda55d789.png",
+      "test-results/journeys-G-persistence-Jou-a4aa7-ross-a-full-process-restart/attachments/02-after-restart-5e32ba8c047678fe8b5161b0d7587cd4e3a97b30.png"
+    ]
+  },
+  {
+    "journeyId": "H-cancellation",
+    "title": "cancelling an in-flight run shows Stopped, keeps the partial reply, and a follow-up turn still works",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 4192,
+    "evidence": [
+      "test-results/journeys-H-cancellation-Jo-892e7--follow-up-turn-still-works/attachments/01-cancelled-abc9c6d5c278f6d91746fd754818aea881b9d19b.png",
+      "test-results/journeys-H-cancellation-Jo-892e7--follow-up-turn-still-works/attachments/02-follow-up-completed-2b5eb092fd91a6acf36f14b732c9caa824f953e0.png"
+    ]
+  },
+  {
+    "journeyId": "H-cancellation",
+    "title": "a deterministic provider error triggers retries then a terminal failure, with a documented failure-code difference",
+    "outcome": "passed",
+    "attempts": 1,
+    "durationMs": 4214,
+    "evidence": [
+      "test-results/journeys-H-cancellation-Jo-1edc0-ted-failure-code-difference/attachments/01-retrying-6c65bc8cb58d61c00222da6f587e300a1fa70fb6.png",
+      "test-results/journeys-H-cancellation-Jo-1edc0-ted-failure-code-difference/attachments/02-terminal-failure-6416859fbf7c5c0acf33793a3515d14237bc4b99.png"
+    ]
+  }
+]

@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Reusable Playwright capture/parity suite for the DeepSeek Harness reconstruction test (T2). Drives either the pinned reference or the Cognate reconstruction through a shared Driver interface.",
+  "scripts": {
+    "journeys": "bun run journeys/run.ts",
+    "journeys:reference": "bun run journeys/run.ts reference",
+    "journeys:cognate": "bun run journeys/run.ts cognate"
+  },
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "pixelmatch": "5.3.0",
