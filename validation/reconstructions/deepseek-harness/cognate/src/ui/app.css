@@ -1927,3 +1927,21 @@ input:focus-visible {
   padding: 6px 14px;
   cursor: pointer;
 }
+
+/* Critic round-5 P1-1: constrain the flex layout (main + .right-panel) within the viewport
+ * at narrow viewports (1024px) so the page does not overflow horizontally. The chat column
+ * and Review panel must share the fixed viewport width instead of forcing it wider. */
+@media (max-width: 1024px) {
+  main {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .right-panel-body {
+    overflow-x: auto;
+  }
+
+  .right-panel {
+    width: 340px;
+  }
+}

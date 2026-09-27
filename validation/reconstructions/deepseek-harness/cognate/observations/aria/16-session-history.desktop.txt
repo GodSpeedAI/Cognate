@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-desktop [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
-      - text: cg-ws-desktop
+    - treeitem "r5w-d [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
+      - text: r5w-d
       - treeitem "[[scenario:error]] trigger a provider error now" [selected]
       - treeitem "[[scenario:plain]] cancel me please now"
       - treeitem "[[scenario:delegate]] delegate this now now"
@@ -32,7 +32,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:error]] trigger a provider error"
   - button "Copy"
-  - text: 02:00 PM
+  - text: 02:16 PM
   - status: Failed
   - button "Took 2s" [disabled]
   - button "Retried model request (5/5) · 2s"

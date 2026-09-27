@@ -9,14 +9,14 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-laptop" [expanded]
+    - treeitem "r5w-l" [expanded]
   - button "Settings"
 - main:
   - banner:
     - button "Open right sidebar" [disabled]
   - heading "Into the Unknown" [level=1]
   - text: Preview
-  - button "cg-ws-laptop" [disabled]
+  - button "r5w-l" [disabled]
   - text: Standard mode
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]

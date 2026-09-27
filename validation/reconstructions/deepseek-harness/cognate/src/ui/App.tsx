@@ -1587,6 +1587,7 @@ function MessageBubble({
           <span className="status-pill status-streaming" role="status">
             <span className="sr-only">Deep diving for {elapsedSeconds ?? 0}s</span>
           </span>
+          <span className="took-btn" aria-hidden="true">Deep diving for {elapsedSeconds ?? 0}s</span>
         </div>
       ) : (
         <div className="message-status-row">
@@ -1792,6 +1793,7 @@ export function App() {
   const openSession = useCallback(
     async (sessionId: string) => {
       setActiveSessionId(sessionId);
+      setOpenReview(undefined);
       // Reattach to a still-in-flight run (running, or waiting on an approval continuation) so its
       // live tool/approval state survives a reload (`11b-approval-pending-after-reload`) — the
       // `sessions` projection's `runId`/`lastStatus` are durable, so this works after a full
@@ -1844,6 +1846,7 @@ export function App() {
     setActiveSessionId(crypto.randomUUID());
     setActiveRunId(undefined);
     setTranscript([]);
+    setOpenReview(undefined);
   }, []);
 
   const send = useCallback(
