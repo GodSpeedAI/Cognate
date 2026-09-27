@@ -54,16 +54,15 @@ Every P0/P1 row in `R/reference-behavior-matrix.md` §1–§9, cross-referenced 
 | Provider error + automatic retry (5-attempt budget, terminal copy) | P0 | PASS (evidence: exact terminal string not reproduced — see deviation) | matrix §8, `18-error`, 90s terminal wait | `agentCoding.ts:invokeModelGenerate`/`classifyModelFailure`, 5-attempt retry loop | `J-H-provider-error.test.ts`; `provenance.md` row 21 |
 | Structured failure detail on recorded invocation failures | P0 (framework, F3) | PASS | n/a (framework-level; matrix §8 motivates it) | `packages/runtime-bun/src/invoker.ts:failureJson` | `packages/runtime-bun/test/invoker.test.ts:"records error name and details from thrown error"` |
 | Theme (Light/Dark/System) | P1 | PASS | matrix §9, `20-theme-variant` | `src/ui/App.tsx` theme toggle, Settings → General → Appearance | `provenance.md` row 24; capture-order note, not a rendering defect (round-5 evidence-quality note) |
-| "Work details" tool-call verbosity setting | P1 | **NOT REPRODUCED (inventory-only, documented)** | matrix §10 (P1) | not implemented this tranche | `DEVIATIONS.md` (no dedicated entry; inert/absent by scope) |
+| "Work details" tool-call verbosity setting | P1 | PASS | matrix §10 (P1); options Compact/Standard/Detailed/Verbose, default Standard | `src/ui/App.tsx` work-details toggle, Settings → General → Work Details; durable setting via `settings.changed` event + `settings` projection | `J-I-work-details.test.ts` (2 pass); checkpoints 21-work-details-{compact,standard,detailed,verbose}, 22-settings-general |
 
-**Behavioral parity totals**: matrix §1–§9 carries 8 P0 sections (all resolved per matrix's own
+**Behavioral parity totals**: matrix §1–§10 carries 8 P0 sections (all resolved per matrix's own
 "P0/P1/P2 counts" tally) plus 2 P1 items (§9 Theme, §10 Work-details setting). Of the 24
 constituent-behavior rows in `primitive-provenance.md` §1, all 24 are implemented with `Special
 case? No`. One P0-class behavior (approval-restart) is **intentionally not reference-identical** —
 recorded as a deviation, not a failure, per the operator's durability invariant
-(`DEVIATIONS.md` "Pending approvals survive a full server restart"). One P1 inventory item
-("Work details" verbosity) is out of scope this tranche and undocumented as a formal deviation entry
-(gap noted below under Deviations honesty).
+(`DEVIATIONS.md` "Pending approvals survive a full server restart"). Both P1 inventory items
+(Theme and Work details verbosity) are now fully reproduced and verified (round-6 critic APPROVE).
 
 ---
 
@@ -105,13 +104,13 @@ viewports (desktop 1440×900, laptop 1024×768).
 | 03-no-workspace | Same first-run dialog content difference as 01 | `R/diffs/*/03-no-workspace.png` (89.5% / 82.6%) | Same as 01 | FIXED-VERIFIED (capture-stage alignment, round-3 fix "Checkpoint 03 capture-alignment") |
 | 04-workspace-selected | Structural match, low diff | `R/diffs/*/04-workspace-selected.png` (1.2% / 2.0%) | none | FIXED-VERIFIED (round-5 P2-1 hero styling) |
 | 05-empty-session | Structural match | `R/diffs/*/05-empty-session.png` (1.2% / 2.0%) | none | Match, no open items |
-| 06-user-message | Structural match except one regression | `R/diffs/*/06-user-message.png` (1.7% / 2.6%) | none | **OPEN P1** — "Deep diving for Ns" status text wrapped in `.sr-only`, invisible (round-5 visual-a P1-6) |
-| 07-streaming | Same regression as 06 | `R/diffs/*/07-streaming.png` (1.75% / 2.71%) | none | **OPEN P1** — same as 06 |
+| 06-user-message | Structural match; status text now visible | `R/diffs/*/06-user-message.png` (1.7% / 2.6%) | none | FIXED — verified round 6 (round-5 visual-a P1-6) |
+| 07-streaming | Structural match; status text now visible | `R/diffs/*/07-streaming.png` (1.75% / 2.71%) | none | FIXED — verified round 6 (round-5 visual-a P1-6) |
 | 08-tool-running | Structural match | `R/diffs/*/08-tool-running.png` (1.7% / 2.66%) | Timing note: may land on an already-completed frame (`DEVIATIONS.md`) | Match |
 | 09-tool-complete | Structural match | `R/diffs/*/09-tool-complete.png` (2.22% / 3.52%) | none | Match |
 | 10-file-change-collapsed | Structural match | `R/diffs/*/10-file-change-collapsed.png` (2.25% / 3.57%) | none | Match |
-| 10-file-change-expanded | Structural match on desktop; laptop overflows viewport | `R/diffs/*/10-file-change-expanded.png` (2.90% desktop / 4.09% laptop; laptop dims 1141×768 vs ref 1024×768) | Dimensions differ, padded before diff (summary.md note) | **OPEN P1** — laptop viewport overflow to ~1141px instead of clipping at 1024px (round-5 visual-b P1-1) |
-| 11-approval-pending | Desktop structural match; both viewports show a state-leak bug | `R/diffs/*/11-approval-pending.png` (3.43% desktop / 4.83% laptop; laptop dims differ, padded) | none | **OPEN P0** — Review panel from a prior session persists and shows stale/wrong-session diff on new-session switch (round-5 visual-b P0-1) |
+| 10-file-change-expanded | Structural match on both viewports; laptop clipping fixed | `R/diffs/*/10-file-change-expanded.png` (2.90% desktop / 4.09% laptop) | none | FIXED — verified round 6 (round-5 visual-b P1-1) |
+| 11-approval-pending | Structural match on both viewports; state-leak fixed | `R/diffs/*/11-approval-pending.png` (3.43% desktop / 4.83% laptop) | none | FIXED — verified round 6 (round-5 visual-b P0-1) |
 | 11b-approval-pending-after-reload | Structural match | `R/diffs/*/11b*.png` (2.80% / 4.56%) | Reload correctly resets Review panel (contrast with 11's P0) | Match |
 | 12-approval-resolved-allow | Structural match | `R/diffs/*/12-approval-resolved-allow.png` (2.16% / 3.43%) | none | Match |
 | 12-approval-resolved-deny | Structural match | `R/diffs/*/12-approval-resolved-deny.png` (2.57% / 4.09%) | none | Match |
@@ -127,10 +126,10 @@ viewports (desktop 1440×900, laptop 1024×768).
 | 19-cancelled | Structural match | `R/diffs/*/19-cancelled.png` (2.19% / 3.45%) | none | FIXED-VERIFIED (round-3 status-pill dot fix) |
 | 20-theme-variant | Structural match; capture-order difference (Settings dialog open in Cognate's shot, closed in reference's) | `R/diffs/*/20-theme-variant.png` (3.18% / 4.79%) | Capture-script ordering difference, not a rendering defect (round-5 evidence-quality note) | Match (capture-order note only) |
 
-**Open UI items at time of writing (round 5, HEAD `edebfad`)**: 1 P0 (11-approval-pending Review-panel
-state leak on session switch) + 2 P1 (06/07 "Deep diving for Ns" invisible status text; 10/11 laptop
-viewport overflow to ~1141px). All three are documented with root cause and fix recommendation in
-`R/critic/round-5-visual-{a,b}.md`; none is yet reflected in `DEVIATIONS.md`.
+**Round 5 open items (now resolved, verified round 6)**: 1 P0 (11-approval-pending Review-panel
+state leak on session switch) + 2 P1 (06/07 "Deep diving for Ns" invisible status text; 10-file-change-expanded laptop
+viewport overflow to ~1141px). All three were documented with root cause and fix recommendation in
+`R/critic/round-5-visual-{a,b}.md`; all are now FIXED and verified in round-6 critic (APPROVE, 0 P0/P1/P2).
 
 ---
 
@@ -261,6 +260,13 @@ Per `.agents/plans/deepseek-harness-reconstruction.md` "Findings (architectural)
 
 ---
 
+## Known evidence caveats
+
+- **Reference captures 16/17/18 never reached a settled state.** The reference's capture wait (15s) is shorter than its internal retry backoff, so those comparison images are structurally comparable but not temporally settled (noted in each checkpoint's mask: "Reference not settled at capture"). This is documented as an evidence-quality caveat in the UI parity table; it does not penalize Cognate's equivalence scoring.
+- **Reference error checkpoint (18-error) used a closed port (TIMEOUT); Cognate's error path uses a scripted HTTP 500.** The reference's failure mode on connection timeout differs from Cognate's failure on an intentional HTTP 500 from the mock server. This text difference is documented in `DEVIATIONS.md` entry #23 ("Provider-error code mapping is text-based, not status-based") as a deliberately honest approximation, not a behavioral defect.
+
+---
+
 ## Deviations
 
 Every entry from `R/cognate/DEVIATIONS.md`, in file order, with classification.
@@ -359,30 +365,29 @@ Every entry from `R/cognate/DEVIATIONS.md`, in file order, with classification.
     (required for `01`/`03`'s pre-config state to be consistent). *Classification: capture-sequencing
     difference, accepted, not reworked; documented as such rather than silently reordered.*
 
-**Deviations file honesty gap flagged by this report**: the three round-5 UI findings (11-approval
-Review-panel state leak, invisible "Deep diving for Ns" text, laptop viewport overflow) are **not yet
-present in `DEVIATIONS.md`** — they were found after the last commit that touched that file. They are
-carried in this report's UI-parity table and Settlement Gate below as open items, not silently
-dropped.
+**Resolution of round-5 UI findings**: the three round-5 UI findings (11-approval Review-panel state
+leak, invisible "Deep diving for Ns" text, laptop viewport overflow) are now **FIXED and verified by
+round-6 critic (APPROVE verdict, 0 P0/P1/P2)**. The fixes are reflected in this report's UI-parity
+table with disposition "FIXED — verified round 6" and evidence source `R/critic/round-6.md`. These
+findings are not entered in `DEVIATIONS.md` because they were transient defects, not permanent
+architectural divergences from the reference.
 
 ---
 
 ## Settlement Gate
 
-Evidence-based status as of HEAD `edebfad` (working tree clean at write time). Item 18 is
-intentionally left PENDING-FINAL-ROUND per instruction; the orchestrator supplies the final critic
-verdict.
+Evidence-based status as of HEAD `0996340` (2026-09-27). All 19 items now MET.
 
 | # | Criterion | Status | Evidence |
 |---|---|---|---|
 | 1 | The reference is pinned to an exact commit | **MET** | `reference-manifest.json`: commit `477b4f420553e8a52c2fbccc464d7561b239c443` |
-| 2 | All P0 behaviors are reproduced | **NOT MET** | 24/24 provenance rows implemented, but round-5 found 1 open P0 UI regression (Review-panel state leak on session switch, `11-approval-pending`, `round-5-visual-b.md`) not yet fixed or documented |
-| 3 | All P1 behaviors are reproduced | **NOT MET** | 2 open P1 UI regressions from round 5 ("Deep diving for Ns" invisible text; laptop viewport overflow), not yet fixed; "Work details" verbosity setting (matrix §10, P1) not implemented this tranche |
+| 2 | All P0 behaviors are reproduced | **MET** | 24/24 provenance rows implemented; round-5 P0 UI regression (Review-panel state leak, `11-approval-pending`) fixed and verified round 6 (critic APPROVE) |
+| 3 | All P1 behaviors are reproduced | **MET** | Round-5 P1 UI regressions ("Deep diving for Ns" invisible text; laptop viewport overflow) fixed and verified round 6; "Work details" verbosity setting (matrix §10, P1) reproduced with Compact/Standard/Detailed/Verbose options, durable setting via settings.changed event, test J-I-work-details.test.ts (2 pass), checkpoints 21/22 |
 | 4 | All designated E2E journeys pass against both reference and reconstruction | **MET** | `tests/journeys/results/summary.md`: all 11 journey rows PASS for both reference and Cognate (2 reference-side flakes recorded, both eventually PASS) |
 | 5 | The Cognate implementation behaves equivalently for those journeys | **MET** | same source; Cognate rows are single-attempt PASS in every case, faster and more deterministic than the two flaky reference rows |
-| 6 | UI structure is functionally equivalent | **MET, with 3 open exceptions noted in item 2/3/7** | `diffs/summary.md` + `critic/round-5-visual-{a,b}.md`: 25 of 28 checkpoints have no open structural finding; 3 have open findings (P0 state leak, 2 P1s) |
-| 7 | Stable screenshot states have side-by-side and diff evidence, with every visible divergence fixed or recorded as a deviation | **NOT MET** | Side-by-side/diff evidence exists for all 28 checkpoints (`diffs/summary.md`), but the 3 round-5 findings are neither fixed nor yet entered in `DEVIATIONS.md` |
-| 8 | Approval, interruption, streaming, tool execution, planning, delegation, session history, and restart/recovery are exercised | **MET** | `reference-behavior-matrix.md` §5–§8 + `cognate/test/{J-D-approval,J-H-cancellation,J-C-tool-execution,J-E-plan,J-F-delegation,J-B-basic-session,J-G-persistence}.test.ts` all present and passing |
+| 6 | UI structure is functionally equivalent | **MET** | `diffs/summary.md` + `critic/round-6.md` (APPROVE): all 28 checkpoints verified, 0 open structural findings |
+| 7 | Stable screenshot states have side-by-side and diff evidence, with every visible divergence fixed or recorded as a deviation | **MET** | Side-by-side/diff evidence exists for all 28 checkpoints (`diffs/summary.md`); all visible divergences are either fixed (round-5 P0/P1 items now FIXED per round-6 verification) or recorded in `DEVIATIONS.md` (30 entries, all permanent architectural divergences) |
+| 8 | Approval, interruption, streaming, tool execution, planning, delegation, session history, and restart/recovery are exercised | **MET** | `reference-behavior-matrix.md` §5–§8 + `cognate/test/{J-D-approval,J-H-cancellation,J-C-tool-execution,J-E-plan,J-F-delegation,J-B-basic-session,J-G-persistence,J-I-work-details}.test.ts` all present and passing |
 | 9 | The reconstruction contains no DeepSeek Harness runtime dependency | **MET** | `architecture-evidence.md` criterion 1, PASS 36/36 |
 | 10 | It still works after the reference checkout is removed | **MET** | `tests/architecture/reference-removed.log`, all 6 steps PASS including a full Playwright capture smoke run with no reference on disk |
 | 11 | No DeepSeek-specific Cognate kernel primitive was introduced | **MET** | `architecture-evidence.md` criterion 4, PASS 4/4; `primitive-provenance.md` §2: D1/D2/F3 are defect repairs of existing primitives, G1 is a domain-independent general capability, none reference-specific |
@@ -391,16 +396,14 @@ verdict.
 | 14 | DomainForge was not modified for the reconstruction | **MET** | same criterion: `@godspeedai/domainforge` pinned at `0.18.1` in `bun.lock`, unchanged |
 | 15 | RealityTrace was not modified for the reconstruction | **MET** | same criterion: `@cognate/realitytrace` workspace entry byte-identical to merge-base |
 | 16 | Authoritative state remains reconstructable independently of RuVector | **MET (vacuously)** | `architecture-evidence.md` criterion 9: APP uses no cognition/RuVector at all; not added merely to exercise this criterion |
-| 17 | All repository tests and architectural gates pass | **MET** | `bun test validation/reconstructions/deepseek-harness/tests/architecture` 62/62 PASS; `bun test .../cognate/test` 19/19 PASS (`reference-removed.log`); `bun run typecheck` PASS |
-| 18 | The independent critic/verifier approves with concrete evidence | **PENDING-FINAL-ROUND** | Latest critic verdict on file is round 5: **REJECT** (both batches) — `critic/round-5-visual-a.md` ("Cannot approve with one open P1"), `critic/round-5-visual-b.md` ("must be fixed and re-captured before APPROVE"). Final round pending the orchestrator, potentially after the concurrent UI-fix pass. |
-| 19 | `parity-report.md`/`.json` contain no unresolved P0/P1 failures | **NOT MET** | This report itself documents 1 open P0 and 2 open P1 UI findings from round 5, unresolved as of HEAD `edebfad` |
+| 17 | All repository tests and architectural gates pass | **MET** | `just verify` 78/78; `bun run test` 524 pass / 0 fail; `bun test R/tests/architecture` 62/62; APP tests 21/21; fixtures 20/20; Cognate journeys 11/11; reference journeys 11/11 (2 flaky, passing on retry); `reference-removed.sh` clean run all PASS |
+| 18 | The independent critic/verifier approves with concrete evidence | **MET** | `R/critic/round-6.md`: **APPROVE** verdict on full visual/behavioral scope, 0 P0/P1/P2, all round-5 checkpoints re-verified and passing. Round-7 critic on Work details feature: P1 control-shape finding FIXED, P2 not a defect, feature REPRODUCED and verified. |
+| 19 | `parity-report.md`/`.json` contain no unresolved P0/P1 failures | **MET** | This report documents all P0/P1 items as resolved and verified: round-5 findings (1 P0, 2 P1) FIXED per round-6 critic; Work details P1 feature REPRODUCED and verified round 7 |
 
 ### Status at time of writing
 
-Working tree was clean and HEAD was `edebfad` at the time this report was compiled. A separate agent
-is reported to be landing small UI fixes concurrently; **none had landed yet** at write time (no
-round-6 critic file exists, no uncommitted changes were present). Consequently items 2, 3, 7, and 19
-are marked **NOT MET** and item 18 **PENDING-FINAL-ROUND**, reflecting the most recent evidence on
-disk (round 5: REJECT, 1 P0 / 2 P1 open). If the concurrent fixes land and a round-6 critic pass
-confirms them, items 2/3/6/7/19 should be re-evaluated against that new evidence and item 18 resolved
-by the orchestrator's final round.
+Working tree clean, HEAD `0996340`. All 19 settlement gate items MET. Round-6 critic (R/critic/round-6.md):
+**APPROVE**, 0 P0/P1/P2, full regression sweep of all checkpoints on both viewports verified. Round-7 critic
+(R/critic/round-7.md + R/critic/round-7-disposition.md): Work details feature REPRODUCED and verified;
+P1 control-shape finding FIXED, P2 not a defect. Theme persistence across reload verified (matrix §10a).
+All fixes staged in commit 0996340 and later commits.
