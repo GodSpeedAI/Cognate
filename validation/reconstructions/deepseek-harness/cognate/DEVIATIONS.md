@@ -217,6 +217,54 @@ the child's result as its tool output."
   chrome (tabs, split/fullscreen/collapse controls) beyond a close button. Plan mode's "View full
   plan" (J-E-plan) is unchanged and still renders inline rather than in this panel.
 
+## Cancellation and provider error/retry (T11)
+
+Cancel and the runtime-level cancellation wiring (`RunContext.signal` -> the invocation's
+`HandlerContext.signal` -> `streamingProviderComponent`'s `provider.stream(request, ctx.signal)` ->
+`openAICompatible`'s `AbortSignal.any([...])` on the underlying `fetch`) already existed unchanged
+from an earlier tranche (`src/components/modelProvider.ts`, `packages/kernel-cordis/src/lease.ts`,
+`packages/provider-openai-compatible/src/index.ts`) — this pass only added the retry loop, the
+sessions-projection folding of `run.cancelled`/`run.failed`, and the UI's failure/retry/stopped
+rendering. `test/J-H-cancellation.test.ts` confirms the mock model server (a real, separate HTTP
+process — see `test/helpers.ts`'s `bootMockModel`) actually observes the connection abort via a new
+`GET /__abort-count` endpoint on `fixtures/mock-model/server.ts` (a counter incremented on the
+request's `AbortSignal`, added because the mock always runs out-of-process, so a test cannot import
+its in-memory state directly).
+
+- **Provider-error code mapping is text-based, not status-based, by construction.** Only
+  `InvocationFailedError.failure.message` survives the kernel's JSON boundary for a handler that
+  throws — `packages/runtime-bun/src/invoker.ts`'s `failureJson` reduces any `{ kind: "failed" }`
+  failure to `{ kind: "failed", message: messageOf(error) }`, dropping `ModelProviderError`'s own
+  `kind`/`status` fields entirely. `agentCoding.ts`'s `classifyModelFailure` therefore matches on the
+  message text: `/timed out/i` maps to the reference's own observed `"Request timed out." / TIMEOUT`
+  (reference-behavior-matrix.md §8); everything else — including this app's mock `[[scenario:error]]`
+  path, a scripted HTTP 500 — maps to an honest, non-invented `"Internal server error" / HTTP_500`
+  rather than fabricating a timeout that didn't happen. `18-error`'s capture and
+  `J-H-provider-error.test.ts` both exercise the HTTP 500 path (this app's mock has no timeout
+  scenario), not the reference's network-timeout trigger.
+- **Retry backoff is real but short, and configurable only via `MODEL_RETRY_BACKOFF_MS`.** The
+  reference's own timing (~90s for the full 5-attempt budget) is not reproduced; `DEFAULT_RETRY_BACKOFF_MS`
+  is 300ms (capture/manual use), and the test suite overrides it to 10-150ms per test via the env var
+  so `bun test` stays fast. The retry *count* (5) and event shape are unaffected by this.
+- **Cancelled-turn history.** Whether a cancelled turn's partial reply should be fed back into the
+  next turn's `session.history` model context is not documented in reference-behavior-matrix.md. This
+  app does not synthesize one: `session.history` (`src/capabilities/sessionHistory.ts`) already only
+  appends an assistant message `if (run.status === "completed")`, so a cancelled run contributes just
+  its user message, unchanged, to history — the partial text stays visible only in the live UI
+  transcript for that browser session (via `run.invocation.progress` events), not restored after a
+  reload/history refetch. Documented as an assumption per the tranche brief, not fixed by adding a
+  cancelled-partial-text capability.
+- **No manual "Retry"/"Dismiss" on a failed turn**, matching the reference exactly
+  (reference-behavior-matrix.md §8: "No manual 'Retry' or 'Dismiss' button is shown on the failed turn
+  itself") — the composer remains available underneath to start a new message.
+- **The retry disclosure's expanded content is this app's own minimal rendering** (one line per
+  recorded attempt: "Attempt k/5: `<message>` (`<CODE>`)") — the reference's own expanded-state
+  content for `"Retried model request (k/5)"` was not captured, so this is not a reproduction, similar
+  in spirit to the To-dos widget's expanded list (T9 section above).
+- **Composer "Stop generating" aria-label matches the reference exactly**
+  (reference-behavior-matrix.md §7 — `button "Stop generating"`, resolved via role/name query); an
+  earlier pass of this tranche used the shorter, non-matching label `"Stop"` — corrected.
+
 ## Icons
 
 All icons (`src/ui/icons.tsx`) are original inline SVGs drawn for this reconstruction — simple

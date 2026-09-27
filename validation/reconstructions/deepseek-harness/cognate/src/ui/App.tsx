@@ -51,6 +51,13 @@ interface ChatMessage {
   readonly tookMs?: number;
   readonly failed?: boolean;
   readonly cancelled?: boolean;
+  /** T11 (J-H-provider-error): the terminal `turn.failed` payload — renders "This turn failed" /
+   *  message / CODE (reference-behavior-matrix.md §8). */
+  readonly failureCode?: string;
+  readonly failureMessage?: string;
+  /** Final retry count out of `MAX_MODEL_RETRIES` (5) once the turn failed — "Retried model request
+   *  (k/5) · Ns" settles at this value (reference-behavior-matrix.md §8). */
+  readonly retryCount?: number;
   /** The last successful `edit` tool call this turn made, if any (`10-file-change-*`). */
   readonly editSummary?: EditSummary;
   /** True for the live in-progress preview bubble — suppresses the "Worked"/"Took Ns" status row,
@@ -357,20 +364,41 @@ function SettingsModels({ onClose }: { readonly onClose: () => void }) {
   );
 }
 
+interface RetryInfo {
+  readonly attempt: number;
+  readonly maxRetries: number;
+  readonly code: string;
+  readonly message: string;
+}
+
+interface TurnFailure {
+  readonly code: string;
+  readonly message: string;
+}
+
 function useStreamingTurn(runId: string | undefined) {
   const client = useCognate();
   const [text, setText] = useState("");
   const [status, setStatus] = useState<"idle" | "streaming" | "completed" | "failed" | "cancelled">("idle");
+  // T11 (J-H-provider-error): recorded `model.request.retried` events for the in-flight run — drives
+  // "Retried model request (k/5) · Ns" while retrying and its settled value once failed
+  // (reference-behavior-matrix.md §8).
+  const [retries, setRetries] = useState<readonly RetryInfo[]>([]);
+  const [failure, setFailure] = useState<TurnFailure | undefined>(undefined);
   const attemptRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!runId) {
       setText("");
       setStatus("idle");
+      setRetries([]);
+      setFailure(undefined);
       return;
     }
     setText("");
     setStatus("streaming");
+    setRetries([]);
+    setFailure(undefined);
     attemptRef.current = undefined;
     const unsubscribe = client.subscribe({ runId }, (event) => {
       if (event.eventType === "run.invocation.progress") {
@@ -384,6 +412,20 @@ function useStreamingTurn(runId: string | undefined) {
           setText((prev) => prev + payload.text!);
         }
         // deltas from a superseded (lower) attempt are discarded
+      } else if (event.eventType === "model.request.retried") {
+        const payload = event.payload as { readonly attempt?: number; readonly maxRetries?: number; readonly error?: { readonly code?: string; readonly message?: string } };
+        setRetries((prev) => [
+          ...prev,
+          {
+            attempt: payload.attempt ?? prev.length + 1,
+            maxRetries: payload.maxRetries ?? 5,
+            code: payload.error?.code ?? "",
+            message: payload.error?.message ?? "",
+          },
+        ]);
+      } else if (event.eventType === "turn.failed") {
+        const payload = event.payload as { readonly code?: string; readonly message?: string };
+        setFailure({ code: payload.code ?? "", message: payload.message ?? "" });
       } else if (event.eventType === "message.completed") {
         const payload = event.payload as { readonly text?: string };
         if (typeof payload.text === "string") setText(payload.text);
@@ -397,7 +439,19 @@ function useStreamingTurn(runId: string | undefined) {
     return unsubscribe;
   }, [client, runId]);
 
-  return { text, status };
+  return { text, status, retries, failure };
+}
+
+/** Ticks once a second while `active`, purely to re-render "Deep diving for Ns" / "Retried model
+ *  request (k/5) · Ns" with a live elapsed time — reference-behavior-matrix.md §8. */
+function useElapsedSeconds(active: boolean, startedAtMs: number): number {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
 }
 
 /** Folds this run's `tool.call.*`/`tool.approval.*` events into an ordered `ToolEntry[]`, keyed by
@@ -475,17 +529,56 @@ function toolActionLabel(entry: ToolEntry): string {
  *  the reference's `08-tool-running` (`status: Deep diving...`, `button "Reading files · ..."` is
  *  read here as a plain row, not a modal card — the card only appears once approval is pending, see
  *  `ApprovalBar` below, which replaces the composer the way the reference's does). */
-function ToolActivity({ entries }: { readonly entries: readonly ToolEntry[] }) {
+function ToolActivity({ entries, elapsedSeconds }: { readonly entries: readonly ToolEntry[]; readonly elapsedSeconds: number }) {
   const current = entries.length > 0 ? entries[entries.length - 1] : undefined;
   if (!current || current.status !== "running") return null;
   return (
     <div className="tool-activity" data-tool-card>
       <span className="status-pill" role="status">
-        <span className="sr-only">Deep diving...</span>
+        <span className="sr-only">Deep diving for {elapsedSeconds}s</span>
       </span>
-      <button type="button" className="tool-activity-btn" disabled title="Deep diving for 1s">
+      <button type="button" className="tool-activity-btn" disabled title={`Deep diving for ${elapsedSeconds}s`}>
         {toolActionLabel(current)}
       </button>
+    </div>
+  );
+}
+
+/** T11 (J-H-provider-error): the collapsed-by-default "Retried model request (k/5) · Ns" row
+ *  (reference-behavior-matrix.md §8) — shown while retrying (the latest attempt) and, settled at its
+ *  final value, on the failed turn itself. */
+function RetryDisclosure({ retries, elapsedSeconds }: { readonly retries: readonly RetryInfo[]; readonly elapsedSeconds: number }) {
+  const [expanded, setExpanded] = useState(false);
+  if (retries.length === 0) return null;
+  const latest = retries[retries.length - 1]!;
+  return (
+    <div className="retry-disclosure" data-retry-card>
+      <button type="button" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)} className="retry-disclosure-btn">
+        Retried model request ({latest.attempt}/{latest.maxRetries}) · {elapsedSeconds}s
+        <ChevronDownIcon />
+      </button>
+      {expanded && (
+        <ul className="retry-list">
+          {retries.map((r, i) => (
+            <li key={i}>
+              Attempt {r.attempt}/{r.maxRetries}: {r.message} ({r.code})
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** T11 (J-H-provider-error): the terminal failure block — exactly "This turn failed" / message /
+ *  a `code` badge (reference-behavior-matrix.md §8). No manual "Retry"/"Dismiss" button; the composer
+ *  stays available underneath to start a new message. */
+function FailureBlock({ code, message }: { readonly code: string; readonly message: string }) {
+  return (
+    <div className="failure-block" role="alert">
+      <p className="failure-title">This turn failed</p>
+      <p className="failure-message">{message}</p>
+      <span className="failure-code">{code}</span>
     </div>
   );
 }
@@ -804,7 +897,7 @@ function Composer({
         </button>
         <div className="composer-spacer" />
         {sending ? (
-          <button type="button" className="send-btn stop" aria-label="Stop" onClick={onStop}>
+          <button type="button" className="send-btn stop" aria-label="Stop generating" onClick={onStop}>
             <StopIcon />
           </button>
         ) : (
@@ -831,7 +924,7 @@ function Composer({
   );
 }
 
-function MessageBubble({ message }: { readonly message: ChatMessage }) {
+function MessageBubble({ message, elapsedSeconds }: { readonly message: ChatMessage; readonly elapsedSeconds?: number }) {
   const bodyRef = useRef<HTMLDivElement>(null);
 
   if (message.role === "system") {
@@ -863,23 +956,34 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
       {message.streaming ? (
         <div className="message-status-row">
           <span className="status-pill status-streaming" role="status">
-            <span className="sr-only">Deep diving...</span>
+            <span className="sr-only">Deep diving for {elapsedSeconds ?? 0}s</span>
           </span>
         </div>
       ) : (
         <div className="message-status-row">
-          <span className={`status-pill${message.failed ? " status-failed" : ""}`} role="status">
+          <span className={`status-pill${message.failed ? " status-failed" : ""}${message.failed ? " disabled" : ""}`} role="status">
             <span className="sr-only">{message.failed ? "Failed" : message.cancelled ? "Stopped" : "Worked"}</span>
           </span>
-          <button type="button" className="took-btn" disabled>
-            Took {Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}s
-          </button>
+          {/* T11 (J-H-cancellation): no duration badge on a stopped turn (reference-behavior-
+           *  matrix.md §7 — "no duration badge is shown"). */}
+          {!message.cancelled && (
+            <button type="button" className="took-btn" disabled>
+              Took {Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}s
+            </button>
+          )}
         </div>
+      )}
+      {message.failed && message.retryCount !== undefined && (
+        <RetryDisclosure
+          retries={[{ attempt: message.retryCount, maxRetries: 5, code: message.failureCode ?? "", message: message.failureMessage ?? "" }]}
+          elapsedSeconds={Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}
+        />
       )}
       <div className="message-divider" />
       <div className="message-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
       <CodeBlocks containerRef={bodyRef} />
       {message.editSummary && <EditDiff summary={message.editSummary} />}
+      {message.failed && message.failureMessage && <FailureBlock code={message.failureCode ?? ""} message={message.failureMessage} />}
       {!message.failed && !message.streaming && (
         <div className="message-actions">
           <button type="button" className="meta-action" aria-label="Copy" title="Copy">
@@ -919,6 +1023,7 @@ export function App() {
   const [activeRunId, setActiveRunId] = useState<string | undefined>(undefined);
   const runStartedAtRef = useRef<number>(0);
   const streaming = useStreamingTurn(activeRunId);
+  const elapsedSeconds = useElapsedSeconds(streaming.status === "streaming", runStartedAtRef.current);
   const toolEntries = useToolTimeline(activeRunId);
   const { open: openContinuations, resolve: resolveContinuation } = useContinuations(activeRunId);
 
@@ -1081,16 +1186,31 @@ export function App() {
       setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "cancelled") {
-      setTranscript((prev) => [...prev, { role: "system", content: "Stopped" }]);
+      // T11 (J-H-cancellation): the partial streamed text is kept, not discarded, with a "Stopped"
+      // status pill and no duration badge (reference-behavior-matrix.md §7).
+      const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "failed") {
+      // T11 (J-H-provider-error): "This turn failed" / message / CODE, plus the settled retry
+      // disclosure (reference-behavior-matrix.md §8).
+      const tookMs = Date.now() - runStartedAtRef.current;
+      const retryCount = streaming.retries.length > 0 ? streaming.retries[streaming.retries.length - 1]!.attempt : undefined;
       setTranscript((prev) => [
         ...prev,
-        { role: "assistant", content: "Something went wrong while generating this response.", failed: true },
+        {
+          role: "assistant",
+          content: "",
+          failed: true,
+          tookMs,
+          retryCount,
+          failureCode: streaming.failure?.code,
+          failureMessage: streaming.failure?.message,
+        },
       ]);
       setActiveRunId(undefined);
     }
-  }, [streaming.status, streaming.text, toolEntries]);
+  }, [streaming.status, streaming.text, streaming.retries, streaming.failure, toolEntries]);
 
   const modelLabel = modelConfig ? `${modelConfig.model}` : undefined;
   const sessionTitle = currentSession?.title || "New Session";
@@ -1239,8 +1359,9 @@ export function App() {
               ))}
               {streaming.status === "streaming" && (
                 <>
-                  <MessageBubble message={{ role: "assistant", content: streaming.text, streaming: true }} />
-                  <ToolActivity entries={toolEntries} />
+                  <MessageBubble message={{ role: "assistant", content: streaming.text, streaming: true }} elapsedSeconds={elapsedSeconds} />
+                  {streaming.retries.length > 0 && <RetryDisclosure retries={streaming.retries} elapsedSeconds={elapsedSeconds} />}
+                  <ToolActivity entries={toolEntries} elapsedSeconds={elapsedSeconds} />
                 </>
               )}
             </div>

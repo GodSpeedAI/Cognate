@@ -161,7 +161,7 @@ export class CognateDriver implements Driver {
     planPanel: (page: Page) => page.locator('[data-plan-panel]').first(),
     subagentCard: (page: Page) => page.locator('[data-subagent-card]').first(),
     themeToggle: (page: Page) => page.getByRole("button", { name: /theme/i }).first(),
-    stopButton: (page: Page) => page.getByRole("button", { name: "Stop", exact: true }),
+    stopButton: (page: Page) => page.getByRole("button", { name: "Stop generating", exact: true }),
     retryButton: (page: Page) => page.getByRole("button", { name: /retry/i }).first(),
     errorBanner: (page: Page) => page.locator('[role="alert"]').first(),
   };

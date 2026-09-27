@@ -8,7 +8,7 @@
 // replay from the same sequence of recorded `tool.read` results, so it stays deterministic.
 import type { ModelMessage, ModelResponse, ToolCall, ToolDefinition } from "@cognate/capabilities";
 import type { Json } from "@cognate/events";
-import type { AgentDefinition, RunContext } from "@cognate/runtime-api";
+import { InvocationFailedError, type AgentDefinition, type RunContext } from "@cognate/runtime-api";
 import { approvalDeniedToolResult, approvalGate } from "../domain/approvalGate.ts";
 import {
   EXIT_PLAN_MODE_NOT_IN_PLAN_MODE,
@@ -34,6 +34,70 @@ export interface AgentCodingInput {
 }
 
 const MAX_TOOL_STEPS = 20;
+
+// T11 (J-H-provider-error / J-H-cancellation): 1 initial attempt + 5 retries, matching the
+// reference's "automatic retry budget of 5 attempts" (reference-behavior-matrix.md §8). Backoff is
+// short and configurable via `MODEL_RETRY_BACKOFF_MS` so tests run fast (~10ms) without changing
+// the retry count itself.
+const MAX_MODEL_RETRIES = 5;
+const DEFAULT_RETRY_BACKOFF_MS = 300;
+
+function retryBackoffMs(): number {
+  const raw = Number(process.env.MODEL_RETRY_BACKOFF_MS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_RETRY_BACKOFF_MS;
+}
+
+/**
+ * Classifies a failed `model.generate` invocation into the `{ code, message }` the UI's failure
+ * block renders ("This turn failed" / message / CODE, reference-behavior-matrix.md §8). Only
+ * `InvocationFailedError.failure.message` survives the kernel's JSON boundary (the provider's
+ * `ModelProviderError.kind`/`status` do not — see `packages/runtime-bun/src/invoker.ts`'s
+ * `failureJson`), so this maps on message text: the reference's own observed failure was a network
+ * timeout ("Request timed out." / TIMEOUT); anything else (this app's mock `error` scenario is an
+ * HTTP 500) gets an honest, non-invented mapping — see DEVIATIONS.md ("provider-error code
+ * mapping").
+ */
+function classifyModelFailure(error: InvocationFailedError): { readonly code: string; readonly message: string } {
+  const failureMessage = (error.failure as { readonly message?: unknown } | null)?.message;
+  const raw = typeof failureMessage === "string" ? failureMessage : error.message;
+  if (/timed out/i.test(raw)) return { code: "TIMEOUT", message: "Request timed out." };
+  return { code: "HTTP_500", message: "Internal server error" };
+}
+
+/**
+ * `ctx.invoke("model.generate", ...)` with explicit, durably recorded retries. Each attempt is its
+ * own `ctx.invoke` call (a distinct step id), so replay never re-runs a completed attempt — it just
+ * returns the recorded result/failure. `callIndex` (the tool-loop step number) keys the backoff step
+ * id so concurrent... (sequential, actually) model calls within one turn don't collide.
+ */
+async function invokeModelGenerate(ctx: RunContext, callIndex: number, messages: ModelMessage[]): Promise<ModelResponse> {
+  for (let attempt = 1; attempt <= MAX_MODEL_RETRIES + 1; attempt++) {
+    try {
+      return (await ctx.invoke("model.generate", { messages, tools: TOOL_DEFS } as unknown as Json)) as unknown as ModelResponse;
+    } catch (error) {
+      // A cancelled run must stop retrying immediately, not spend its remaining backoff/attempts —
+      // `ctx.emit`/`ctx.step` would throw the runtime's internal halt sentinel anyway (via `guard()`),
+      // but checking here keeps the intent explicit and avoids emitting a spurious retry/failure
+      // event on the way out.
+      if (ctx.signal.aborted) throw error;
+      if (!(error instanceof InvocationFailedError)) throw error;
+
+      const classified = classifyModelFailure(error);
+      if (attempt > MAX_MODEL_RETRIES) {
+        await ctx.emit("turn.failed", classified as unknown as Json);
+        throw new Error(classified.message);
+      }
+      await ctx.emit("model.request.retried", { attempt, maxRetries: MAX_MODEL_RETRIES, error: classified } as unknown as Json);
+      await ctx.step(`backoff:${callIndex}:${attempt}`, async () => {
+        const ms = retryBackoffMs();
+        await Bun.sleep(ms);
+        return ms;
+      });
+    }
+  }
+  /* istanbul ignore next -- unreachable: the loop above always returns or throws */
+  throw new Error("unreachable");
+}
 
 const TOOL_DEFS: ToolDefinition[] = [
   {
@@ -206,7 +270,7 @@ export const agentCodingAgent: AgentDefinition = {
     const readFiles = new Set<string>();
 
     for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-      const response = (await ctx.invoke("model.generate", { messages, tools: TOOL_DEFS } as unknown as Json)) as unknown as ModelResponse;
+      const response = await invokeModelGenerate(ctx, step, messages);
       if (response.toolCalls.length === 0) {
         await ctx.emit("message.completed", { sessionId, workspaceId, text: response.message.content });
         return { text: response.message.content };

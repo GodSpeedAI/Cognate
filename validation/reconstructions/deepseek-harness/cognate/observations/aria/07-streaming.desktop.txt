@@ -26,16 +26,20 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 04:04 AM
-  - status: Deep diving...
+  - text: 07:37 AM
+  - status: Deep diving for 1s
   - heading "Summary" [level=1]
   - paragraph: "Here is what I found:"
   - list:
     - listitem: first point
     - listitem: second point
+  - text: text
+  - button "Wrap lines" [pressed]
+  - button "Copy"
+  - code: export
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
-  - button "Stop"
+  - button "Stop generating"
   - text: 0 turns 0 steps · 0 tok/s 0% of context used

@@ -334,6 +334,12 @@ function requestSummary(scenario: string, step: number, stream: boolean) {
 // ---------------------------------------------------------------------------
 const retrySeen = new Set<string>();
 
+// T11 (J-H-cancellation): counts client-aborted streaming requests (UI Stop / a cancelled run's
+// signal closing the fetch). Exposed over HTTP (not a module export) because this server always
+// runs as a separate process (see `test/helpers.ts`'s `bootMockModel`), so a test process cannot
+// import this module's state directly.
+let streamAbortCount = 0;
+
 function retryKey(messages: ChatMessage[]): string {
   // Hash the full message history so distinct conversations retry independently.
   return fnv1a(JSON.stringify(messages));
@@ -449,7 +455,12 @@ export async function handleRequest(req: Request): Promise<Response> {
 
     if (req.method === "POST" && url.pathname === "/__reset") {
       retrySeen.clear();
+      streamAbortCount = 0;
       return Response.json({ ok: true });
+    }
+
+    if (req.method === "GET" && url.pathname === "/__abort-count") {
+      return Response.json({ count: streamAbortCount });
     }
 
     if (req.method === "POST" && url.pathname === "/v1/chat/completions") {
@@ -463,6 +474,9 @@ export async function handleRequest(req: Request): Promise<Response> {
       const stream = body.stream === true;
       const { name: scenario, step } = extractScenario(messages);
       requestSummary(scenario, step, stream);
+      // T11 (J-H-cancellation): observe the client (fetch/AbortSignal) closing the connection early,
+      // e.g. a UI Stop or a run cancellation aborting the underlying HTTP request.
+      if (stream) req.signal.addEventListener("abort", () => { streamAbortCount++; }, { once: true });
 
       if (scenario === "error") {
         return openAIError(500, "Mock model server: scripted server_error", "server_error", "mock_server_error");
