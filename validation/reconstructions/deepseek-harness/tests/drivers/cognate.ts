@@ -89,8 +89,18 @@ export class CognateDriver implements Driver {
   }
 
   async send(page: Page, text: string): Promise<void> {
-    await page.getByRole("textbox", { name: /Message or run a task|Select a workspace/ }).fill(text);
+    await page.getByRole("textbox", { name: /Message or run a task|Select a workspace|describe your task/ }).fill(text);
     await page.getByRole("button", { name: "Send message", exact: true }).click();
+  }
+
+  // J-E-plan: the plan review card's own buttons ("Request changes" / "Approve") are distinct from
+  // the tool-approval card's ("Reject" / "Allow once", see `approve`/`deny` above).
+  async approvePlan(page: Page): Promise<void> {
+    await page.getByRole("button", { name: "Approve", exact: true }).click();
+  }
+
+  async requestPlanChanges(page: Page): Promise<void> {
+    await page.getByRole("button", { name: "Request changes", exact: true }).click();
   }
 
   async waitForIdle(page: Page, opts?: { timeoutMs?: number }): Promise<void> {

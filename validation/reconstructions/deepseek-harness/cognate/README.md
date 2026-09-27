@@ -32,6 +32,40 @@ that restart does *not* silently finalize the run — see `DEVIATIONS.md`).
 Journeys covered: `J-C-tool-execution` (`test/J-C-tool-execution.test.ts`), `J-D-approval`
 (`test/J-D-approval.test.ts`, allow/deny/restart-while-pending/replay-safety).
 
+## Plan mode and to-dos (T9)
+
+Plan mode is session state, not a capability the UI invokes — it is app events
+(`plan.mode.changed`, `plan.todos.updated`, `plan.review.requested`, `plan.review.decided`) emitted
+directly by `agent.coding`, folded by the public `plans` projection (`src/projections/plans.ts`) and
+read back at the start of every turn via `plan.state` (`src/capabilities/planState.ts`, bound to the
+IDM's `PlanMode` entity — see `BINDINGS.md`). A leading `"/plan "` prefix on the user's message
+(reference-behavior-matrix.md §6.3's composer literal-insertion) turns plan mode on for this and
+following turns; `"/plan off"` is a pure control command `agent.coding` handles without a model round
+trip. `todo_write` is recorded as `plan.todos.updated` regardless of plan mode (the reference's
+To-dos widget works "under Standard mode" too). `exit_plan_mode` is the same
+`PreToolDecision`/human-approval waterfall as `run_code`'s sandbox escalation (`approvalGate.ts`),
+applied to a different tool and modeled as a *distinct* continuation type — `ctx.waitFor("plan-
+review:<toolCallId>", { type: "plan-review", ... })`, not `"tool-approval"` — because its
+payload/outcome shape differs (a plan heading/markdown to review, not a permission to allow/deny).
+Calling `exit_plan_mode` while the session is not genuinely in plan mode fails closed with the
+reference's exact text (`Error: exit_plan_mode is only available in plan mode`,
+`src/domain/planGate.ts`). On Approve, plan mode exits and the model is fed back the reference's
+exact reflection text verbatim (`reference-behavior-matrix.md` §6.3); "Request changes" (the
+journey's deny-equivalent) was not exercised against the pinned reference build, so its wording is
+this app's own invention — see `DEVIATIONS.md`.
+
+UI: `TodoWidget`/`PlanReviewCard` (`src/ui/App.tsx`) dock the same way `ApprovalBar` does — the plan
+review card replaces the composer while a `plan-review` continuation is open; the To-dos widget sits
+above it and persists after plan mode exits. The sidebar prefixes a session's title with "Plan
+awaiting review " while its review is pending. The reference also auto-opens the plan in a
+right-sidebar tab; this tranche has no right sidebar at all (already inert per `DEVIATIONS.md`), so
+the full plan renders inline via "View full plan" instead — see `DEVIATIONS.md` for the resulting
+visual gap.
+
+Journey covered: `J-E-plan` (`test/J-E-plan.test.ts`: todos progression, the `plan-review`
+continuation opening with the plan's heading/markdown, Approve; plus `exit_plan_mode` failing closed
+outside plan mode).
+
 ## Run it
 
 ```bash
@@ -149,3 +183,8 @@ carry a large, expected diff — the former because this app has no DeepSeek-bra
 dialog, the latter because Settings > Models is a single always-open form rather than the
 reference's provider-list + multi-step add-wizard; both are recorded in `DEVIATIONS.md`, not fixed
 silently.
+
+T9's `13-plan-active`/`13b-plan-review-prompt`/`13c-plan-completed` (1 capture/compare round) sit at
+3.4-5.3% differing pixels — in the same range as the rest of the T5b-T8 checkpoints, with the largest
+contributor being the missing right-sidebar plan tab (see `DEVIATIONS.md` "Plan mode (T9)") rather
+than any missing control.

@@ -89,3 +89,22 @@ export function bindTranche7(domain: Domain) {
   ];
   return { toolRead, toolEdit, toolBash, toolRunCode, workspacePath };
 }
+
+/**
+ * T9 addition: `PlanMode` (`plan.state`, `agent.coding`'s per-turn read of the session's plan
+ * mode/todos/review state — see `src/capabilities/planState.ts`). Plan mode itself is not a
+ * `CapabilityContract` a UI action invokes directly; it is app events (`plan.mode.changed`,
+ * `plan.todos.updated`, `plan.review.requested`, `plan.review.decided`) emitted by `agent.coding`
+ * and folded by the `plans` projection — same shape as `ApprovalGate` (T7-T8: a pure decision
+ * function plus a `ctx.waitFor` continuation, not a bound capability). See BINDINGS.md.
+ */
+export function tranche9Bindings(domain: Domain): readonly CapabilityBinding[] {
+  return [{ semanticId: domain.semanticId("PlanMode"), capability: { id: "plan.state", version: "1.0.0" } }];
+}
+
+export function bindTranche9(domain: Domain) {
+  const contracts = bindCapabilities(domain.projection, tranche9Bindings(domain));
+  if (contracts.length !== 1) throw new Error(`domain: expected 1 bound contract, got ${contracts.length}`);
+  const [planState] = contracts as [CapabilityContract];
+  return { planState };
+}

@@ -151,6 +151,41 @@ stably reproducible, e.g. `11-approval-pending`) is correct. Not fixed by adding
 to the tool capabilities themselves, which would misrepresent this app's real (fast, local) tool
 latency for a screenshot's sake.
 
+## Plan mode (T9)
+
+- **`13-plan-active` lands past the intended `todo_write`-only frame.** The reference's
+  `13-plan-active` shows a mid-`todo_write` frame (`button "Updating the plan · todo_write"`, no
+  review card yet). The mock model's `plan` script runs `todo_write` then `exit_plan_mode` back to
+  back with no real latency between them (same root cause as "`08-tool-running` may land on an
+  already-completed frame" above), so by the time `tests/capture/cognate.capture.ts` observes the
+  `todo_write` activity label and takes the screenshot, `exit_plan_mode` has often already opened the
+  `plan-review` continuation — the capture ends up showing the same state as `13b`. The
+  `13-plan-active`/`13b-plan-review-prompt` UI states are each individually correct and distinct
+  (verified via `test/J-E-plan.test.ts`'s event-order assertions, which don't race a screenshot); this
+  is a capture-timing artifact, not a missing or incorrect feature.
+- **No right-sidebar plan tab.** The reference auto-opens the plan as its own tab in a right sidebar
+  (title = plan heading, rendered markdown) alongside the review card/completed-session state. This
+  tranche has no right sidebar at all — "Open right sidebar" is already inert (see above) — so the
+  full plan is shown inline instead, via `PlanReviewCard`'s "View full plan" disclosure. This accounts
+  for most of `13b-plan-review-prompt`/`13c-plan-completed`'s pixel diff (the reference's screenshot
+  is wider, with a populated right pane; this app's right pane is simply absent).
+- **"Open plan: `<title>`" is present but disabled.** The reference's completed-session standalone
+  button linking back to the plan artifact (`13c-plan-completed`) is reproduced with the same
+  accessible name pattern but disabled (`title={NOT_IMPLEMENTED}`) — no plan-artifact viewer in this
+  tranche, consistent with the right-sidebar gap above.
+- **"Request changes" wording is not reference-confirmed.** `reference-behavior-matrix.md` §6.3
+  states this path "was not exercised this pass" against the pinned build. The tool-result text
+  `planRequestChangesToolResult` (`src/domain/planGate.ts`) feeds back on denial is this app's own
+  invention, shaped by `canonical-journey-catalog.md` `j_e_plan`'s step description rather than any
+  observed string — `test/J-E-plan.test.ts` does not assert this path for the same reason (only
+  Approve is exercised, matching the brief's stated test scope).
+- **"Plan mode off." confirmation turn.** Toggling plan mode off (`"/plan off"`, or the composer's
+  "Plan mode on, press to turn off" button) is handled by `agent.coding` as a pure control command:
+  no model round trip, just a `plan.mode.changed` event and a short assistant-style confirmation
+  message ("Plan mode off."). The reference's exact UI for this transition was not captured/observed
+  this pass, so this exchange (and the composer toggle invoking a full new turn to produce it) is this
+  app's own minimal design, not a reproduction.
+
 ## Icons
 
 All icons (`src/ui/icons.tsx`) are original inline SVGs drawn for this reconstruction — simple

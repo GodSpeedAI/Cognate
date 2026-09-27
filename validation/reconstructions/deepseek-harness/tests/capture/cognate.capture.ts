@@ -182,6 +182,31 @@ try {
   await page.waitForTimeout(200);
   await checkpoint(page, "12-approval-resolved-deny");
 
+  // --- T9: plan mode (journey J-E-plan) ---
+
+  // 13 - plan active: "/plan " prefix enters plan mode; `[[scenario:plan]]` drives
+  // todo_write -> exit_plan_mode. Capture while the tool activity indicator is still showing
+  // (before the review card renders), matching the reference's `13-plan-active`.
+  await driver.newSession(page);
+  await driver.send(page, "/plan make a plan now [[scenario:plan]]");
+  // The `todo_write` activity window is brief (the mock model's next step, `exit_plan_mode`,
+  // follows immediately) — target its exact label rather than any tool-activity-btn, which would
+  // just as happily match the later `exit_plan_mode` state.
+  await page.getByRole("button", { name: /Updating the plan/ }).waitFor({ timeout: 5_000 }).catch(() => undefined);
+  await checkpoint(page, "13-plan-active");
+
+  // 13b - plan review prompt: the `exit_plan_mode` call opens a `plan-review` continuation.
+  await page.waitForSelector("[data-plan-panel]", { timeout: 15_000 }).catch(() => undefined);
+  await page.waitForTimeout(150);
+  await checkpoint(page, "13b-plan-review-prompt");
+
+  // 13c - plan completed: Approve exits plan mode, the run completes, and the To-dos widget
+  // persists.
+  await driver.approvePlan(page);
+  await driver.waitForIdle(page, { timeoutMs: 15_000 });
+  await page.waitForTimeout(200);
+  await checkpoint(page, "13c-plan-completed");
+
   // 15 - completed session (status dot, duration badge, full markdown rendering).
   await driver.waitForIdle(page, { timeoutMs: 30_000 });
   await page.waitForTimeout(300);

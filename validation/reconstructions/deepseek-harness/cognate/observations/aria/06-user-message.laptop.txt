@@ -17,7 +17,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 03:08 AM
+  - text: 03:32 AM
   - status: Deep diving...
   - heading "Summary" [level=1]
   - paragraph: Here is

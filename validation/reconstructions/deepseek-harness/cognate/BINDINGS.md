@@ -1,4 +1,4 @@
-# Capability bindings (T5, extended T7)
+# Capability bindings (T5, extended T7, T9)
 
 Per `idm-to-cognate.md`: `bindCapabilities` is the only path from a `SemanticObject` to a
 `CapabilityContract`, and it is 100% explicit. This file lists every binding this app makes — no
@@ -21,8 +21,10 @@ objects, digest logged at startup).
 | 8 | `deepseek-harness.interaction::Tool` | `tool.bash` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Runs a shell command as a Bun subprocess, `cwd` = workspace root, timeout + output caps. |
 | 9 | `deepseek-harness.interaction::Tool` | `tool.run_code` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Runs a code snippet (original small `tools.bash`-providing harness, not copied from the reference) as a Bun subprocess; the tool a `sandbox_permissions` escalation request rides on — see `approvalGate.ts`. |
 | 10 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.path` v1.0.0 | `workspacePathComponent` (`src/capabilities/workspacePath.ts`) | Resolves a `workspaceId` to its canonical path for the tool loop (`agent.coding`'s `ctx.invoke("workspace.path", ...)`). |
+| 11 | `deepseek-harness.interaction::PlanMode` | `plan.state` v1.0.0 | `planStateComponent` (`src/capabilities/planState.ts`) | Resolves a `sessionId` to its current plan-mode/todos/review state (the `plans` projection) — `agent.coding`'s per-turn read of whether the session is genuinely in plan mode. |
 
 `tranche7Bindings`/`bindTranche7` (`domain/index.ts`) bind #6-10, alongside `tranche5Bindings` above.
+`tranche9Bindings`/`bindTranche9` (`domain/index.ts`) bind #11.
 
 ## Not bound (deliberately)
 
@@ -40,6 +42,13 @@ objects, digest logged at startup).
   "ApprovalGate"` is realized as the `tool-approval` continuation's resume input (`{ approved:
   boolean }`), resolved via `client.resolveContinuation`/`RuntimeService.resolveContinuation` — see
   `README.md` "Tool loop and approvals (T7-T8)".
-- `PlanMode`, `Subagent`, `Goal`, `ChildAgent`, `ApprovalAuthority`, `Composer`, `OperatorAgent`,
-  `User` — real `.sea` entities with no bound capability yet; they belong to later tranches (T9-T11)
-  and are intentionally left unbound until this app actually publishes something for them.
+- `Subagent`, `Goal`, `ChildAgent`, `ApprovalAuthority`, `Composer`, `OperatorAgent`, `User` — real
+  `.sea` entities with no bound capability yet; they belong to later tranches (T10-T11) and are
+  intentionally left unbound until this app actually publishes something for them.
+- `PlanMode`'s plan-mode-on/off and todos/review state (T9) is realized the same way as
+  `ApprovalGate`: app events (`plan.mode.changed`, `plan.todos.updated`, `plan.review.requested`,
+  `plan.review.decided`) emitted directly by `agent.coding`, not a `CapabilityContract` a UI action
+  invokes — the only bound capability is the read side, `plan.state` (#11 above). `exit_plan_mode`'s
+  review is a `ctx.waitFor("plan-review:<toolCallId>", ...)` durable continuation, the same pattern
+  as `tool-approval` but a distinct `type` (different payload/outcome shape — a plan heading/markdown
+  to review, not a permission to allow/deny). See `src/domain/planGate.ts` and README.md.

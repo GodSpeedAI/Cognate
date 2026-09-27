@@ -748,6 +748,116 @@ input:focus-visible {
   color: var(--cg-text);
 }
 
+/* J-E-plan: docked where the composer sits, same pattern as `.approval-card` (amber border per
+   reference-behavior-matrix.md §6.3: "amber border, orange dot 'Plan review'"). */
+.plan-review-card {
+  border: 1px solid #f0b429;
+  border-radius: var(--cg-radius-md);
+  overflow: hidden;
+  background: var(--cg-surface, #fff);
+  padding: 14px 16px;
+}
+
+.plan-review-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.plan-review-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f0b429;
+  flex-shrink: 0;
+}
+
+.plan-review-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a5a00;
+}
+
+.plan-review-disclosure {
+  border: none;
+  background: transparent;
+  color: var(--cg-text-muted);
+  padding: 0;
+  font-size: 12px;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.plan-review-heading {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.plan-review-preview {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--cg-text);
+}
+
+.plan-review-body {
+  font-size: 13px;
+  color: var(--cg-text);
+  margin-bottom: 8px;
+}
+
+.plan-review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.plan-review-btn {
+  border-radius: var(--cg-radius-xs);
+  padding: 6px 16px;
+  font-size: 13px;
+  border: 1px solid var(--cg-border);
+}
+
+.plan-review-btn.plan-review-approve {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.plan-review-btn.plan-review-changes {
+  background: var(--cg-surface, #fff);
+  color: var(--cg-text);
+}
+
+/* "To-dos" region (reference-behavior-matrix.md §6.3: `region "To-dos"` with a single summary
+   button). */
+.todo-widget {
+  padding: 8px 0;
+}
+
+.todo-widget > button {
+  border: 1px solid var(--cg-border);
+  background: var(--cg-surface-sunken);
+  border-radius: var(--cg-radius-xs);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.plan-mode-toggle {
+  border: 1px solid var(--cg-border);
+  background: var(--cg-surface-sunken);
+  border-radius: var(--cg-radius-xs);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.todo-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
 .edit-diff {
   margin-top: 8px;
 }

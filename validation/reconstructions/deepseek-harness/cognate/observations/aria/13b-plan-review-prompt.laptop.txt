@@ -1,0 +1,33 @@
+- complementary:
+  - button "Collapse sidebar"
+  - button "New session"
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - button "Switch to dark theme"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": New Session
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - status: plan · Plan mode on. Use /plan off to leave.
+  - paragraph: /plan make a plan now [[scenario:plan]]
+  - button "Copy"
+  - text: 03:33 AM
+  - status: Deep diving...
+  - status: Deep diving...
+  - button "Calling tools · exit_plan_mode" [disabled]
+  - region "To-dos":
+    - button "To-dos 1 in progress · 1 pending"
+  - region "Approve this plan and leave plan mode?":
+    - text: Plan review
+    - button "View full plan"
+    - heading "Update greeting" [level=3]
+    - paragraph: 1. Read src/greet.ts
+    - button "Request changes"
+    - button "Approve"
