@@ -68,40 +68,40 @@ outside plan mode).
 
 ## Subagents/delegation (T10)
 
-The `subagent` tool (`{description, prompt, run_in_background?}`) is built on `spawnSubagent`
-(`@cognate/profile-harness`): a durable `ctx.invoke("subagent.start", ...)` + `ctx.waitFor(id, {
-type: "subagent", condition: { kind: "run_completion", runId } })` that resumes across restarts.
-`subagent.start` itself is this app's own capability (`src/capabilities/subagentStart.ts`), not the
-packaged one — the packaged version starts the child with no `correlationId` at all, and this app
-needs the child correlated `subagent:<parentRunId>:<id>` specifically: both to be queryable as a
+The `subagent` tool (`{description, prompt, run_in_background?}`) is **fire-and-forget**, matching
+the reference exactly (reference-behavior-matrix.md §6.4): `agent.coding` calls
+`ctx.invoke("subagent.start", { agent: AGENT_CODING, input, key: "<parentRunId>:<toolCallId>" })` —
+this app's own capability (`src/capabilities/subagentStart.ts`), which starts a durable child
+`agent.coding` run correlated `subagent:<parentRunId>:<toolCallId>` (both so it is queryable as a
 subagent run, and so `sessions.ts`'s "only `session:`-correlated runs" guard excludes it from the
-top-level session list (children are not sessions). The child is a plain `agent.coding` run (fresh
-history, the delegated `prompt` as its message, same workspace as the parent).
+top-level session list) — and returns *immediately*, without waiting on the child. The tool result
+fed back to the model is the reference's exact reflection text: `started subagent <childRunId>`. The
+child is a plain `agent.coding` run (fresh history, the delegated `prompt` as its message, same
+workspace as the parent).
 
-`spawnSubagent`'s `run_completion` continuation needs *something* to resolve it once the child
-finishes — `createHarness` wires this via an internal `store.onCommitted` subscriber
-(`profiles/harness/src/index.ts`); this app hand-composes `createRuntime` (see "Why createRuntime,
-not createHarness" above) so that watcher does not exist unless provided here. `src/server.ts`'s
-`resolveSubagentCompletion` reproduces it against the public `RuntimeService` API (`listRuns`/
-`listContinuations`/`resolveContinuation`): a startup catch-up pass over every `OPEN` `"subagent"`
-continuation, plus a live check on every `run.completed`/`run.failed`/`run.cancelled` event on the
-same tenant-event-stream subscription that already tracks `workspace.added`.
-
-The child's output becomes the parent's tool result, fed back to the model verbatim — a deliberate
-departure from the reference's fire-and-forget "`Tool result: started subagent <uuid>`" plus a
-separate next-turn reflection (not exercised in the reference capture); this reconstruction
-synchronously awaits the child via `spawnSubagent` instead, per this tranche's composition
-requirement. See `DEVIATIONS.md`.
+Nothing watches for the child's completion on the parent's behalf (no continuation, no watcher — an
+earlier pass of this tranche synchronously awaited the child via `spawnSubagent`
+(`@cognate/profile-harness`), which does not match the reference; corrected). Instead, the `subagents`
+projection (`src/projections/subagents.ts`) observes the child's own events directly: it parses the
+`subagent:<parentRunId>:<toolCallId>` correlation back off the child's `message.completed`/
+`run.failed` events to update that child's row to `"completed"`/`"failed"` with its output — no
+parent-side emission needed. `session.history` (`src/capabilities/sessionHistory.ts`) reads this same
+projection and, for each parent run, appends a synthetic context message for any subagent it spawned
+that has since completed — so the result durably "returns to the parent" on the session's *next*
+turn, per the matrix's "the parent's next model turn ... would see the child's result as its tool
+output."
 
 UI: the session banner's "N subagent(s)" disclosure (reference-behavior-matrix.md §6.4) opens a
-`tree "Subagent sessions"` with rows `"<title> · <desc> · continuable · <status> · 0 tok · 0s"` and
-an `"Open <title> in sidebar"` button — present with the reference's exact accessible name but
-disabled, since there is no separate child-transcript view this tranche (children are not sessions).
-While a `subagent` call is in flight, the tool activity indicator reads "Coordinating subagents ·
-`<description>`" (`src/ui/App.tsx` `toolActionLabel`).
+`tree "Subagent sessions"` with rows `"<title> · <desc> · continuable · <status> · 0 tok · 0s"`. "Open
+`<title>` in sidebar" opens a small new right-hand panel (`RightPanel`, `src/ui/App.tsx`) showing the
+child's prompt + final answer as a two-message transcript, sourced entirely from its `subagents` row
+(no separate child-session/transcript capability exists, or is needed, since children are not
+sessions). While a `subagent` call is in flight, the tool activity indicator reads "Coordinating
+subagents · `<description>`" (`toolActionLabel`).
 
-Journey covered: `J-F-delegation` (`test/J-F-delegation.test.ts`: child run created and completes,
-its output lands in the parent, parent completes, child excluded from `sessions`; plus a
+Journey covered: `J-F-delegation` (`test/J-F-delegation.test.ts`: the child is started and the parent
+completes immediately with the reflection text, the child completes independently, its result appears
+in the parent session's next-turn history, and the child is excluded from `sessions`; plus a
 restart-mid-delegation test asserting no duplicate child run).
 
 ## Run it

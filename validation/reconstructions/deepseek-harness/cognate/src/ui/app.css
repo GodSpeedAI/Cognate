@@ -844,6 +844,46 @@ input:focus-visible {
   font-size: 12px;
 }
 
+/* Right-hand panel: reused across features that need one (currently only J-F-delegation's "Open
+   ... in sidebar" populates it). */
+.right-panel {
+  width: 340px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--cg-border);
+  background: var(--cg-surface, #fff);
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--cg-border);
+  padding: 8px 12px;
+}
+
+.right-panel-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.right-panel-tab button {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--cg-text-muted);
+}
+
+.right-panel-body {
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* J-F-delegation (reference-behavior-matrix.md §6.4). */
 .subagent-count-btn {
   border: 1px solid var(--cg-border);

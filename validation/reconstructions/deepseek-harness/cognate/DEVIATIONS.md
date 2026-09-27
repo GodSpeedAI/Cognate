@@ -188,15 +188,19 @@ latency for a screenshot's sake.
 
 ## Subagents (T10)
 
-- **Synchronous delegation, not fire-and-forget.** `reference-behavior-matrix.md` §6.4 documents the
-  reference's own reflection text on the parent turn as exactly `Tool result: started subagent
-  <uuid>` — the reference's `subagent` tool call apparently returns immediately once the child is
-  *started*, and the child's actual answer would land on a later parent turn ("not exercised further
-  this pass" per the matrix). This tranche's explicit composition requirement was the opposite: "the
-  parent's tool result is the child output." `agent.coding` therefore awaits `spawnSubagent`
-  synchronously and feeds the child's real answer back as the tool result — so `14b-subagent-
-  completed-panel`'s reflected text ("Tool result: The fixture workspace is a tiny, clean project
-  ...") differs from the reference's "started subagent `<uuid>`" by design, not by omission.
+Delegation is fire-and-forget, matching the reference exactly (reference-behavior-matrix.md §6.4):
+`agent.coding` starts the child (`subagent.start`, this app's own capability —
+`src/capabilities/subagentStart.ts`) and returns immediately with `Tool result: started subagent
+<childRunId>`; there is no `ctx.waitFor` and no parent-side completion watcher (an earlier pass of
+this tranche synchronously awaited the child and fed its answer back as the tool result, which does
+not match the reference — corrected; `src/server.ts` no longer needs or contains a
+`run_completion`-resolving watcher at all). The child's own completion is observed directly from its
+own events (the `subagents` projection parses the `subagent:<parentRunId>:<toolCallId>` correlation
+back off `message.completed`/`run.failed`, `src/projections/subagents.ts`), and durably "returns to
+the parent" as a synthetic context message on the parent session's *next* turn
+(`src/capabilities/sessionHistory.ts`), per the matrix's "the parent's next model turn ... would see
+the child's result as its tool output."
+
 - **`14-subagent-active` may already show the "N subagent(s)" banner.** Same root cause as the
   `08`/`13` timing notes above: `subagent.spawned` is recorded (and the banner becomes visible) as
   soon as the child run is *started*, which on this local mock setup can happen well before the
@@ -204,20 +208,14 @@ latency for a screenshot's sake.
   `14-subagent-active` does not yet show the banner at that point; this app's sometimes does. Content-
   timing artifact, not a missing/incorrect feature (`test/J-F-delegation.test.ts` asserts the actual
   event ordering without racing a screenshot).
-- **"Open `<title>` in sidebar" is present but disabled.** No separate child-transcript/right-sidebar
-  view in this tranche (children are not sessions — the whole point of `sessions.ts`'s correlation
-  guard) — reproduced with the reference's exact accessible name, disabled, same pattern as every
-  other out-of-scope control.
-- **`createHarness`'s subagent-completion watcher had to be reproduced by hand.** `spawnSubagent`'s
-  `run_completion` continuation is only ever resolved by something watching for the child run's
-  terminal state — `createHarness` wires this internally (`profiles/harness/src/index.ts`, a
-  `store.onCommitted` subscriber); this app does not use `createHarness` (see "Why createRuntime, not
-  createHarness" in README.md) and without an equivalent, every `subagent` call would hang forever.
-  `src/server.ts`'s `resolveSubagentCompletion` reproduces the same behavior against the public
-  `RuntimeService` API only (`listRuns`/`listContinuations`/`resolveContinuation`) — not a copy of the
-  harness's internal `store`-level subscription, and not something we discovered was needed until
-  building this tranche (flagging here as a framework-shape gap for any other app that hand-composes
-  `createRuntime` and wants `spawnSubagent`).
+- **"Open `<title>` in sidebar" opens a minimal, newly-built right panel, not a reused one.** No right
+  sidebar existed anywhere in this app before this correction (`DEVIATIONS.md` previously listed
+  "Open right sidebar" as fully inert) — there was nothing to reuse. `RightPanel`
+  (`src/ui/App.tsx`) is a small new component populated entirely from the child's own `subagents` row
+  (its delegated prompt + final answer as a two-message transcript), not a general session/transcript
+  viewer — sufficient for a single-turn child, not a reproduction of the reference's own right-sidebar
+  chrome (tabs, split/fullscreen/collapse controls) beyond a close button. Plan mode's "View full
+  plan" (J-E-plan) is unchanged and still renders inline rather than in this panel.
 
 ## Icons
 

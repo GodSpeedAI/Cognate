@@ -9,7 +9,6 @@
 import type { ModelMessage, ModelResponse, ToolCall, ToolDefinition } from "@cognate/capabilities";
 import type { Json } from "@cognate/events";
 import type { AgentDefinition, RunContext } from "@cognate/runtime-api";
-import { spawnSubagent } from "@cognate/profile-harness";
 import { approvalDeniedToolResult, approvalGate } from "../domain/approvalGate.ts";
 import {
   EXIT_PLAN_MODE_NOT_IN_PLAN_MODE,
@@ -86,7 +85,7 @@ const TOOL_DEFS: ToolDefinition[] = [
   },
   {
     name: "subagent",
-    description: "Delegate a task to a background subagent and wait for its result.",
+    description: "Delegate a task to a background subagent.",
     inputSchema: {
       type: "object",
       properties: {
@@ -257,31 +256,25 @@ export const agentCodingAgent: AgentDefinition = {
             }
           }
         } else if (call.name === "subagent") {
-          // J-F-delegation: a durable child run of `agent.coding`, correlated
-          // `subagent:<parentRunId>:<id>` (this app's own `subagent.start` capability, not the
-          // packaged one — see `src/capabilities/subagentStart.ts`), so it survives a restart and is
-          // excluded from the `sessions` projection's top-level session list. `spawnSubagent`
-          // (`@cognate/profile-harness`) durably resumes the `ctx.waitFor` across restarts too — a
-          // restart mid-delegation replays the same `subagent.start` invocation (idempotent: the
-          // same child run is returned, not a new one) and re-waits on its completion.
+          // J-F-delegation: fire-and-forget delegation (reference-behavior-matrix.md §6.4) — starts
+          // a durable child `agent.coding` run, correlated `subagent:<parentRunId>:<id>` (this app's
+          // own `subagent.start` capability, not `@cognate/profile-harness`'s `spawnSubagent` — see
+          // `src/capabilities/subagentStart.ts`), and returns immediately with the reference's exact
+          // reflection text. There is no `ctx.waitFor` here: the parent does not block on the child,
+          // and does not durably record the child's completion itself — the child's own events carry
+          // that (folded by the `subagents` projection, `src/projections/subagents.ts`). The child's
+          // result "returns to the parent" via `session.history` on the *next* parent turn instead
+          // (`src/capabilities/sessionHistory.ts`), not on this turn's tool result.
           const description = String(args.description ?? "");
           const childPrompt = String(args.prompt ?? "");
-          await ctx.emit("subagent.spawned", { sessionId, toolCallId: call.id, description, prompt: childPrompt });
-          try {
-            const childOutput = (await spawnSubagent(ctx, call.id, AGENT_CODING, {
-              sessionId: `${sessionId}:sub:${call.id}`,
-              workspaceId,
-              message: childPrompt,
-            } as unknown as Json)) as unknown as { readonly text?: string };
-            resultText = String(childOutput?.text ?? "");
-            await ctx.emit("subagent.completed", { sessionId, toolCallId: call.id, text: resultText });
-            await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result: { text: resultText } });
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            resultText = `Error: subagent failed: ${message}`;
-            await ctx.emit("subagent.failed", { sessionId, toolCallId: call.id, error: message });
-            await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: message });
-          }
+          const { runId: childRunId } = (await ctx.invoke("subagent.start", {
+            agent: AGENT_CODING,
+            input: { sessionId: `${sessionId}:sub:${call.id}`, workspaceId, message: childPrompt },
+            key: `${ctx.runId}:${call.id}`,
+          } as unknown as Json)) as unknown as { readonly runId: string };
+          await ctx.emit("subagent.spawned", { sessionId, toolCallId: call.id, description, prompt: childPrompt, childRunId });
+          resultText = `started subagent ${childRunId}`;
+          await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result: { childRunId } });
         } else if (approvalDecision.required) {
           const permission = approvalDecision.permission ?? "";
           const justification = approvalDecision.justification ?? "";

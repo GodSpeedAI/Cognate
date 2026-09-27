@@ -133,18 +133,23 @@ interface SubagentRowView {
   readonly toolCallId: string;
   readonly title: string;
   readonly desc: string;
+  readonly prompt: string;
   readonly status: "running" | "completed" | "failed";
+  readonly output?: string;
 }
 
-/** J-F-delegation: this session's subagent rows (`plans`-style keying, `src/projections/
- *  subagents.ts`: `${sessionId}/${toolCallId}`) — the banner's "N subagent(s)" disclosure and the
- *  "Subagent sessions" tree (reference-behavior-matrix.md §6.4, `14b-subagent-completed-panel`). */
+/** J-F-delegation: this session's subagent rows (keyed `${parentRunId}/${toolCallId}` in
+ *  `src/projections/subagents.ts` — fire-and-forget delegation has no single parent run to key off
+ *  of, so rows are matched by their own `sessionId` field instead) — the banner's "N subagent(s)"
+ *  disclosure and the "Subagent sessions" tree (reference-behavior-matrix.md §6.4,
+ *  `14b-subagent-completed-panel`). */
 function useSubagents(sessionId: string | undefined): readonly SubagentRowView[] {
   const rows = useProjection("subagents");
   return useMemo(() => {
     if (!sessionId) return [];
-    const prefix = `${sessionId}/`;
-    return (rows ?? []).filter((r) => r.key.startsWith(prefix)).map((r) => r.value as unknown as SubagentRowView);
+    return (rows ?? [])
+      .map((r) => r.value as unknown as SubagentRowView)
+      .filter((r) => r.sessionId === sessionId);
   }, [rows, sessionId]);
 }
 
@@ -558,12 +563,11 @@ function TodoWidget({ todos }: { readonly todos: readonly PlanTodo[] }) {
 }
 
 /** "Subagent sessions" tree (J-F-delegation): one row per child, reference-behavior-matrix.md §6.4:
- *  `"<title> · <desc> · continuable · completed · 0 tok · 0s"` + `"Open <title> in sidebar"`. There
- *  is no separate child-transcript view in this tranche (children are not sessions — see
- *  `src/projections/sessions.ts`), so "Open ... in sidebar" is present with the reference's
- *  accessible name but disabled, same pattern as every other out-of-scope control
- *  (`DEVIATIONS.md`). */
-function SubagentTree({ rows }: { readonly rows: readonly SubagentRowView[] }) {
+ *  `"<title> · <desc> · continuable · completed · 0 tok · 0s"` + `"Open <title> in sidebar"`. "Open
+ *  ... in sidebar" opens the child's transcript in the right-hand panel (`RightPanel` below) — the
+ *  only source for it is this row itself (prompt + output), since children are not sessions
+ *  (`src/projections/sessions.ts`) and so have no `session.history` of their own to fetch. */
+function SubagentTree({ rows, onOpen }: { readonly rows: readonly SubagentRowView[]; readonly onOpen: (row: SubagentRowView) => void }) {
   return (
     <div role="tree" aria-label="Subagent sessions" className="subagent-tree" data-subagent-card>
       {rows.map((row) => (
@@ -571,12 +575,46 @@ function SubagentTree({ rows }: { readonly rows: readonly SubagentRowView[] }) {
           <span className="subagent-row-text">
             {row.title} · {row.desc} · continuable · {row.status} · 0 tok · 0s
           </span>
-          <button type="button" disabled title={NOT_IMPLEMENTED} aria-label={`Open ${row.title} in sidebar`}>
+          <button type="button" aria-label={`Open ${row.title} in sidebar`} onClick={() => onOpen(row)}>
             Open {row.title} in sidebar
           </button>
         </div>
       ))}
     </div>
+  );
+}
+
+/** Right-hand panel (reused for J-F-delegation's "Open <title> in sidebar"): the reference's own
+ *  right sidebar is otherwise entirely inert this tranche (`DEVIATIONS.md` — "Open right sidebar"),
+ *  so this is the first thing to actually populate it; a plan's "View full plan" (J-E-plan) still
+ *  renders inline rather than here, unchanged. Shows the child's two-message transcript (its
+ *  delegated prompt, its final answer) sourced entirely from its `subagents` projection row. */
+function RightPanel({ row, onClose }: { readonly row: SubagentRowView; readonly onClose: () => void }) {
+  return (
+    <aside className="right-panel" role="tabpanel" aria-label={row.title}>
+      <div className="right-panel-tabs" role="tablist">
+        <span role="tab" aria-selected="true" className="right-panel-tab">
+          {row.title}
+          <button type="button" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        </span>
+      </div>
+      <div className="right-panel-body">
+        <div className="message message-user">
+          <div className="message-bubble">
+            <div className="message-body">{row.prompt}</div>
+          </div>
+        </div>
+        {row.status === "completed" ? (
+          <div className="message message-assistant">
+            <div className="message-body">{row.output}</div>
+          </div>
+        ) : (
+          <p className="empty-state small">{row.status === "failed" ? "Subagent failed." : "Running…"}</p>
+        )}
+      </div>
+    </aside>
   );
 }
 
@@ -907,6 +945,8 @@ export function App() {
   // subagent(s)" disclosure (reference-behavior-matrix.md §6.4).
   const subagentRows = useSubagents(activeSessionId);
   const [subagentsExpanded, setSubagentsExpanded] = useState(false);
+  const [openChildToolCallId, setOpenChildToolCallId] = useState<string | undefined>(undefined);
+  const openChildRow = subagentRows.find((r) => r.toolCallId === openChildToolCallId);
   const planReviewContinuation = openContinuations.find((c) => c.type === "plan-review");
   const decidePlanReview = useCallback(
     async (approved: boolean) => {
@@ -1224,10 +1264,13 @@ export function App() {
                 onTogglePlanMode={togglePlanMode}
               />
             )}
-            {subagentsExpanded && subagentRows.length > 0 && <SubagentTree rows={subagentRows} />}
+            {subagentsExpanded && subagentRows.length > 0 && (
+              <SubagentTree rows={subagentRows} onOpen={(row) => setOpenChildToolCallId(row.toolCallId)} />
+            )}
           </>
         )}
       </main>
+      {openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />}
       {showSettings && <SettingsModels onClose={() => setShowSettings(false)} />}
     </div>
   );
