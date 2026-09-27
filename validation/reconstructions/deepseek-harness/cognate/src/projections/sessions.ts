@@ -26,6 +26,12 @@ export const sessionsProjection: Projection = {
   name: "sessions",
   version: "1.0.0",
   apply(event, state) {
+    // T10 (J-F-delegation): a subagent's child run is `agent.coding` too, so it emits the same
+    // `session.turn.started`/`message.completed` event types as a real session turn — but
+    // correlated `subagent:<parentRunId>:<id>`, not `session:<id>`. Excluding anything not
+    // "session:"-correlated is what keeps children out of the sidebar's session tree (they are
+    // tracked instead by the `subagents` projection — see `src/projections/subagents.ts`).
+    if (!event.correlationId.startsWith("session:")) return [];
     if (event.eventType === "session.turn.started") {
       const payload = event.payload as { readonly sessionId: string; readonly workspaceId: string; readonly message: string };
       const key = `${event.tenant}/${payload.sessionId}`;

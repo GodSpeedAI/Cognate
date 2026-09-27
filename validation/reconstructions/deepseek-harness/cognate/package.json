@@ -21,6 +21,7 @@
     "@cognate/protocol-connect": "workspace:*",
     "@cognate/protocol-connect-bun": "workspace:*",
     "@cognate/provider-openai-compatible": "workspace:*",
+    "@cognate/profile-harness": "workspace:*",
     "@cognate/react": "workspace:*",
     "@cognate/runtime-api": "workspace:*",
     "@cognate/runtime-bun": "workspace:*",

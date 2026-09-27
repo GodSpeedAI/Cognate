@@ -103,6 +103,11 @@ export class CognateDriver implements Driver {
     await page.getByRole("button", { name: "Request changes", exact: true }).click();
   }
 
+  // J-F-delegation: the session banner's "N subagent(s)" disclosure button.
+  async openSubagentPanel(page: Page): Promise<void> {
+    await page.getByRole("button", { name: /^\d+ subagents?$/ }).click();
+  }
+
   async waitForIdle(page: Page, opts?: { timeoutMs?: number }): Promise<void> {
     const timeoutMs = opts?.timeoutMs ?? 30_000;
     const deadline = Date.now() + timeoutMs;

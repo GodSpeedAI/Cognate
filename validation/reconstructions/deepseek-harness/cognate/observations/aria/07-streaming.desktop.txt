@@ -26,13 +26,17 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 03:32 AM
+  - text: 03:50 AM
   - status: Deep diving...
   - heading "Summary" [level=1]
   - paragraph: "Here is what I found:"
   - list:
     - listitem: first point
     - listitem: second point
+  - text: text
+  - button "Wrap lines" [pressed]
+  - button "Copy"
+  - code: export function
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

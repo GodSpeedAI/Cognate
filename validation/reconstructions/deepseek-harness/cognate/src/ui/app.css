@@ -844,6 +844,37 @@ input:focus-visible {
   font-size: 12px;
 }
 
+/* J-F-delegation (reference-behavior-matrix.md §6.4). */
+.subagent-count-btn {
+  border: 1px solid var(--cg-border);
+  background: var(--cg-surface-sunken);
+  border-radius: var(--cg-radius-xs);
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.subagent-tree {
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-md);
+  background: var(--cg-surface, #fff);
+  padding: 8px 0;
+  margin-top: 8px;
+}
+
+.subagent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.subagent-row-text {
+  color: var(--cg-text);
+}
+
 .plan-mode-toggle {
   border: 1px solid var(--cg-border);
   background: var(--cg-surface-sunken);

@@ -17,7 +17,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] cancel me please"
   - button "Copy"
-  - text: 03:33 AM
+  - text: 03:51 AM
   - status: Stopped
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]

@@ -186,6 +186,39 @@ latency for a screenshot's sake.
   this pass, so this exchange (and the composer toggle invoking a full new turn to produce it) is this
   app's own minimal design, not a reproduction.
 
+## Subagents (T10)
+
+- **Synchronous delegation, not fire-and-forget.** `reference-behavior-matrix.md` §6.4 documents the
+  reference's own reflection text on the parent turn as exactly `Tool result: started subagent
+  <uuid>` — the reference's `subagent` tool call apparently returns immediately once the child is
+  *started*, and the child's actual answer would land on a later parent turn ("not exercised further
+  this pass" per the matrix). This tranche's explicit composition requirement was the opposite: "the
+  parent's tool result is the child output." `agent.coding` therefore awaits `spawnSubagent`
+  synchronously and feeds the child's real answer back as the tool result — so `14b-subagent-
+  completed-panel`'s reflected text ("Tool result: The fixture workspace is a tiny, clean project
+  ...") differs from the reference's "started subagent `<uuid>`" by design, not by omission.
+- **`14-subagent-active` may already show the "N subagent(s)" banner.** Same root cause as the
+  `08`/`13` timing notes above: `subagent.spawned` is recorded (and the banner becomes visible) as
+  soon as the child run is *started*, which on this local mock setup can happen well before the
+  capture script's poll for the "Coordinating subagents" activity label resolves. The reference's
+  `14-subagent-active` does not yet show the banner at that point; this app's sometimes does. Content-
+  timing artifact, not a missing/incorrect feature (`test/J-F-delegation.test.ts` asserts the actual
+  event ordering without racing a screenshot).
+- **"Open `<title>` in sidebar" is present but disabled.** No separate child-transcript/right-sidebar
+  view in this tranche (children are not sessions — the whole point of `sessions.ts`'s correlation
+  guard) — reproduced with the reference's exact accessible name, disabled, same pattern as every
+  other out-of-scope control.
+- **`createHarness`'s subagent-completion watcher had to be reproduced by hand.** `spawnSubagent`'s
+  `run_completion` continuation is only ever resolved by something watching for the child run's
+  terminal state — `createHarness` wires this internally (`profiles/harness/src/index.ts`, a
+  `store.onCommitted` subscriber); this app does not use `createHarness` (see "Why createRuntime, not
+  createHarness" in README.md) and without an equivalent, every `subagent` call would hang forever.
+  `src/server.ts`'s `resolveSubagentCompletion` reproduces the same behavior against the public
+  `RuntimeService` API only (`listRuns`/`listContinuations`/`resolveContinuation`) — not a copy of the
+  harness's internal `store`-level subscription, and not something we discovered was needed until
+  building this tranche (flagging here as a framework-shape gap for any other app that hand-composes
+  `createRuntime` and wants `spawnSubagent`).
+
 ## Icons
 
 All icons (`src/ui/icons.tsx`) are original inline SVGs drawn for this reconstruction — simple

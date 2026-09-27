@@ -128,6 +128,26 @@ function usePlanState(sessionId: string | undefined): PlanStateRow | undefined {
   }, [rows, sessionId]);
 }
 
+interface SubagentRowView {
+  readonly sessionId: string;
+  readonly toolCallId: string;
+  readonly title: string;
+  readonly desc: string;
+  readonly status: "running" | "completed" | "failed";
+}
+
+/** J-F-delegation: this session's subagent rows (`plans`-style keying, `src/projections/
+ *  subagents.ts`: `${sessionId}/${toolCallId}`) — the banner's "N subagent(s)" disclosure and the
+ *  "Subagent sessions" tree (reference-behavior-matrix.md §6.4, `14b-subagent-completed-panel`). */
+function useSubagents(sessionId: string | undefined): readonly SubagentRowView[] {
+  const rows = useProjection("subagents");
+  return useMemo(() => {
+    if (!sessionId) return [];
+    const prefix = `${sessionId}/`;
+    return (rows ?? []).filter((r) => r.key.startsWith(prefix)).map((r) => r.value as unknown as SubagentRowView);
+  }, [rows, sessionId]);
+}
+
 /** Session ids with a currently-pending plan review — for the sidebar's "Plan awaiting review
  *  <title>" prefix (reference-behavior-matrix.md §6.3, `13b-plan-review-prompt`'s treeitem). */
 function usePlanReviewPendingSessions(): ReadonlySet<string> {
@@ -440,6 +460,9 @@ function toolActionLabel(entry: ToolEntry): string {
   // `13b-plan-review-prompt` shows "Calling tools · exit_plan_mode".
   if (entry.tool === "todo_write") return "Updating the plan · todo_write";
   if (entry.tool === "exit_plan_mode") return "Calling tools · exit_plan_mode";
+  // reference-behavior-matrix.md §6.4: `14-subagent-active` shows "Coordinating subagents ·
+  // <description>".
+  if (entry.tool === "subagent") return `Coordinating subagents · ${String(args.description ?? "")}`;
   return `Running ${entry.tool}`;
 }
 
@@ -530,6 +553,29 @@ function TodoWidget({ todos }: { readonly todos: readonly PlanTodo[] }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** "Subagent sessions" tree (J-F-delegation): one row per child, reference-behavior-matrix.md §6.4:
+ *  `"<title> · <desc> · continuable · completed · 0 tok · 0s"` + `"Open <title> in sidebar"`. There
+ *  is no separate child-transcript view in this tranche (children are not sessions — see
+ *  `src/projections/sessions.ts`), so "Open ... in sidebar" is present with the reference's
+ *  accessible name but disabled, same pattern as every other out-of-scope control
+ *  (`DEVIATIONS.md`). */
+function SubagentTree({ rows }: { readonly rows: readonly SubagentRowView[] }) {
+  return (
+    <div role="tree" aria-label="Subagent sessions" className="subagent-tree" data-subagent-card>
+      {rows.map((row) => (
+        <div key={row.toolCallId} role="treeitem" className="subagent-row">
+          <span className="subagent-row-text">
+            {row.title} · {row.desc} · continuable · {row.status} · 0 tok · 0s
+          </span>
+          <button type="button" disabled title={NOT_IMPLEMENTED} aria-label={`Open ${row.title} in sidebar`}>
+            Open {row.title} in sidebar
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
@@ -856,6 +902,11 @@ export function App() {
   // ever open at a time.
   const planState = usePlanState(activeSessionId);
   const planReviewPendingSessions = usePlanReviewPendingSessions();
+
+  // J-F-delegation: subagent rows for the active session, plus a local toggle for the banner's "N
+  // subagent(s)" disclosure (reference-behavior-matrix.md §6.4).
+  const subagentRows = useSubagents(activeSessionId);
+  const [subagentsExpanded, setSubagentsExpanded] = useState(false);
   const planReviewContinuation = openContinuations.find((c) => c.type === "plan-review");
   const decidePlanReview = useCallback(
     async (approved: boolean) => {
@@ -1107,6 +1158,16 @@ export function App() {
               <nav aria-label="Session hierarchy" className="breadcrumb">
                 {breadcrumbTitle}
               </nav>
+              {subagentRows.length > 0 && (
+                <button
+                  type="button"
+                  className="subagent-count-btn"
+                  aria-expanded={subagentsExpanded}
+                  onClick={() => setSubagentsExpanded((v) => !v)}
+                >
+                  {subagentRows.length} subagent{subagentRows.length === 1 ? "" : "s"}
+                </button>
+              )}
               <span className="mode-badge">Standard mode</span>
               <div className="header-actions">
                 <button type="button" disabled title={NOT_IMPLEMENTED}>
@@ -1163,6 +1224,7 @@ export function App() {
                 onTogglePlanMode={togglePlanMode}
               />
             )}
+            {subagentsExpanded && subagentRows.length > 0 && <SubagentTree rows={subagentRows} />}
           </>
         )}
       </main>
