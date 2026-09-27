@@ -9,16 +9,15 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "deepseek-harness-smoke-ws.HggTIM Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: deepseek-harness-smoke-ws.HggTIM
+    - treeitem "deepseek-harness-smoke-ws.SVUNU8 Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: deepseek-harness-smoke-ws.SVUNU8
       - treeitem "Waiting for approval [[scenario:approval]] run something risky Approval now" [selected]
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
-  - text: Standard mode
+  - text: PTC mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
   - button "More actions" [disabled]: …
@@ -28,7 +27,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 08:07 AM
+  - text: 02:09 PM
   - status: Deep diving for 0s
   - status: Deep diving for 0s
   - button "Running code · Clear stale scratch cache outside the workspace" [disabled]
