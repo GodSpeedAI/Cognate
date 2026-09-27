@@ -9,19 +9,18 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-desktop [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cg-ws-desktop
-      - treeitem "[[scenario:plain]] cancel me please now" [selected]
+    - treeitem "cap-ws-d [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
+      - text: cap-ws-d
       - treeitem "[[scenario:delegate]] delegate this now now"
       - treeitem "/plan make a plan now [[scenario:plan]] now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
-      - treeitem "[[scenario:multi]] do the multi-step task now now"
-      - treeitem "[[scenario:plain]] hello there now"
+      - treeitem "[[scenario:multi]] do the multi-step task now 1m"
+      - treeitem "[[scenario:plain]] hello there 1m"
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "[[scenario:plain]] cancel me please"
+  - navigation "Session hierarchy": New Session
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -32,14 +31,13 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] cancel me please"
   - button "Copy"
-  - text: 08:22 AM
+  - text: 12:24 PM
   - status: Stopped
-  - heading "Summary" [level=1]
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 08:22 AM
+  - text: Usage 0 tok 12:24 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

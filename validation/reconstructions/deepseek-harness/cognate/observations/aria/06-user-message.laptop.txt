@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-laptop [[scenario:plain]] hello there now" [expanded]:
-      - text: cg-ws-laptop
+    - treeitem "cap-ws-l [[scenario:plain]] hello there now" [expanded]:
+      - text: cap-ws-l
       - treeitem "[[scenario:plain]] hello there now" [selected]
   - button "Switch to dark theme": Dark theme
   - button "Settings"
@@ -26,10 +26,8 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 08:22 AM
+  - text: 12:25 PM
   - status: Deep diving for 0s
-  - heading "Summary" [level=1]
-  - paragraph: Here is
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

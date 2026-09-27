@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-desktop [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cg-ws-desktop
+    - treeitem "cap-ws-d [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: cap-ws-d
       - treeitem "[[scenario:multi]] do the multi-step task now now" [selected]
       - treeitem "[[scenario:plain]] hello there now"
   - button "Switch to dark theme": Dark theme
@@ -27,16 +27,16 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:multi]] do the multi-step task now"
   - button "Copy"
-  - text: 08:21 AM
+  - text: 12:23 PM
   - status: Worked
-  - button "Took 2s" [disabled]
+  - button "Took 14s" [disabled]
   - paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
   - 'button "View changes to src/greet.ts: Edited greet.ts +1 -1"'
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 08:21 AM
+  - text: Usage 0 tok 12:24 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
