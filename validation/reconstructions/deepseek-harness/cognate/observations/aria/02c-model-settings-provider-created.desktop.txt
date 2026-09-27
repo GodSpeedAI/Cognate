@@ -19,6 +19,8 @@
   - button "Choose workspace" [disabled]
 - dialog "Settings":
   - heading "Settings" [level=2]
+  - button "Open configuration file" [disabled]
+  - button "Close settings": ×
   - navigation "Settings sections":
     - button "General" [disabled]
     - button "Models"
@@ -26,22 +28,13 @@
     - button "Agent presets" [disabled]
   - heading "Models" [level=3]
   - paragraph: Enter your API key to use models from the following provider.
-  - text: Provider id
-  - textbox "Provider id": custom
-  - text: Base URL
-  - textbox "Base URL":
-    - /placeholder: http://127.0.0.1:4010/v1
-    - text: http://127.0.0.1:4010/v1
-  - text: Protocol
-  - textbox "Protocol" [disabled]: openai-compatible
-  - text: Model
-  - textbox "Model":
-    - /placeholder: mock-model-1
-    - text: mock-model-1
+  - text: mock-model — mock-model-1 API key configured
+  - button "Edit mock-model (mock-model)": Edit
+  - button "Delete mock-model (mock-model)" [disabled]: Delete
   - text: API key
   - textbox "API key":
     - /placeholder: Configured — enter a new value to replace
-  - paragraph: Saved. Model changes take effect on the next request.
-  - button "Add model provider" [disabled]
-  - button "Close"
-  - button "Save"
+  - button "Customized settings"
+  - button "Cancel"
+  - button "Apply" [disabled]
+  - button "Add model provider"

@@ -49,16 +49,25 @@ function retryBackoffMs(): number {
 
 /**
  * Classifies a failed `model.generate` invocation into the `{ code, message }` the UI's failure
- * block renders ("This turn failed" / message / CODE, reference-behavior-matrix.md §8). Only
- * `InvocationFailedError.failure.message` survives the kernel's JSON boundary (the provider's
- * `ModelProviderError.kind`/`status` do not — see `packages/runtime-bun/src/invoker.ts`'s
- * `failureJson`), so this maps on message text: the reference's own observed failure was a network
- * timeout ("Request timed out." / TIMEOUT); anything else (this app's mock `error` scenario is an
- * HTTP 500) gets an honest, non-invented mapping — see DEVIATIONS.md ("provider-error code
- * mapping").
+ * block renders ("This turn failed" / message / CODE, reference-behavior-matrix.md §8).
+ * Prefers structured `failure.details` (provider error's `kind`/`status` now recorded by
+ * `packages/runtime-bun/src/invoker.ts`'s `failureJson`), with fallback to message-regex
+ * matching for backward compatibility (e.g. "Request timed out." → TIMEOUT).
  */
 function classifyModelFailure(error: InvocationFailedError): { readonly code: string; readonly message: string } {
-  const failureMessage = (error.failure as { readonly message?: unknown } | null)?.message;
+  const failure = error.failure as { readonly details?: Record<string, unknown>; readonly message?: unknown } | null;
+  const details = failure?.details;
+
+  // Prefer structured error details over message regex fallback
+  if (details?.kind === "cancelled") return { code: "TIMEOUT", message: "Request timed out." };
+  if (typeof details?.status === "number") {
+    if (details.status === 408) return { code: "TIMEOUT", message: "Request timed out." };
+    if (details.status === 500) return { code: "HTTP_500", message: "Internal server error" };
+    return { code: `HTTP_${details.status}`, message: `Request failed (HTTP ${details.status}).` };
+  }
+
+  // Fallback: message regex (backward compatibility)
+  const failureMessage = failure?.message;
   const raw = typeof failureMessage === "string" ? failureMessage : error.message;
   if (/timed out/i.test(raw)) return { code: "TIMEOUT", message: "Request timed out." };
   return { code: "HTTP_500", message: "Internal server error" };

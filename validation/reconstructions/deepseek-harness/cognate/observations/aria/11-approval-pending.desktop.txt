@@ -9,15 +9,15 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - 'treeitem "cg-ws-desktop New Session now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+    - treeitem "cg-ws-desktop Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
       - text: cg-ws-desktop
-      - treeitem "New Session now" [selected]
-      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
-      - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
+      - treeitem "Waiting for approval [[scenario:approval]] run something risky Approval now" [selected]
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": New Session
+  - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -28,7 +28,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 07:37 AM
+  - text: 08:22 AM
   - status: Deep diving for 1s
   - status: Deep diving for 1s
   - button "Running code · Clear stale scratch cache outside the workspace" [disabled]

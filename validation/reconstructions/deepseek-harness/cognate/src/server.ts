@@ -26,12 +26,14 @@ import { workspacePathComponent } from "./capabilities/workspacePath.ts";
 import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
 import { planStateComponent } from "./capabilities/planState.ts";
 import { subagentStartComponent } from "./capabilities/subagentStart.ts";
+import { onboardingDismissComponent } from "./capabilities/onboardingDismiss.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
 import { sessionsProjection } from "./projections/sessions.ts";
 import { plansProjection } from "./projections/plans.ts";
 import { subagentsProjection } from "./projections/subagents.ts";
+import { onboardingProjection } from "./projections/onboarding.ts";
 import { secretStore } from "./secrets.ts";
 
 export const LOCAL_OPERATOR = { actor: { id: "operator", kind: "user" as const }, tenant: "local" };
@@ -61,6 +63,7 @@ const GRANTED_CAPABILITIES = [
   "tool.run_code",
   "plan.state",
   "subagent.start",
+  "onboarding.dismiss",
 ];
 
 function buildPolicy(): Policy {
@@ -154,6 +157,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       toolCapabilitiesComponent(toolBindings.toolRead.semanticRef),
       planStateComponent(getService, planBindings.planState.semanticRef),
       subagentStartComponent({ getService, systemActor: SYSTEM_CALLER.actor, semanticRef: subagentBindings.subagentStart.semanticRef }),
+      onboardingDismissComponent({ getService, systemCaller: SYSTEM_CALLER }),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
@@ -161,6 +165,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       { projection: sessionsProjection, public: true },
       { projection: plansProjection, public: true },
       { projection: subagentsProjection, public: true },
+      { projection: onboardingProjection, public: true },
     ],
     system: SYSTEM_CALLER.actor,
   });

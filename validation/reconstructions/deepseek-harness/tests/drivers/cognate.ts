@@ -55,12 +55,54 @@ export class CognateDriver implements Driver {
   }
 
   async authenticate(page: Page): Promise<void> {
+    await this.authenticateRaw(page);
+    await this.dismissIfPresent(page, "Continue");
+    await this.dismissIfPresent(page, "Configure later");
+  }
+
+  /** Navigate to the app shell only; leaves the first-run dialog pair up (for capturing
+   *  `01-first-launch`) — mirrors `ReferenceDriver.authenticateRaw`. */
+  async authenticateRaw(page: Page): Promise<void> {
     if (!this.baseUrl) throw new Error("launch() must be called before authenticate()");
     await page.goto(this.baseUrl, { waitUntil: "load" });
     await page.waitForTimeout(500);
   }
 
+  /** Public wrapper so capture/journey scripts can dismiss a specific first-run dialog by its
+   *  button name (`"Continue"` for the notice, `"Configure later"` for the API-key step). */
+  async dismiss(page: Page, name: string): Promise<boolean> {
+    return this.dismissIfPresent(page, name);
+  }
+
+  // `onboarding.dismiss` is a real `client.invoke` round trip (capability -> agent.config run ->
+  // event -> live SSE dispatch -> the `onboarding` projection's `useSyncExternalStore` refresh), not
+  // a synchronous local state update — a single click + short wait can race that round trip. Retry
+  // like `ReferenceDriver.dismissIfPresent` (5 attempts, 300ms apart) so a slightly slow projection
+  // refresh doesn't get misread as "the dialog never appeared".
+  private async dismissIfPresent(page: Page, name: string): Promise<boolean> {
+    const btn = page.getByRole("button", { name, exact: true });
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const count = await btn.count().catch(() => 0);
+      if (count === 0) return attempt > 0;
+      const first = btn.first();
+      const visible = await first.isVisible().catch(() => false);
+      const enabled = visible && (await first.isEnabled().catch(() => false));
+      if (visible && enabled) {
+        await first.click().catch(() => {});
+        await page.waitForTimeout(300);
+        // Wait for the dialog to actually disappear (the projection round trip) before declaring
+        // success, so a caller's next action doesn't race a still-open backdrop.
+        await btn.first().waitFor({ state: "detached", timeout: 3000 }).catch(() => {});
+        return true;
+      }
+      await page.waitForTimeout(300);
+    }
+    return false;
+  }
+
   async openSettingsModels(page: Page): Promise<void> {
+    await this.dismissIfPresent(page, "Continue");
+    await this.dismissIfPresent(page, "Configure later");
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.waitForTimeout(200);
   }
@@ -68,12 +110,28 @@ export class CognateDriver implements Driver {
   async configureModel(
     page: Page,
     config: { baseUrl: string; apiKey: string; protocol: "openai-completions" },
+    onFormOpen?: (page: Page) => Promise<void>,
   ): Promise<void> {
     // Settings -> Models must already be open (call openSettingsModels first).
-    await page.getByLabel("Base URL").fill(config.baseUrl);
-    await page.getByLabel("Model").fill("mock-model-1");
-    await page.getByLabel("API key").fill(config.apiKey);
-    await page.getByRole("button", { name: "Save", exact: true }).click();
+    const existing = page.getByRole("button", { name: /^Edit mock-model/ });
+    if ((await existing.count()) > 0) return; // already configured in this COGNATE_HARNESS_HOME
+
+    await page.getByRole("button", { name: "Add model provider", exact: true }).click();
+    await page.waitForTimeout(200);
+    await page.getByRole("tab", { name: "Custom model API", exact: true }).click();
+    await page.waitForTimeout(150);
+    if (onFormOpen) await onFormOpen(page);
+    await page.getByLabel("Provider ID", { exact: true }).fill("mock-model");
+    await page.getByLabel("Display name", { exact: true }).fill("Mock Model");
+    await page.getByLabel("Base URL", { exact: true }).fill(config.baseUrl);
+    // API protocol combobox already defaults to "OpenAI Chat Completions", matching
+    // config.protocol === "openai-completions".
+    await page.getByLabel("API key", { exact: true }).fill(config.apiKey);
+    await page.getByRole("button", { name: "Add model", exact: true }).click();
+    await page.waitForTimeout(100);
+    await page.getByLabel("Model 1 ID", { exact: true }).fill("mock-model-1");
+    await page.getByLabel("Model 1 display name", { exact: true }).fill("Mock Model 1");
+    await page.getByRole("button", { name: "Create provider", exact: true }).click();
     await page.waitForTimeout(300);
   }
 
@@ -140,7 +198,17 @@ export class CognateDriver implements Driver {
 
   async reload(page: Page): Promise<void> {
     await page.reload({ waitUntil: "load" });
-    await page.waitForTimeout(500);
+    // A hard reload remounts the whole client, replaying the tenant's full event stream from
+    // position 0; every event dispatched triggers a refetch of *every* projection store
+    // (`Engine.dispatch` in packages/client). On a session with many recorded turns/retries this can
+    // burst dozens of overlapping `ReadProjection` calls, and `ProjectionStore.refresh()`'s
+    // generation guard discards any response that resolves after a newer request has already been
+    // issued — so a store's value can stay `undefined` well past a short fixed wait while that replay
+    // burst is still in flight. A long-lived SSE connection (`follow: true`) means `networkidle`
+    // never fires, so wait out a generous flat window instead — long enough for a session with dozens
+    // of recorded events to fully settle (the last-issued refresh's generation only wins once no
+    // further events are still arriving).
+    await page.waitForTimeout(3000);
   }
 
   async restart(page: Page, options: LaunchOptions): Promise<void> {

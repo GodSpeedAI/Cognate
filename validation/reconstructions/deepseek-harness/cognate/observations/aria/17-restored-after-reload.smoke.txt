@@ -1,0 +1,24 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session" [disabled]: New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - paragraph: No workspace selected
+  - button "Switch to dark theme": Dark theme
+  - button "Settings"
+- main:
+  - alert: Unable to create default workspace. Use Choose workspace to select a folder.
+  - textbox "Workspace directory path":
+    - /placeholder: /path/to/project
+  - button "Choose workspace" [disabled]
+- dialog "Internal Testing Notice":
+  - heading "Internal Testing Notice" [level=2]
+  - paragraph: This Cognate reconstruction of the DeepSeek Harness Web UI remains in testing for Cognate developers. Many areas need further improvement, and we welcome feedback from the developer community. Cognate's core capabilities and foundational APIs will continue to evolve rapidly over the coming months.
+  - paragraph: Plugins built for this reconstruction are experimental and may change without notice as the underlying capability model matures.
+  - button "Continue"

@@ -9,13 +9,13 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-desktop New Session now" [expanded]:
+    - treeitem "cg-ws-desktop [[scenario:plain]] hello there now" [expanded]:
       - text: cg-ws-desktop
-      - treeitem "New Session now" [selected]
+      - treeitem "[[scenario:plain]] hello there now" [selected]
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": New Session
+  - navigation "Session hierarchy": "[[scenario:plain]] hello there"
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -26,17 +26,13 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 07:37 AM
+  - text: 08:21 AM
   - status: Deep diving for 1s
   - heading "Summary" [level=1]
   - paragraph: "Here is what I found:"
   - list:
     - listitem: first point
     - listitem: second point
-  - text: text
-  - button "Wrap lines" [pressed]
-  - button "Copy"
-  - code: export
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

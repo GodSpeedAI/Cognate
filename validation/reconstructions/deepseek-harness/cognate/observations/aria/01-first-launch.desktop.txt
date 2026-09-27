@@ -17,3 +17,8 @@
   - textbox "Workspace directory path":
     - /placeholder: /path/to/project
   - button "Choose workspace" [disabled]
+- dialog "Internal Testing Notice":
+  - heading "Internal Testing Notice" [level=2]
+  - paragraph: This Cognate reconstruction of the DeepSeek Harness Web UI remains in testing for Cognate developers. Many areas need further improvement, and we welcome feedback from the developer community. Cognate's core capabilities and foundational APIs will continue to evolve rapidly over the coming months.
+  - paragraph: Plugins built for this reconstruction are experimental and may change without notice as the underlying capability model matures.
+  - button "Continue"

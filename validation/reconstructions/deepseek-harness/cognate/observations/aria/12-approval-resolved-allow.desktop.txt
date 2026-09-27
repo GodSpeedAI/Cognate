@@ -9,15 +9,15 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - 'treeitem "cg-ws-desktop Tool result: (run_code completed with no output) now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+    - treeitem "cg-ws-desktop [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
       - text: cg-ws-desktop
-      - 'treeitem "Tool result: (run_code completed with no output) now" [selected]'
-      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
-      - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
+      - treeitem "[[scenario:approval]] run something risky now" [selected]
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "Tool result: (run_code completed with no output)"
+  - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -28,15 +28,15 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 07:37 AM
+  - text: 08:22 AM
   - status: Worked
-  - button "Took 1s" [disabled]
+  - button "Took 3s" [disabled]
   - paragraph: "Tool result: (run_code completed with no output)"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 07:37 AM
+  - text: Usage 0 tok 08:22 AM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

@@ -9,20 +9,20 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - 'treeitem "cg-ws-desktop New Session now New Session now Tool result: started subagent c726f767-70e0-4c45-b770-f6d48b865daa now Tool result: Plan approved — plan mode exited; carry out the plan starting with… now Tool result: Error: the user rejected escalating this program to \"workspace-wri… now Tool result: (run_code completed with no output) now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+    - treeitem "cg-ws-desktop [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
       - text: cg-ws-desktop
-      - treeitem "New Session now" [selected]
-      - treeitem "New Session now"
-      - 'treeitem "Tool result: started subagent c726f767-70e0-4c45-b770-f6d48b865daa now"'
-      - 'treeitem "Tool result: Plan approved — plan mode exited; carry out the plan starting with… now"'
-      - 'treeitem "Tool result: Error: the user rejected escalating this program to \"workspace-wri… now"'
-      - 'treeitem "Tool result: (run_code completed with no output) now"'
-      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
-      - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
+      - treeitem "[[scenario:error]] trigger a provider error now" [selected]
+      - treeitem "[[scenario:plain]] cancel me please now"
+      - treeitem "[[scenario:delegate]] delegate this now now"
+      - treeitem "/plan make a plan now [[scenario:plan]] now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": New Session
+  - navigation "Session hierarchy": "[[scenario:error]] trigger a provider error"
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -33,7 +33,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:error]] trigger a provider error"
   - button "Copy"
-  - text: 07:37 AM
+  - text: 08:22 AM
   - status: Failed
   - button "Took 2s" [disabled]
   - button "Retried model request (5/5) · 2s"
