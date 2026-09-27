@@ -9,7 +9,7 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-r3-desktop" [expanded]
+    - treeitem "cg-ws-desktop" [expanded]
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:

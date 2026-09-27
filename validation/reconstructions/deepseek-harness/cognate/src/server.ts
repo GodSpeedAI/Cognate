@@ -15,13 +15,15 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 
-import { bindTranche5, loadDomain } from "../domain/index.ts";
+import { bindTranche5, bindTranche7, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
 import { sessionHistoryComponent } from "./capabilities/sessionHistory.ts";
 import { modelConfigureComponent } from "./capabilities/modelConfigure.ts";
 import { workspaceSelectComponent } from "./capabilities/workspaceSelect.ts";
+import { workspacePathComponent } from "./capabilities/workspacePath.ts";
+import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
@@ -42,7 +44,18 @@ export interface AppServer {
   stop(): Promise<void>;
 }
 
-const GRANTED_CAPABILITIES = ["model.generate", "model.configure", "secret.put", "workspace.select", "session.history"];
+const GRANTED_CAPABILITIES = [
+  "model.generate",
+  "model.configure",
+  "secret.put",
+  "workspace.select",
+  "workspace.path",
+  "session.history",
+  "tool.read",
+  "tool.edit",
+  "tool.bash",
+  "tool.run_code",
+];
 
 function buildPolicy(): Policy {
   return rulePolicy(
@@ -112,6 +125,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
 
   const domain = await loadDomain();
   const bindings = bindTranche5(domain);
+  const toolBindings = bindTranche7(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -128,6 +142,8 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     components: [
       secretPutComponent(secrets, bindings.secretPut.semanticRef),
       sessionHistoryComponent(getService, bindings.sessionHistory.semanticRef),
+      workspacePathComponent(getService, toolBindings.workspacePath.semanticRef),
+      toolCapabilitiesComponent(toolBindings.toolRead.semanticRef),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
@@ -155,6 +171,22 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   await runtime.kernel.mount(
     modelConfigureComponent({ registry, secrets, getService, systemCaller: SYSTEM_CALLER, semanticRef: bindings.modelConfigure.semanticRef }),
   );
+
+  // Re-mount the last-configured provider on boot (survives restart): `model.generate` is not
+  // itself durable state, only the fact `model.configured` is (via `model-config`) — a run resumed
+  // after a restart (e.g. one paused on an open approval continuation) needs a live provider before
+  // it can call `model.generate` again.
+  const modelConfigRows = await runtime.service.readProjection(LOCAL_OPERATOR, { name: "model-config" });
+  const currentModelConfig = modelConfigRows.find((r) => r.key === "current")?.value as
+    | { readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
+    | undefined;
+  if (currentModelConfig) {
+    await registry.swap(
+      { providerId: currentModelConfig.providerId, baseURL: currentModelConfig.baseURL, protocol: currentModelConfig.protocol, model: currentModelConfig.model },
+      secrets,
+    );
+  }
+
   // Track newly added workspaces (so workspace.select can tell "add" from "reselect") by following
   // the tenant's event stream live; torn down on `stop()` via AbortController.
   const eventsController = new AbortController();

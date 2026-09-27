@@ -94,6 +94,63 @@ the pinned build per `reference-behavior-matrix.md`). A failed run renders the a
 red status dot and a `role="alert"`-free error-tinted body ("Something went wrong…") rather than the
 reference's still-unconfirmed error-row chrome.
 
+## Approval-gate access mode is a fixed default, not wired to the composer dropdown (T7-T8)
+
+`approvalGate` (`src/domain/approvalGate.ts`) compares a `run_code` call's requested
+`sandbox_permissions` against the session's access mode, ranked `read-only < workspace-write <
+full-access` — this is the real reference comparison (per updated
+`reference-behavior-matrix.md` §6: approval fires when the requested permission ranks above the
+current access mode). Since the composer's access-mode dropdown is still inert/display-only this
+tranche (see "Composer permission-mode and model dropdowns" above), `agent.coding` defaults `mode`
+to `"read-only"` when the caller doesn't pass one — the conservative default that matches the
+reference's own observed mode during its approval scenario (`Access mode, current: Read Only` in
+`12-approval-resolved-allow`/`-deny`). `AgentCodingInput.mode` exists so a later tranche can plumb
+the dropdown's real value through without changing the gate.
+
+## Pending approvals survive a full server restart; the reference does not (T8)
+
+Confirmed by re-reading `reference-behavior-matrix.md` after this pass started: the reference keeps
+a pending approval across a page *reload*, but **not** across a full process restart — after a
+restart it silently finalizes the turn as "Worked", with no approval card and no answer text. This
+reconstruction deliberately does not reproduce that: a Cognate run's open continuations are durable
+by construction (SQLite-backed `run.waiting`/`continuation` state), and treating durable event
+history as authoritative is a project invariant this reconstruction does not want to break to match
+a reference implementation detail that looks like data loss. `test/J-D-approval.test.ts` ("a pending
+approval survives a full server restart") asserts Cognate's actual (durable) behavior — the
+continuation is still `OPEN` and the run still `waiting` after a full `app.stop()` + fresh
+`startServer()` against the same SQLite store, and resolving it then still completes the run. Note
+this required one supporting fix: `src/server.ts` now re-mounts the last-configured model provider
+on boot from the persisted `model-config` projection (previously only `model.configure` mounted a
+provider), because a run resumed after a restart needs a live `model.generate` provider to finish.
+
+## `run_code`'s sandbox is an original harness, not the reference's dsh-tools sandbox (T7)
+
+The reference's `run_code` (`packages/core/tools/src/ptc.ts`, not read/copied) executes an
+arbitrary JS snippet in a real sandbox exposing a `tools` object. This reconstruction's
+`tool.run_code` (`src/capabilities/tools.ts`) runs the model-supplied `code` as a `bun -e`
+subprocess wrapped in a small, original harness that defines `tools.bash` in terms of this same
+app's `tool.bash` execution path — enough to run the fixture's exact `run_code` snippet
+(`await tools.bash({ command: 'rm -rf /tmp/scratch-cache', ... })`) faithfully, not a general
+reproduction of the reference's sandbox/permission model (no filesystem/network sandboxing beyond
+this app's own workspace-path containment).
+
+## `08-tool-running` may land on an already-completed frame (T7)
+
+Each `read`/`bash`/`edit` invocation in this reconstruction resolves against the local filesystem
+in well under a millisecond (no real process spawn latency beyond `bash`'s own near-instant exit,
+no network filesystem) — so the window where a given tool call's UI state is genuinely `"running"`
+(after `tool.call.started`, before `tool.call.completed`) is only as wide as one local
+event round trip, not the reference's real backend tool latency (a few seconds per turn, per
+`08-tool-running`'s aria: `button "Deep diving for 1s"`). `tests/capture/cognate.capture.ts`
+best-effort-polls for `.tool-activity-btn` before capturing "08-tool-running", but on a fast
+machine the run can finish before that poll observes a running frame, so the checkpoint sometimes
+shows the same completed state as "09-tool-complete" instead of a genuine mid-run frame. This is a
+timing/nature difference, not a missing feature — the running-state UI itself (verified separately
+by capturing while an *approval* is pending, which genuinely blocks for a human decision and is
+stably reproducible, e.g. `11-approval-pending`) is correct. Not fixed by adding an artificial delay
+to the tool capabilities themselves, which would misrepresent this app's real (fast, local) tool
+latency for a screenshot's sake.
+
 ## Icons
 
 All icons (`src/ui/icons.tsx`) are original inline SVGs drawn for this reconstruction — simple

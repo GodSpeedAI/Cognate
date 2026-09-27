@@ -9,10 +9,13 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - 'treeitem "cg-ws-r3-desktop New Session now New Session now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
-      - text: cg-ws-r3-desktop
+    - 'treeitem "cg-ws-desktop New Session now New Session now Tool result: Error: the user rejected escalating this program to \"workspace-wri… now Tool result: (run_code completed with no output) now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+      - text: cg-ws-desktop
+      - treeitem "New Session now" [selected]
       - treeitem "New Session now"
-      - treeitem "New Session now"
+      - 'treeitem "Tool result: Error: the user rejected escalating this program to \"workspace-wri… now"'
+      - 'treeitem "Tool result: (run_code completed with no output) now"'
+      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
       - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
   - button "Switch to light theme": Light theme
   - button "Settings"
@@ -26,10 +29,13 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory" [disabled]
-  - paragraph: Start the conversation below.
+  - paragraph: trigger a real provider error
+  - button "Copy"
+  - text: 03:08 AM
+  - status: Deep diving...
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
-  - button "Send message" [disabled]
+  - button "Stop"
   - text: 0 turns 0 steps · 0 tok/s 0% of context used

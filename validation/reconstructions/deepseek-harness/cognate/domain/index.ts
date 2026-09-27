@@ -60,3 +60,32 @@ export function bindTranche5(domain: Domain) {
   ];
   return { modelGenerate, secretPut, modelConfigure, workspaceSelect, sessionHistory };
 }
+
+/**
+ * T7 additions: `Tool` (`tool.read`/`tool.edit`/`tool.bash`/`tool.run_code`) and `WorkspaceRecord`
+ * (`workspace.path`, the tool loop's root-resolution lookup). `ApprovalGate` is deliberately left
+ * unbound here — it is realized as a pure decision function (`src/domain/approvalGate.ts`) plus a
+ * `ctx.waitFor` continuation inside `agent.coding`, not as a `CapabilityContract`; see BINDINGS.md.
+ */
+export function tranche7Bindings(domain: Domain): readonly CapabilityBinding[] {
+  return [
+    { semanticId: domain.semanticId("Tool"), capability: { id: "tool.read", version: "1.0.0" } },
+    { semanticId: domain.semanticId("Tool"), capability: { id: "tool.edit", version: "1.0.0" } },
+    { semanticId: domain.semanticId("Tool"), capability: { id: "tool.bash", version: "1.0.0" } },
+    { semanticId: domain.semanticId("Tool"), capability: { id: "tool.run_code", version: "1.0.0" } },
+    { semanticId: domain.semanticId("WorkspaceRecord"), capability: { id: "workspace.path", version: "1.0.0" } },
+  ];
+}
+
+export function bindTranche7(domain: Domain) {
+  const contracts = bindCapabilities(domain.projection, tranche7Bindings(domain));
+  if (contracts.length !== 5) throw new Error(`domain: expected 5 bound contracts, got ${contracts.length}`);
+  const [toolRead, toolEdit, toolBash, toolRunCode, workspacePath] = contracts as [
+    CapabilityContract,
+    CapabilityContract,
+    CapabilityContract,
+    CapabilityContract,
+    CapabilityContract,
+  ];
+  return { toolRead, toolEdit, toolBash, toolRunCode, workspacePath };
+}

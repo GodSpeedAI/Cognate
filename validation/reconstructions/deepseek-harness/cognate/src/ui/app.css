@@ -606,6 +606,10 @@ input:focus-visible {
   background: var(--cg-danger);
 }
 
+.status-pill.status-streaming {
+  background: var(--cg-text-faint, #999);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -661,6 +665,120 @@ input:focus-visible {
   font-size: 11px;
   color: var(--cg-text-faint);
   margin-left: 4px;
+}
+
+/* Tool activity, approval card, edit diff (T7-T8) */
+
+.tool-activity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+
+.tool-activity-btn {
+  border: none;
+  background: transparent;
+  color: var(--cg-text-muted);
+  padding: 0;
+  font-size: 13px;
+  text-align: left;
+}
+
+/* Docked where the composer sits (reference `11-approval-pending`: the card replaces the composer
+   at the bottom of the chat pane, not an inline message-list card). */
+.approval-card {
+  border: 1px solid #f0b429;
+  border-radius: var(--cg-radius-md);
+  overflow: hidden;
+  background: var(--cg-surface, #fff);
+}
+
+.approval-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fdf3d9;
+}
+
+.approval-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f0b429;
+  flex-shrink: 0;
+}
+
+.approval-waiting {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a5a00;
+}
+
+.approval-details {
+  font-size: 13px;
+  color: var(--cg-text);
+  padding: 14px 16px 0;
+}
+
+.approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.approval-btn {
+  border-radius: var(--cg-radius-xs);
+  padding: 6px 16px;
+  font-size: 13px;
+  border: 1px solid var(--cg-border);
+}
+
+.approval-btn.approval-allow {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.approval-btn.approval-reject {
+  background: var(--cg-surface, #fff);
+  color: var(--cg-text);
+}
+
+.edit-diff {
+  margin-top: 8px;
+}
+
+.edit-diff-toggle {
+  border: 1px solid var(--cg-border);
+  background: var(--cg-surface-sunken);
+  border-radius: var(--cg-radius-xs);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.edit-diff-body {
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-xs);
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+.diff-add {
+  color: var(--cg-success);
+}
+
+.diff-del {
+  color: var(--cg-danger);
+}
+
+.diff-ctx {
+  color: var(--cg-text-muted);
 }
 
 /* Code blocks */
