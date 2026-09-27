@@ -1,0 +1,40 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools" [expanded]
+  - treeitem "Running [[scenario:delegate]] delegate this now" [selected]
+  - treeitem "[[scenario:plan]] make a plan now"
+  - treeitem "Waiting for approval [[scenario:approval]] run something risk"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:delegate]] delegate this"
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: "[[scenario:delegate]] delegate this 00:22"
+- button "Copy"
+- status: Deep diving...
+- button "Deep diving for 1s" [disabled]
+- button "Coordinating subagents · Summarize project status"
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Stop generating"
+- button "0% of context used": 0%

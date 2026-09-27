@@ -90,7 +90,7 @@ function indexHtml(): string {
 <html>
 <head>
 <meta charset="utf-8" />
-<title>DeepSeek Harness (Cognate reconstruction)</title>
+<title>Cognate Local Build</title>
 <link rel="stylesheet" href="/astryx.css" />
 <link rel="stylesheet" href="/theme.css" />
 <link rel="stylesheet" href="/app.css" />

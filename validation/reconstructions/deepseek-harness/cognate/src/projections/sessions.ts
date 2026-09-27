@@ -1,5 +1,11 @@
 // Public projection `sessions`: keyed `${tenant}/${sessionId}` (per the architecture table's
-// "Session" row). Title = first message, truncated (reference's `first-prompt` cadence).
+// "Session" row). Title = the session's first *assistant* answer, truncated — this matches the
+// reference (see reference/observations/aria/15-completed-session.desktop.txt: the sidebar
+// treeitem label is the raw markdown of the answer, e.g. "# Summary Here is what I found: ...",
+// not the user's prompt). Before the first answer lands, the row falls back to "New Session"
+// (see reference/observations/aria/04-workspace-selected.desktop.txt: the fresh session treeitem
+// name is "New Session"). We do not implement the reference's `all-prompts` LLM re-titling
+// cadence — see APP/README.md "Known gaps".
 import type { Json } from "@cognate/events";
 import type { Projection } from "@cognate/projections";
 
@@ -24,7 +30,7 @@ export const sessionsProjection: Projection = {
           value: {
             id: payload.sessionId,
             workspaceId: payload.workspaceId,
-            title: existing?.title ?? titleFrom(payload.message),
+            title: existing?.title ?? "New Session",
             lastStatus: "running",
             updatedAt: event.recordedAt,
           },
@@ -41,7 +47,7 @@ export const sessionsProjection: Projection = {
           value: {
             id: payload.sessionId,
             workspaceId: payload.workspaceId,
-            title: existing?.title ?? "New Session",
+            title: existing?.title && existing.title !== "New Session" ? existing.title : titleFrom(payload.text),
             lastStatus: "completed",
             updatedAt: event.recordedAt,
           },

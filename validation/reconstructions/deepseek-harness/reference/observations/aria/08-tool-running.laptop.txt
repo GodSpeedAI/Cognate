@@ -1,0 +1,35 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools2" [expanded]
+  - treeitem "Running [[scenario:multi]] do the multi-step tas now" [selected]
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:multi]] do the multi-step tas"
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: "[[scenario:multi]] do the multi-step task 00:25"
+- button "Copy"
+- status: Deep diving...
+- button "Deep diving for 1s" [disabled]
+- button "Reading files · src/greet.ts"
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Stop generating"
+- button "0% of context used": 0%

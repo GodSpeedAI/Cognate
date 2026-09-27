@@ -1,0 +1,44 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools2" [expanded]
+  - treeitem "[[scenario:approval]] run something risk now" [selected]
+  - treeitem "Completed [[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:approval]] run something risk"
+  - text: PTC mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: "[[scenario:approval]] run something risky 00:25"
+- button "Copy"
+- status: Worked
+- button "Took 3s"
+- paragraph: "Tool result: Error: the user rejected escalating this program to \"workspace-write\"; it stays denied, so stop and explain instead of working around it"
+- button "Copy"
+- button "Good response"
+- button "Bad response"
+- button "Branch into a new conversation"
+- button "Usage 0 tok"
+- text: 00:25
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Read Only"': Read Only
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 2 steps · 0 tok/s": 1 turns 2 steps0 tok/s
+- button "0% of context used": 0%
