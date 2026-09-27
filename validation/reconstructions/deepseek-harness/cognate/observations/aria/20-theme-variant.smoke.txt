@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "deepseek-harness-smoke-ws.HggTIM [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: deepseek-harness-smoke-ws.HggTIM
+    - treeitem "deepseek-harness-smoke-ws.SVUNU8 [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: deepseek-harness-smoke-ws.SVUNU8
       - treeitem "[[scenario:error]] trigger a provider error now" [selected]
       - treeitem "[[scenario:plain]] cancel me please now"
       - treeitem "[[scenario:delegate]] delegate this now now"
@@ -19,7 +19,6 @@
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
-  - button "Switch to light theme": Light theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": "[[scenario:error]] trigger a provider error"
@@ -33,10 +32,24 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:error]] trigger a provider error"
   - button "Copy"
-  - text: 08:07 AM
+  - text: 02:09 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
   - text: 0 turns 0 steps · 0 tok/s 0% of context used
+- dialog "Settings":
+  - heading "Settings" [level=2]
+  - button "Open configuration file" [disabled]
+  - button "Close settings": ×
+  - navigation "Settings sections":
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins" [disabled]
+    - button "Agent presets" [disabled]
+  - heading "General" [level=3]
+  - paragraph: Appearance
+  - group "Appearance":
+    - button "Light"
+    - button "Dark" [pressed]

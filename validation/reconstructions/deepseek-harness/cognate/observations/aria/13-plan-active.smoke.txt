@@ -9,14 +9,13 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "deepseek-harness-smoke-ws.HggTIM Plan awaiting review /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: deepseek-harness-smoke-ws.HggTIM
+    - treeitem "deepseek-harness-smoke-ws.SVUNU8 Plan awaiting review /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: deepseek-harness-smoke-ws.SVUNU8
       - treeitem "Plan awaiting review /plan make a plan now [[scenario:plan]] now" [selected]
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": /plan make a plan now [[scenario:plan]]
@@ -31,9 +30,9 @@
   - status: plan · Plan mode on. Use /plan off to leave.
   - paragraph: /plan make a plan now [[scenario:plan]]
   - button "Copy"
-  - text: 08:07 AM
-  - status: Deep diving for 5s
-  - status: Deep diving for 5s
+  - text: 02:09 PM
+  - status: Deep diving for 4s
+  - status: Deep diving for 4s
   - button "Calling tools · exit_plan_mode" [disabled]
   - region "To-dos":
     - button "To-dos 1 in progress · 1 pending"
