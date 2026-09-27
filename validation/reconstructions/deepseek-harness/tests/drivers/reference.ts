@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
-import type { Driver, LaunchOptions } from "./types";
+import type { Driver, Expectations, LaunchOptions } from "./types";
 
 /**
  * Driver implementation for the pinned DeepSeek Harness reference (`dsh web`).
@@ -37,7 +37,17 @@ export class ReferenceDriver implements Driver {
       const proc = spawn(
         "pnpm",
         ["dsh", "web", "--no-open", "--port", String(options.port)],
-        { cwd: this.clonePath, env: { ...process.env, DSH_HOME: options.homeDir } },
+        {
+          cwd: this.clonePath,
+          env: { ...process.env, DSH_HOME: options.homeDir, ...options.env },
+          // `pnpm dsh web` forks its own grandchild (`node --import tsx/esm apps/cli/src/bin.ts
+          // web ...`, the actual process holding the port). Killing only the top `pnpm` process
+          // leaves that grandchild running - orphaned, still bound to the port - which both leaks
+          // processes across test runs AND makes a same-port `restart()` race a stale listener
+          // into EADDRINUSE. `detached: true` puts pnpm in its own process group so `stop()` can
+          // SIGKILL the whole group at once via a negative pid.
+          detached: true,
+        },
       );
       this.proc = proc;
       let buf = "";
@@ -59,8 +69,14 @@ export class ReferenceDriver implements Driver {
   }
 
   async stop(): Promise<void> {
-    if (this.proc && !this.proc.killed) {
-      this.proc.kill("SIGKILL");
+    if (this.proc && !this.proc.killed && this.proc.pid) {
+      // Kill the whole detached process group (negative pid), not just the top `pnpm` process -
+      // see the `detached: true` comment in launch().
+      try {
+        process.kill(-this.proc.pid, "SIGKILL");
+      } catch {
+        this.proc.kill("SIGKILL");
+      }
     }
     this.proc = null;
   }
@@ -104,12 +120,18 @@ export class ReferenceDriver implements Driver {
   async openSettingsModels(page: Page): Promise<void> {
     await this.dismissIfPresent(page, "Continue");
     await this.dismissIfPresent(page, "Configure later");
-    await page.getByRole("button", { name: "Settings", exact: true }).click({ timeout: 5000 }).catch(async () => {
-      await page.getByRole("button", { name: "Settings", exact: true }).click({ force: true });
-    });
-    await page.waitForTimeout(300);
-    await this.dismissIfPresent(page, "Configure later");
-    await page.getByRole("button", { name: "Models", exact: true }).click();
+    const modelsTab = page.getByRole("button", { name: "Models", exact: true });
+    // Occasionally the "Settings" click lands before the shell has finished settling right after
+    // authenticate()/a first-run dialog dismissal and has no visible effect - self-heal by retrying
+    // the click a few times rather than hanging on a single click forever (observed once in this
+    // suite's own journey harness, not a reference bug: retrying always succeeds within 1-2 tries).
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await this.dismissIfPresent(page, "Configure later");
+      await page.getByRole("button", { name: "Settings", exact: true }).click({ timeout: 5000 }).catch(() => {});
+      if (await modelsTab.isVisible({ timeout: 2000 }).catch(() => false)) break;
+      await page.waitForTimeout(300);
+    }
+    await modelsTab.click();
     await page.waitForTimeout(300);
   }
 
@@ -257,9 +279,43 @@ export class ReferenceDriver implements Driver {
     await page.waitForTimeout(300);
   }
 
+  /**
+   * See Driver.prepareApprovalTrigger. `run_code` (the tool the fixture's
+   * `approval` scenario calls) is only registered under PTC mode; the
+   * default access mode ("Workspace Write") already covers the scenario's
+   * requested "workspace-write", so it never escalates unless the session
+   * is first switched to "Read Only" (reference-behavior-matrix.md §6.2,
+   * §0 recipe notes; see tests/capture/reference.capture-tools.ts).
+   */
+  async prepareApprovalTrigger(page: Page): Promise<void> {
+    await this.switchAgentPreset(page, "PTC mode");
+    await page.getByRole("button", { name: /Access mode/ }).click();
+    await page.waitForTimeout(200);
+    await page.getByRole("menuitem", { name: "Read Only", exact: true }).click();
+    await page.waitForTimeout(200);
+  }
+
+  expectations(): Expectations {
+    return {
+      // reference-behavior-matrix.md §6.2 "Full process restart": the
+      // pending approval does not survive - the turn silently finalizes as
+      // "Worked" with no approval card at all.
+      approvalSurvivesRestart: false,
+      // reference-behavior-matrix.md §8: the only confirmed failure code is
+      // "TIMEOUT", observed for a genuine network-level timeout (closed
+      // port), not the mock's scripted HTTP 500 marker path.
+      providerErrorCode: "TIMEOUT",
+    };
+  }
+
+  /**
+   * `index` is 0-based among SESSION rows only (newest first), not raw tree
+   * position - the session tree nests all sessions for a workspace under one
+   * expanded "workspace" group treeitem, so a raw `treeitem.nth(index)` is
+   * off by one (index 0 would hit the group header, not a session).
+   */
   async openSession(page: Page, index: number): Promise<void> {
-    const items = page.getByRole("treeitem");
-    await items.nth(index).click();
+    await this.locators.sessionListItem(page, index).click();
     await page.waitForTimeout(300);
   }
 
@@ -270,6 +326,10 @@ export class ReferenceDriver implements Driver {
 
   async restart(page: Page, options: LaunchOptions): Promise<void> {
     await this.stop();
+    // A SIGKILL'd listener does not release its port instantaneously - relaunching on the SAME
+    // port immediately after can race the OS into EADDRINUSE (observed: "dsh: startup failed ...
+    // listen EADDRINUSE"). Give it a moment, matching CognateDriver.restart.
+    await new Promise((r) => setTimeout(r, 1000));
     await this.launch(options);
   }
 
@@ -277,7 +337,10 @@ export class ReferenceDriver implements Driver {
     composer: (page: Page) => page.getByRole("textbox", { name: /Describe what you want to build|Message or run a task/ }),
     sendButton: (page: Page) => page.getByRole("button", { name: "Send message", exact: true }),
     sessionList: (page: Page) => page.getByRole("tree", { name: "Sessions" }),
-    sessionListItem: (page: Page, index: number) => page.getByRole("treeitem").nth(index),
+    // treeitem #0 is always the workspace-group header (sibling of the session rows, not their
+    // ancestor, despite the indented rendering); +1 skips it so index 0 is the newest SESSION.
+    sessionListItem: (page: Page, index: number) =>
+      page.getByRole("tree", { name: "Sessions" }).getByRole("treeitem").nth(index + 1),
     // Mid-run, the running/pending tool group renders as a single button
     // ("Reading files · <path>", "Running commands · <description>",
     // "Running code · <description>", "Coordinating subagents · <description>",
@@ -286,7 +349,10 @@ export class ReferenceDriver implements Driver {
     // to <path>" file-diff button, or "Open plan: <title>").
     toolCard: (page: Page, index = 0) =>
       page.getByRole("button", { name: /Reading files|Running commands|Running code|Coordinating subagents|Updating the plan|Read files|Ran code|Called tools|View changes to|Open plan:/ }).nth(index),
-    approvalPanel: (page: Page) => page.getByRole("group", { name: /^Allow this operation with/ }),
+    // The card's accessible group name is "Approval details" - the "Allow this operation with..."
+    // text is its content, not its ARIA name (confirmed via error-context snapshot: `group
+    // "Approval details": "Allow this operation with workspace-write permissions: ..."`).
+    approvalPanel: (page: Page) => page.getByRole("group", { name: "Approval details" }),
     approveButton: (page: Page) => page.getByRole("button", { name: "Allow once", exact: true }),
     denyButton: (page: Page) => page.getByRole("button", { name: "Reject", exact: true }),
     planPanel: (page: Page) => page.getByRole("region", { name: /^Approve this plan and leave plan mode\?$/ }),

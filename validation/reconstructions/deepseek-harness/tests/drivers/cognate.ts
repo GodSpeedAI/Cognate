@@ -3,7 +3,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Driver, LaunchOptions } from "./types";
+import type { Driver, Expectations, LaunchOptions } from "./types";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = join(HERE, "..", "..", "cognate");
@@ -29,7 +29,10 @@ export class CognateDriver implements Driver {
     await new Promise<void>((resolve, reject) => {
       const proc = spawn("bun", ["src/server.ts"], {
         cwd: APP_DIR,
-        env: { ...process.env, COGNATE_HARNESS_HOME: options.homeDir, PORT: String(options.port) },
+        env: { ...process.env, COGNATE_HARNESS_HOME: options.homeDir, PORT: String(options.port), ...options.env },
+        // See ReferenceDriver.launch's doc comment on `detached: true` - defensive here too so a
+        // same-port restart() never races a not-yet-reaped grandchild into EADDRINUSE.
+        detached: true,
       });
       this.proc = proc;
       let buf = "";
@@ -50,7 +53,13 @@ export class CognateDriver implements Driver {
   }
 
   async stop(): Promise<void> {
-    if (this.proc && !this.proc.killed) this.proc.kill("SIGKILL");
+    if (this.proc && !this.proc.killed && this.proc.pid) {
+      try {
+        process.kill(-this.proc.pid, "SIGKILL");
+      } catch {
+        this.proc.kill("SIGKILL");
+      }
+    }
     this.proc = null;
   }
 
@@ -166,6 +175,43 @@ export class CognateDriver implements Driver {
     await page.getByRole("button", { name: /^\d+ subagents?$/ }).click();
   }
 
+  /** Driver interface name for openSubagentPanel (kept alongside it so tests/capture/cognate.capture.ts, written against the original name, keeps working). */
+  async openSubagentList(page: Page): Promise<void> {
+    await this.openSubagentPanel(page);
+  }
+
+  /**
+   * See Driver.prepareApprovalTrigger. Cognate's default tool-loop access
+   * mode ("read-only") already ranks below the `[[scenario:approval]]`
+   * fixture's requested "workspace-write" (src/domain -- approvalGate), so
+   * no preset/mode switch is needed before sending it - a plain `send()`
+   * with the marker is already enough (see tests/capture/cognate.capture.ts
+   * checkpoint "11-approval-pending", which does exactly this).
+   */
+  async prepareApprovalTrigger(_page: Page): Promise<void> {
+    // no-op by design; see doc comment above.
+  }
+
+  /** `/plan ` is a literal command prefix Cognate's composer parses directly - no autocomplete step is needed (unlike the reference's `/plan` -> option-click flow). */
+  async sendInPlanMode(page: Page, task: string): Promise<void> {
+    await this.send(page, `/plan ${task}`);
+  }
+
+  expectations(): Expectations {
+    return {
+      // cognate/DEVIATIONS.md "Pending approvals survive a full server
+      // restart; the reference does not (T8)": continuations are durable
+      // SQLite-backed state by construction, a deliberate divergence from
+      // the reference's silent-finalize-on-restart behavior.
+      approvalSurvivesRestart: true,
+      // cognate/DEVIATIONS.md "Provider-error code mapping is text-based,
+      // not status-based, by construction": classifyModelFailure maps any
+      // non-timeout failure (including the mock's scripted HTTP 500 used by
+      // [[scenario:error]]) to "HTTP_500".
+      providerErrorCode: "HTTP_500",
+    };
+  }
+
   async waitForIdle(page: Page, opts?: { timeoutMs?: number }): Promise<void> {
     const timeoutMs = opts?.timeoutMs ?? 30_000;
     const deadline = Date.now() + timeoutMs;
@@ -186,14 +232,10 @@ export class CognateDriver implements Driver {
     await page.getByRole("button", { name: "Reject", exact: true }).click();
   }
 
+  /** See ReferenceDriver.openSession's doc comment - same "0 = newest session" convention. */
   async openSession(page: Page, index: number): Promise<void> {
-    const items = page.getByRole("treeitem", { selected: undefined }).filter({ hasText: /.+/ });
-    // Session rows are the treeitem buttons inside .session-rows; workspace header rows are also
-    // role=treeitem, so restrict to buttons.
-    const rows = page.locator(".session-row");
-    await rows.nth(index).click();
+    await this.locators.sessionListItem(page, index).click();
     await page.waitForTimeout(200);
-    void items;
   }
 
   async reload(page: Page): Promise<void> {
@@ -213,6 +255,9 @@ export class CognateDriver implements Driver {
 
   async restart(page: Page, options: LaunchOptions): Promise<void> {
     await this.stop();
+    // See ReferenceDriver.restart's doc comment - a SIGKILL'd listener needs a moment to release
+    // its port before relaunching on the same one.
+    await new Promise((r) => setTimeout(r, 1000));
     await this.launch(options);
     void page;
   }
@@ -221,7 +266,10 @@ export class CognateDriver implements Driver {
     composer: (page: Page) => page.getByRole("textbox", { name: /Message or run a task|Select a workspace/ }),
     sendButton: (page: Page) => page.getByRole("button", { name: "Send message", exact: true }),
     sessionList: (page: Page) => page.getByRole("tree", { name: "Sessions" }),
-    sessionListItem: (page: Page, index: number) => page.locator(".session-row").nth(index),
+    // treeitem #0 is always the workspace-group header; +1 skips it so index 0 is the newest
+    // SESSION (mirrors ReferenceDriver.locators.sessionListItem).
+    sessionListItem: (page: Page, index: number) =>
+      page.getByRole("tree", { name: "Sessions" }).getByRole("treeitem").nth(index + 1),
     toolCard: (page: Page, index = 0) => page.locator('[data-tool-card]').nth(index),
     approvalPanel: (page: Page) => page.locator('[data-approval-panel]').first(),
     approveButton: (page: Page) => page.getByRole("button", { name: /^Allow/i }).first(),
