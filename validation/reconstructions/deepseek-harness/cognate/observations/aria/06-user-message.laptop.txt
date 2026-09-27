@@ -9,10 +9,9 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-l [[scenario:plain]] hello there now" [expanded]:
-      - text: cap-ws-l
+    - treeitem "ck-cog-laptop-ws [[scenario:plain]] hello there now" [expanded]:
+      - text: ck-cog-laptop-ws
       - treeitem "[[scenario:plain]] hello there now" [selected]
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": "[[scenario:plain]] hello there"
@@ -26,7 +25,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 12:25 PM
+  - text: 01:10 PM
   - status: Deep diving for 0s
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]

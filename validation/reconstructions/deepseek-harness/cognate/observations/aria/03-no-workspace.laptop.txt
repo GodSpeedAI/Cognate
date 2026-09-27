@@ -10,10 +10,17 @@
   - button "Add workspace" [disabled]
   - tree "Sessions":
     - paragraph: No workspace selected
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - alert: Unable to create default workspace. Use Choose workspace to select a folder.
+  - button "Standard mode" [disabled]
   - textbox "Workspace directory path":
     - /placeholder: /path/to/project
   - button "Choose workspace" [disabled]
+- dialog "Add an API key to get started":
+  - heading "Add an API key to get started" [level=2]
+  - paragraph: Configure a model provider to start building.
+  - text: API key
+  - textbox "API key"
+  - button "Configure later"
+  - button "Save and continue" [disabled]

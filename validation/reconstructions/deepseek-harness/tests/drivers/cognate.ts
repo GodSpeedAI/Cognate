@@ -116,6 +116,14 @@ export class CognateDriver implements Driver {
     await page.waitForTimeout(200);
   }
 
+  /** Settings -> General (Appearance/theme lives here, not a persistent sidebar control — see
+   *  tests/capture/reference.capture.ts's "Settings -> General -> Appearance -> Dark" step). */
+  async openSettingsGeneral(page: Page): Promise<void> {
+    await this.openSettingsModels(page);
+    await page.getByRole("button", { name: "General", exact: true }).click();
+    await page.waitForTimeout(150);
+  }
+
   async configureModel(
     page: Page,
     config: { baseUrl: string; apiKey: string; protocol: "openai-completions" },
@@ -276,7 +284,7 @@ export class CognateDriver implements Driver {
     denyButton: (page: Page) => page.getByRole("button", { name: /^Deny|^Reject/i }).first(),
     planPanel: (page: Page) => page.locator('[data-plan-panel]').first(),
     subagentCard: (page: Page) => page.locator('[data-subagent-card]').first(),
-    themeToggle: (page: Page) => page.getByRole("button", { name: /theme/i }).first(),
+    themeToggle: (page: Page) => page.getByRole("button", { name: /^(Light|Dark)$/, exact: true }).first(),
     stopButton: (page: Page) => page.getByRole("button", { name: "Stop generating", exact: true }),
     retryButton: (page: Page) => page.getByRole("button", { name: /retry/i }).first(),
     errorBanner: (page: Page) => page.locator('[role="alert"]').first(),

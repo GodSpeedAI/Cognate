@@ -214,7 +214,8 @@ bun run capture/cognate.capture.ts laptop 1024 768 /tmp/cg-home-laptop 3183 /tmp
 bun run visual/compare.ts
 ```
 
-As of this pass (5 capture/compare/fix rounds, most recently addressing `critic/round-1.md`): every
+As of this pass (6 capture/compare/fix rounds, most recently addressing `critic/round-2-visual-a.md`
+and `critic/round-2-visual-b.md` — see `critic/round-2-disposition.md` for the full item list): every
 checkpoint from `04-workspace-selected` onward sits at 1.5-6% differing pixels (timestamps, static
 stats, and font-metric antialiasing account for the remainder). `01-first-launch`/`03-no-workspace`
 and the `02*-model-settings` family still carry a large, expected diff even after the round-1 fixes —

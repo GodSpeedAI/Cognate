@@ -9,14 +9,13 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-l /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
-      - text: cap-ws-l
+    - treeitem "ck-cog-laptop-ws /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
+      - text: ck-cog-laptop-ws
       - treeitem "/plan make a plan now [[scenario:plan]] now" [selected]
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there 1m"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": /plan make a plan now [[scenario:plan]]
@@ -31,7 +30,7 @@
   - status: plan · Plan mode on. Use /plan off to leave.
   - paragraph: /plan make a plan now [[scenario:plan]]
   - button "Copy"
-  - text: 12:25 PM
+  - text: 01:11 PM
   - status: Worked
   - button "Took 11s" [disabled]
   - paragraph: "Tool result: Plan approved — plan mode exited; carry out the plan starting with your next step."
@@ -39,7 +38,7 @@
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 12:26 PM
+  - text: Usage 0 tok 01:11 PM
   - region "To-dos":
     - button "To-dos 1 in progress · 1 pending"
   - textbox "Message or run a task, / commands, @ files or sessions"
@@ -47,4 +46,4 @@
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
-  - text: 0 turns 0 steps · 0 tok/s 0% of context used
+  - text: 1 turns 2 steps · 0 tok/s 0% of context used

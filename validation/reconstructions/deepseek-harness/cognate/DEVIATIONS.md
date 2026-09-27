@@ -49,7 +49,12 @@ round-1 P1-1), disabled — no OS file-reveal capability this tranche.
 ## Settings General / Built-in plugins / Agent presets — inert nav items
 
 Present in the Settings left nav with the reference's exact labels (aria: `button "General"`,
-`"Models"`, `"Built-in plugins"`, `"Agent presets"`), disabled. Only Models is implemented.
+`"Models"`, `"Built-in plugins"`, `"Agent presets"`). `Built-in plugins`/`Agent presets` remain
+disabled stubs. `General` is now live (critic round-2 batch A cross-cutting P2): it holds the
+Appearance section (`Light`/`Dark` theme buttons) that used to be a persistent sidebar footer
+control with no reference counterpart — the reference switches theme via Settings → General →
+Appearance (`tests/capture/reference.capture.ts`'s `20-theme-variant` step), not a standing sidebar
+toggle, so the sidebar control was removed and the switch moved here to match.
 
 ## Sidebar "Plugins" global panel — inert
 
@@ -287,3 +292,34 @@ its in-memory state directly).
 
 All icons (`src/ui/icons.tsx`) are original inline SVGs drawn for this reconstruction — simple
 monochrome line glyphs, not visual copies of the reference's iconography.
+
+## Round-2 critic fixes (see `critic/round-2-disposition.md` for the full item-by-item list)
+
+New in this pass, all still governed by durable events/projections:
+
+- **Review split-diff panel** (`ReviewPanel` in `src/ui/App.tsx`): "Edited `<file>` +N -M" now opens a
+  real right-hand pane beside the chat (reusing the same `<aside class="right-panel">` shell the
+  subagent child view already used) — tab strip (`Review · turn N` + close + disabled "+"), a
+  list/split/code toolbar, and a two-column diff with a line-number gutter and one `@@` hunk header
+  (`diffHunk()` derives gutter numbers/hunk bounds from the existing `EditSummary.diffLines`, no new
+  domain data). Geometry per product-characterization.md §2 (min 300px / max 70% / default 45vw).
+  Previously this was an inline diff card inside the message body — removed.
+- **"Into the Unknown" hero landing** (`HeroLanding`): a selected workspace with zero messages in the
+  active session now renders the centered landing (logo, heading, Preview badge, workspace/mode
+  pills, centered composer, no tab bar) instead of jumping straight to the tabbed session chrome.
+- **Header mode badge is a real per-session field**: `sessions` projection now sets `mode: "ptc"` the
+  first time a session's run emits `tool.approval.requested`, sticky afterward; the header shows "PTC
+  mode" for those sessions, "Standard mode" otherwise (was a hardcoded string).
+- **Subagent popover anchors under the header** (`.subagent-count-wrap`/`.subagent-tree` in
+  `app.css`), not as a bottom banner above the composer.
+- **Accent color is near-black/gray** (`--cg-accent`), not blue, matching the reference; sidebar
+  "Workspaces" label is sentence-case/regular-weight, not small-caps/bold.
+- **02-model-settings checkpoint pairing (P1, accepted, not fixed):** the reference's own
+  `02-model-settings` capture happens to already show a configured-provider card (a pre-existing
+  config carried into that capture run), while Cognate's `02` is a genuinely fresh, unconfigured
+  first visit (the only state consistent with `01`/`03` needing no model configured yet). Both states
+  are individually correct per this app's own lifecycle — `02d-model-settings-redacted-key` already
+  demonstrates the configured-provider card layout side-by-side with the reference's equivalent.
+  Reordering the capture script to pre-configure a provider before `02` would corrupt `01`/`03`'s
+  required unconfigured state, so this is left as a documented capture-sequencing difference, not
+  reworked.

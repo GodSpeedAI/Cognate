@@ -10,10 +10,10 @@
   - button "Add workspace" [disabled]
   - tree "Sessions":
     - paragraph: No workspace selected
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - alert: Unable to create default workspace. Use Choose workspace to select a folder.
+  - button "Standard mode" [disabled]
   - textbox "Workspace directory path":
     - /placeholder: /path/to/project
   - button "Choose workspace" [disabled]

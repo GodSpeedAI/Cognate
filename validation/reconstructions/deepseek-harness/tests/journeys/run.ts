@@ -181,7 +181,24 @@ for (const system of systems) {
   console.log(`\nWrote ${join(RESULTS_DIR, `${system}.json`)}`);
 }
 
+// Regenerate summary.md from both systems' JSON even when only one was run this invocation — fall
+// back to the other system's previously-written results/<system>.json on disk (critic round-2:
+// `run.ts` used to only write summary.md when *this* run covered both systems, so a single-system
+// run silently left summary.md stale/missing instead of refreshing it against the other system's
+// last known results).
+for (const system of (["reference", "cognate"] as const)) {
+  if (all[system]) continue;
+  const path = join(RESULTS_DIR, `${system}.json`);
+  try {
+    all[system] = JSON.parse(readFileSync(path, "utf8")) as JourneyResult[];
+  } catch {
+    // no prior results for this system yet — summary.md just won't have a column for it.
+  }
+}
+
 if (all.reference && all.cognate) {
   writeSummary({ reference: all.reference, cognate: all.cognate });
   console.log(`Wrote ${join(RESULTS_DIR, "summary.md")}`);
+} else if (all.reference || all.cognate) {
+  console.log("Skipped summary.md: no prior results found for the other system yet.");
 }

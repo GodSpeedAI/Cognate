@@ -90,6 +90,18 @@ export const sessionsProjection: Projection = {
       if (!existing) return [];
       return [{ key, value: { ...existing, lastStatus: "waiting", runId: event.runId } }];
     }
+    // Header mode badge ("Standard mode" / "PTC mode" — reference-behavior-matrix.md, round-2 critic
+    // batch B P1): the reference's badge reads "PTC mode" for sessions that have ever needed a
+    // tool-approval escalation, "Standard mode" otherwise. Sticky once set — approvalGate.ts's
+    // decision is per-tool-call, but the badge itself does not flip back once a session has crossed
+    // into a permission-to-continue exchange.
+    if (event.eventType === "tool.approval.requested") {
+      const payload = event.payload as { readonly sessionId: string };
+      const key = `${event.tenant}/${payload.sessionId}`;
+      const existing = state.get(key) as Record<string, Json> | undefined;
+      if (!existing) return [];
+      return [{ key, value: { ...existing, mode: "ptc" } }];
+    }
     // T11 (J-H-cancellation / J-H-provider-error): these are runtime-emitted (not agent-emitted)
     // events on the run's own stream, so — like `run.waiting` above — they carry neither
     // `sessionId` nor `workspaceId` in their payload; only the correlation id names the session. The
