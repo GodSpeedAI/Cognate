@@ -312,8 +312,25 @@ New in this pass, all still governed by durable events/projections:
   mode" for those sessions, "Standard mode" otherwise (was a hardcoded string).
 - **Subagent popover anchors under the header** (`.subagent-count-wrap`/`.subagent-tree` in
   `app.css`), not as a bottom banner above the composer.
-- **Accent color is near-black/gray** (`--cg-accent`), not blue, matching the reference; sidebar
-  "Workspaces" label is sentence-case/regular-weight, not small-caps/bold.
+- **Accent color audit (critic round-3 P0/P1 — corrects this entry's earlier blanket claim):** the
+  reference does not use one accent hue for every primary/active element. Pixel-sampled from
+  `reference/screenshots/desktop/{01-first-launch,02-model-settings,07-streaming,11-approval-
+  pending,15-completed-session}.png`:
+  - Near-black/gray (`--cg-accent`, `#1b1d22` light / `#ececee` dark) is correct for modal/approval
+    CTA buttons only — "Continue", "Apply", "Allow once" (samples to `#0f1115`-ish).
+  - The composer send/stop button and the active-tab underline are a separate **blue**
+    (`--cg-accent-interactive`, sampled `#4176e6`) — round-2's retone had incorrectly pulled these
+    onto the near-black token too; split out in `src/ui/app.css`.
+  - The user-message bubble is its own **light lavender fill with dark text**
+    (`--cg-message-bubble-bg: #edf3fe`, `--cg-message-bubble-text`), sampled from
+    `15-completed-session.png` — round-2's retone had also pulled the bubble onto near-black
+    (`--cg-accent`), which this DEVIATIONS.md previously and incorrectly described as "matching the
+    reference." Fixed in `.message-bubble` (`src/ui/app.css`).
+  - `--cg-active` (low-alpha near-black, e.g. `rgba(27,29,34,0.08)`) was already correct as-is — at
+    that opacity over a white surface it renders as the same light neutral gray the reference's
+    active session row uses (`#eceef0`-ish); no change needed there.
+  Sidebar "Workspaces" label is sentence-case/regular-weight, not small-caps/bold (unchanged, still
+  accurate).
 - **02-model-settings checkpoint pairing (P1, accepted, not fixed):** the reference's own
   `02-model-settings` capture happens to already show a configured-provider card (a pre-existing
   config carried into that capture run), while Cognate's `02` is a genuinely fresh, unconfigured
@@ -323,3 +340,41 @@ New in this pass, all still governed by durable events/projections:
   Reordering the capture script to pre-configure a provider before `02` would corrupt `01`/`03`'s
   required unconfigured state, so this is left as a documented capture-sequencing difference, not
   reworked.
+
+## Round-3 critic fixes
+
+- **In-chat file-change control is now a file-icon card**, not a text pill: `EditDiff` (`src/ui/
+  App.tsx`) renders a `FileIcon`, an "Edited `<file>`" heading line, and a "+N -M" stat line inside a
+  bordered card (`.edit-diff-card` in `app.css`), matching `reference/screenshots/*/10-file-change-
+  expanded.png`. The accessible name (`View changes to <path>: Edited <file> +N -M`) is preserved via
+  `aria-label` on the button.
+- **Review panel toolbar controls added, several inert by design (feature out of scope this
+  tranche):** matching `reference/observations/aria/10-file-change-expanded.desktop.txt`'s tab-strip
+  and toolbar rows —
+  - Tab-strip row: `Split`, `Fullscreen`, `Collapse right sidebar` icon buttons are now present next
+    to "Add tab", but **inert** (`disabled`, `title={NOT_IMPLEMENTED}`) — this tranche has no
+    multi-pane layout engine, real fullscreen, or a separate collapsible right sidebar to drive them.
+  - Toolbar row: `Show file location` and `More ways to open` buttons are now present, also
+    **inert** for the same reason (no file-location surface or external-open integration exists) —
+    this matches the reference itself, which also shows both `[disabled]` in its own ARIA dump.
+  - `Open <file> in sidebar` is now **enabled** (previously incorrectly disabled) — the reference
+    leaves it enabled. Since this panel already *is* the file's sidebar view, the click is a no-op
+    rather than a second navigation.
+- **User-message bubble background/text color**: see the "Accent color audit" entry above.
+- **Cancelled-turn status pill has no visual dot**: `.status-pill.status-cancelled` renders
+  transparent/zero-size (was inheriting the default green `--cg-success` dot used for "Worked"); the
+  accessible `role="status"` text ("Stopped") is unchanged. Reference's standalone "Stopped" line has
+  no leading indicator (`19-cancelled.desktop.txt`).
+- **Step counter now counts the model's own generation step, not just tool calls**: turn `stepCount`
+  is `useToolTimeline(...).length + 1` (previously just the raw tool-call count) — the `+1` accounts
+  for the generation/response step itself, present even with zero tool calls or on a turn cancelled
+  mid-stream. Verified against every reference ARIA dump with a turns/steps footer (`{15-completed-
+  session,19-cancelled}` 0 tools → "1 steps"; `12-approval-resolved-{allow,deny}` 1 tool → "2 steps";
+  `13c-plan-completed` 2 tools → "3 steps"; `{09-tool-complete,10-file-change-*}` 3 tools → "4
+  steps") — all now match with the `+1` term.
+- **Checkpoint 03 capture-alignment (capture-script fault, not an app defect):** `tests/capture/
+  cognate.capture.ts`'s `03-no-workspace` checkpoint now runs before either onboarding dialog is
+  dismissed, same as `reference.capture.ts` (whose own `dismiss(page, "Continue")` before `03` is a
+  no-op against the reference's disabled "Continue" button) — both sides now land on the same first
+  dialog ("Internal Testing Notice" / its Cognate-branded equivalent) still open, instead of Cognate
+  advancing to its second dialog first.

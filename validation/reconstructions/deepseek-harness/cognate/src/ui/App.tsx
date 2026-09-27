@@ -10,6 +10,8 @@ import {
   CollapseIcon,
   CopyIcon,
   EditIcon,
+  FileIcon,
+  FullscreenIcon,
   GearIcon,
   ListViewIcon,
   LogoIcon,
@@ -67,9 +69,15 @@ interface ChatMessage {
   readonly retryCount?: number;
   /** The last successful `edit` tool call this turn made, if any (`10-file-change-*`). */
   readonly editSummary?: EditSummary;
-  /** Tool-call count for this turn (`useToolTimeline(activeRunId).length` at finalize time) — feeds
-   *  the composer footer's "N turns M steps" counter (critic round-2 batch A P1: counters must
-   *  reflect a cancelled turn too, not stay pinned at 0). */
+  /** Step count for this turn — `useToolTimeline(activeRunId).length + 1` at finalize time (the
+   *  `+1` is the model's own generation step, present even with zero tool calls or on a cancelled
+   *  turn) — feeds the composer footer's "N turns M steps" counter. Critic round-2 batch A P1:
+   *  counters must reflect a cancelled turn too, not stay pinned at 0. Critic round-3 P2-2: the
+   *  round-2 fix used the raw tool-call count with no `+1`, so a cancelled turn with no completed
+   *  tool calls still showed "0 steps" against reference's "1 steps" — reference/observations/aria/
+   *  {15-completed-session,19-cancelled,09-tool-complete,12-approval-resolved-allow,
+   *  13c-plan-completed}.desktop.txt confirm steps = tool-call count + 1 in every observed case
+   *  (0→1, 1→2, 2→3, 3→4). */
   readonly stepCount?: number;
   /** True for the live in-progress preview bubble — suppresses the "Worked"/"Took Ns" status row,
    *  which only makes sense once the turn has actually finished (also what `CognateDriver.waitForIdle`
@@ -1200,8 +1208,21 @@ function EditDiff({
   const fileName = summary.file_path.split("/").pop() ?? summary.file_path;
   return (
     <div className="edit-diff">
-      <button type="button" className="edit-diff-toggle" onClick={() => onOpenReview(summary, turnNumber)}>
-        View changes to {summary.file_path}: Edited {fileName} +{summary.additions} -{summary.deletions}
+      <button
+        type="button"
+        className="edit-diff-toggle edit-diff-card"
+        aria-label={`View changes to ${summary.file_path}: Edited ${fileName} +${summary.additions} -${summary.deletions}`}
+        onClick={() => onOpenReview(summary, turnNumber)}
+      >
+        <span className="edit-diff-icon" aria-hidden="true">
+          <FileIcon />
+        </span>
+        <span className="edit-diff-info">
+          <span className="edit-diff-heading">Edited {fileName}</span>
+          <span className="edit-diff-stat">
+            +{summary.additions} -{summary.deletions}
+          </span>
+        </span>
       </button>
     </div>
   );
@@ -1268,6 +1289,19 @@ function ReviewPanel({
         <button type="button" className="right-panel-add-tab" aria-label="Add tab" disabled title={NOT_IMPLEMENTED}>
           <PlusIcon />
         </button>
+        {/* Layout controls at the tab-strip level (critic round-3 P1 — reference ARIA lists these
+         *  beside the tab strip, distinct from the toolbar's view toggles below). This tranche has
+         *  no multi-pane layout engine or real fullscreen/sidebar-collapse implementation, so these
+         *  stay inert (present-but-disabled) — see DEVIATIONS.md. */}
+        <button type="button" className="review-toolbar-btn icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Split">
+          <SplitViewIcon />
+        </button>
+        <button type="button" className="review-toolbar-btn icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Fullscreen">
+          <FullscreenIcon />
+        </button>
+        <button type="button" className="review-toolbar-btn icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Collapse right sidebar">
+          <PanelRightIcon />
+        </button>
       </div>
       <div className="review-panel-toolbar" role="toolbar" aria-label="Review view">
         <button type="button" className="review-toolbar-btn icon-btn" aria-pressed={!splitView} onClick={() => setSplitView(false)} aria-label="List view" title="List view">
@@ -1286,8 +1320,19 @@ function ReviewPanel({
         <button type="button" className="review-toolbar-btn" aria-pressed={lineWrap} onClick={() => setLineWrap((v) => !v)}>
           Line wrap
         </button>
-        <button type="button" className="review-toolbar-btn" disabled title={NOT_IMPLEMENTED}>
+        {/* Enabled per reference ARIA (critic round-3 P1 — Cognate's disabled state didn't match);
+         *  this panel already *is* the file's sidebar view, so the action is a no-op rather than a
+         *  second navigation. */}
+        <button type="button" className="review-toolbar-btn" onClick={() => undefined}>
           Open {fileName} in sidebar
+        </button>
+        {/* Both inert in the reference too (`[disabled]` in reference ARIA) — no file-location or
+         *  external-open surface exists in this tranche. */}
+        <button type="button" className="review-toolbar-btn" disabled title={NOT_IMPLEMENTED}>
+          Show file location
+        </button>
+        <button type="button" className="review-toolbar-btn" disabled title={NOT_IMPLEMENTED}>
+          More ways to open
         </button>
       </div>
       <div className="review-panel-body">
@@ -1528,7 +1573,13 @@ function MessageBubble({
         </div>
       ) : (
         <div className="message-status-row">
-          <span className={`status-pill${message.failed ? " status-failed" : ""}${message.failed ? " disabled" : ""}`} role="status">
+          {/* Critic round-3 P2: reference's "Stopped" line carries no leading dot (unlike
+           *  "Worked"/"Failed") — `status-cancelled` keeps the accessible status text but removes
+           *  the visual indicator. */}
+          <span
+            className={`status-pill${message.failed ? " status-failed" : ""}${message.cancelled ? " status-cancelled" : ""}${message.failed ? " disabled" : ""}`}
+            role="status"
+          >
             <span className="sr-only">{message.failed ? "Failed" : message.cancelled ? "Stopped" : "Worked"}</span>
           </span>
           {/* T11 (J-H-cancellation): a disabled "Stopped" chip in place of the duration badge —
@@ -1815,13 +1866,13 @@ export function App() {
       // The last successful `edit` this turn made, if any (`10-file-change-collapsed`/`-expanded`).
       const lastEdit = [...toolEntries].reverse().find((e) => e.tool === "edit" && e.status === "success");
       const editSummary = lastEdit ? (lastEdit.result as EditSummary | undefined) : undefined;
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary, stepCount: toolEntries.length }]);
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary, stepCount: toolEntries.length + 1 }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "cancelled") {
       // T11 (J-H-cancellation): the partial streamed text is kept, not discarded, with a "Stopped"
       // status pill and no duration badge (reference-behavior-matrix.md §7).
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true, stepCount: toolEntries.length }]);
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true, stepCount: toolEntries.length + 1 }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "failed") {
       // T11 (J-H-provider-error): "This turn failed" / message / CODE, plus the settled retry
@@ -1838,7 +1889,7 @@ export function App() {
           retryCount,
           failureCode: streaming.failure?.code,
           failureMessage: streaming.failure?.message,
-          stepCount: toolEntries.length,
+          stepCount: toolEntries.length + 1,
         },
       ]);
       setActiveRunId(undefined);
