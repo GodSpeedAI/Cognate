@@ -123,6 +123,65 @@ try {
   await page.waitForTimeout(300);
   await checkpoint(page, "07-streaming");
 
+  // --- T7-T8: tool execution + approval (journeys J-C-tool-execution, J-D-approval) ---
+
+  // 08 - tool running: `[[scenario:multi]]` drives read -> bash -> edit; capture while the tool
+  // activity indicator is showing (before the run settles).
+  await driver.newSession(page);
+  await driver.send(page, "[[scenario:multi]] do the multi-step task now");
+  // Wait for the first tool-call event to actually reach the client (the mock model's first
+  // scripted step + a network round trip) rather than a fixed short delay, so this doesn't race the
+  // "current tool" indicator into capturing before it renders.
+  await page.waitForSelector(".tool-activity-btn", { timeout: 5_000 }).catch(() => undefined);
+  await checkpoint(page, "08-tool-running");
+
+  // 09 - tool complete: run settled, final answer + edit summary button visible (collapsed).
+  await driver.waitForIdle(page, { timeoutMs: 30_000 });
+  await page.waitForTimeout(200);
+  await checkpoint(page, "09-tool-complete");
+
+  // 10 - file change collapsed/expanded: the edit summary's diff view toggle.
+  await checkpoint(page, "10-file-change-collapsed");
+  const diffToggle = page.getByRole("button", { name: /^View changes to/ }).first();
+  if ((await diffToggle.count()) > 0) {
+    await diffToggle.click();
+    await page.waitForTimeout(150);
+    await checkpoint(page, "10-file-change-expanded");
+  } else {
+    console.log("[capture] 10-file-change-expanded: no edit summary button found — skipping");
+  }
+
+  // 11 - approval pending: `[[scenario:approval]]` requests a `run_code` escalation; the tool
+  // loop's default access mode (read-only) ranks below the requested "workspace-write", so
+  // `approvalGate` opens a `tool-approval` continuation and the run waits.
+  await driver.newSession(page);
+  await driver.send(page, "[[scenario:approval]] run something risky");
+  await page.waitForSelector('[data-approval-panel]', { timeout: 15_000 }).catch(() => undefined);
+  await page.waitForTimeout(150);
+  await checkpoint(page, "11-approval-pending");
+
+  // 11b - approval pending after reload: the continuation is durable, so reopening the same
+  // session (auto-restored via `cognate.lastSession.<workspaceId>`) shows the same pending card.
+  await driver.reload(page);
+  await page.waitForSelector('[data-approval-panel]', { timeout: 15_000 }).catch(() => undefined);
+  await page.waitForTimeout(200);
+  await checkpoint(page, "11b-approval-pending-after-reload");
+
+  // 12 - approval resolved (allow): the tool call proceeds and the run completes.
+  await driver.approve(page);
+  await driver.waitForIdle(page, { timeoutMs: 15_000 });
+  await page.waitForTimeout(200);
+  await checkpoint(page, "12-approval-resolved-allow");
+
+  // 12 - approval resolved (deny): a second `[[scenario:approval]]` run, rejected this time.
+  await driver.newSession(page);
+  await driver.send(page, "[[scenario:approval]] run something risky");
+  await page.waitForSelector('[data-approval-panel]', { timeout: 15_000 }).catch(() => undefined);
+  await driver.deny(page);
+  await driver.waitForIdle(page, { timeoutMs: 15_000 });
+  await page.waitForTimeout(200);
+  await checkpoint(page, "12-approval-resolved-deny");
+
   // 15 - completed session (status dot, duration badge, full markdown rendering).
   await driver.waitForIdle(page, { timeoutMs: 30_000 });
   await page.waitForTimeout(300);

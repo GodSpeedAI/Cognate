@@ -1,0 +1,45 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - 'treeitem "cg-ws-desktop Tool result: (run_code completed with no output) now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+      - text: cg-ws-desktop
+      - 'treeitem "Tool result: (run_code completed with no output) now" [selected]'
+      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
+      - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
+  - button "Switch to dark theme": Dark theme
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": "Tool result: (run_code completed with no output)"
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - paragraph: "[[scenario:approval]] run something risky"
+  - button "Copy"
+  - text: 03:08 AM
+  - status: Worked
+  - button "Took 1s" [disabled]
+  - paragraph: "Tool result: (run_code completed with no output)"
+  - button "Copy"
+  - button "Good response" [disabled]
+  - button "Bad response" [disabled]
+  - button "Branch into a new conversation" [disabled]
+  - text: Usage 0 tok 03:08 AM
+  - textbox "Message or run a task, / commands, @ files or sessions"
+  - button "Add files or run commands" [disabled]
+  - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
+  - button "Select model, current mock-model-1" [disabled]: mock-model-1
+  - button "Send message" [disabled]
+  - text: 0 turns 0 steps · 0 tok/s 0% of context used

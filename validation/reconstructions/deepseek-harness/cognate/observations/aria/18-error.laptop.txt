@@ -17,14 +17,8 @@
     - tab "Trajectory" [disabled]
   - paragraph: trigger a real provider error
   - button "Copy"
-  - text: 12:16 AM
-  - status: Worked
-  - button "Took 0s" [disabled]
-  - button "Copy"
-  - button "Good response" [disabled]
-  - button "Bad response" [disabled]
-  - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok
+  - text: 03:09 AM
+  - status: Deep diving...
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

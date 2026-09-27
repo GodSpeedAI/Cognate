@@ -105,12 +105,12 @@ export class CognateDriver implements Driver {
     }
   }
 
-  async approve(_page: Page): Promise<void> {
-    // No approval surface in this tranche — see APP/DEVIATIONS.md.
+  async approve(page: Page): Promise<void> {
+    await page.getByRole("button", { name: "Allow once", exact: true }).click();
   }
 
-  async deny(_page: Page): Promise<void> {
-    // No approval surface in this tranche — see APP/DEVIATIONS.md.
+  async deny(page: Page): Promise<void> {
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
   }
 
   async openSession(page: Page, index: number): Promise<void> {

@@ -1,4 +1,4 @@
-# Capability bindings (T5)
+# Capability bindings (T5, extended T7)
 
 Per `idm-to-cognate.md`: `bindCapabilities` is the only path from a `SemanticObject` to a
 `CapabilityContract`, and it is 100% explicit. This file lists every binding this app makes — no
@@ -16,15 +16,30 @@ objects, digest logged at startup).
 | 3 | `deepseek-harness.interaction::ModelProvider` | `model.configure` v1.0.0 | `modelConfigureComponent` (`src/capabilities/modelConfigure.ts`) | The orchestration capability the UI's Settings → Models "Save" invokes: writes the secret, hot-swaps the provider, and starts the durable `agent.config` run. |
 | 4 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.select` v1.0.0 | `workspaceSelectComponent` (`src/capabilities/workspaceSelect.ts`) | Validates a directory and durably records `workspace.added`/`workspace.selected` — the `WorkspaceRecord` entity's only producer. |
 | 5 | `deepseek-harness.interaction::Session` | `session.history` v1.0.0 | `sessionHistoryComponent` (`src/capabilities/sessionHistory.ts`) | Folds a `Session`'s prior turns into model messages — the "History" row of the architecture table. |
+| 6 | `deepseek-harness.interaction::Tool` | `tool.read` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Reads a file inside the session's workspace. Path-contained (`resolveInWorkspace`, rejects any escape). |
+| 7 | `deepseek-harness.interaction::Tool` | `tool.edit` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Exact `old_string`/`new_string` replace (unique match required unless `replace_all`); path-contained. |
+| 8 | `deepseek-harness.interaction::Tool` | `tool.bash` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Runs a shell command as a Bun subprocess, `cwd` = workspace root, timeout + output caps. |
+| 9 | `deepseek-harness.interaction::Tool` | `tool.run_code` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Runs a code snippet (original small `tools.bash`-providing harness, not copied from the reference) as a Bun subprocess; the tool a `sandbox_permissions` escalation request rides on — see `approvalGate.ts`. |
+| 10 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.path` v1.0.0 | `workspacePathComponent` (`src/capabilities/workspacePath.ts`) | Resolves a `workspaceId` to its canonical path for the tool loop (`agent.coding`'s `ctx.invoke("workspace.path", ...)`). |
+
+`tranche7Bindings`/`bindTranche7` (`domain/index.ts`) bind #6-10, alongside `tranche5Bindings` above.
 
 ## Not bound (deliberately)
 
 - `agent.config` and `agent.coding` are `AgentDefinition`s, not capabilities — an agent id is not a
   `CapabilityContract`, so `bindCapabilities` does not apply to them. Their runs still carry
-  `semanticRef` transitively: `agent.coding`'s `ctx.invoke("model.generate", ...)` and
-  `ctx.invoke("session.history", ...)` calls record the bound contracts' `semanticRef` in
+  `semanticRef` transitively: `agent.coding`'s `ctx.invoke("model.generate", ...)`,
+  `ctx.invoke("session.history", ...)`, `ctx.invoke("workspace.path", ...)` and
+  `ctx.invoke("tool.<name>", ...)` calls record the bound contracts' `semanticRef` in
   `run.invocation` events (traceability rule #2).
-- `Tool`, `ApprovalGate`, `PlanMode`, `Subagent`, `Goal`, `ChildAgent`, `ApprovalAuthority`,
-  `Composer`, `OperatorAgent`, `User` — real `.sea` entities with no bound capability yet; they
-  belong to later tranches (T7–T11) and are intentionally left unbound until this app actually
-  publishes something for them.
+- **`ApprovalGate`** — deliberately realized as a pure decision function (`approvalGate` in
+  `src/domain/approvalGate.ts`, named after this `.sea` entity) plus a `ctx.waitFor` continuation
+  inside `agent.coding`, not as a `CapabilityContract`. An approval gate is a policy decision over an
+  already-invoked tool call's arguments, not itself an invokable capability — there is nothing for a
+  `Component` to `provide`. `j_d_approval`'s `Flow "ApprovalDecision" from "ApprovalAuthority" to
+  "ApprovalGate"` is realized as the `tool-approval` continuation's resume input (`{ approved:
+  boolean }`), resolved via `client.resolveContinuation`/`RuntimeService.resolveContinuation` — see
+  `README.md` "Tool loop and approvals (T7-T8)".
+- `PlanMode`, `Subagent`, `Goal`, `ChildAgent`, `ApprovalAuthority`, `Composer`, `OperatorAgent`,
+  `User` — real `.sea` entities with no bound capability yet; they belong to later tranches (T9-T11)
+  and are intentionally left unbound until this app actually publishes something for them.

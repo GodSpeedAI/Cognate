@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Json } from "@cognate/events";
-import { useCognate, useProjection } from "@cognate/react";
+import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
 import {
   BranchIcon,
@@ -34,6 +34,14 @@ interface SessionRow {
   readonly title: string;
   readonly lastStatus: string;
   readonly updatedAt: string;
+  readonly runId?: string | null;
+}
+
+interface EditSummary {
+  readonly file_path: string;
+  readonly additions: number;
+  readonly deletions: number;
+  readonly diffLines: readonly string[];
 }
 
 interface ChatMessage {
@@ -43,6 +51,23 @@ interface ChatMessage {
   readonly tookMs?: number;
   readonly failed?: boolean;
   readonly cancelled?: boolean;
+  /** The last successful `edit` tool call this turn made, if any (`10-file-change-*`). */
+  readonly editSummary?: EditSummary;
+  /** True for the live in-progress preview bubble — suppresses the "Worked"/"Took Ns" status row,
+   *  which only makes sense once the turn has actually finished (also what `CognateDriver.waitForIdle`
+   *  in the parity-capture suite keys off of — a status row on a still-streaming bubble made it
+   *  detect "idle" far too early for a multi-step tool turn; see `tests/drivers/cognate.ts`). */
+  readonly streaming?: boolean;
+}
+
+interface ToolEntry {
+  readonly toolCallId: string;
+  readonly tool: string;
+  readonly args: Readonly<Record<string, unknown>>;
+  readonly status: "running" | "success" | "failed";
+  readonly result?: unknown;
+  readonly error?: string;
+  readonly approval?: { readonly status: "pending" | "approved" | "denied"; readonly permission?: string; readonly justification?: string };
 }
 
 interface ModelConfigRow {
@@ -313,6 +338,156 @@ function useStreamingTurn(runId: string | undefined) {
   return { text, status };
 }
 
+/** Folds this run's `tool.call.*`/`tool.approval.*` events into an ordered `ToolEntry[]`, keyed by
+ *  `toolCallId` (a run's tool loop is sequential, so at most one entry is ever `"running"` at a
+ *  time — matching the reference's single "current tool" indicator, e.g. `08-tool-running`). */
+function useToolTimeline(runId: string | undefined): readonly ToolEntry[] {
+  const client = useCognate();
+  const [entries, setEntries] = useState<readonly ToolEntry[]>([]);
+
+  useEffect(() => {
+    setEntries([]);
+    if (!runId) return;
+    const byId = new Map<string, ToolEntry>();
+    const flush = () => setEntries([...byId.values()]);
+    const unsubscribe = client.subscribe({ runId }, (event) => {
+      if (event.eventType === "tool.call.started") {
+        const p = event.payload as { readonly toolCallId: string; readonly tool: string; readonly args?: Record<string, unknown> };
+        byId.set(p.toolCallId, { toolCallId: p.toolCallId, tool: p.tool, args: p.args ?? {}, status: "running" });
+        flush();
+      } else if (event.eventType === "tool.call.completed") {
+        const p = event.payload as { readonly toolCallId: string; readonly result?: unknown };
+        const prev = byId.get(p.toolCallId);
+        if (prev) {
+          byId.set(p.toolCallId, { ...prev, status: "success", result: p.result });
+          flush();
+        }
+      } else if (event.eventType === "tool.call.failed") {
+        const p = event.payload as { readonly toolCallId: string; readonly error?: string };
+        const prev = byId.get(p.toolCallId);
+        if (prev) {
+          byId.set(p.toolCallId, { ...prev, status: "failed", error: p.error });
+          flush();
+        }
+      } else if (event.eventType === "tool.approval.requested") {
+        const p = event.payload as { readonly toolCallId: string; readonly permission?: string; readonly justification?: string };
+        const prev = byId.get(p.toolCallId);
+        if (prev) {
+          byId.set(p.toolCallId, { ...prev, approval: { status: "pending", permission: p.permission, justification: p.justification } });
+          flush();
+        }
+      } else if (event.eventType === "tool.approval.decided") {
+        const p = event.payload as { readonly toolCallId: string; readonly approved?: boolean };
+        const prev = byId.get(p.toolCallId);
+        if (prev?.approval) {
+          byId.set(p.toolCallId, { ...prev, approval: { ...prev.approval, status: p.approved ? "approved" : "denied" } });
+          flush();
+        }
+      }
+    });
+    return unsubscribe;
+  }, [client, runId]);
+
+  return entries;
+}
+
+/** The current/latest tool action's accessible label, matching the reference's single running-tool
+ *  button (`08-tool-running`: `button "Reading files · src/greet.ts"` / `"Running code · ..."`). */
+function toolActionLabel(entry: ToolEntry): string {
+  const args = entry.args;
+  if (entry.tool === "read") return `Reading files · ${String(args.file_path ?? "")}`;
+  if (entry.tool === "edit") return `Editing files · ${String(args.file_path ?? "")}`;
+  if (entry.tool === "bash") return `Running commands · ${String(args.description ?? args.command ?? "")}`;
+  if (entry.tool === "run_code") return `Running code · ${String(args.description ?? "")}`;
+  return `Running ${entry.tool}`;
+}
+
+/** During a run: the "Deep diving..." status plus a plain-text current-tool-action line, matching
+ *  the reference's `08-tool-running` (`status: Deep diving...`, `button "Reading files · ..."` is
+ *  read here as a plain row, not a modal card — the card only appears once approval is pending, see
+ *  `ApprovalBar` below, which replaces the composer the way the reference's does). */
+function ToolActivity({ entries }: { readonly entries: readonly ToolEntry[] }) {
+  const current = entries.length > 0 ? entries[entries.length - 1] : undefined;
+  if (!current || current.status !== "running") return null;
+  return (
+    <div className="tool-activity" data-tool-card>
+      <span className="status-pill" role="status">
+        <span className="sr-only">Deep diving...</span>
+      </span>
+      <button type="button" className="tool-activity-btn" disabled title="Deep diving for 1s">
+        {toolActionLabel(current)}
+      </button>
+    </div>
+  );
+}
+
+/** Approval bar: docked where the composer normally sits (reference `11-approval-pending`: the
+ *  approval card sits at the bottom of the chat pane, composer hidden underneath it) — exact
+ *  strings/buttons/keyboard behavior: Enter = allow once, Escape = reject (characterization's
+ *  stated keyboard behavior). */
+function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly onDecide: (approved: boolean) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+  return (
+    <div
+      className="approval-card"
+      data-approval-panel
+      tabIndex={-1}
+      ref={ref}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onDecide(true);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          onDecide(false);
+        }
+      }}
+    >
+      <div className="approval-header">
+        <span className="approval-dot" aria-hidden="true" />
+        <span className="approval-waiting">Waiting for approval</span>
+      </div>
+      <div role="group" aria-label="Approval details" className="approval-details">
+        Allow this operation with {entry.approval?.permission} permissions: {entry.approval?.justification}.
+      </div>
+      <div className="approval-actions">
+        <button type="button" className="approval-btn approval-reject" onClick={() => onDecide(false)}>
+          Reject
+        </button>
+        <button type="button" className="approval-btn approval-allow" onClick={() => onDecide(true)}>
+          Allow once
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** The folded diff view for an `edit` tool call — folds to the first 9 rows, expandable
+ *  (`10-file-change-collapsed`/`-expanded`). */
+function EditDiff({ summary }: { readonly summary: EditSummary }) {
+  const [expanded, setExpanded] = useState(false);
+  const rows = summary.diffLines.length > 9 ? summary.diffLines.slice(0, 9) : summary.diffLines;
+  return (
+    <div className="edit-diff">
+      <button type="button" className="edit-diff-toggle" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+        View changes to {summary.file_path}: Edited {summary.file_path.split("/").pop()} +{summary.additions} -{summary.deletions}
+      </button>
+      {expanded && (
+        <pre className="edit-diff-body">
+          {rows.map((line, i) => (
+            <div key={i} className={line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-del" : "diff-ctx"}>
+              {line}
+            </div>
+          ))}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 function CodeBlocks({ containerRef }: { readonly containerRef: React.RefObject<HTMLDivElement | null> }) {
   // Fenced code blocks come back from renderMarkdown() as plain
   // `<pre class="code-block" data-lang="...">` nodes (see ./markdown.ts) — they need a language
@@ -468,18 +643,27 @@ function MessageBubble({ message }: { readonly message: ChatMessage }) {
 
   return (
     <div className={`message message-assistant${message.failed ? " message-failed" : ""}`}>
-      <div className="message-status-row">
-        <span className={`status-pill${message.failed ? " status-failed" : ""}`} role="status">
-          <span className="sr-only">{message.failed ? "Failed" : message.cancelled ? "Stopped" : "Worked"}</span>
-        </span>
-        <button type="button" className="took-btn" disabled>
-          Took {Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}s
-        </button>
-      </div>
+      {message.streaming ? (
+        <div className="message-status-row">
+          <span className="status-pill status-streaming" role="status">
+            <span className="sr-only">Deep diving...</span>
+          </span>
+        </div>
+      ) : (
+        <div className="message-status-row">
+          <span className={`status-pill${message.failed ? " status-failed" : ""}`} role="status">
+            <span className="sr-only">{message.failed ? "Failed" : message.cancelled ? "Stopped" : "Worked"}</span>
+          </span>
+          <button type="button" className="took-btn" disabled>
+            Took {Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}s
+          </button>
+        </div>
+      )}
       <div className="message-divider" />
       <div className="message-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
       <CodeBlocks containerRef={bodyRef} />
-      {!message.failed && (
+      {message.editSummary && <EditDiff summary={message.editSummary} />}
+      {!message.failed && !message.streaming && (
         <div className="message-actions">
           <button type="button" className="meta-action" aria-label="Copy" title="Copy">
             <CopyIcon />
@@ -518,6 +702,20 @@ export function App() {
   const [activeRunId, setActiveRunId] = useState<string | undefined>(undefined);
   const runStartedAtRef = useRef<number>(0);
   const streaming = useStreamingTurn(activeRunId);
+  const toolEntries = useToolTimeline(activeRunId);
+  const { open: openContinuations, resolve: resolveContinuation } = useContinuations(activeRunId);
+
+  // The tool loop is sequential (one call in flight at a time), so at most one `tool-approval`
+  // continuation is ever open for a run — match it to the tool entry currently waiting.
+  const decideApproval = useCallback(
+    async (_toolCallId: string, approved: boolean) => {
+      const continuation = openContinuations.find((c) => c.type === "tool-approval");
+      if (!continuation) return;
+      await resolveContinuation(continuation.id, "resume", { approved });
+    },
+    [openContinuations, resolveContinuation],
+  );
+  const pendingApproval = toolEntries.find((e) => e.approval?.status === "pending");
 
   // Sidebar auto-collapses below 1024px viewport width, matching the reference's
   // SIDEBAR_AUTO_COLLAPSE breakpoint (product-characterization.md §2); a manual toggle can still
@@ -534,10 +732,34 @@ export function App() {
   const currentSession = sessions.find((s) => s.id === activeSessionId);
   const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId);
 
+  // Remembers the last-open session per workspace (`localStorage`, per-browser only — see Artifact
+  // tool's browser-storage guidance; this is a UI convenience, not durable state) so a reload lands
+  // back on the same session instead of the empty "no session selected" shell
+  // (`17-restored-after-reload`, `11b-approval-pending-after-reload`). The actual run/approval state
+  // shown once reopened comes entirely from durable events/projections, not from this key.
+  const rememberSession = useCallback((workspaceId: string, sessionId: string) => {
+    try {
+      localStorage.setItem(`cognate.lastSession.${workspaceId}`, sessionId);
+    } catch {
+      // best-effort; ignore storage failures (private mode, quota, etc.)
+    }
+  }, []);
+
   const openSession = useCallback(
     async (sessionId: string) => {
       setActiveSessionId(sessionId);
-      setActiveRunId(undefined);
+      // Reattach to a still-in-flight run (running, or waiting on an approval continuation) so its
+      // live tool/approval state survives a reload (`11b-approval-pending-after-reload`) — the
+      // `sessions` projection's `runId`/`lastStatus` are durable, so this works after a full
+      // restart too, not just a soft reload.
+      const row = sessions.find((s) => s.id === sessionId);
+      const stillInFlight = row && (row.lastStatus === "running" || row.lastStatus === "waiting") && row.runId;
+      setActiveRunId(stillInFlight ? (row.runId as string) : undefined);
+      // Reattaching after a reload loses the in-memory "when did this run start" clock — reset it to
+      // now rather than leaving it at its initial 0, which would render a nonsensical "Took Ns"
+      // duration (`Date.now() - 0`) once the reattached run completes.
+      if (stillInFlight) runStartedAtRef.current = Date.now();
+      if (row) rememberSession(row.workspaceId, sessionId);
       const history = (await client.invoke("session.history", { sessionId })) as { role: string; content: string }[];
       setTranscript(
         history.map((m) => ({
@@ -547,8 +769,23 @@ export function App() {
         })),
       );
     },
-    [client],
+    [client, sessions, rememberSession],
   );
+
+  // Auto-restore the last-open session for the current workspace on mount/reload (see
+  // `rememberSession` above) — `openSession` itself reattaches to any still-in-flight run from
+  // durable state, so this is what makes `17-restored-after-reload`/`11b-approval-pending-after-
+  // reload` show the same session instead of the empty shell.
+  useEffect(() => {
+    if (!currentWorkspaceId || activeSessionId) return;
+    let remembered: string | null = null;
+    try {
+      remembered = localStorage.getItem(`cognate.lastSession.${currentWorkspaceId}`);
+    } catch {
+      remembered = null;
+    }
+    if (remembered && sessions.some((s) => s.id === remembered)) void openSession(remembered);
+  }, [currentWorkspaceId, sessions, activeSessionId, openSession]);
 
   const newSession = useCallback(() => {
     setActiveSessionId(crypto.randomUUID());
@@ -561,6 +798,7 @@ export function App() {
       if (!currentWorkspaceId) return;
       const sessionId = activeSessionId ?? crypto.randomUUID();
       if (!activeSessionId) setActiveSessionId(sessionId);
+      rememberSession(currentWorkspaceId, sessionId);
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       setTranscript((prev) => [...prev, { role: "user", content: message, at }]);
       runStartedAtRef.current = Date.now();
@@ -571,7 +809,7 @@ export function App() {
       );
       setActiveRunId(view.runId);
     },
-    [client, currentWorkspaceId, activeSessionId],
+    [client, currentWorkspaceId, activeSessionId, rememberSession],
   );
 
   const stop = useCallback(async () => {
@@ -583,7 +821,10 @@ export function App() {
     if (streaming.status === "completed" && streaming.text) {
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const tookMs = Date.now() - runStartedAtRef.current;
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs }]);
+      // The last successful `edit` this turn made, if any (`10-file-change-collapsed`/`-expanded`).
+      const lastEdit = [...toolEntries].reverse().find((e) => e.tool === "edit" && e.status === "success");
+      const editSummary = lastEdit ? (lastEdit.result as EditSummary | undefined) : undefined;
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "cancelled") {
       setTranscript((prev) => [...prev, { role: "system", content: "Stopped" }]);
@@ -595,7 +836,7 @@ export function App() {
       ]);
       setActiveRunId(undefined);
     }
-  }, [streaming.status, streaming.text]);
+  }, [streaming.status, streaming.text, toolEntries]);
 
   const modelLabel = modelConfig ? `${modelConfig.model}` : undefined;
   const sessionTitle = currentSession?.title || "New Session";
@@ -730,10 +971,17 @@ export function App() {
                 <MessageBubble key={index} message={message} />
               ))}
               {streaming.status === "streaming" && (
-                <MessageBubble message={{ role: "assistant", content: streaming.text }} />
+                <>
+                  <MessageBubble message={{ role: "assistant", content: streaming.text, streaming: true }} />
+                  <ToolActivity entries={toolEntries} />
+                </>
               )}
             </div>
-            <Composer disabled={composerDisabled} sending={streaming.status === "streaming"} modelLabel={modelLabel} onSend={send} onStop={stop} />
+            {pendingApproval ? (
+              <ApprovalBar entry={pendingApproval} onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)} />
+            ) : (
+              <Composer disabled={composerDisabled} sending={streaming.status === "streaming"} modelLabel={modelLabel} onSend={send} onStop={stop} />
+            )}
           </>
         )}
       </main>

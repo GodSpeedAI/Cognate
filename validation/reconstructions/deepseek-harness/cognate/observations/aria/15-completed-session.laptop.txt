@@ -6,7 +6,7 @@
   - button "Switch to dark theme"
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "# Summary Here is what I found: - first point - second point ``…"
+  - navigation "Session hierarchy": "Tool result: Error: the user rejected escalating this program t…"
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -15,25 +15,17 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory" [disabled]
-  - paragraph: "[[scenario:plain]] hello there"
+  - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 12:16 AM
+  - text: 03:08 AM
   - status: Worked
-  - button "Took 0s" [disabled]
-  - heading "Summary" [level=1]
-  - paragraph: "Here is what I found:"
-  - list:
-    - listitem: first point
-    - listitem: second point
-  - text: ts
-  - button "Wrap lines" [pressed]
-  - button "Copy"
-  - code: "export function greet(name: string): string { return `Hello, ${name}!`; }"
+  - button "Took 2s" [disabled]
+  - paragraph: "Tool result: Error: the user rejected escalating this program to \"workspace-write\"; it stays denied, so stop and explain instead of working around it"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 12:16 AM
+  - text: Usage 0 tok 03:08 AM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

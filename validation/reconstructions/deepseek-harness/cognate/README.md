@@ -1,8 +1,36 @@
-# DeepSeek Harness reconstruction — Cognate app (tranche T5, UI fidelity pass T5b)
+# DeepSeek Harness reconstruction — Cognate app (tranches T5-T8)
 
-A Cognate app that reconstructs the DeepSeek Harness Web UI's "first use" surface: configure a
-model, choose a workspace, run a session, watch it stream. Model: `.sea/interaction/`. Method:
-`.agents/skills/building-with-cognate/SKILL.md`.
+A Cognate app that reconstructs the DeepSeek Harness Web UI's "first use" surface plus tool
+execution and approvals: configure a model, choose a workspace, run a session, watch it stream, let
+the agent read/edit/run inside the workspace, and gate a privileged escalation behind a human
+decision. Model: `.sea/interaction/`. Method: `.agents/skills/building-with-cognate/SKILL.md`.
+
+## Tool loop and approvals (T7-T8)
+
+`agent.coding` (`src/agents/agentCoding.ts`) runs a deterministic model/tool loop: `model.generate`
+(with `read`/`edit`/`bash`/`run_code` tool definitions) -> for each returned tool call, invoke
+`tool.<name>` (`src/capabilities/tools.ts`, path-contained to the session's workspace root, resolved
+via `workspace.path`) -> the result goes back to the model as a `role: "tool"` message -> repeat
+until the model answers in plain text or `MAX_TOOL_STEPS` (20) is hit. `edit` enforces a
+read-before-edit guard for files that already exist on disk (journey `J-C-tool-execution`'s
+`fs_not_observed` variant), boxed in `ctx.step` so the disk check itself replays deterministically.
+
+Approval (T8) is a policy gate, not a special construct: `approvalGate`
+(`src/domain/approvalGate.ts`, named after `.sea/interaction/interaction-model.sea`'s `Entity
+"ApprovalGate"`) is a pure function of `(tool, args, mode)` — required exactly when `tool ===
+"run_code"` and its `sandbox_permissions` ranks above the session's access mode (`read-only <
+workspace-write < full-access`; see `DEVIATIONS.md` for the mode default). When required,
+`agent.coding` opens `ctx.waitFor("approve:<toolCallId>", { type: "tool-approval", condition: {
+kind: "human_approval" }, payload: { tool, args, permission, justification } })` and blocks. The UI
+resolves it via `client.resolveContinuation(continuationId, "resume", { approved })`. On denial, the
+tool call's result fed back to the model is the reference's exact wording (`approvalDeniedToolResult`
+in `approvalGate.ts`; evidence: `reference/observations/aria/12-approval-resolved-deny`). A pending
+approval survives reload and a full server restart (SQLite-backed durable continuations —
+`test/J-D-approval.test.ts` proves both the persistence and, deliberately unlike the reference here,
+that restart does *not* silently finalize the run — see `DEVIATIONS.md`).
+
+Journeys covered: `J-C-tool-execution` (`test/J-C-tool-execution.test.ts`), `J-D-approval`
+(`test/J-D-approval.test.ts`, allow/deny/restart-while-pending/replay-safety).
 
 ## Run it
 
@@ -60,17 +88,18 @@ provider. `model.configure` (`src/capabilities/modelConfigure.ts`) is invoked vi
 argument never touches the durable event log. `test/J-CFG-model-provider.test.ts` scans the SQLite
 `payloads`, `events.metadata`, `records`, and `projection_state` tables directly to prove it.
 
-## Journeys covered (this tranche)
+## Journeys covered
 
 J-A-first-use (composer gating), J-CFG-model-provider (configure + hot-swap), J-WS-select (choose a
-workspace), J-B-basic-session (one streamed turn, history into the next). Tests:
+workspace), J-B-basic-session (one streamed turn, history into the next), J-C-tool-execution
+(read/bash/edit tool loop), J-D-approval (escalation approval: allow/deny/restart/replay). Tests:
 `test/J-CFG-model-provider.test.ts`, `test/J-WS-select.test.ts`, `test/J-B-basic-session.test.ts`,
-`test/J-G-persistence.test.ts`.
+`test/J-G-persistence.test.ts`, `test/J-C-tool-execution.test.ts`, `test/J-D-approval.test.ts`.
 
 ## Known gaps vs. the reference product
 
-- No tools (`read`/`bash`/`edit`), no approvals, no plan mode, no subagents, no cancel/retry — later
-  tranches (T7–T11) per `.agents/plans/deepseek-harness-reconstruction.md`.
+- No plan mode, no subagents, no cancel/retry (beyond the T5b UI-level Stop button) — later
+  tranches (T9–T11) per `.agents/plans/deepseek-harness-reconstruction.md`.
 - The UI does not reproduce the reference's exact Astryx shell geometry (sidebar drag-resize,
   collapse breakpoints, right sidebar) — it is a minimal shell using `@cognate/react` hooks with the
   Astryx CSS loaded but not its component primitives, styled to the same rough proportions

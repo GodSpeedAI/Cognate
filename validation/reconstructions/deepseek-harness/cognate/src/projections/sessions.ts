@@ -16,6 +16,12 @@ function titleFrom(message: string): string {
   return trimmed.length > TITLE_MAX ? `${trimmed.slice(0, TITLE_MAX - 1)}…` : trimmed;
 }
 
+/** `startRun`'s `correlationId` for `agent.coding` is always `session:<sessionId>` — the only way
+ *  to recover which session a runId (and a bare `run.waiting`, which carries neither) belongs to. */
+function sessionIdFromCorrelation(correlationId: string): string | undefined {
+  return correlationId.startsWith("session:") ? correlationId.slice("session:".length) : undefined;
+}
+
 export const sessionsProjection: Projection = {
   name: "sessions",
   version: "1.0.0",
@@ -32,6 +38,7 @@ export const sessionsProjection: Projection = {
             workspaceId: payload.workspaceId,
             title: existing?.title ?? "New Session",
             lastStatus: "running",
+            runId: event.runId,
             updatedAt: event.recordedAt,
           },
         },
@@ -49,10 +56,23 @@ export const sessionsProjection: Projection = {
             workspaceId: payload.workspaceId,
             title: existing?.title && existing.title !== "New Session" ? existing.title : titleFrom(payload.text),
             lastStatus: "completed",
+            runId: event.runId,
             updatedAt: event.recordedAt,
           },
         },
       ];
+    }
+    // `run.waiting` (e.g. a pending tool approval): carries neither `sessionId` nor `workspaceId`
+    // in its payload, only `runId`/`correlationId` on the envelope. Reproduces "Waiting for
+    // approval <title>" surviving a reload (`11b-approval-pending-after-reload`): the sidebar/App
+    // needs to know a session's run is waiting so it can reattach to the live run on reopen.
+    if (event.eventType === "run.waiting") {
+      const sessionId = sessionIdFromCorrelation(event.correlationId);
+      if (!sessionId) return [];
+      const key = `${event.tenant}/${sessionId}`;
+      const existing = state.get(key) as Record<string, Json> | undefined;
+      if (!existing) return [];
+      return [{ key, value: { ...existing, lastStatus: "waiting", runId: event.runId } }];
     }
     return [];
   },
