@@ -467,12 +467,37 @@ function SettingsModels({
   const [models, setModels] = useState<readonly ModelRow[]>([]);
   const [modelError, setModelError] = useState<string | undefined>(undefined);
   const [customizedOpen, setCustomizedOpen] = useState(false);
+  const [workDetailsMenuOpen, setWorkDetailsMenuOpen] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   // Quick "Apply" from the list-view row: just the API key, reusing the already-configured
   // provider/base URL/model.
   const [rowApiKey, setRowApiKey] = useState("");
+  const workDetailsMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!workDetailsMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (workDetailsMenuRef.current && !workDetailsMenuRef.current.contains(e.target as Node)) {
+        setWorkDetailsMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setWorkDetailsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [workDetailsMenuOpen]);
 
   const resetWizard = useCallback((prefillFromConfig: boolean) => {
     setAddTab("custom");
@@ -636,17 +661,35 @@ function SettingsModels({
                 </div>
                 <p className="settings-subtitle">Work details</p>
                 <p className="settings-description">Choose how much detail to show for tool calls</p>
-                <div role="group" aria-label="Work details" className="work-details-group">
-                  {WORK_DETAILS_MODES.map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      aria-pressed={workDetails === mode}
-                      onClick={() => setWorkDetails(mode)}
-                    >
-                      {WORK_DETAILS_LABELS[mode]}
-                    </button>
-                  ))}
+                <div className="work-details-dropdown" ref={workDetailsMenuRef}>
+                  <button
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={workDetailsMenuOpen}
+                    onClick={() => setWorkDetailsMenuOpen(!workDetailsMenuOpen)}
+                  >
+                    {WORK_DETAILS_LABELS[workDetails]}
+                    <svg className="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                  {workDetailsMenuOpen && (
+                    <div role="menu" className="work-details-menu">
+                      {WORK_DETAILS_MODES.map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setWorkDetails(mode);
+                            setWorkDetailsMenuOpen(false);
+                          }}
+                        >
+                          {WORK_DETAILS_LABELS[mode]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             ) : view === "list" ? (

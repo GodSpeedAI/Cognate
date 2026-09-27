@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cog-ws2 [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cog-ws2
+    - treeitem "r7w [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: r7w
       - treeitem "[[scenario:multi]] do the multi-step task now now" [selected]
       - treeitem "[[scenario:plain]] hello there now"
   - button "Settings"
@@ -26,7 +26,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:multi]] do the multi-step task now"
   - button "Copy"
-  - text: 05:43 PM
+  - text: 06:29 PM
   - status: Worked
   - button "Took 14s" [disabled]
   - paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
@@ -35,7 +35,7 @@
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 05:43 PM
+  - text: Usage 0 tok 06:29 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

@@ -578,11 +578,83 @@ input:focus-visible {
   cursor: default;
 }
 
-.appearance-group,
-.work-details-group {
+.appearance-group {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.work-details-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.work-details-dropdown > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-xs);
+  background: var(--cg-surface, #fff);
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.work-details-dropdown > button:hover {
+  background: var(--cg-hover);
+}
+
+.work-details-dropdown > button:focus-visible {
+  outline: 2px solid var(--cg-accent);
+  outline-offset: 2px;
+}
+
+.dropdown-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.work-details-dropdown > button[aria-expanded="true"] .dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.work-details-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 160px;
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-xs);
+  background: var(--cg-surface, #fff);
+  box-shadow: var(--cg-shadow);
+  padding: 4px 0;
+}
+
+.work-details-menu > button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.work-details-menu > button:hover {
+  background: var(--cg-hover);
+}
+
+.work-details-menu > button:focus-visible {
+  outline: 2px solid var(--cg-accent);
+  outline-offset: -2px;
 }
 
 .settings-description {
