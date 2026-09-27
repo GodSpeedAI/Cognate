@@ -13,16 +13,33 @@ both `reference/screenshots/desktop/<name>.png` and
 `reference/observations/aria/<name>.<viewport>.txt`.
 
 Suite code: `tests/playwright.config.ts`, `tests/drivers/types.ts`,
-`tests/drivers/reference.ts`, `tests/capture/reference.capture.ts`.
+`tests/drivers/reference.ts`, `tests/capture/reference.capture.ts` (startup/
+settings/workspace/conversation/error/cancel/theme checkpoints),
+`tests/capture/reference.capture-tools.ts` (tool/approval/plan/subagent
+checkpoints — see §6 for the exact recipe: PTC mode + Read Only access mode
+for approvals, `/plan ` prefix for plan mode).
 
 ---
 
-## 0. CRITICAL — mock-model scenario routing is broken end-to-end via the real UI
+## 0. RESOLVED (commit d83960f) — mock-model scenario routing
 
-**This blocks every non-`plain` scenario capture (`read`, `edit`, `shell`,
+**Status: fixed and re-verified.** Commit `d83960f` changed
+`extractScenario()` to scan all `role:"user"` messages for the last one
+containing a `[[scenario:...]]` marker (via `MARKER`/`textOf`), instead of
+requiring the literal last user message to carry it, and made the SSE write
+loop tolerant of client-aborted streams. Both fixes were re-verified directly
+against the live reference this tranche: `read`, `shell`, `edit`, `multi`,
+`plan`, `delegate` all now route correctly out of the box; `approval` needed
+no fixture change either (see §6) — its apparent non-triggering was a
+driver/config gap, not a routing bug. The original bug report is kept below
+for the record.
+
+<details>
+<summary>Original bug report (T2 tranche 1, now fixed)</summary>
+
+**This blocked every non-`plain` scenario capture (`read`, `edit`, `shell`,
 `multi`, `approval`, `plan`, `delegate`, `error`, `interrupt`, `retry`) when
-driven through the actual reference product**, and is the single most
-important finding of this tranche.
+driven through the actual reference product.**
 
 - Class: **P0 — reconstruction blocker for the fixture, not for DSH itself.**
 - Root cause (confirmed by inserting a logging reverse proxy between the
@@ -73,22 +90,19 @@ important finding of this tranche.
     return { name, step };
   }
   ```
-- **Impact on this tranche**: checkpoints `08-tool-running`, `09-tool-complete`,
+- **Impact at the time**: checkpoints `08-tool-running`, `09-tool-complete`,
   `10-file-change`, `11-approval-pending`, `12-approval-resolved`,
-  `13-plan-active`, `14-subagent-active` from the spec's checkpoint list were
-  **not captured** — they cannot be reached with the fixture as committed.
-  Journeys C/D/E/F (tool execution, approval, plan, delegation) are equally
-  blocked for the *reference* side of the future parity suite until this is
-  fixed.
-- Everything else in this document (startup, settings/models, workspace,
-  plain conversation, session history, reload/restart persistence, a genuine
-  provider-level error/retry, cancellation, theme) does **not** depend on
-  scenario routing and was captured normally.
+  `13-plan-active`, `14-subagent-active` could not be reached with the
+  fixture as it stood then. All are now captured — see §6.
 
-## 0b. Secondary bug — mock server crashes on client-aborted stream
+</details>
 
-- Class: P2 (test-infra robustness, not a product bug).
-- `fixtures/mock-model/server.ts` line ~336 throws unhandled
+## 0b. RESOLVED (commit d83960f) — mock server crash on client-aborted stream
+
+- Class: P2 (test-infra robustness, not a product bug). **Fixed and
+  re-verified**: cancelling an in-flight stream (§7) no longer crashes the
+  mock server.
+- Original report: `fixtures/mock-model/server.ts` line ~336 threw unhandled
   `TypeError: Invalid state: Controller is already closed` when the SSE
   stream's `ReadableStream` controller is `enqueue`d after the client
   (browser) has already disconnected — exactly what happens when the
@@ -157,7 +171,7 @@ Entry: Settings (bottom-left gear) → **Models** tab.
 | Active-session navigation / switching | Clicking a different `treeitem` in the `tree "Sessions"` switches the main pane to that session's transcript; the sidebar highlights the selected item. |
 | Session list ordering/labels | Newest session on top; each item shows a relative-time label ("now", "4min" in this pass). |
 | Reload | `page.reload()` — session list and the previously-open session's full transcript (including the earlier assistant reply, markdown, code block) are restored unchanged. Screenshot `17-restored-after-reload`. |
-| Process restart | Not exercised this pass (would require killing and relaunching the `dsh web` process against the same `DSH_HOME` — planned for the parity-journey suite, Journey G). Flagged under "Still unresolved". |
+| Process restart | Exercised (kill + relaunch `dsh web` against the same `DSH_HOME`): completed sessions and their full transcripts survive unchanged. A **pending approval does not survive**: it silently finalizes as `status: Worked` with no assistant text/tool card at all — see §6.2. |
 | Empty / active / completed session | Empty: composer only, no transcript (`05-empty-session`). Active (mid-run): user bubble + in-progress status text, no duration badge yet (`06-user-message`, `07-streaming`). Completed: `status: Worked`, a disabled **"Took \<N\>s"** duration button, full rendered reply (`15-completed-session`). |
 | Failed/interrupted session | Cancelled: status text **"Stopped"** (both as a small label above the reply and as a pill under the heading) — see §7. A genuine provider error instead shows a persistent **"Deep diving for \<N\>s"** status plus an expandable **"Retried model request (\<k\>/5) · \<N\>s"** row — see §8. |
 | Fork/resume affordances | **"Branch into a new conversation"** button appears under every completed assistant turn (feedback row: Good/Bad response, Branch, Usage). Not exercised end-to-end this pass. |
@@ -180,34 +194,172 @@ Entry: Settings (bottom-left gear) → **Models** tab.
 | Screenshots | `06-user-message`, `07-streaming`, `15-completed-session`. |
 | Class | P0 |
 
-## 6. Tools, Approvals, Plans, Subagents — BLOCKED this tranche
+## 6. Tools, Approvals, Plans, Subagents — RESOLVED
 
-Per §0, `[[scenario:read/edit/shell/multi/approval/plan/delegate]]` all
-resolve to the generic `plain` reply through the live reference UI because of
-the fixture's last-user-message assumption. **No tool card, approval panel,
-plan panel, or subagent card was observed this pass**, and none of
-uncertainties #4–#6, #10, #12 from `product-characterization.md` §13 could be
-resolved. This is recorded as the primary blocker (§0) rather than restated
-per-feature here. Re-run Phase 3/4 for these sections once the fixture fix in
-§0 lands (or a hand-crafted, non-marker-based mock request is substituted for
-this investigation only).
+All four areas were reached and captured this tranche (screenshots
+`08-tool-running` … `14b-subagent-completed-panel`, both viewports; aria
+snapshots alongside). Class: **P0**, all captured.
 
-The driver (`tests/drivers/reference.ts`) ships best-guess locators for
-`approveButton`/`denyButton`/`toolCard`/`planPanel`/`subagentCard` (regex on
-likely button text / class-name substrings) but **these are unverified** —
-marked clearly in code comments — and must be corrected once real approval/
-plan/tool UI can be reached.
+### 6.1 Tool execution (`multi`: read → bash → edit → summary)
 
-Class: **P0 (blocked)**.
+- Mid-run: a single collapsed group button, one line per active step, e.g.
+  **"Reading files · src/greet.ts"**, **"Running commands · Show working tree
+  status"**, **"Running code · \<description\>"**, **"Updating the plan ·
+  todo_write"**, **"Coordinating subagents · \<description\>"** — the exact
+  verb is tool-specific. Overall status line: **"Deep diving…"** /
+  **"Deep diving for \<N\>s"** (disabled button).
+- On completion the collapsed group re-labels to a past-tense summary, e.g.
+  **"Read files, ran commands, edited files"** (`[expanded]`), then — once the
+  turn fully settles — **the group button disappears entirely** and only leaf
+  artifacts remain inline: the assistant's final text plus a file-change
+  button (below). This is the key visual difference between `09-tool-complete`
+  (still expanded, right after settle) and `15-completed-session` (fully
+  settled, group gone).
+- File-change artifact: **"Edited \<file\>.ts"** pill with **`+1 -1`** style
+  stat, icon "TS". Clicking it opens a right-hand **"Review · turn \<n\>"**
+  tab: file picker (`src/greet.ts` ▾), `+1 -1`, a real split-diff view
+  (line-numbered old/new panes, red/green highlighted changed lines), toggles
+  for **"Split view"** and **"Line wrap"**, and **"Open \<file\> in sidebar"**.
+  Closing the tab (✕ on "Review · turn \<n\>") returns to the collapsed
+  (chat-only) view — `10-file-change-collapsed` / `-expanded`.
+- **Verified real workspace mutation** (Journey C): `ws-cap-tools/src/greet.ts`
+  changed on disk from `` `Hello, ${name}!` `` to `` `Howdy, ${name}!` ``,
+  confirmed via `git diff` in the fixture workspace — matches the UI diff
+  card exactly, byte for byte.
+
+### 6.2 Approvals (`approval`: `run_code` sandbox escalation)
+
+Two non-obvious preconditions were required to reach this state — **neither
+needed a fixture change**, both are pure driver/session-config:
+
+1. **Agent preset must be "PTC mode", not the default "Standard mode".**
+   `run_code` (source: `packages/core/tools/src/ptc.ts`) is only registered
+   as a callable tool under PTC mode; under Standard mode the model's
+   `run_code` tool call errors client-side: `Tool result: Error: unknown tool
+   "run_code"` and no approval is ever asked.
+2. **The requested `sandbox_permissions` must be strictly wider than the
+   session's current access mode** (`packages/sandbox/sandbox/src/escalation.ts`
+   throws otherwise: *"sandbox escalation to X is not strictly wider than
+   this call's current mode"*). The fixture's `approval` scenario requests
+   `sandbox_permissions: "workspace-write"`; the default access mode is
+   already **"Workspace Write"**, so the escalation is a no-op and nothing is
+   asked. Switching the session's **Access mode to "Read Only"** first
+   (composer footer → "Access mode" menu) makes `"workspace-write"` a real
+   escalation, and the approval card appears. (Confirmed both bash-outside-
+   workspace and `plugin_manager` set/list actions do **not** ask under any
+   access mode in this build — the sandbox executor genuinely isn't confined
+   for those; only the `run_code`/PTC escalation path is wired to `ask`.)
+
+With both conditions met, the exact UI (both `Allow once` and `Reject`
+variants tested):
+
+- Session sidebar label prefix: **"Waiting for approval \<title\>"**, with a
+  small **"Approval"** badge and an orange/amber dot.
+- Status line: **"Waiting for approval"**.
+- Approval card (`group`, orange border): body text is exactly
+  **"Allow this operation with \<mode\> permissions: \<justification\>"**
+  (e.g. *"Allow this operation with workspace-write permissions: Need to
+  remove a stale cache directory outside the default workspace sandbox."*).
+- Buttons: **"Reject"** and **"Allow once"** — this resolves uncertainty #12:
+  no broader "permission presets" control appears in this card; a session-
+  wide policy switch does exist but as the separate **`/permission`** slash
+  command ("Switch the permission preset (sandbox mode + approval policy)"),
+  not adjacent to the approval card itself.
+- **Approve**: run resumes, tool executes, final status **"Worked"**,
+  duration badge includes the wait time (observed **"Took 50s"** for a run
+  that waited ~48s for the click). Reflection text: `Tool result: (run_code
+  completed with no output)`.
+- **Reject**: run resumes immediately (`~3s` total), status **"Worked"** —
+  the *escalation* is denied, not the whole turn; the model's next completion
+  (`Done after tool result.` in the mock) still runs normally, receiving the
+  rejection as its tool result content (`escalation.ts`'s rejected-branch
+  message: *"the user rejected escalating this \<subject\> to \<mode\>; it
+  stays denied…"*).
+- **Reload persistence (resolves uncertainty #3, partially)**: reloading the
+  page while an approval is pending **preserves it** — the card, its exact
+  text, and "Reject"/"Allow once" all re-render identically after reload
+  (`11b-approval-pending-after-reload`); the elapsed "Deep diving for Ns"
+  counter continues from where it was (the run itself never stopped
+  server-side).
+- **Full process restart (resolves uncertainty #3, fully)**: killing and
+  relaunching `dsh web` against the **same `DSH_HOME`** does **not** preserve
+  the pending approval. Reopening the session afterward shows `status:
+  Worked`, a duration badge (`Took 1s`), and **no assistant text, no tool
+  card, no approval card at all** — the turn is silently finalized empty.
+  This is the fail-closed behavior product-characterization.md speculated
+  about, now confirmed: **reload survives; restart does not.**
+
+### 6.3 Plans (`plan`: `todo_write` → `exit_plan_mode`)
+
+- `todo_write` alone (without entering Plan Mode) works under Standard mode
+  and renders a region **"To-dos"** with a summary button, e.g. **"To-dos 1
+  in progress · 1 pending"** — resolves uncertainty #1's "badge label"
+  concretely (the English UI string is "To-dos", not a translation of the
+  Chinese term the docs used).
+- `exit_plan_mode` **requires the session to actually be in Plan Mode**,
+  entered via the **`/plan`** slash command (autocomplete option: **"Plan —
+  Enter or leave plan mode"**). Selecting it inserts a literal `/plan `
+  prefix into the composer (not just a placeholder hint) — the task text
+  must be **appended** after it, not used to replace the composer contents,
+  or `exit_plan_mode` fails: `Tool result: Error: exit_plan_mode is only
+  available in plan mode`.
+- Once genuinely in Plan Mode: a system notice line renders inline —
+  **"plan · Plan mode on. Use /plan off to leave."** — and the composer
+  footer's mode toggle becomes **"Plan mode on, press to turn off"** (icon
+  label "Plan").
+- `todo_write` then `exit_plan_mode` produces a **Plan review** card:
+  - Session sidebar label prefix: **"Plan awaiting review \<title\>"**.
+  - Card body (`region "Approve this plan and leave plan mode?"`, amber
+    border, orange dot "Plan review"): a **"View full plan"** disclosure, the
+    plan's `heading` (from the model's `exit_plan_mode.plan` argument, e.g.
+    **"Update greeting"**), and a text preview of its first line.
+  - The full plan **also auto-opens in the right sidebar** as its own tab
+    (title = plan heading), rendering the plan's markdown as a real heading +
+    ordered list (e.g. "1. Read src/greet.ts", "2. Change \"Hello\" to
+    \"Howdy\"", "3. Report the change").
+  - Buttons: **"Request changes"** and **"Approve"**.
+  - **Approve**: plan mode exits, status → **"Worked"**, reflection text
+    exactly: `Tool result: Plan approved — plan mode exited; carry out the
+    plan starting with your next step.`, the mode banner reverts to
+    "Standard mode", and the **"To-dos"** region persists showing the
+    still-open items.
+  - "Request changes" (deny-equivalent for plans) was not exercised this
+    pass — flagged under "Still unresolved".
+- Completed sessions also render a standalone **"Open plan: \<title\>"**
+  button (Plan · Markdown) even outside an active review, linking back to the
+  same plan artifact.
+
+### 6.4 Subagents/delegation (`delegate`: `subagent` tool)
+
+- Mid-run: collapsed group **"Coordinating subagents · \<description\>"**
+  (e.g. "Summarize project status").
+- Session banner gains a **"\<N\> subagent(s)"** disclosure button (e.g.
+  **"1 subagent"**) next to the session-hierarchy breadcrumb — this is a
+  parent-session-scoped indicator, not a separate view; delegation does
+  **not** open a separate window/route.
+- Expanding it renders a `tree "Subagent sessions"` popover: one row per
+  child, e.g. **"Summarize project status · Summarize the current state of ·
+  continuable · completed · 0 tok · 0s"** with a green status dot and a
+  **"Open \<title\> in sidebar"** button (opens the child's own transcript in
+  the right-hand panel — this is the "child view" the spec asks about).
+- Reflection text on the parent turn: exactly `Tool result: started subagent
+  <uuid>`.
+- Final parent status: **"Worked"**. The child's own completion (`completed`,
+  visible in the subagent-list row) is what "returns to the parent" — the
+  parent's next model turn (not exercised further this pass) would see the
+  child's result as its tool output.
+- Persistence across session reload was not re-verified for the child
+  specifically this pass (parent-session persistence is covered generally in
+  §4/§5); flagged under "Still unresolved".
 
 ## 7. Cancellation
 
 | Feature | Evidence |
 |---|---|
-| Trigger | While a (slowed, 250ms/chunk) stream is in flight, the composer's send button is replaced by a filled **square "Stop"-shaped icon button** (send-button slot; exact accessible name not confirmed — see below) — clicking it aborts the stream. |
+| Trigger | While a stream/run is in flight, the composer's send button is replaced by a filled circular icon button with accessible name **"Stop generating"** (confirmed via role/name query, e.g. visible throughout §6's mid-run states) — clicking it aborts the stream. |
 | Visible result | Status line changes to **"Stopped"** (also repeated as a small pill under the truncated `heading "Summary"` that had already streamed in); no duration badge is shown; the partial reply (here, just the heading, since cancellation happened right after the first chunk) is kept, not discarded. |
 | Session list | The cancelled session's sidebar entry remains, labelled with its literal message text and a "now" timestamp — no distinct "cancelled" badge in the sidebar itself. |
-| A11y gap | The stop-button's accessible name was **not confirmed** — the capture script located it by CSS/positional heuristics, not a stable role/name query; **flagged for follow-up** (see "Still unresolved"). |
+| A11y | Resolved: `button "Stop generating"`, exact role/name, present throughout every mid-run state in §6. |
 | Screenshot | `19-cancelled`. |
 | Class | P0 |
 
@@ -217,9 +369,9 @@ Class: **P0 (blocked)**.
 |---|---|
 | Trigger used | A **second custom provider** pointed at a closed TCP port (`http://127.0.0.1:4099/v1`, nothing listening) — a genuine network-level provider error, independent of the broken `[[scenario:error]]` marker path (§0). |
 | Visible result | Status line **"Deep diving for \<N\>s"** (a generic in-flight/thinking label — not itself an error string) persists across the failure; an expandable, collapsed-by-default row appears: **"Retried model request (\<k\>/5) · \<N\>s"** with a right-chevron affordance, confirming an **automatic retry budget of 5 attempts** with per-attempt elapsed time shown. |
-| Terminal failure copy | **Not captured** — even after ~15s / 1 visible retry, the reference had not yet exhausted its retry budget and shown a terminal error banner. Exact terminal error copy, icon, and any manual "Retry"/"Dismiss" affordance are **unresolved** — would need a longer wait (the 5-attempt budget with observed ~1s per early attempt suggests real backoff growth; plan for ≥60s in a follow-up capture). |
-| Screenshots | `18-error` (desktop, 15s wait — still "Deep diving"), `18-error` (laptop, same wait — shows the "Retried model request (1/5) · 1s" disclosure row, not visible in the desktop capture at the same elapsed time, suggesting some timing variance between runs). |
-| Class | P0 (the retry/backoff behavior itself is now confirmed; the terminal state is P1/unresolved). |
+| Terminal failure copy | **Resolved** (waited out the full 5-attempt budget, ~90s total). Final state: status **"Failed"** (disabled, `[expanded]`); the retry disclosure settles to **"Retried model request (5/5) · 9s"**; and a dedicated failure block renders below it with exactly: **"This turn failed"** / **"Request timed out."** / a `code` badge **"TIMEOUT"**. No manual "Retry" or "Dismiss" button is shown on the failed turn itself (composer remains available to start a new message). |
+| Screenshots | `18-error` (both viewports, captured mid-retry at ~15s — "Deep diving" / first retry visible); the full terminal state (`final-error-terminal`, 90s wait) is evidence for this row but was captured outside the paired-viewport screenshot set this pass — reproduce via `tests/capture/reference.capture-tools.ts`'s pattern with a ≥90s wait to add it as a named checkpoint. |
+| Class | P0 — fully resolved (retry budget, backoff, and terminal copy all confirmed). |
 
 ## 9. Theme
 
@@ -258,53 +410,78 @@ shortcuts editor, **Send behavior while busy** (default **"Queue"**).
   (Provider ID / Display name / Base URL / API protocol [3 options] / API key
   / Models list with per-model ID+display-name+options+delete, "Create
   provider" validation gating, redaction on edit).
-- Partial **#11** — session status vocabulary: confirmed **"Worked"**
-  (success), **"Stopped"** (user-cancelled), **"Deep diving for \<N\>s"**
-  (in-flight/retrying) as real, rendered strings. `active`/`failed` terminal
-  labels beyond these were not reached (see unresolved).
+- **#11** — session status vocabulary: confirmed **"Worked"** (success),
+  **"Stopped"** (user-cancelled), **"Failed"** (terminal error, disabled +
+  expanded), **"Deep diving for \<N\>s"** (in-flight/retrying/reasoning),
+  **"Waiting for approval"** (pending ask), **"Plan awaiting review"**
+  (pending plan review) as real, rendered strings (§4, §6, §7, §8).
+- **#3** — pending-approval persistence: **reload preserves it exactly**
+  (same card, text, buttons); **a full process restart does not** — the turn
+  silently finalizes as `Worked` with empty output (§6.2).
+- **#4** — goal-bar/plan-bar UI copy: the plan surfaces are **"To-dos \<N\>
+  in progress · \<N\> pending"** (todo list) and, distinct from the approval
+  card, a **"Plan review"** card body reading exactly *"Allow this operation
+  with..."*-style copy is NOT used for plans — plans use **"Approve this plan
+  and leave plan mode?"** with **"Request changes"/"Approve"** buttons (§6.3).
+- **#5** — a subagent's terminal result: renders as a row in a `tree
+  "Subagent sessions"` popover (expand the "N subagent(s)" banner button);
+  opening it ("Open \<title\> in sidebar") shows the child's own transcript in
+  the right panel — there is no separate dedicated route (§6.4).
+- **#6** — tool-card pending/success states now characterized in full (§6.1):
+  collapsed "\<Verb\> · \<detail\>" while running, past-tense summary
+  ("Read files, ran commands, edited files") right after settle, then the
+  group vanishes leaving only leaf artifacts (file-change pill, plan-open
+  button, etc.) once the session is fully idle. A **failed** tool-card state
+  specifically was not distinctly captured (the observed failure this pass
+  was a provider-level error, not a single tool call failing — flagged
+  below).
+- **#10** — narrow-viewport plan-mode behavior: not specifically isolated
+  (plan mode UI at 1024×768 looked structurally identical to 1440×900 in this
+  pass's captures) — the `plan-narrow-viewport` snapshot's implied extra
+  mechanism remains unconfirmed.
+- **#12** — "Allow once" is the only action shown on the approval card itself;
+  the broader policy control exists as the separate **`/permission`** slash
+  command, not inline in the approval panel.
 
 ## Still unresolved (carried forward / newly identified)
 
-1. **§0 fixture bug** — blocks tool/approval/plan/delegate/subagent capture
-   entirely; needs the `extractScenario` fix described in §0 before Phase 3/4
-   can be completed for those sections.
-2. **§0b fixture robustness** — mock server crashes (uncaught exception) on
-   client-aborted stream; needs a try/catch around the SSE write loop.
-3. Exact terminal error banner copy/affordances (§8) — retry budget (5
-   attempts) confirmed, terminal state not reached within this pass's wait
-   budget.
-4. Exact accessible name of the in-flight "Stop" button (§7) — currently
-   located heuristically, not via a confirmed role/name query.
-5. Whether the sidebar session title is ever replaced by the model-generated
+1. Exact **failed individual tool-call** card state (as opposed to a failed
+   whole-turn/provider error) — not distinctly triggered this pass.
+2. "Request changes" (plan-review deny-equivalent) was not exercised — only
+   "Approve" was tested end-to-end.
+3. Whether the sidebar session title is ever replaced by the model-generated
    title (a real, separate title-generation call was proven to happen — see
    §0 — but its effect on the visible title was not confirmed within this
    pass's session lifetimes).
-6. "Trajectory" tab contents (present whenever "Coding Tools" is enabled,
+4. "Trajectory" tab contents (present whenever "Coding Tools" is enabled,
    which is the default) — not explored.
-7. Exact shape of "Choose workspace" when a workspace is already added
+5. Exact shape of "Choose workspace" when a workspace is already added
    (dropdown vs. file browser) — noted in §3, not screenshotted.
-8. Theme preference persistence across reload/restart — plausible but not
+6. Theme preference persistence across reload/restart — plausible but not
    re-verified.
-9. Original uncertainties #1 (plan-mode badge English text), #2 (full
-   Settings tab inventory beyond General/Models — Built-in plugins/Agent
-   presets tabs exist per the aria dump but their contents weren't opened),
-   #3 (approval persistence across reload), #4–#6, #10, #12 (all
-   plan/approval/subagent/narrow-viewport specifics) remain **fully
-   unresolved**, gated on fixing §0.
+7. Original uncertainty #2 (full Settings tab inventory beyond
+   General/Models — Built-in plugins/Agent presets tabs exist per the aria
+   dump but their contents weren't opened) and #1 (the plan-mode *badge*'s
+   exact English copy beyond "To-dos" is otherwise resolved) remain open.
+8. Subagent-child persistence across parent-session reload was not
+   specifically re-verified (only whole-session reload/restart in general).
 
 ---
 
 ## P0/P1/P2 counts (this tranche)
 
-- **P0**: 8 sections carry a P0 classification (§1 Startup/shell, §2 Models,
-  §3 Workspace, §4 Sessions, §5 Conversation, §6 Tools/Approvals/Plans —
-  *blocked*, §7 Cancellation, §8 Errors/retry).
-- **P1**: 2 (§9 Theme, "Work details" tool-call verbosity setting in §10).
+- **P0**: 8 sections carry a P0 classification, **all now fully or largely
+  resolved**: §1 Startup/shell, §2 Models, §3 Workspace, §4 Sessions,
+  §5 Conversation, §6 Tools/Approvals/Plans/Subagents, §7 Cancellation,
+  §8 Errors/retry (terminal copy included).
+- **P1**: 2 (§9 Theme, "Work details" tool-call verbosity setting in §10),
+  plus the handful of items 1–2 above (failed individual tool-call card,
+  plan "Request changes" path).
 - **P2**: remaining §10 inventory items (Permission mode default, Language,
   Font size, Performance & usage detail, Coding Tools toggle itself,
-  Keyboard shortcuts, Send-behavior-while-busy) plus §0b (fixture crash
-  robustness) and the §3 "already-added workspace" picker shape.
+  Keyboard shortcuts, Send-behavior-while-busy) plus the §3 "already-added
+  workspace" picker shape and items 3–8 above.
 
-All P0 behaviors that were reachable this pass were captured for both
-viewports; the P0 behaviors gated on §0 (tools/approvals/plans/subagents)
-are the primary carry-over into the next tranche.
+All P0 behaviors targeted by this tranche were captured for both viewports.
+The remaining P1/P2 items above are the primary carry-over into the next
+tranche.
