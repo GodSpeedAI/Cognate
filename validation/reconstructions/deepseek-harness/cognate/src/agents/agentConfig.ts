@@ -4,12 +4,14 @@
 // event itself, then this run durably records the resulting domain event). The run body only emits
 // — no I/O, no randomness, replay-safe by construction.
 import type { AgentDefinition } from "@cognate/runtime-api";
+import type { WorkDetailsMode } from "../workDetails.ts";
 
 export type AgentConfigInput =
   | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
   | { readonly kind: "workspace.added"; readonly workspaceId: string; readonly path: string; readonly title: string }
   | { readonly kind: "workspace.selected"; readonly workspaceId: string }
-  | { readonly kind: "onboarding.dismissed"; readonly step: "notice" | "apikey" };
+  | { readonly kind: "onboarding.dismissed"; readonly step: "notice" | "apikey" }
+  | { readonly kind: "settings.changed"; readonly workDetails: WorkDetailsMode };
 
 export const AGENT_CONFIG = "agent.config";
 
@@ -38,6 +40,11 @@ export const agentConfigAgent: AgentDefinition = {
       case "onboarding.dismissed": {
         const { kind: _kind, ...payload } = command;
         await ctx.emit("onboarding.dismissed", payload);
+        return { ok: true };
+      }
+      case "settings.changed": {
+        const { kind: _kind, ...payload } = command;
+        await ctx.emit("settings.changed", payload);
         return { ok: true };
       }
       default: {

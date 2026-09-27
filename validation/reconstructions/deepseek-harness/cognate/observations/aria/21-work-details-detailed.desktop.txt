@@ -1,0 +1,52 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "cog-ws2 [[scenario:multi]] do the multi-step task now now [[scenario:multi]] do the multi-step task now now [[scenario:multi]] do the multi-step task now now [[scenario:error]] trigger a provider error now [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now 1m /plan make a plan now [[scenario:plan]] 1m [[scenario:approval]] run something risky 1m [[scenario:approval]] run something risky 1m [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 2m" [expanded]:
+      - text: cog-ws2
+      - treeitem "[[scenario:multi]] do the multi-step task now now" [selected]
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:error]] trigger a provider error now"
+      - treeitem "[[scenario:plain]] cancel me please now"
+      - treeitem "[[scenario:delegate]] delegate this now 1m"
+      - treeitem "/plan make a plan now [[scenario:plan]] 1m"
+      - treeitem "[[scenario:approval]] run something risky 1m"
+      - treeitem "[[scenario:approval]] run something risky 1m"
+      - treeitem "[[scenario:multi]] do the multi-step task now 1m"
+      - treeitem "[[scenario:plain]] hello there 2m"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": "[[scenario:multi]] do the multi-step task now"
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - paragraph: "[[scenario:multi]] do the multi-step task now"
+  - button "Copy"
+  - text: 05:45 PM
+  - status: Worked
+  - button "Took 9s" [disabled]
+  - paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
+  - button "Copy"
+  - button "Good response" [disabled]
+  - button "Bad response" [disabled]
+  - button "Branch into a new conversation" [disabled]
+  - text: Usage 0 tok 05:45 PM
+  - textbox "Message or run a task, / commands, @ files or sessions"
+  - button "Add files or run commands" [disabled]
+  - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
+  - button "Select model, current mock-model-1" [disabled]: mock-model-1
+  - button "Send message" [disabled]
+  - text: 1 turns 4 steps · 0 tok/s 0% of context used

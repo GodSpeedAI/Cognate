@@ -578,9 +578,36 @@ input:focus-visible {
   cursor: default;
 }
 
-.appearance-group {
+.appearance-group,
+.work-details-group {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-description {
+  margin: 0 0 4px;
+  color: var(--cg-text-muted);
+  font-size: 12px;
+}
+
+.verbose-step-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--cg-text-muted);
+}
+
+.verbose-step-failed {
+  color: var(--cg-danger, #c0392b);
+}
+
+.verbose-step-error {
+  color: var(--cg-danger, #c0392b);
 }
 
 .header-actions {

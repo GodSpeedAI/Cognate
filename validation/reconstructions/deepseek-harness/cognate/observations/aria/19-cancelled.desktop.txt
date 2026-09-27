@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "r5w-d [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
-      - text: r5w-d
+    - treeitem "cog-ws2 [[scenario:plain]] cancel me please now [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
+      - text: cog-ws2
       - treeitem "[[scenario:plain]] cancel me please now" [selected]
       - treeitem "[[scenario:delegate]] delegate this now now"
       - treeitem "/plan make a plan now [[scenario:plan]] now"
@@ -31,7 +31,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] cancel me please"
   - button "Copy"
-  - text: 02:16 PM
+  - text: 05:44 PM
   - status: Stopped
   - button "Stopped" [disabled]
   - heading "Summary" [level=1]
@@ -40,7 +40,7 @@
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 02:16 PM
+  - text: Usage 0 tok 05:44 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

@@ -104,6 +104,39 @@ completes immediately with the reflection text, the child completes independentl
 in the parent session's next-turn history, and the child is excluded from `sessions`; plus a
 restart-mid-delegation test asserting no duplicate child run).
 
+## Settings → General → Work details (P1, reference-behavior-matrix.md §10a)
+
+"Choose how much detail to show for tool calls" — four modes (`compact`, `standard`, `detailed`,
+`verbose`), default `standard`, same option set/default/description as the reference. Durable the
+same way every other setting in this app is: `settings.changeWorkDetails`
+(`src/capabilities/settingsChange.ts`, a `client.invoke` capability) starts a deterministic
+`agent.config` run (`src/agents/agentConfig.ts`'s `"settings.changed"` command), which emits
+`settings.changed`, folded by the public `settings` projection (`src/projections/settings.ts`) into
+a single `"current"` row — absence of a row (a fresh `COGNATE_HARNESS_HOME`) is what makes the UI
+default to `standard`. `test/J-I-work-details.test.ts` asserts this survives a full runtime restart
+against the same SQLite store, not just a client reload.
+
+Effect on tool-card rendering (`src/ui/App.tsx`), ported from the reference's own presentation
+policy (`.tmp/ref/deepseek-harness/packages/client/ui-chat/src/client/presentation-policy.ts`):
+- **Verbose** (`foldCompletedTurns: false`): a completed turn's tool calls each render as their own
+  ungrouped line ("Read · `<path>`", "Bash · `<description>`", "Edit · `<path>`", a failed step in
+  red with its error inline) instead of folding behind the "Took Ns" line — see `verboseStepLabel`
+  and the `message.steps` snapshot `ChatMessage` carries for the turn that just finished in this
+  browser session (not persisted across a reload/session-switch — `session.history` only returns
+  `stepCount`, not per-step detail, so a reloaded historical turn falls back to the folded view even
+  under Verbose; a documented gap, not a silent inaccuracy).
+- **Compact/Standard/Detailed** all fold identically at this app's single-turn depth (confirmed
+  against the reference's own captures — the reference's `stepGrouping: "collapsed"` vs `"history"`
+  distinction between these three only affects multi-turn session-history grouping, which neither
+  system's `multi` scenario exercises).
+- The *running* tool-activity label's "· `<detail>`" suffix (`toolActionLabel`) is separately gated
+  on `showsLiveProcessDetail` (compact/verbose hide it, standard/detailed show it), taken directly
+  from the reference's `liveProcessDetail` policy field.
+
+Screenshots: `cognate/screenshots/desktop/21-work-details-{compact,standard,detailed,verbose}.png`
+(`tests/capture/cognate.capture.ts`), paired against the reference's own in
+`diffs/desktop/21-work-details-*.png` (`tests/visual/compare.ts`).
+
 ## Run it
 
 ```bash

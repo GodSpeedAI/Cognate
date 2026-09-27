@@ -335,6 +335,32 @@ try {
   await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await page.waitForTimeout(150);
   await checkpoint(page, "20-theme-variant");
+
+  // 21 - Work details (reference-behavior-matrix.md §10a): Settings -> General -> "Work details",
+  // one `multi`-scenario session per mode, tool/file cards captured once the run settles. Mirrors
+  // tests/capture/reference.capture-workdetails.ts's own checkpoint names exactly so
+  // tests/visual/compare.ts pairs them up. reference.capture-workdetails.ts never touches the theme
+  // (its 21-* checkpoints are captured Light, the default) — switch back to Light here first so the
+  // pair isn't dominated by an unrelated theme diff on top of the Work details diff.
+  await driver.openSettingsGeneral(page);
+  await page.getByRole("button", { name: "Light", exact: true }).click();
+  await page.waitForTimeout(200);
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
+  await page.waitForTimeout(150);
+  for (const mode of ["Compact", "Standard", "Detailed", "Verbose"] as const) {
+    await driver.openSettingsGeneral(page);
+    await page.getByRole("button", { name: mode, exact: true }).click();
+    await page.waitForTimeout(200);
+    await page.getByRole("button", { name: "Close settings", exact: true }).click();
+    await page.waitForTimeout(150);
+
+    await driver.newSession(page);
+    await driver.send(page, "[[scenario:multi]] do the multi-step task now");
+    await page.waitForSelector(".tool-activity-btn", { timeout: 5_000 }).catch(() => undefined);
+    await driver.waitForIdle(page, { timeoutMs: 30_000 });
+    await page.waitForTimeout(300);
+    await checkpoint(page, `21-work-details-${mode.toLowerCase()}`);
+  }
 } finally {
   await browser.close();
   await driver.stop();
