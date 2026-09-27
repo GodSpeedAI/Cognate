@@ -1,5 +1,12 @@
 # DeepSeek Harness Reconstruction — Final Parity Report
 
+> **Superseded as of 2026-09-27.** This report's visual-parity target was retired by explicit
+> operator decision in favor of an independent Hallmark/Impeccable UI/UX redesign of
+> `cognate/`. The scores below remain valid as a historical record that parity *was* achieved;
+> they are no longer being kept green, and new visual divergence from the reference is expected
+> from this point forward. Behavioral parity (journeys, `test/`, `tests/architecture/`) is
+> unaffected. See `.agents/evidence/2026-09-27-deepseek-harness-redesign-decision.md`.
+
 Branch `cognate/harness`. This report is compiled strictly from the artifacts listed under each
 section; no result is asserted that is not sourced from a file in
 `validation/reconstructions/deepseek-harness/` (`R/` below) or `.agents/plans/deepseek-harness-reconstruction.md`.

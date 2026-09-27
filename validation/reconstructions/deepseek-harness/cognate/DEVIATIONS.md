@@ -1,5 +1,12 @@
 # Deviations from the pinned DeepSeek Harness reference (tranche T5b)
 
+> **Note (2026-09-27):** the entries below describe divergence up through the settled
+> reconstruction. From this point forward the app's *visual* identity is deliberately diverging
+> further under an independent Hallmark/Impeccable redesign — see
+> `.agents/evidence/2026-09-27-deepseek-harness-redesign-decision.md` and the new `DESIGN.md` this
+> redesign introduces. New visual divergence is a product decision recorded in `DESIGN.md`, not a
+> tranche deviation to log here; this file remains the record of *behavioral*/structural deviations.
+
 This file records every place the Cognate reconstruction's UI is intentionally different from, or
 inert relative to, the pinned reference — either because the underlying feature is out of scope
 for this tranche, or because reproducing the reference exactly would mean copying DeepSeek's own
