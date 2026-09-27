@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import type { Json } from "@cognate/events";
 import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
@@ -11,7 +12,6 @@ import {
   type WorkDetailsMode,
 } from "../workDetails.ts";
 import {
-  BranchIcon,
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -19,7 +19,6 @@ import {
   CollapseIcon,
   CopyIcon,
   EditIcon,
-  ExternalLinkIcon,
   FileIcon,
   FolderIcon,
   FullscreenIcon,
@@ -27,15 +26,10 @@ import {
   ListViewIcon,
   LogoIcon,
   PanelRightIcon,
-  PluginIcon,
   PlusIcon,
-  SearchIcon,
   SendIcon,
-  SlidersIcon,
   SplitViewIcon,
   StopIcon,
-  ThumbDownIcon,
-  ThumbUpIcon,
   TrashIcon,
 } from "./icons.tsx";
 
@@ -258,6 +252,48 @@ function relativeTime(iso: string, nowMs: number = Date.now()): string {
   return `${diffDay}d`;
 }
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Shared modal contract (technical audit: only one of three modal surfaces had this before this
+ *  redesign) — traps focus inside the dialog, returns focus to whatever opened it on unmount, and
+ *  optionally calls `onEscape` when the dialog is open and Escape is pressed. Every modal in this
+ *  app (Settings, both first-run dialogs) uses this instead of inventing its own subset. */
+function useModalFocus(dialogRef: RefObject<HTMLElement | null>, onEscape?: () => void): void {
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const focusables = dialog?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    (focusables && focusables[0] ? focusables[0] : dialog)?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && onEscape) {
+        e.preventDefault();
+        onEscape();
+        return;
+      }
+      if (e.key !== "Tab" || !dialog) return;
+      const nodes = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (nodes.length === 0) return;
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+
 function useTheme(): readonly [string, () => void] {
   const [theme, setTheme] = useState<string>(() => {
     try {
@@ -283,17 +319,26 @@ function useTheme(): readonly [string, () => void] {
  *  matrix.md §1) — Cognate-branded wording, not DeepSeek's copy (spec: brand/copy may be swapped,
  *  the control itself may not be dropped). */
 function FirstRunNotice({ onContinue }: { readonly onContinue: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef);
   return (
     <div className="modal-backdrop">
-      <div className="modal first-run-dialog" role="dialog" aria-modal="true" aria-labelledby="first-run-notice-heading">
-        <h2 id="first-run-notice-heading">Internal Testing Notice</h2>
+      <div
+        className="modal first-run-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="first-run-notice-heading"
+        tabIndex={-1}
+        ref={dialogRef}
+      >
+        <h2 id="first-run-notice-heading">Welcome to Cognate Console</h2>
         <p>
-          This Cognate reconstruction of the DeepSeek Harness Web UI remains in testing for Cognate
-          developers. Many areas need further improvement, and we welcome feedback from the
-          developer community. Cognate's core capabilities and foundational APIs will continue to
-          evolve rapidly over the coming months.
+          Cognate Console runs a coding agent against your own workspace: it can read and edit
+          files, run shell commands, and execute code on your behalf. Every one of those actions is
+          visible in the transcript as it happens, and anything irreversible — like running
+          arbitrary code — pauses for your explicit approval first.
         </p>
-        <p>Plugins built for this reconstruction are experimental and may change without notice as the underlying capability model matures.</p>
+        <p>This build is under active development; expect rough edges and changing behavior.</p>
         <div className="modal-actions">
           <button type="button" onClick={onContinue}>
             Continue
@@ -313,9 +358,18 @@ function FirstRunNotice({ onContinue }: { readonly onContinue: () => void }) {
  *  Models afterward. */
 function FirstRunApiKey({ onDismiss }: { readonly onDismiss: () => void }) {
   const [key, setKey] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef);
   return (
     <div className="modal-backdrop">
-      <div className="modal first-run-dialog" role="dialog" aria-modal="true" aria-labelledby="first-run-apikey-heading">
+      <div
+        className="modal first-run-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="first-run-apikey-heading"
+        tabIndex={-1}
+        ref={dialogRef}
+      >
         <h2 id="first-run-apikey-heading">Add an API key to get started</h2>
         <p>Configure a model provider to start building.</p>
         <label>
@@ -609,9 +663,11 @@ function SettingsModels({
     }
   }, [client, config, rowApiKey]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, onClose);
   return (
-    <div className="modal-backdrop" role="dialog" aria-label="Settings">
-      <div className="modal settings-panel">
+    <div className="modal-backdrop">
+      <div className="modal settings-panel" role="dialog" aria-modal="true" aria-label="Settings" tabIndex={-1} ref={dialogRef}>
         <div className="settings-titlebar">
           <h2>Settings</h2>
           <button type="button" className="open-config-file-btn" disabled title={NOT_IMPLEMENTED}>
@@ -1138,7 +1194,7 @@ function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly 
   }, []);
   return (
     <div
-      className="approval-card"
+      className="approval-card surface-consequential"
       data-approval-panel
       tabIndex={-1}
       ref={ref}
@@ -1276,12 +1332,34 @@ function PlanReviewCard({
   readonly onDecide: (approved: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
   const firstLine = markdown
     .split("\n")
     .map((l) => l.trim())
     .find((l) => l.length > 0 && !l.startsWith("#"));
   return (
-    <div className="plan-review-card" data-plan-panel role="region" aria-label="Approve this plan and leave plan mode?">
+    <div
+      className="plan-review-card surface-consequential"
+      data-plan-panel
+      role="region"
+      aria-label="Approve this plan and leave plan mode?"
+      tabIndex={-1}
+      ref={ref}
+      onKeyDown={(e) => {
+        // Same contract as ApprovalBar (DESIGN.md § Interaction conventions): both cards mean "the
+        // agent is blocked on your decision" and should feel identical from the keyboard.
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onDecide(true);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          onDecide(false);
+        }
+      }}
+    >
       <div className="plan-review-header">
         <span className="plan-review-dot" aria-hidden="true" />
         <span className="plan-review-label">Plan review</span>
@@ -1600,28 +1678,17 @@ function Composer({
         }}
       />
       <div className="composer-toolbar">
-        <button type="button" className="icon-btn" aria-label="Add files or run commands" disabled title={NOT_IMPLEMENTED}>
-          <PlusIcon />
-        </button>
-        <button type="button" className="dropdown-btn" aria-label="Access mode, current: Workspace Write" disabled title={NOT_IMPLEMENTED}>
+        <span className="composer-info-label" title="Sandbox access mode for this session">
           Workspace Write
-          <ChevronDownIcon />
-        </button>
+        </span>
         {planMode && (
           <button type="button" className="plan-mode-toggle" aria-label="Plan mode on, press to turn off" onClick={onTogglePlanMode}>
             Plan
           </button>
         )}
-        <button
-          type="button"
-          className="dropdown-btn"
-          aria-label={`Select model, current ${modelLabel ?? "none"}`}
-          disabled
-          title={NOT_IMPLEMENTED}
-        >
+        <span className="composer-info-label" title="Model configured in Settings → Models">
           {modelLabel ?? "No model"}
-          <ChevronDownIcon />
-        </button>
+        </span>
         <div className="composer-spacer" />
         {sending ? (
           <button type="button" className="send-btn stop" aria-label="Stop generating" onClick={onStop}>
@@ -1640,11 +1707,8 @@ function Composer({
         )}
       </div>
       <div className="composer-stats">
-        <span className="stat-chip" title={NOT_IMPLEMENTED}>
-          {turns} turns {steps} steps · 0 tok/s
-        </span>
-        <span className="stat-chip" title={NOT_IMPLEMENTED}>
-          0% of context used
+        <span className="stat-chip">
+          {turns} turn{turns === 1 ? "" : "s"} · {steps} step{steps === 1 ? "" : "s"}
         </span>
       </div>
     </div>
@@ -1767,18 +1831,6 @@ function MessageBubble({
           <button type="button" className="meta-action" aria-label="Copy" title="Copy">
             <CopyIcon />
           </button>
-          <button type="button" className="meta-action" aria-label="Good response" title={NOT_IMPLEMENTED} disabled>
-            <ThumbUpIcon />
-          </button>
-          <button type="button" className="meta-action" aria-label="Bad response" title={NOT_IMPLEMENTED} disabled>
-            <ThumbDownIcon />
-          </button>
-          <button type="button" className="meta-action" aria-label="Branch into a new conversation" title={NOT_IMPLEMENTED} disabled>
-            <BranchIcon />
-          </button>
-          <span className="usage-chip" title={NOT_IMPLEMENTED}>
-            Usage 0 tok
-          </span>
           {message.at && <span className="meta-time">{message.at}</span>}
         </div>
       )}
@@ -1807,21 +1859,17 @@ function HeroLanding({
 }) {
   return (
     <>
-      <div className="hero-banner" role="banner">
-        <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Open right sidebar">
-          <PanelRightIcon />
-        </button>
-      </div>
       <div className="hero-landing">
         <LogoIcon className="hero-logo" />
         <div className="hero-heading-row">
-          <h1 className="hero-heading">Into the Unknown</h1>
+          <h1 className="hero-heading">Start a session</h1>
           <span className="hero-preview-badge">Preview</span>
         </div>
         <div className="hero-pills">
-          <button type="button" className="hero-pill" disabled title={NOT_IMPLEMENTED}>
+          <span className="hero-pill" title={workspaceLabel}>
+            <FolderIcon aria-hidden="true" />
             {workspaceLabel}
-          </button>
+          </span>
           <span className="mode-badge">{modeLabel}</span>
         </div>
         <div className="hero-composer">
@@ -2100,28 +2148,10 @@ export function App() {
           {!collapsed && "New Session"}
         </button>
 
-        <nav aria-label="Global panels" className="global-panels">
-          <button type="button" className="icon-btn" aria-label="Plugins" disabled title={NOT_IMPLEMENTED}>
-            <PluginIcon />
-            {!collapsed && <span>Plugins</span>}
-          </button>
-        </nav>
-
         {!collapsed && (
           <div className="workspaces-section">
             <div className="workspaces-header">
               <span>Workspaces</span>
-              <div className="workspaces-actions">
-                <button type="button" className="icon-btn" aria-label="Search sessions" disabled title={NOT_IMPLEMENTED}>
-                  <SearchIcon />
-                </button>
-                <button type="button" className="icon-btn" aria-label="View options" disabled title={NOT_IMPLEMENTED}>
-                  <SlidersIcon />
-                </button>
-                <button type="button" className="icon-btn" aria-label="Add workspace" disabled title={NOT_IMPLEMENTED}>
-                  <PlusIcon />
-                </button>
-              </div>
             </div>
             <div role="tree" aria-label="Sessions" className="session-tree">
               {currentWorkspace ? (
@@ -2219,47 +2249,8 @@ export function App() {
                 </div>
               )}
               <span className="mode-badge">{currentSession?.mode === "ptc" ? "PTC mode" : "Standard mode"}</span>
-              {/* Critic round-4 P2: once the Review panel is open it narrows the chat column, and the
-               *  reference collapses these two labeled buttons to icon-only affordances (same
-               *  accessible names, still disabled per DEVIATIONS.md "Session header actions —
-               *  inert") so the header stays a single row instead of wrapping to two. */}
-              <div className="header-actions">
-                {openReview ? (
-                  <>
-                    <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Open in Files">
-                      <ExternalLinkIcon />
-                    </button>
-                    <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="More ways to open">
-                      <ChevronDownIcon />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" disabled title={NOT_IMPLEMENTED}>
-                      Open in Files
-                    </button>
-                    <button type="button" disabled title={NOT_IMPLEMENTED}>
-                      More ways to open
-                    </button>
-                  </>
-                )}
-                <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="More actions">
-                  &hellip;
-                </button>
-                <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Open right sidebar">
-                  <PanelRightIcon />
-                </button>
-              </div>
-              <div role="tablist" className="tabs">
-                <button type="button" role="tab" aria-selected="true" className="tab active">
-                  Chat
-                </button>
-                <button type="button" role="tab" aria-selected="false" className="tab" disabled title={NOT_IMPLEMENTED}>
-                  Trajectory
-                </button>
-              </div>
             </header>
-            <div className="messages">
+            <div className="messages" aria-live="polite" aria-atomic="false" aria-relevant="additions text">
               {transcript.length === 0 && streaming.status === "idle" && <p className="empty-state">Start the conversation below.</p>}
               {transcript.map((message, index) => (
                 <MessageBubble key={index} message={message} turnNumber={index + 1} onOpenReview={openReviewPanel} workDetails={workDetails} />

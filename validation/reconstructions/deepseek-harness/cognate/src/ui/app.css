@@ -1,123 +1,132 @@
 /*
- * Cognate reconstruction of the DeepSeek Harness Web UI shell (tranche T5b).
- * Independently authored — no CSS or assets copied from the reference clone.
- * Geometry follows reference/observations/product-characterization.md §2:
- *   SIDEBAR_MIN=264 SIDEBAR_MAX=420 SIDEBAR_DEFAULT=280 SIDEBAR_COLLAPSED=56
- *   SIDEBAR_AUTO_COLLAPSE=1024 CENTER_MIN=400
- * Radius scale follows the matrix's "DSH unified corner-radius standard":
- *   R4 xs / R8 sm / R12 md / R16 lg / R20 xl / R28 panel.
- * Light is the default theme; [data-theme="dark"] overrides tokens below.
+ * Hallmark · genre: modern-minimal · theme: cobalt (app-adapted) · designed-as-app
+ * Cognate Console — an independent visual system (see ../../DESIGN.md), no longer a forensic
+ * reconstruction of the DeepSeek Harness reference. Token NAMES are kept stable from the prior
+ * system (hundreds of rules below reference them); token VALUES and the radius/type scale are new.
+ * Geometry (sidebar widths, breakpoint) is retained from the settled reconstruction — it was judged
+ * structurally sound in redesign/hallmark-audit.md and is not part of this redesign's scope.
  */
 
 :root {
   color-scheme: light;
 
-  --cg-bg: #f7f7f8;
-  --cg-surface: #ffffff;
-  --cg-surface-raised: #ffffff;
-  --cg-surface-sunken: #f0f1f3;
-  --cg-border: #e3e4e8;
-  --cg-border-strong: #d3d5db;
-  --cg-text: #1b1d22;
-  --cg-text-muted: #6b7280;
-  --cg-text-faint: #9aa0ab;
-  --cg-accent: #1b1d22;
-  --cg-accent-contrast: #ffffff;
-  /* Round-3 audit (P0/P1): the reference does NOT use one accent hue everywhere. Near-black
-   * (`--cg-accent` above) is only the modal/approval CTA color ("Continue", "Apply", "Allow once" —
-   * reference/screenshots/desktop/{01-first-launch,02-model-settings,11-approval-pending}.png).
-   * The composer send/stop button and the active-tab underline are a separate BLUE
-   * (`reference/screenshots/desktop/{07-streaming,15-completed-session}.png` sample to `#4176e6`) —
-   * given its own token so it doesn't get pulled along by a future accent retone. */
-  --cg-accent-interactive: #4176e6;
-  --cg-accent-interactive-contrast: #ffffff;
-  /* The user-message bubble is its own light lavender/blue-gray fill with dark text, NOT the
-   * near-black `--cg-accent` (critic round-3 P0/P1: `--cg-accent` was pulled onto the bubble by the
-   * round-2 retone, but reference/screenshots/{desktop,laptop}/15-completed-session.png samples the
-   * bubble fill to `#edf3fe` with dark text, distinct from the near-black button/active-row color). */
-  --cg-message-bubble-bg: #edf3fe;
-  --cg-message-bubble-text: #1b1d22;
-  --cg-danger: #d93025;
-  --cg-danger-bg: #fdecea;
-  --cg-success: #1a7f37;
-  --cg-code-bg: #f2f3f5;
-  --cg-hover: rgba(0, 0, 0, 0.045);
-  --cg-active: rgba(27, 29, 34, 0.08);
-  --cg-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  /* ---- Cobalt palette (DESIGN.md § Theme) — cool engineered paper, one electric signal ---- */
+  --cg-bg: oklch(96.5% 0.006 250);
+  --cg-surface: oklch(98.5% 0.004 250);
+  --cg-surface-raised: oklch(99% 0.003 250);
+  --cg-surface-sunken: oklch(94% 0.008 250);
+  --cg-border: oklch(88% 0.008 255);
+  --cg-border-strong: oklch(80% 0.01 255);
+  --cg-text: oklch(24% 0.02 258);
+  --cg-text-muted: oklch(52% 0.014 257);
+  --cg-text-faint: oklch(64% 0.012 256);
+  /* One signal accent (Hallmark color.md: "one accent, ≤3-5% of viewport") — replaces the prior
+   * two-accent (near-black CTA / separate blue interactive) scheme; hallmark-audit.md finding 1.
+   * Lightness tuned to 52% (darker than Cobalt's reference 58%) so white button text clears
+   * WCAG 4.5:1 against it — color.md's own contrast table, not just the "large text" 3:1 floor. */
+  --cg-accent: oklch(52% 0.19 256);
+  --cg-accent-contrast: oklch(99% 0.006 256);
+  --cg-accent-interactive: var(--cg-accent);
+  --cg-accent-interactive-contrast: var(--cg-accent-contrast);
+  --cg-message-bubble-bg: oklch(94% 0.03 256);
+  --cg-message-bubble-text: var(--cg-text);
+  --cg-danger: oklch(52% 0.19 25);
+  --cg-danger-bg: oklch(96% 0.03 25);
+  --cg-success: oklch(55% 0.14 152);
+  --cg-code-bg: oklch(93% 0.01 255);
+  --cg-hover: oklch(24% 0.02 258 / 0.045);
+  --cg-active: oklch(24% 0.02 258 / 0.08);
+  --cg-shadow: 0 1px 2px oklch(24% 0.02 258 / 0.06), 0 1px 3px oklch(24% 0.02 258 / 0.08);
+  /* The "consequential" surface register (DESIGN.md § Surface/elevation) — approval + plan-review
+   * cards get a deliberately stronger lift than ambient cards; nothing else uses this token. */
+  --cg-shadow-consequential: 0 4px 16px oklch(24% 0.02 258 / 0.14), 0 1px 2px oklch(24% 0.02 258 / 0.1);
+  /* The "graphite" register — code/diff/tool-call surfaces (Cobalt's "code is the hero" move). */
+  --cg-graphite: oklch(22% 0.016 260);
+  --cg-graphite-ink: oklch(94% 0.01 258);
 
+  /* ---- Radii — Cobalt's tight technical scale, replacing the reference's 4/8/12/16/20/28 ---- */
   --cg-radius-xs: 4px;
-  --cg-radius-sm: 8px;
-  --cg-radius-md: 12px;
-  --cg-radius-lg: 16px;
-  --cg-radius-xl: 20px;
-  --cg-radius-panel: 28px;
+  --cg-radius-sm: 6px;
+  --cg-radius-md: 8px;
+  --cg-radius-lg: 10px;
+  --cg-radius-xl: 12px;
+  --cg-radius-panel: 14px;
 
   --cg-sidebar-width: 280px;
   --cg-sidebar-min: 264px;
   --cg-sidebar-max: 420px;
   --cg-sidebar-collapsed: 56px;
   --cg-center-min: 400px;
-  /* Critic round-4 P1-1: the chat column's outer width (messages, composer, and the cards docked
-   * where the composer sits) — includes the column's own side padding, chosen so the rendered
-   * *content* measures ~742px, matching the reference (see app.css's `.messages` comment). */
   --cg-chat-column-max-width: 790px;
 
-  --cg-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
-  --cg-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* ---- Typography — Space Grotesk display, Inter body, JetBrains Mono outlier (DESIGN.md) ---- */
+  --cg-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --cg-font: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --cg-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --cg-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --cg-bg: #17181b;
-    --cg-surface: #1e2024;
-    --cg-surface-raised: #24262b;
-    --cg-surface-sunken: #16171a;
-    --cg-border: #2c2e34;
-    --cg-border-strong: #3a3d44;
-    --cg-text: #ececee;
-    --cg-text-muted: #a3a8b3;
-    --cg-text-faint: #767c88;
-    --cg-accent: #ececee;
-    --cg-accent-contrast: #17181b;
-    --cg-accent-interactive: #6f92ef;
-    --cg-accent-interactive-contrast: #0c1220;
-    --cg-message-bubble-bg: #2a3350;
-    --cg-message-bubble-text: #ececee;
-    --cg-danger: #ff6b6b;
-    --cg-danger-bg: #3a1f1f;
-    --cg-success: #4ade80;
-    --cg-code-bg: #17181c;
-    --cg-hover: rgba(255, 255, 255, 0.06);
-    --cg-active: rgba(236, 236, 238, 0.14);
-    --cg-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+    --cg-bg: oklch(14% 0.01 258);
+    --cg-surface: oklch(16% 0.012 258);
+    --cg-surface-raised: oklch(19% 0.014 258);
+    --cg-surface-sunken: oklch(12% 0.01 258);
+    --cg-border: oklch(28% 0.012 258);
+    --cg-border-strong: oklch(36% 0.014 258);
+    --cg-text: oklch(94% 0.008 258);
+    --cg-text-muted: oklch(74% 0.012 257);
+    --cg-text-faint: oklch(58% 0.012 257);
+    --cg-accent: oklch(66% 0.17 256);
+    --cg-accent-contrast: oklch(14% 0.012 258);
+    --cg-accent-interactive: var(--cg-accent);
+    --cg-accent-interactive-contrast: var(--cg-accent-contrast);
+    --cg-message-bubble-bg: oklch(28% 0.05 256);
+    --cg-message-bubble-text: var(--cg-text);
+    --cg-danger: oklch(68% 0.17 25);
+    --cg-danger-bg: oklch(24% 0.05 25);
+    --cg-success: oklch(72% 0.15 152);
+    --cg-code-bg: oklch(19% 0.012 258);
+    --cg-hover: oklch(94% 0.008 258 / 0.06);
+    --cg-active: oklch(94% 0.008 258 / 0.14);
+    --cg-shadow: 0 1px 2px oklch(0% 0 0 / 0.4), 0 1px 3px oklch(0% 0 0 / 0.5);
+    --cg-shadow-consequential: 0 4px 16px oklch(0% 0 0 / 0.5), 0 1px 2px oklch(0% 0 0 / 0.4);
+    /* Dark-mode recipe: elevated surfaces are lighter, not darker (color.md) — graphite becomes the
+     * *raised* surface here, the inverse of light mode where it's the one deliberate dark band. */
+    --cg-graphite: oklch(26% 0.018 260);
+    --cg-graphite-ink: oklch(94% 0.01 258);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --cg-bg: #17181b;
-  --cg-surface: #1e2024;
-  --cg-surface-raised: #24262b;
-  --cg-surface-sunken: #16171a;
-  --cg-border: #2c2e34;
-  --cg-border-strong: #3a3d44;
-  --cg-text: #ececee;
-  --cg-text-muted: #a3a8b3;
-  --cg-text-faint: #767c88;
-  --cg-accent: #ececee;
-  --cg-accent-contrast: #17181b;
-  --cg-accent-interactive: #6f92ef;
-  --cg-accent-interactive-contrast: #0c1220;
-  --cg-message-bubble-bg: #2a3350;
-  --cg-message-bubble-text: #ececee;
-  --cg-danger: #ff6b6b;
-  --cg-danger-bg: #3a1f1f;
-  --cg-success: #4ade80;
-  --cg-code-bg: #17181c;
-  --cg-hover: rgba(255, 255, 255, 0.06);
-  --cg-active: rgba(236, 236, 238, 0.14);
-  --cg-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --cg-bg: oklch(14% 0.01 258);
+  --cg-surface: oklch(16% 0.012 258);
+  --cg-surface-raised: oklch(19% 0.014 258);
+  --cg-surface-sunken: oklch(12% 0.01 258);
+  --cg-border: oklch(28% 0.012 258);
+  --cg-border-strong: oklch(36% 0.014 258);
+  --cg-text: oklch(94% 0.008 258);
+  --cg-text-muted: oklch(74% 0.012 257);
+  --cg-text-faint: oklch(58% 0.012 257);
+  --cg-accent: oklch(66% 0.17 256);
+  --cg-accent-contrast: oklch(14% 0.012 258);
+  --cg-accent-interactive: var(--cg-accent);
+  --cg-accent-interactive-contrast: var(--cg-accent-contrast);
+  --cg-message-bubble-bg: oklch(28% 0.05 256);
+  --cg-message-bubble-text: var(--cg-text);
+  --cg-danger: oklch(68% 0.17 25);
+  --cg-danger-bg: oklch(24% 0.05 25);
+  --cg-success: oklch(72% 0.15 152);
+  --cg-code-bg: oklch(19% 0.012 258);
+  --cg-hover: oklch(94% 0.008 258 / 0.06);
+  --cg-active: oklch(94% 0.008 258 / 0.14);
+  --cg-shadow: 0 1px 2px oklch(0% 0 0 / 0.4), 0 1px 3px oklch(0% 0 0 / 0.5);
+  --cg-shadow-consequential: 0 4px 16px oklch(0% 0 0 / 0.5), 0 1px 2px oklch(0% 0 0 / 0.4);
+  --cg-graphite: oklch(26% 0.018 260);
+  --cg-graphite-ink: oklch(94% 0.01 258);
 }
 
 * {
@@ -129,6 +138,12 @@ body,
 #root {
   height: 100%;
   margin: 0;
+}
+
+/* Hallmark mobile floor (responsive.md): no horizontal scroll, ever — `clip`, never `hidden`. */
+html,
+body {
+  overflow-x: clip;
 }
 
 body {
@@ -197,7 +212,9 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-family: var(--cg-font-display);
   font-weight: 600;
+  letter-spacing: -0.02em;
   font-size: 14px;
   white-space: nowrap;
 }
@@ -272,15 +289,6 @@ input:focus-visible {
   cursor: not-allowed;
 }
 
-.global-panels {
-  display: flex;
-  flex-direction: column;
-}
-
-.global-panels .icon-btn {
-  justify-content: flex-start;
-}
-
 .workspaces-section {
   display: flex;
   flex-direction: column;
@@ -299,15 +307,6 @@ input:focus-visible {
   text-transform: none;
   letter-spacing: normal;
   color: var(--cg-text-muted);
-}
-
-.workspaces-actions {
-  display: flex;
-  gap: 2px;
-}
-
-.workspaces-actions .icon-btn {
-  padding: 4px;
 }
 
 .session-tree {
@@ -462,12 +461,6 @@ input:focus-visible {
 
 /* ---------- Hero landing (04/05: workspace selected, no messages yet) ---------- */
 
-.hero-banner {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 12px;
-}
-
 .hero-landing {
   margin: auto;
   display: flex;
@@ -496,8 +489,10 @@ input:focus-visible {
 /* Critic round-4 P2-1: the reference's hero heading is regular/medium weight, and the workspace/mode
  * row beneath it is plain icon+text with no pill border/background — not bold/bordered chrome. */
 .hero-heading {
+  font-family: var(--cg-font-display);
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin: 0;
   color: var(--cg-text);
 }
@@ -518,12 +513,20 @@ input:focus-visible {
 }
 
 .hero-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 400;
   color: var(--cg-text-muted);
   background: transparent;
   border: none;
   padding: 4px 0;
+}
+
+.hero-pill svg {
+  width: 13px;
+  height: 13px;
 }
 
 .hero-composer {
@@ -564,8 +567,11 @@ input:focus-visible {
 }
 
 .mode-badge {
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--cg-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--cg-text-muted);
   background: var(--cg-surface-sunken);
   border: 1px solid var(--cg-border);
@@ -682,34 +688,6 @@ input:focus-visible {
   color: var(--cg-danger, #c0392b);
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-
-.header-actions button:not(.icon-btn) {
-  border: 1px solid var(--cg-border);
-  background: var(--cg-surface);
-  border-radius: var(--cg-radius-sm);
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.header-actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.tabs {
-  display: flex;
-  gap: 2px;
-  width: 100%;
-  border-top: 1px solid transparent;
-}
-
 .tab {
   border: none;
   background: transparent;
@@ -755,6 +733,30 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   max-width: 720px;
+  animation: cg-rise-in 180ms var(--cg-ease-out);
+}
+
+/* DESIGN.md § Motion — the one deliberate motion in this app besides streaming text itself: a
+   short opacity+rise on new content (messages, disclosure reveals). Nothing else animates. */
+@keyframes cg-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
 }
 
 .message-user {
@@ -911,12 +913,6 @@ input:focus-visible {
   margin-top: 8px;
 }
 
-.usage-chip {
-  font-size: 11px;
-  color: var(--cg-text-faint);
-  margin-left: 4px;
-}
-
 .cancelled-tag {
   font-size: 11px;
   font-weight: 500;
@@ -941,16 +937,26 @@ input:focus-visible {
   text-align: left;
 }
 
-/* Docked where the composer sits (reference `11-approval-pending`: the card replaces the composer
-   at the bottom of the chat pane, not an inline message-list card). */
+/* The "consequential" surface register (DESIGN.md § Surface/elevation) — the one place a deliberate
+   accent-colored edge + a stronger shadow appear, so "the agent is blocked on your decision" reads
+   as a different kind of space than an ordinary ambient card. Shared by ApprovalBar and
+   PlanReviewCard; replaces two separately hand-tuned amber treatments with one system rule. */
+.surface-consequential {
+  /* Impeccable's mechanical detector (redesign/impeccable-detect-report.json) flagged an earlier
+     draft's accent-colored left border as the "side-tab accent border" AI-slop tell — the signal
+     comes from the header dot/label + a genuinely stronger lift instead, not a colored edge. */
+  background: var(--cg-surface);
+  border: 1px solid var(--cg-border-strong);
+  border-radius: var(--cg-radius-lg);
+  box-shadow: var(--cg-shadow-consequential);
+}
+
+/* Docked where the composer sits (replaces the composer at the bottom of the chat pane). */
 .approval-card {
   width: calc(100% - 48px);
   max-width: calc(var(--cg-chat-column-max-width) - 48px);
   margin: 0 auto 20px;
-  border: 1px solid #f0b429;
-  border-radius: var(--cg-radius-md);
   overflow: hidden;
-  background: var(--cg-surface, #fff);
 }
 
 .approval-header {
@@ -958,14 +964,14 @@ input:focus-visible {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #fdf3d9;
+  background: var(--cg-surface-sunken);
 }
 
 .approval-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #f0b429;
+  background: var(--cg-accent);
   flex-shrink: 0;
 }
 
@@ -973,7 +979,7 @@ input:focus-visible {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #8a5a00;
+  color: var(--cg-text);
 }
 
 .approval-details {
@@ -990,33 +996,27 @@ input:focus-visible {
 }
 
 .approval-btn {
-  border-radius: var(--cg-radius-xs);
+  border-radius: var(--cg-radius-sm);
   padding: 6px 16px;
   font-size: 13px;
   border: 1px solid var(--cg-border);
 }
 
 .approval-btn.approval-allow {
-  background: #111;
-  color: #fff;
-  border-color: #111;
+  background: var(--cg-accent);
+  color: var(--cg-accent-contrast);
+  border-color: var(--cg-accent);
 }
 
 .approval-btn.approval-reject {
-  background: var(--cg-surface, #fff);
+  background: var(--cg-surface);
   color: var(--cg-text);
 }
 
-/* J-E-plan: docked where the composer sits, same pattern as `.approval-card` (amber border per
-   reference-behavior-matrix.md §6.3: "amber border, orange dot 'Plan review'"). */
 .plan-review-card {
   width: calc(100% - 48px);
   max-width: calc(var(--cg-chat-column-max-width) - 48px);
   margin: 0 auto 20px;
-  border: 1px solid #f0b429;
-  border-radius: var(--cg-radius-md);
-  overflow: hidden;
-  background: var(--cg-surface, #fff);
   padding: 14px 16px;
 }
 
@@ -1031,14 +1031,14 @@ input:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #f0b429;
+  background: var(--cg-accent);
   flex-shrink: 0;
 }
 
 .plan-review-label {
   font-size: 13px;
   font-weight: 600;
-  color: #8a5a00;
+  color: var(--cg-text);
 }
 
 .plan-review-disclosure {
@@ -1075,20 +1075,20 @@ input:focus-visible {
 }
 
 .plan-review-btn {
-  border-radius: var(--cg-radius-xs);
+  border-radius: var(--cg-radius-sm);
   padding: 6px 16px;
   font-size: 13px;
   border: 1px solid var(--cg-border);
 }
 
 .plan-review-btn.plan-review-approve {
-  background: #111;
-  color: #fff;
-  border-color: #111;
+  background: var(--cg-accent);
+  color: var(--cg-accent-contrast);
+  border-color: var(--cg-accent);
 }
 
 .plan-review-btn.plan-review-changes {
-  background: var(--cg-surface, #fff);
+  background: var(--cg-surface);
   color: var(--cg-text);
 }
 
@@ -1422,7 +1422,8 @@ input:focus-visible {
   gap: 6px;
 }
 
-.dropdown-btn {
+.dropdown-btn,
+.composer-info-label {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1431,7 +1432,11 @@ input:focus-visible {
   color: var(--cg-text-muted);
   border-radius: var(--cg-radius-sm);
   padding: 5px 9px;
-  font-size: 12px;
+  font-family: var(--cg-font-mono);
+  font-size: 11px;
+}
+
+.dropdown-btn {
   cursor: pointer;
 }
 
@@ -1469,10 +1474,12 @@ input:focus-visible {
 
 .composer-stats {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   padding: 2px 6px 4px;
+  font-family: var(--cg-font-mono);
   font-size: 11px;
+  letter-spacing: 0.02em;
   color: var(--cg-text-faint);
 }
 
@@ -1517,6 +1524,9 @@ input:focus-visible {
 
 .settings-titlebar h2 {
   margin: 0;
+  font-family: var(--cg-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   font-size: 16px;
   flex: 1;
 }
@@ -1588,6 +1598,9 @@ input:focus-visible {
 
 .settings-content h3 {
   margin: 0;
+  font-family: var(--cg-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   font-size: 15px;
 }
 
@@ -1628,6 +1641,9 @@ input:focus-visible {
 
 .modal h2 {
   margin: 0;
+  font-family: var(--cg-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   font-size: 16px;
 }
 
@@ -1706,11 +1722,14 @@ input:focus-visible {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  font-family: var(--cg-font-mono);
   font-size: 10px;
   font-weight: 600;
-  color: #8a5a00;
-  background: #fdf3d9;
-  border: 1px solid #f0b429;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cg-accent);
+  background: var(--cg-surface-sunken);
+  border: 1px solid var(--cg-border-strong);
   border-radius: var(--cg-radius-xs);
   padding: 1px 6px;
 }
@@ -1719,7 +1738,7 @@ input:focus-visible {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #f0b429;
+  background: var(--cg-accent);
   flex-shrink: 0;
 }
 
@@ -2042,5 +2061,70 @@ input:focus-visible {
 
   .right-panel {
     width: 340px;
+  }
+}
+
+/* DESIGN.md § Responsive principles — narrow register (Phase 7). `--cg-center-min` (400px) is a
+   desktop layout floor inherited from the settled reconstruction's own product-characterization
+   geometry; it must not apply once the viewport itself is narrower than that. */
+@media (max-width: 640px) {
+  .center-column {
+    min-width: 0;
+  }
+
+  .hero-landing {
+    padding: 0 16px 32px;
+  }
+
+  .hero-heading-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .hero-pills {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .composer-toolbar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .composer-spacer {
+    display: none;
+  }
+
+  .send-btn {
+    margin-left: auto;
+  }
+
+  .session-header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .modal.settings-panel {
+    width: 100%;
+  }
+
+  .settings-body {
+    flex-direction: column;
+    max-height: none;
+  }
+
+  .settings-nav {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--cg-border);
+  }
+
+  .right-panel {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    z-index: 30;
   }
 }
