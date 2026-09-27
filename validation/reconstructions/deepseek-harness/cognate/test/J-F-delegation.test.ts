@@ -1,11 +1,14 @@
 // Journey J-F-delegation: `[[scenario:delegate]]` calls the `subagent` tool
-// (`{description: "Summarize project status", prompt: "... [[scenario:child]]"}`), which
-// `agent.coding` runs as a durable child `agent.coding` run via `spawnSubagent`
-// (`@cognate/profile-harness`), correlated `subagent:<parentRunId>:<toolCallId>` (this app's own
-// `subagent.start` capability — `src/capabilities/subagentStart.ts`). Covers: the child run is
-// actually created and completes, its output becomes the parent's tool result and the parent
-// completes, the child does NOT show up in the `sessions` projection (top-level session list), and a
-// restart mid-delegation resumes without spawning a duplicate child.
+// (`{description: "Summarize project status", prompt: "... [[scenario:child]]"}`). Fire-and-forget
+// delegation (reference-behavior-matrix.md §6.4): `agent.coding` starts a durable child
+// `agent.coding` run via this app's own `subagent.start` capability
+// (`src/capabilities/subagentStart.ts`), correlated `subagent:<parentRunId>:<toolCallId>`, and
+// returns immediately with the reference's exact reflection text (`started subagent <uuid>`) — it
+// does not wait on the child. Covers: the child run is actually created and completes independently
+// (visible via the `subagents` projection), the parent completes right away with that exact text,
+// the child does NOT show up in the `sessions` projection (top-level session list), the completed
+// child's result appears in the parent session's *next* turn history (`session.history`), and a
+// restart mid-delegation resumes the child without spawning a duplicate.
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -43,10 +46,25 @@ async function waitForCompletion(app: AppServer, runId: string) {
   throw new Error(`run ${runId} did not complete in time`);
 }
 
+interface SubagentRow {
+  readonly sessionId: string;
+  readonly toolCallId: string;
+  readonly title: string;
+  readonly status: string;
+  readonly output?: string;
+}
+
+async function subagentRowsFor(app: AppServer, sessionId: string): Promise<{ readonly key: string; readonly value: SubagentRow }[]> {
+  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" });
+  return rows
+    .map((r) => ({ key: r.key, value: r.value as unknown as SubagentRow }))
+    .filter((r) => r.value.sessionId === sessionId);
+}
+
 const CHILD_TEXT = "The fixture workspace is a tiny, clean project with a README, a greet() helper, and no pending changes.";
 
 describe("J-F-delegation", () => {
-  test("child run is created and completes, its result lands in the parent, parent completes", async () => {
+  test("child is started, parent completes with the reflection text, child completes, result lands in the parent's next turn", async () => {
     await withTempHome(async (home) => {
       const mock = await bootMockModel();
       const { app, client } = await bootApp(home);
@@ -61,30 +79,47 @@ describe("J-F-delegation", () => {
           { idempotencyKey: randomUUID(), correlationId: `session:${sessionId}` },
         );
 
+        // Fire-and-forget: the parent completes right away with the exact "started subagent <uuid>"
+        // reflection text, not the child's answer.
         const finalRun = await waitForCompletion(app, run.runId);
         expect(finalRun.status).toBe("completed");
         const output = finalRun.output as { readonly text?: string };
-        expect(output.text).toBe(`Tool result: ${CHILD_TEXT}`);
+        const match = output.text?.match(/^Tool result: started subagent (.+)$/);
+        expect(match).toBeTruthy();
+        const childRunId = match![1]!;
 
-        // The `subagents` projection has one completed row for this session.
-        const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" });
-        const mine = rows.filter((r) => r.key.startsWith(`${sessionId}/`));
+        // The `subagents` projection has one row for this session, initially not yet completed
+        // (the child's own model call hasn't finished by the time the parent already has).
+        let mine = await subagentRowsFor(app, sessionId);
         expect(mine).toHaveLength(1);
-        const row = mine[0]!.value as { readonly title: string; readonly status: string };
-        expect(row.title).toBe("Summarize project status");
-        expect(row.status).toBe("completed");
+        expect(mine[0]!.value.title).toBe("Summarize project status");
 
-        // The child is a real, separate, completed run.
-        const toolCallId = mine[0]!.key.split("/")[1]!;
+        // The child is a real, separate run, correlated as this app's design requires.
+        const toolCallId = mine[0]!.key.split("/").pop()!;
         const childRuns = await app.runtime.service.listRuns(LOCAL_OPERATOR, { correlationId: `subagent:${run.runId}:${toolCallId}` });
         expect(childRuns).toHaveLength(1);
-        expect(childRuns[0]!.status).toBe("completed");
-        expect((childRuns[0]!.output as { readonly text?: string }).text).toBe(CHILD_TEXT);
+        expect(childRuns[0]!.runId).toBe(childRunId);
+
+        // The child completes independently; the `subagents` projection reflects it directly from
+        // the child's own events (no parent-side wait or emission).
+        await waitForCondition(async () => {
+          const r = await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: childRunId });
+          return r.status === "completed";
+        });
+        await waitForCondition(async () => {
+          mine = await subagentRowsFor(app, sessionId);
+          return mine[0]?.value.status === "completed";
+        });
+        expect(mine[0]!.value.output).toBe(CHILD_TEXT);
 
         // The child must NOT appear in the top-level `sessions` projection.
         const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
-        expect(sessionRows.some((r) => r.key === childRuns[0]!.runId || r.key.includes(":sub:"))).toBe(false);
+        expect(sessionRows.some((r) => r.key === childRunId)).toBe(false);
         expect(sessionRows.map((r) => r.key)).toContain(sessionId);
+
+        // The parent session's NEXT turn history durably includes the completed child's result.
+        const history = (await client.invoke("session.history", { sessionId })) as { readonly role: string; readonly content: string }[];
+        expect(history.some((m) => m.content.includes(`Subagent "Summarize project status" completed: ${CHILD_TEXT}`))).toBe(true);
       } finally {
         await app.stop();
         await mock.stop();
@@ -93,7 +128,7 @@ describe("J-F-delegation", () => {
   });
 
   test(
-    "restart mid-delegation resumes without spawning a duplicate child run",
+    "restart mid-delegation resumes the child without spawning a duplicate run",
     async () => {
       await withTempHome(async (home) => {
         const mock = await bootMockModel();
@@ -109,30 +144,31 @@ describe("J-F-delegation", () => {
             { idempotencyKey: randomUUID(), correlationId: `session:${sessionId}` },
           );
 
-          // Stop as soon as the parent has recorded that it spawned the child (strictly between
-          // `subagent.spawned` and the parent's own completion) — restart is genuinely mid-delegation.
-          await waitForCondition(async () => {
-            const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" });
-            return rows.some((r) => r.key.startsWith(`${sessionId}/`));
-          });
+          // Stop as soon as the child has been started (the parent itself completes essentially at
+          // the same instant, fire-and-forget) — the child is very likely still mid-flight (its own
+          // model call not yet finished), making this a genuine restart mid-delegation.
+          await waitForCondition(async () => (await subagentRowsFor(app, sessionId)).length > 0);
+          const mineBeforeRestart = await subagentRowsFor(app, sessionId);
+          const toolCallId = mineBeforeRestart[0]!.key.split("/").pop()!;
           await app.stop();
 
           const restarted = await startServer({ port: 0, home });
           try {
-            const finalRun = await waitForCompletion(restarted, run.runId);
-            expect(finalRun.status).toBe("completed");
-            const output = finalRun.output as { readonly text?: string };
-            expect(output.text).toBe(`Tool result: ${CHILD_TEXT}`);
+            const childRuns = await restarted.runtime.service.listRuns(LOCAL_OPERATOR, { correlationId: `subagent:${run.runId}:${toolCallId}` });
+            expect(childRuns).toHaveLength(1); // no duplicate child from a second `subagent.start`
+            const childRunId = childRuns[0]!.runId;
 
-            const rows = await restarted.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" });
-            const mine = rows.filter((r) => r.key.startsWith(`${sessionId}/`));
-            expect(mine).toHaveLength(1); // no duplicate row from a second `subagent.spawned`
-            const toolCallId = mine[0]!.key.split("/")[1]!;
-            const childRuns = await restarted.runtime.service.listRuns(LOCAL_OPERATOR, {
-              correlationId: `subagent:${run.runId}:${toolCallId}`,
-            });
-            expect(childRuns).toHaveLength(1); // exactly one child run, not a duplicate
-            expect(childRuns[0]!.status).toBe("completed");
+            for (let i = 0; i < 400; i++) {
+              const r = await restarted.runtime.service.getRun(LOCAL_OPERATOR, { runId: childRunId });
+              if (r.status === "completed" || r.status === "failed") break;
+              await new Promise((r2) => setTimeout(r2, 25));
+            }
+            const finishedChild = await restarted.runtime.service.getRun(LOCAL_OPERATOR, { runId: childRunId });
+            expect(finishedChild.status).toBe("completed");
+
+            const rows = await subagentRowsFor(restarted, sessionId);
+            expect(rows).toHaveLength(1); // still exactly one row, not duplicated
+            expect(rows[0]!.value.status).toBe("completed");
           } finally {
             await restarted.stop();
           }

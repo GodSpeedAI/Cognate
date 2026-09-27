@@ -111,8 +111,8 @@ export function bindTranche9(domain: Domain) {
 
 /**
  * T10 addition: `Subagent` (`subagent.start`, this app's own capability the `subagent` tool's
- * `spawnSubagent` call depends on — see `src/capabilities/subagentStart.ts` for why the packaged
- * `@cognate/profile-harness` one is not reused directly).
+ * fire-and-forget delegation invokes directly — see `src/capabilities/subagentStart.ts` for why the
+ * packaged `@cognate/profile-harness` one is not reused).
  */
 export function tranche10Bindings(domain: Domain): readonly CapabilityBinding[] {
   return [{ semanticId: domain.semanticId("Subagent"), capability: { id: "subagent.start", version: "1.0.0" } }];

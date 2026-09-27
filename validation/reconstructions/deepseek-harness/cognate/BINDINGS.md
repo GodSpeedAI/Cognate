@@ -22,7 +22,7 @@ objects, digest logged at startup).
 | 9 | `deepseek-harness.interaction::Tool` | `tool.run_code` v1.0.0 | `toolCapabilitiesComponent` (`src/capabilities/tools.ts`) | Runs a code snippet (original small `tools.bash`-providing harness, not copied from the reference) as a Bun subprocess; the tool a `sandbox_permissions` escalation request rides on — see `approvalGate.ts`. |
 | 10 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.path` v1.0.0 | `workspacePathComponent` (`src/capabilities/workspacePath.ts`) | Resolves a `workspaceId` to its canonical path for the tool loop (`agent.coding`'s `ctx.invoke("workspace.path", ...)`). |
 | 11 | `deepseek-harness.interaction::PlanMode` | `plan.state` v1.0.0 | `planStateComponent` (`src/capabilities/planState.ts`) | Resolves a `sessionId` to its current plan-mode/todos/review state (the `plans` projection) — `agent.coding`'s per-turn read of whether the session is genuinely in plan mode. |
-| 12 | `deepseek-harness.interaction::Subagent` | `subagent.start` v1.0.0 | `subagentStartComponent` (`src/capabilities/subagentStart.ts`) | Starts a child `agent.coding` run correlated `subagent:<parentRunId>:<id>` — what `spawnSubagent` (`@cognate/profile-harness`) depends on; this app's own implementation, not the packaged one (see the file's own comment for why). |
+| 12 | `deepseek-harness.interaction::Subagent` | `subagent.start` v1.0.0 | `subagentStartComponent` (`src/capabilities/subagentStart.ts`) | Starts a child `agent.coding` run correlated `subagent:<parentRunId>:<id>`, invoked directly and fire-and-forget by the `subagent` tool (`agentCoding.ts`) — not `@cognate/profile-harness`'s packaged `subagent.start` (see the file's own comment for why). |
 
 `tranche7Bindings`/`bindTranche7` (`domain/index.ts`) bind #6-10, alongside `tranche5Bindings` above.
 `tranche9Bindings`/`bindTranche9` (`domain/index.ts`) bind #11.
@@ -48,12 +48,11 @@ objects, digest logged at startup).
   entities with no bound capability yet; they belong to later tranches (T11) or are not surfaced by
   this reconstruction at all, and are intentionally left unbound until this app actually publishes
   something for them.
-- The `subagent` tool itself, `spawnSubagent`'s `ctx.waitFor(..., { type: "subagent", ... })`
-  continuation, and the completion-watcher that resolves it (`src/server.ts`
-  `resolveSubagentCompletion`) are not `CapabilityContract`s — same "policy/orchestration lives in
-  `agent.coding`/`server.ts`, only the leaf I/O is a capability" shape as `ApprovalGate`/`PlanMode`
-  above. Only the leaf capability the child run needs to actually start (`subagent.start`, #12) is
-  bound.
+- The `subagent` tool itself is not a `CapabilityContract` — same "policy/orchestration lives in
+  `agent.coding`, only the leaf I/O is a capability" shape as `ApprovalGate`/`PlanMode` above. Only
+  the leaf capability the child run needs to actually start (`subagent.start`, #12) is bound; there is
+  no continuation and no completion-watcher (fire-and-forget delegation, T10's correction — see
+  `README.md` and `DEVIATIONS.md`).
 - `PlanMode`'s plan-mode-on/off and todos/review state (T9) is realized the same way as
   `ApprovalGate`: app events (`plan.mode.changed`, `plan.todos.updated`, `plan.review.requested`,
   `plan.review.decided`) emitted directly by `agent.coding`, not a `CapabilityContract` a UI action

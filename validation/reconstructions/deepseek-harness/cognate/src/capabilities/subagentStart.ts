@@ -1,14 +1,14 @@
-// `subagent.start`: this app's own implementation of the capability `@cognate/profile-harness`'s
-// `spawnSubagent(ctx, id, agent, input)` invokes (`ctx.invoke("subagent.start", { agent, input, key
-// })`, `profiles/harness/src/index.ts`). Not reused directly (same rationale as `README.md`'s "Why
-// createRuntime, not createHarness": the packaged `subagentStartComponent` starts the child run with
-// no `correlationId` at all, so a child would fall back to whatever the runtime defaults to — this
-// app needs the child correlated as `subagent:<parentRunId>:<id>` specifically, both so it is
-// queryable as a subagent run and so it is *excluded* from the `sessions` projection's "session:"-
-// only guard (`src/projections/sessions.ts`) — children must not appear as top-level sessions.
-// `spawnSubagent` itself (the two-line `ctx.invoke`/`ctx.waitFor` durable-resume helper) is still
-// used as-is from `@cognate/profile-harness` in `agentCoding.ts` — only its capability dependency is
-// this app's own.
+// `subagent.start`: starts a child `agent.coding` run for the `subagent` tool
+// (`agentCoding.ts`, invoked directly via `ctx.invoke("subagent.start", { agent, input, key })` —
+// fire-and-forget, reference-behavior-matrix.md §6.4: the parent does not wait on the child). Named
+// and shaped after `@cognate/profile-harness`'s own `subagent.start` (`profiles/harness/src/
+// index.ts`'s `subagentStartComponent`, which `spawnSubagent` depends on) but not reused directly:
+// the packaged version starts the child run with no `correlationId` at all, so a child would fall
+// back to whatever the runtime defaults to — this app needs the child correlated as
+// `subagent:<parentRunId>:<id>` specifically, both so it is queryable as a subagent run (the
+// `subagents` projection parses this correlation back apart) and so it is *excluded* from the
+// `sessions` projection's "session:"-only guard (`src/projections/sessions.ts`) — children must not
+// appear as top-level sessions.
 import type { Json } from "@cognate/events";
 import type { Component, SemanticRef } from "@cognate/kernel-api";
 import type { RuntimeService } from "@cognate/runtime-api";

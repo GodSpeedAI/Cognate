@@ -6,7 +6,7 @@
   - button "Switch to dark theme"
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": New Session
+  - navigation "Session hierarchy": "Tool result: started subagent 862fda41-c478-4fc8-8004-f8c815a67…"
   - button "1 subagent"
   - text: Standard mode
   - button "Open in Files" [disabled]
@@ -18,13 +18,18 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 03:51 AM
-  - status: Deep diving...
-  - status: Deep diving...
-  - button "Coordinating subagents · Summarize project status" [disabled]
+  - text: 04:05 AM
+  - status: Worked
+  - button "Took 1s" [disabled]
+  - paragraph: "Tool result: started subagent 862fda41-c478-4fc8-8004-f8c815a67c9a"
+  - button "Copy"
+  - button "Good response" [disabled]
+  - button "Bad response" [disabled]
+  - button "Branch into a new conversation" [disabled]
+  - text: Usage 0 tok 04:05 AM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
-  - button "Stop"
+  - button "Send message" [disabled]
   - text: 0 turns 0 steps · 0 tok/s 0% of context used

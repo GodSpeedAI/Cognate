@@ -9,7 +9,9 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cg-ws-desktop" [expanded]
+    - treeitem "cg-ws-desktop New Session now" [expanded]:
+      - text: cg-ws-desktop
+      - treeitem "New Session now" [selected]
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
@@ -24,10 +26,10 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 03:50 AM
+  - text: 04:04 AM
   - status: Deep diving...
   - heading "Summary" [level=1]
-  - paragraph: Here is what
+  - paragraph: Here is
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
