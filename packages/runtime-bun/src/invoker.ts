@@ -14,7 +14,7 @@ export interface InvocationOutcome {
   readonly semanticRef: SemanticRef | null;
   readonly ok: boolean;
   readonly value: Json;
-  /** JSON form of the typed failure, e.g. `{ kind: "denied", reason }`. */
+  /** JSON form of the typed failure, e.g. `{ kind: "denied", reason }`. For "failed" kind, includes `name` (error constructor name) and `details` (error's enumerable properties as string/number/boolean/null). */
   readonly failure: { readonly kind: InvocationFailure["kind"]; readonly [key: string]: Json } | null;
 }
 
@@ -81,8 +81,27 @@ function failureJson(failure: InvocationFailure): NonNullable<InvocationOutcome[
       return { kind: failure.kind, reason: failure.reason };
     case "denied":
       return { kind: failure.kind, policyId: failure.decision.policyId, reason: failure.decision.reason };
-    case "failed":
-      return { kind: failure.kind, message: messageOf(failure.error) };
+    case "failed": {
+      const result: Record<string, Json> = {
+        kind: failure.kind,
+        message: messageOf(failure.error),
+      };
+      if (failure.error instanceof Error) {
+        result.name = failure.error.name;
+        const details: Record<string, Json> = {};
+        for (const [key, value] of Object.entries(failure.error)) {
+          if (key !== "message" && key !== "stack") {
+            if (typeof value === "string" || typeof value === "number" || typeof value === "boolean" || value === null) {
+              details[key] = value;
+            }
+          }
+        }
+        if (Object.keys(details).length > 0) {
+          result.details = details;
+        }
+      }
+      return result as NonNullable<InvocationOutcome["failure"]>;
+    }
     default:
       return { kind: failure.kind };
   }

@@ -43,7 +43,7 @@ envelope, so the audit chain survives while the content does not.
 |---|---|---|
 | `run.started` | `run-<id>` | the run's first fact; `payload.input`, metadata `agent`, `agentVersion`, `startedBy`, `startedByKind`; `causationId: null` |
 | `run.step.completed` | `run-<id>` | a `ctx.step` or `ctx.state` result; `metadata.stepId` |
-| `run.invocation` | `run-<id>` | a capability invocation; `payload {input, result| failure}`, metadata `{stepId, capability, providerId, fiberId, decision, ok, failureKind}` |
+| `run.invocation` | `run-<id>` | a capability invocation; `payload {input, result\| failure}` where failure includes `kind`, `message`, and optionally `name` (error constructor name) and `details` (enumerable error properties as string/number/boolean/null); metadata `{stepId, capability, providerId, fiberId, decision, ok, failureKind}` |
 | `run.invocation.progress` | `run-<id>` | a `HandlerContext.progress` call made while a `run.invocation` is in flight (e.g. streamed model token deltas); `payload` is the handler's payload verbatim, metadata `{stepId: "invoke:<n>", attempt, seq}`. `attempt` starts at 0 and increases only if the invocation is re-executed after a crash mid-attempt; `seq` is 0-based per attempt. Never assigned an `emit:<n>` id — it does not advance the run's emit counter, and a completed invocation's progress events are not repeated on replay (the handler is not called again). |
 | `run.recall` | `run-<id>` | a `ctx.recall` result |
 | `run.artifact` | `run-<id>` | `payload {artifactId}` |
