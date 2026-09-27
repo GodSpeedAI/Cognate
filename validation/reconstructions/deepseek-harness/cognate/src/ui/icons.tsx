@@ -87,6 +87,16 @@ export const PluginIcon = (props: IconProps) =>
 
 export const ChevronDownIcon = (props: IconProps) => base(<path d="M4 6l4 4 4-4" />, props);
 
+export const ChevronRightIcon = (props: IconProps) => base(<path d="M6 4l4 4-4 4" />, props);
+
+/** Sidebar workspace row (critic round-4 P1-4): a plain folder-outline glyph before the workspace
+ *  name, matching the reference's `folder-icon "<workspace>"` row. */
+export const FolderIcon = (props: IconProps) =>
+  base(
+    <path d="M1.75 4.25a1 1 0 0 1 1-1h3l1.25 1.5h6.25a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-10.5a1 1 0 0 1-1-1z" />,
+    props,
+  );
+
 export const SendIcon = (props: IconProps) => base(<path d="M8 12.5V3.5M8 3.5L4 7.5M8 3.5l4 4" />, props);
 
 export const StopIcon = (props: IconProps) => base(<rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none" />, props);
@@ -163,6 +173,18 @@ export const FileIcon = (props: IconProps) =>
     <>
       <path d="M4.5 1.5h5l2 2v11h-7z" />
       <path d="M9.5 1.5v2h2" />
+    </>,
+    props,
+  );
+
+/** Session header "Open in Files" (critic round-4 P2): collapses to this icon-only glyph once the
+ *  Review panel narrows the chat column, keeping the same accessible name. */
+export const ExternalLinkIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M6.5 2.5h-3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3" />
+      <path d="M9.5 2.5H13.5V6.5" />
+      <path d="M13 3L7 9" />
     </>,
     props,
   );

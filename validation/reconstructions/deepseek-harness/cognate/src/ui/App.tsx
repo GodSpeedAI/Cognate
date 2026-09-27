@@ -6,11 +6,14 @@ import {
   BranchIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   CodeViewIcon,
   CollapseIcon,
   CopyIcon,
   EditIcon,
+  ExternalLinkIcon,
   FileIcon,
+  FolderIcon,
   FullscreenIcon,
   GearIcon,
   ListViewIcon,
@@ -963,7 +966,11 @@ function ToolActivity({ entries, elapsedSeconds }: { readonly entries: readonly 
   if (!current || current.status !== "running") return null;
   return (
     <div className="tool-activity" data-tool-card>
-      <span className="status-pill" role="status">
+      {/* Critic round-4 P1-5 gave the base `.status-pill` (message-status-row's completed/failed
+       *  duration line) no visible dot — this in-progress "Deep diving" indicator is a distinct case
+       *  (critic round-4 batch B's sweep: the colored dot belongs here, not on "Took Ns"), so it
+       *  keeps its own modifier class. */}
+      <span className="status-pill status-active" role="status">
         <span className="sr-only">Deep diving for {elapsedSeconds}s</span>
       </span>
       <button type="button" className="tool-activity-btn" disabled title={`Deep diving for ${elapsedSeconds}s`}>
@@ -1093,14 +1100,20 @@ function SubagentTree({ rows, onOpen }: { readonly rows: readonly SubagentRowVie
   return (
     <div role="tree" aria-label="Subagent sessions" className="subagent-tree" data-subagent-card>
       {rows.map((row) => (
-        <div key={row.toolCallId} role="treeitem" className="subagent-row">
+        <button
+          key={row.toolCallId}
+          type="button"
+          role="treeitem"
+          className="subagent-row"
+          aria-label={`Open ${row.title} in sidebar`}
+          onClick={() => onOpen(row)}
+        >
           <span className="subagent-row-text">
-            {row.title} · {row.desc} · continuable · {row.status} · 0 tok · 0s
+            {row.title} · {row.desc} · continuable · {row.status}
           </span>
-          <button type="button" aria-label={`Open ${row.title} in sidebar`} onClick={() => onOpen(row)}>
-            Open {row.title} in sidebar
-          </button>
-        </div>
+          <span className="subagent-row-stat">0 tok / 0s</span>
+          <ChevronRightIcon aria-hidden="true" />
+        </button>
       ))}
     </div>
   );
@@ -1206,6 +1219,10 @@ function EditDiff({
   readonly onOpenReview: (summary: EditSummary, turnNumber: number) => void;
 }) {
   const fileName = summary.file_path.split("/").pop() ?? summary.file_path;
+  // Critic round-4 P2 (laptop file-change card): a colored file-type glyph by extension, matching
+  // the reference's blue "TS" square — consistent at every viewport width since it's not keyed off
+  // any breakpoint-dependent card size, just the file name.
+  const ext = fileName.includes(".") ? fileName.split(".").pop()!.toLowerCase() : "";
   return (
     <div className="edit-diff">
       <button
@@ -1214,8 +1231,8 @@ function EditDiff({
         aria-label={`View changes to ${summary.file_path}: Edited ${fileName} +${summary.additions} -${summary.deletions}`}
         onClick={() => onOpenReview(summary, turnNumber)}
       >
-        <span className="edit-diff-icon" aria-hidden="true">
-          <FileIcon />
+        <span className="edit-diff-icon" data-ext={ext} aria-hidden="true">
+          {ext === "ts" || ext === "tsx" ? "TS" : <FileIcon />}
         </span>
         <span className="edit-diff-info">
           <span className="edit-diff-heading">Edited {fileName}</span>
@@ -1787,12 +1804,21 @@ export function App() {
       // duration (`Date.now() - 0`) once the reattached run completes.
       if (stillInFlight) runStartedAtRef.current = Date.now();
       if (row) rememberSession(row.workspaceId, sessionId);
-      const history = (await client.invoke("session.history", { sessionId })) as { role: string; content: string }[];
+      const history = (await client.invoke("session.history", { sessionId })) as {
+        role: string;
+        content: string;
+        stepCount?: number;
+      }[];
       setTranscript(
         history.map((m) => ({
           role: m.role === "assistant" ? "assistant" : "user",
           content: m.content,
           at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          // Critic round-4 P1-3: reopening a session from history must feed the same "N turns M
+          // steps" footer counter (`sessionSteps` below) that a live-finished turn does — see
+          // `sessionHistory.ts`'s `stepCount` (tool-call count + 1, matching `useToolTimeline(...)
+          // .length + 1`), not the unset/`0` default that regressed `15-completed-session`.
+          stepCount: m.role === "assistant" ? (m.stepCount ?? 1) : undefined,
         })),
       );
     },
@@ -1956,6 +1982,7 @@ export function App() {
               {currentWorkspace ? (
                 <div role="treeitem" aria-expanded="true" className="workspace-row">
                   <span className="workspace-row-label" title={currentWorkspace.path}>
+                    <FolderIcon aria-hidden="true" />
                     {currentWorkspace.title || currentWorkspace.id}
                   </span>
                   <div className="session-rows">
@@ -2047,13 +2074,30 @@ export function App() {
                 </div>
               )}
               <span className="mode-badge">{currentSession?.mode === "ptc" ? "PTC mode" : "Standard mode"}</span>
+              {/* Critic round-4 P2: once the Review panel is open it narrows the chat column, and the
+               *  reference collapses these two labeled buttons to icon-only affordances (same
+               *  accessible names, still disabled per DEVIATIONS.md "Session header actions —
+               *  inert") so the header stays a single row instead of wrapping to two. */}
               <div className="header-actions">
-                <button type="button" disabled title={NOT_IMPLEMENTED}>
-                  Open in Files
-                </button>
-                <button type="button" disabled title={NOT_IMPLEMENTED}>
-                  More ways to open
-                </button>
+                {openReview ? (
+                  <>
+                    <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Open in Files">
+                      <ExternalLinkIcon />
+                    </button>
+                    <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="More ways to open">
+                      <ChevronDownIcon />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" disabled title={NOT_IMPLEMENTED}>
+                      Open in Files
+                    </button>
+                    <button type="button" disabled title={NOT_IMPLEMENTED}>
+                      More ways to open
+                    </button>
+                  </>
+                )}
                 <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="More actions">
                   &hellip;
                 </button>
