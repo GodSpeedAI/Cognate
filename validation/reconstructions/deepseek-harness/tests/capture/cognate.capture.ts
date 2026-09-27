@@ -332,9 +332,9 @@ try {
   await driver.openSettingsGeneral(page);
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   await page.waitForTimeout(200);
-  await checkpoint(page, "20-theme-variant");
   await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await page.waitForTimeout(150);
+  await checkpoint(page, "20-theme-variant");
 } finally {
   await browser.close();
   await driver.stop();
