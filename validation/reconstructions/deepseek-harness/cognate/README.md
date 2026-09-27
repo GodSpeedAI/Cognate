@@ -232,3 +232,12 @@ differing pixels, same range again. The banner button, "Subagent sessions" tree,
 "Open ... in sidebar" button all match the reference's structure; the main content difference is the
 completed turn's reflected text (this app's child-output text vs. the reference's "started subagent
 `<uuid>`" — see `DEVIATIONS.md` "Subagents (T10)").
+
+T11's `18-error`/`19-cancelled` (1 capture/compare round) sit at 3.0%/2.9% (desktop) and 3.9%/3.4%
+(laptop) differing pixels — in the same range as the rest. `18-error` uses the mock's
+`[[scenario:error]]` marker (a deterministic HTTP 500) rather than the reference's own genuine-network-
+timeout trigger (this mock has no timeout scenario), and shows this app's honest `"Internal server
+error" / HTTP_500` mapping instead of the reference's `"Request timed out." / TIMEOUT` — see
+`DEVIATIONS.md` "Cancellation and provider error/retry (T11)". `19-cancelled` shows the "Stopped"
+status pill with the partial streamed content retained and no duration badge, matching
+reference-behavior-matrix.md §7.

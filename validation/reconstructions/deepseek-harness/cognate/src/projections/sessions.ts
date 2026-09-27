@@ -80,6 +80,21 @@ export const sessionsProjection: Projection = {
       if (!existing) return [];
       return [{ key, value: { ...existing, lastStatus: "waiting", runId: event.runId } }];
     }
+    // T11 (J-H-cancellation / J-H-provider-error): these are runtime-emitted (not agent-emitted)
+    // events on the run's own stream, so — like `run.waiting` above — they carry neither
+    // `sessionId` nor `workspaceId` in their payload; only the correlation id names the session. The
+    // sidebar has no distinct "cancelled" badge of its own (reference-behavior-matrix.md §7 — "no
+    // distinct cancelled badge in the sidebar itself"), but `lastStatus` still needs to move off
+    // "running" so `App.tsx`'s `openSession` stops treating the run as still in flight on reopen.
+    if (event.eventType === "run.cancelled" || event.eventType === "run.failed") {
+      const sessionId = sessionIdFromCorrelation(event.correlationId);
+      if (!sessionId) return [];
+      const key = `${event.tenant}/${sessionId}`;
+      const existing = state.get(key) as Record<string, Json> | undefined;
+      if (!existing) return [];
+      const lastStatus = event.eventType === "run.cancelled" ? "cancelled" : "failed";
+      return [{ key, value: { ...existing, lastStatus, runId: event.runId } }];
+    }
     return [];
   },
 };

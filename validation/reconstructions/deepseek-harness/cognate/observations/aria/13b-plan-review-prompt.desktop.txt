@@ -31,9 +31,9 @@
   - status: plan · Plan mode on. Use /plan off to leave.
   - paragraph: /plan make a plan now [[scenario:plan]]
   - button "Copy"
-  - text: 04:04 AM
-  - status: Deep diving...
-  - status: Deep diving...
+  - text: 07:37 AM
+  - status: Deep diving for 5s
+  - status: Deep diving for 5s
   - button "Calling tools · exit_plan_mode" [disabled]
   - region "To-dos":
     - button "To-dos 1 in progress · 1 pending"

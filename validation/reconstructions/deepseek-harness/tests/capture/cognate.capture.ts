@@ -233,7 +233,7 @@ try {
   await driver.newSession(page);
   await driver.send(page, "[[scenario:plain]] cancel me please");
   await page.waitForTimeout(60);
-  const stopBtn = page.getByRole("button", { name: "Stop", exact: true });
+  const stopBtn = page.getByRole("button", { name: "Stop generating", exact: true });
   if ((await stopBtn.count()) > 0 && (await stopBtn.isVisible().catch(() => false))) {
     await stopBtn.click();
     await page.waitForTimeout(300);
@@ -244,17 +244,15 @@ try {
     await checkpoint(page, "19-cancelled-no-stop-button-found");
   }
 
-  // 18 - error: point the model config at a closed port to force a genuine network error.
-  await driver.openSettingsModels(page);
-  await page.getByLabel("Base URL").fill("http://127.0.0.1:4099/v1");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await page.waitForTimeout(200);
-  await page.getByRole("button", { name: "Close", exact: true }).click();
-  await page.waitForTimeout(200);
+  // 18 - error: the mock model's `[[scenario:error]]` marker (deterministic HTTP 500) — T11's
+  // retry budget (5 attempts) then the terminal failure block. The reference's own `18-error` used a
+  // genuine network timeout against a closed port; this mock has no timeout scenario, so this
+  // captures our honest HTTP_500 mapping instead of inventing a fake "Request timed out." — see
+  // DEVIATIONS.md ("provider-error code mapping").
   await driver.newSession(page);
-  await driver.send(page, "trigger a real provider error");
+  await driver.send(page, "[[scenario:error]] trigger a provider error");
   await page.waitForTimeout(3000);
-  await driver.waitForIdle(page, { timeoutMs: 15_000 });
+  await driver.waitForIdle(page, { timeoutMs: 60_000 });
   await checkpoint(page, "18-error");
 
   // 16 - session history: sidebar with multiple sessions from this run.
