@@ -1,11 +1,14 @@
 // Public projection `sessions`: keyed `${tenant}/${sessionId}` (per the architecture table's
-// "Session" row). Title = the session's first *assistant* answer, truncated — this matches the
-// reference (see reference/observations/aria/15-completed-session.desktop.txt: the sidebar
-// treeitem label is the raw markdown of the answer, e.g. "# Summary Here is what I found: ...",
-// not the user's prompt). Before the first answer lands, the row falls back to "New Session"
-// (see reference/observations/aria/04-workspace-selected.desktop.txt: the fresh session treeitem
-// name is "New Session"). We do not implement the reference's `all-prompts` LLM re-titling
-// cadence — see APP/README.md "Known gaps".
+// "Session" row). Title = the literal first human message text, truncated, set as soon as the turn
+// starts — matching the reference's *in-flight* behavior (reference-behavior-matrix.md §4: "Derived
+// verbatim from the literal first human message text ... at least at the moment of creation";
+// confirmed in reference/observations/aria/06-user-message.desktop.txt and
+// 08-tool-running.desktop.txt, both of which already show the literal-message title mid-run, not
+// "New Session"). Before any turn starts, the row falls back to "New Session" (see
+// reference/observations/aria/04-workspace-selected.desktop.txt). The reference's `all-prompts`
+// LLM re-titling cadence (a separate model request; see reference-behavior-matrix.md §0/§4) was not
+// observed to visibly replace this literal-text title within the pinned pass's timeframe, so this
+// reconstruction does not implement a second titling call — see APP/README.md "Known gaps".
 import type { Json } from "@cognate/events";
 import type { Projection } from "@cognate/projections";
 
@@ -36,13 +39,17 @@ export const sessionsProjection: Projection = {
       const payload = event.payload as { readonly sessionId: string; readonly workspaceId: string; readonly message: string };
       const key = `${event.tenant}/${payload.sessionId}`;
       const existing = state.get(key) as Record<string, Json> | undefined;
+      // Title from the literal first human message, set immediately (reference-behavior-matrix.md
+      // §4) — only the *first* turn's message sets it; a later turn in the same session must not
+      // overwrite an already-titled session.
+      const title = existing?.title && existing.title !== "New Session" ? existing.title : titleFrom(payload.message);
       return [
         {
           key,
           value: {
             id: payload.sessionId,
             workspaceId: payload.workspaceId,
-            title: existing?.title ?? "New Session",
+            title,
             lastStatus: "running",
             runId: event.runId,
             updatedAt: event.recordedAt,
@@ -54,13 +61,16 @@ export const sessionsProjection: Projection = {
       const payload = event.payload as { readonly sessionId: string; readonly workspaceId: string; readonly text: string };
       const key = `${event.tenant}/${payload.sessionId}`;
       const existing = state.get(key) as Record<string, Json> | undefined;
+      // Title was already set from the literal first message at `session.turn.started` time; keep
+      // it (falling back to the answer text only in the defensive case a `session.turn.started`
+      // event was somehow never seen for this session).
       return [
         {
           key,
           value: {
             id: payload.sessionId,
             workspaceId: payload.workspaceId,
-            title: existing?.title && existing.title !== "New Session" ? existing.title : titleFrom(payload.text),
+            title: existing?.title ?? titleFrom(payload.text),
             lastStatus: "completed",
             runId: event.runId,
             updatedAt: event.recordedAt,

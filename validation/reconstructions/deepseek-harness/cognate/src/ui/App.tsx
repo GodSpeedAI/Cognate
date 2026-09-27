@@ -4,9 +4,11 @@ import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
 import {
   BranchIcon,
+  CheckIcon,
   ChevronDownIcon,
   CollapseIcon,
   CopyIcon,
+  EditIcon,
   GearIcon,
   LogoIcon,
   MoonIcon,
@@ -20,6 +22,7 @@ import {
   SunIcon,
   ThumbDownIcon,
   ThumbUpIcon,
+  TrashIcon,
 } from "./icons.tsx";
 
 interface WorkspaceRow {
@@ -180,6 +183,18 @@ function useModelConfig(): ModelConfigRow | undefined {
   return current ? (current.value as unknown as ModelConfigRow) : undefined;
 }
 
+/** Whether the given first-run step (`"notice"` | `"apikey"`) has already been dismissed for this
+ *  `COGNATE_HARNESS_HOME` — folded from durable `onboarding.dismissed` events (`onboarding`
+ *  projection). Absence of a row is what makes the first-run dialog pair reappear on a fresh home,
+ *  same mechanism the reference uses per-`DSH_HOME` (critic round-1 P0-1). */
+function useOnboardingDismissed(step: "notice" | "apikey"): boolean {
+  const rows = useProjection("onboarding");
+  // `ReadProjection` strips the tenant prefix the projection stores keys with (same convention as
+  // `model-config`'s "current" / `workspaces`'s "record/<id>" rows) — the row key here is the bare
+  // step name, not `${tenant}/${step}`.
+  return useMemo(() => rows?.some((r) => r.key === step) ?? false, [rows, step]);
+}
+
 /** "just now" / "2m" / "3h" / "5d" — same rough granularity as the reference's session-tree
  * relative-time suffix (see reference/observations/aria/15-completed-session.desktop.txt: a
  * session row name ends in a relative-time word like "now"). */
@@ -214,6 +229,77 @@ function useTheme(): readonly [string, () => void] {
   }, [theme]);
   const toggle = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
   return [theme, toggle] as const;
+}
+
+/** First-run dialog #1 (critic round-1 P0-1): same structure/roles as the reference's "Internal
+ *  Testing Notice" (`dialog`, `heading[level=2]`, single "Continue" button; reference-behavior-
+ *  matrix.md §1) — Cognate-branded wording, not DeepSeek's copy (spec: brand/copy may be swapped,
+ *  the control itself may not be dropped). */
+function FirstRunNotice({ onContinue }: { readonly onContinue: () => void }) {
+  return (
+    <div className="modal-backdrop">
+      <div className="modal first-run-dialog" role="dialog" aria-modal="true" aria-labelledby="first-run-notice-heading">
+        <h2 id="first-run-notice-heading">Internal Testing Notice</h2>
+        <p>
+          This Cognate reconstruction of the DeepSeek Harness Web UI remains in testing for Cognate
+          developers. Many areas need further improvement, and we welcome feedback from the
+          developer community. Cognate's core capabilities and foundational APIs will continue to
+          evolve rapidly over the coming months.
+        </p>
+        <p>Plugins built for this reconstruction are experimental and may change without notice as the underlying capability model matures.</p>
+        <div className="modal-actions">
+          <button type="button" onClick={onContinue}>
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** First-run dialog #2 (critic round-1 P0-1): same structure as the reference's "Add an API key to
+ *  get started" (API-key textbox, "Configure later"/"Save and continue", the latter disabled until a
+ *  key is entered; reference-behavior-matrix.md §1). This tranche has no default/preset provider to
+ *  key-only configure (no DeepSeek-branded "official" provider) — "Save and continue" dismisses this
+ *  step the same as "Configure later"; the entered key is not persisted here (an assumption, not an
+ *  observed reference behavior — see APP/DEVIATIONS.md). Full provider setup happens in Settings →
+ *  Models afterward. */
+function FirstRunApiKey({ onDismiss }: { readonly onDismiss: () => void }) {
+  const [key, setKey] = useState("");
+  return (
+    <div className="modal-backdrop">
+      <div className="modal first-run-dialog" role="dialog" aria-modal="true" aria-labelledby="first-run-apikey-heading">
+        <h2 id="first-run-apikey-heading">Add an API key to get started</h2>
+        <p>Configure a model provider to start building.</p>
+        <label>
+          API key
+          <input type="password" aria-label="API key" value={key} onChange={(e) => setKey(e.currentTarget.value)} />
+        </label>
+        <div className="modal-actions">
+          <button type="button" onClick={onDismiss}>
+            Configure later
+          </button>
+          <button type="button" disabled={key.trim().length === 0} onClick={onDismiss}>
+            Save and continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Sequences the two first-run dialogs, gated by the `onboarding` projection — renders nothing once
+ *  both steps are dismissed (or the apikey step is moot because a model is already configured, e.g.
+ *  a home reused from an older build of this app). */
+function FirstRunDialogs() {
+  const client = useCognate();
+  const noticeDismissed = useOnboardingDismissed("notice");
+  const apikeyDismissed = useOnboardingDismissed("apikey");
+  const modelConfig = useModelConfig();
+  const dismiss = useCallback((step: "notice" | "apikey") => void client.invoke("onboarding.dismiss", { step }), [client]);
+  if (!noticeDismissed) return <FirstRunNotice onContinue={() => dismiss("notice")} />;
+  if (!apikeyDismissed && !modelConfig) return <FirstRunApiKey onDismiss={() => dismiss("apikey")} />;
+  return null;
 }
 
 function WorkspaceChooser() {
@@ -262,38 +348,181 @@ function WorkspaceChooser() {
   );
 }
 
+/** A small, original list of generic OpenAI-compatible provider presets for the "Third-party model
+ *  provider" combobox (critic round-1 P0-4) — deliberately not a copy of the reference's ~35-entry
+ *  DeepSeek-branded provider list (that list mixes in DeepSeek's own brand assets); this is a short
+ *  placeholder set of well-known OpenAI-compatible endpoints, sufficient to exercise the tab/combobox
+ *  control itself. Picking one pre-fills the Custom model API form's Base URL/Provider ID/Display
+ *  name fields (this app has no live per-provider defaults database beyond this).
+ */
+const THIRD_PARTY_PRESETS: readonly { readonly id: string; readonly label: string; readonly baseURL: string }[] = [
+  { id: "openai", label: "OpenAI", baseURL: "https://api.openai.com/v1" },
+  { id: "openrouter", label: "OpenRouter", baseURL: "https://openrouter.ai/api/v1" },
+  { id: "azure-openai", label: "Azure OpenAI", baseURL: "https://your-resource.openai.azure.com/openai/deployments/your-deployment" },
+  { id: "groq", label: "Groq", baseURL: "https://api.groq.com/openai/v1" },
+  { id: "mistral", label: "Mistral", baseURL: "https://api.mistral.ai/v1" },
+  { id: "together", label: "Together AI", baseURL: "https://api.together.xyz/v1" },
+  { id: "fireworks", label: "Fireworks AI", baseURL: "https://api.fireworks.ai/inference/v1" },
+];
+
+const API_PROTOCOL_OPTIONS = ["OpenAI Chat Completions", "OpenAI Responses", "Anthropic Messages"] as const;
+
+interface ModelRow {
+  readonly id: string;
+  readonly modelId: string;
+  readonly displayName: string;
+}
+
+/** Settings → Models: a provider list (row + Cancel/Apply for the configured provider's API key,
+ *  Edit/Delete) plus a two-tab "Add model provider" wizard (Third-party combobox / Custom model API
+ *  form with a Models sub-list and Cancel/Create provider) — critic round-1 P0-4/P1-4. This tranche's
+ *  backend (`model.configure`) still only ever holds one live provider config (`model-config`
+ *  projection's single `"current"` row — see APP/DEVIATIONS.md), so "Edit" reopens the wizard
+ *  prefilled with the current config and "Delete" is present but disabled (no backend
+ *  "unconfigure" capability exists this tranche) — same "control present, feature stubbed" pattern
+ *  used throughout this app (see the Settings nav's inert items below). */
 function SettingsModels({ onClose }: { readonly onClose: () => void }) {
   const client = useCognate();
   const config = useModelConfig();
-  const [providerId, setProviderId] = useState(config?.providerId ?? "custom");
-  const [baseURL, setBaseURL] = useState(config?.baseURL ?? "");
-  const [model, setModel] = useState(config?.model ?? "");
+  const [view, setView] = useState<"list" | "wizard">("list");
+  const [addTab, setAddTab] = useState<"third-party" | "custom">("custom");
+  const [thirdParty, setThirdParty] = useState("");
+  const [providerId, setProviderId] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [baseURL, setBaseURL] = useState("");
+  const [protocol, setProtocol] = useState<(typeof API_PROTOCOL_OPTIONS)[number]>(API_PROTOCOL_OPTIONS[0]);
   const [apiKey, setApiKey] = useState("");
+  const [models, setModels] = useState<readonly ModelRow[]>([]);
+  const [modelError, setModelError] = useState<string | undefined>(undefined);
+  const [customizedOpen, setCustomizedOpen] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Quick "Apply" from the list-view row: just the API key, reusing the already-configured
+  // provider/base URL/model.
+  const [rowApiKey, setRowApiKey] = useState("");
 
-  const save = useCallback(async () => {
+  const resetWizard = useCallback((prefillFromConfig: boolean) => {
+    setAddTab("custom");
+    setThirdParty("");
+    setModelError(undefined);
+    setError(undefined);
+    if (prefillFromConfig && config) {
+      setProviderId(config.providerId);
+      setDisplayName(config.providerId);
+      setBaseURL(config.baseURL);
+      setProtocol(API_PROTOCOL_OPTIONS[0]);
+      setApiKey("");
+      setModels([{ id: crypto.randomUUID(), modelId: config.model, displayName: config.model }]);
+    } else {
+      setProviderId("");
+      setDisplayName("");
+      setBaseURL("");
+      setProtocol(API_PROTOCOL_OPTIONS[0]);
+      setApiKey("");
+      setModels([]);
+    }
+  }, [config]);
+
+  const openAddWizard = useCallback(() => {
+    resetWizard(false);
+    setView("wizard");
+  }, [resetWizard]);
+
+  const openEditWizard = useCallback(() => {
+    resetWizard(true);
+    setView("wizard");
+  }, [resetWizard]);
+
+  const applyPreset = useCallback((id: string) => {
+    setThirdParty(id);
+    const preset = THIRD_PARTY_PRESETS.find((p) => p.id === id);
+    if (preset) {
+      setProviderId(preset.id);
+      setDisplayName(preset.label);
+      setBaseURL(preset.baseURL);
+      setAddTab("custom");
+    }
+  }, []);
+
+  const addModelRow = useCallback(() => {
+    setModels((prev) => [...prev, { id: crypto.randomUUID(), modelId: "", displayName: "" }]);
+  }, []);
+
+  const updateModelRow = useCallback((id: string, patch: Partial<ModelRow>) => {
+    setModels((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }, []);
+
+  const createProviderValid =
+    providerId.trim().length > 0 &&
+    displayName.trim().length > 0 &&
+    baseURL.trim().length > 0 &&
+    apiKey.trim().length > 0 &&
+    models.length > 0 &&
+    models.every((m) => m.modelId.trim().length > 0);
+
+  const createProvider = useCallback(async () => {
     setBusy(true);
     setError(undefined);
-    setSaved(false);
+    setModelError(undefined);
     try {
-      if (!providerId || !baseURL || !model) throw new Error("Provider id, base URL, and model are required.");
-      await client.invoke("model.configure", { providerId, baseURL, protocol: "openai-compatible", model, apiKey });
-      setSaved(true);
-      setApiKey("");
+      if (models.length === 0 || models.some((m) => m.modelId.trim().length === 0)) {
+        const badIndex = models.findIndex((m) => m.modelId.trim().length === 0);
+        setModelError(`Model ${badIndex === -1 ? models.length + 1 : badIndex + 1}: Model ID is required.`);
+        return;
+      }
+      if (!providerId || !displayName || !baseURL) throw new Error("Provider ID, display name, and base URL are required.");
+      // This tranche's `model.configure` capability holds exactly one live provider config; a
+      // Models sub-list with several rows is structurally supported (Fetch/Add), but only the first
+      // configured model is actually wired through to the backend — see APP/DEVIATIONS.md.
+      await client.invoke("model.configure", {
+        providerId,
+        baseURL,
+        protocol: "openai-compatible",
+        model: models[0]!.modelId,
+        apiKey,
+      });
+      setView("list");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
-  }, [client, providerId, baseURL, model, apiKey]);
+  }, [client, providerId, displayName, baseURL, apiKey, models]);
+
+  const applyRowKey = useCallback(async () => {
+    if (!config) return;
+    setBusy(true);
+    setError(undefined);
+    setSaved(false);
+    try {
+      await client.invoke("model.configure", {
+        providerId: config.providerId,
+        baseURL: config.baseURL,
+        protocol: "openai-compatible",
+        model: config.model,
+        apiKey: rowApiKey,
+      });
+      setSaved(true);
+      setRowApiKey("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [client, config, rowApiKey]);
 
   return (
     <div className="modal-backdrop" role="dialog" aria-label="Settings">
       <div className="modal settings-panel">
         <div className="settings-titlebar">
           <h2>Settings</h2>
+          <button type="button" className="open-config-file-btn" disabled title={NOT_IMPLEMENTED}>
+            Open configuration file
+          </button>
+          <button type="button" className="icon-btn" aria-label="Close settings" onClick={onClose}>
+            ×
+          </button>
         </div>
         <div className="settings-body">
           <nav className="settings-nav" aria-label="Settings sections">
@@ -311,54 +540,200 @@ function SettingsModels({ onClose }: { readonly onClose: () => void }) {
             </button>
           </nav>
           <div className="settings-content">
-            <h3>Models</h3>
-            <p className="settings-subtitle">Enter your API key to use models from the following provider.</p>
-            <div className="provider-card">
-              <label>
-                Provider id
-                <input value={providerId} onChange={(e) => setProviderId(e.currentTarget.value)} />
-              </label>
-              <label>
-                Base URL
-                <input value={baseURL} onChange={(e) => setBaseURL(e.currentTarget.value)} placeholder="http://127.0.0.1:4010/v1" />
-              </label>
-              <label>
-                Protocol
-                <input value="openai-compatible" disabled />
-              </label>
-              <label>
-                Model
-                <input value={model} onChange={(e) => setModel(e.currentTarget.value)} placeholder="mock-model-1" />
-              </label>
-              <label>
-                API key
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.currentTarget.value)}
-                  placeholder={config ? "Configured — enter a new value to replace" : ""}
-                />
-              </label>
-              {error && (
-                <p role="alert" className="form-error">
-                  {error}
-                </p>
-              )}
-              {saved && <p className="form-success">Saved. Model changes take effect on the next request.</p>}
-            </div>
-            <button type="button" className="add-provider-btn" disabled title={NOT_IMPLEMENTED}>
-              <PlusIcon /> Add model provider
-            </button>
+            {view === "list" ? (
+              <>
+                <h3>Models</h3>
+                <p className="settings-subtitle">Enter your API key to use models from the following provider.</p>
+                {config ? (
+                  <div className="provider-card provider-card-configured">
+                    <div className="provider-card-header">
+                      <span className="provider-card-name">
+                        <CheckIcon aria-hidden="true" />
+                        {config.providerId} — {config.model}
+                      </span>
+                      <span className="provider-card-key-status" title="API key configured">
+                        <CheckIcon aria-hidden="true" /> API key configured
+                      </span>
+                      <div className="provider-card-actions">
+                        <button type="button" aria-label={`Edit ${config.providerId} (${config.providerId})`} onClick={openEditWizard}>
+                          <EditIcon /> Edit
+                        </button>
+                        <button type="button" aria-label={`Delete ${config.providerId} (${config.providerId})`} disabled title={NOT_IMPLEMENTED}>
+                          <TrashIcon /> Delete
+                        </button>
+                      </div>
+                    </div>
+                    <label>
+                      API key
+                      <input
+                        type="password"
+                        value={rowApiKey}
+                        onChange={(e) => setRowApiKey(e.currentTarget.value)}
+                        placeholder="Configured — enter a new value to replace"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="disclosure-btn"
+                      aria-expanded={customizedOpen}
+                      onClick={() => setCustomizedOpen((v) => !v)}
+                    >
+                      Customized settings
+                    </button>
+                    {customizedOpen && (
+                      <div className="provider-customized">
+                        <div>
+                          Base URL: <code>{config.baseURL}</code>
+                        </div>
+                        <div>Model: {config.model}</div>
+                      </div>
+                    )}
+                    {error && (
+                      <p role="alert" className="form-error">
+                        {error}
+                      </p>
+                    )}
+                    {saved && <p className="form-success">Saved. Model changes take effect on the next request.</p>}
+                    <div className="provider-card-row-actions">
+                      <button type="button" onClick={() => setRowApiKey("")}>
+                        Cancel
+                      </button>
+                      <button type="button" disabled={busy || rowApiKey.trim().length === 0} onClick={applyRowKey}>
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="empty-state small">No model provider configured yet.</p>
+                )}
+                <button type="button" className="add-provider-btn" onClick={openAddWizard}>
+                  <PlusIcon /> Add model provider
+                </button>
+              </>
+            ) : (
+              <>
+                <h3>Add model provider</h3>
+                <div role="tablist" aria-label="How to add" className="add-provider-tabs">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={addTab === "third-party"}
+                    className={addTab === "third-party" ? "tab active" : "tab"}
+                    onClick={() => setAddTab("third-party")}
+                  >
+                    Third-party model provider
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={addTab === "custom"}
+                    className={addTab === "custom" ? "tab active" : "tab"}
+                    onClick={() => setAddTab("custom")}
+                  >
+                    Custom model API
+                  </button>
+                </div>
+                {addTab === "third-party" ? (
+                  <div className="third-party-panel">
+                    <label>
+                      Provider
+                      <select aria-label="Third-party model provider" value={thirdParty} onChange={(e) => applyPreset(e.currentTarget.value)}>
+                        <option value="" disabled>
+                          Choose a provider…
+                        </option>
+                        {THIRD_PARTY_PRESETS.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <p className="settings-subtitle">Selecting a provider fills in its details on the Custom model API tab.</p>
+                  </div>
+                ) : (
+                  <div className="provider-card">
+                    <label>
+                      Provider ID
+                      <input value={providerId} onChange={(e) => setProviderId(e.currentTarget.value)} placeholder="acme-gateway" />
+                    </label>
+                    <p className="field-hint">Lowercase identifier, starting with a letter, that uniquely names this provider in requests and as its credential name.</p>
+                    <label>
+                      Display name
+                      <input value={displayName} onChange={(e) => setDisplayName(e.currentTarget.value)} />
+                    </label>
+                    <label>
+                      Base URL
+                      <input value={baseURL} onChange={(e) => setBaseURL(e.currentTarget.value)} placeholder="https://gateway.example/v1" />
+                    </label>
+                    <label>
+                      API protocol
+                      <select value={protocol} onChange={(e) => setProtocol(e.currentTarget.value as (typeof API_PROTOCOL_OPTIONS)[number])}>
+                        {API_PROTOCOL_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      API key
+                      <input type="password" value={apiKey} onChange={(e) => setApiKey(e.currentTarget.value)} />
+                    </label>
+                    <div role="region" aria-label="Models" className="models-region">
+                      <div className="models-region-header">
+                        <span>Models</span>
+                        <div>
+                          <button type="button" disabled={baseURL.trim().length === 0} title={NOT_IMPLEMENTED}>
+                            Fetch available models
+                          </button>
+                          <button type="button" onClick={addModelRow}>
+                            Add model
+                          </button>
+                        </div>
+                      </div>
+                      {models.map((m, i) => (
+                        <div key={m.id} className="model-row">
+                          <input
+                            aria-label={`Model ${i + 1} ID`}
+                            value={m.modelId}
+                            onChange={(e) => updateModelRow(m.id, { modelId: e.currentTarget.value })}
+                            placeholder="Model ID"
+                          />
+                          <input
+                            aria-label={`Model ${i + 1} display name`}
+                            value={m.displayName}
+                            onChange={(e) => updateModelRow(m.id, { displayName: e.currentTarget.value })}
+                            placeholder="Display name"
+                          />
+                        </div>
+                      ))}
+                      {modelError && (
+                        <p role="alert" className="form-error">
+                          {modelError}
+                        </p>
+                      )}
+                    </div>
+                    {error && (
+                      <p role="alert" className="form-error">
+                        {error}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
-        <div className="modal-actions">
-          <button type="button" onClick={onClose}>
-            Close
-          </button>
-          <button type="button" disabled={busy} onClick={save}>
-            Save
-          </button>
-        </div>
+        {view === "wizard" && (
+          <div className="modal-actions">
+            <button type="button" onClick={() => setView("list")}>
+              Cancel
+            </button>
+            <button type="button" disabled={busy || !createProviderValid} onClick={createProvider}>
+              Create provider
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -758,23 +1133,71 @@ function PlanReviewCard({
 }
 
 /** The folded diff view for an `edit` tool call — folds to the first 9 rows, expandable
- *  (`10-file-change-collapsed`/`-expanded`). */
+ *  (`10-file-change-collapsed`/`-expanded`). Expanded state is the reference's "Review · turn <n>"
+ *  split-diff panel (reference-behavior-matrix.md §6.1: line-numbered old/new panes, red/green
+ *  highlighted changed lines) plus its bottom toolbar — "Split view" and "Line wrap" toggles, and an
+ *  "Open <file> in sidebar" button (critic round-1 P0-6). */
 function EditDiff({ summary }: { readonly summary: EditSummary }) {
   const [expanded, setExpanded] = useState(false);
+  const [splitView, setSplitView] = useState(true);
+  const [lineWrap, setLineWrap] = useState(false);
   const rows = summary.diffLines.length > 9 ? summary.diffLines.slice(0, 9) : summary.diffLines;
+  const fileName = summary.file_path.split("/").pop() ?? summary.file_path;
   return (
     <div className="edit-diff">
       <button type="button" className="edit-diff-toggle" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
-        View changes to {summary.file_path}: Edited {summary.file_path.split("/").pop()} +{summary.additions} -{summary.deletions}
+        View changes to {summary.file_path}: Edited {fileName} +{summary.additions} -{summary.deletions}
       </button>
       {expanded && (
-        <pre className="edit-diff-body">
-          {rows.map((line, i) => (
-            <div key={i} className={line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-del" : "diff-ctx"}>
-              {line}
+        <div className="review-panel" role="region" aria-label={`Review · ${summary.file_path}`}>
+          <div className="review-panel-header">
+            <span className="review-panel-file">{summary.file_path}</span>
+            <span className="review-panel-stat">
+              +{summary.additions} -{summary.deletions}
+            </span>
+          </div>
+          {splitView ? (
+            <div className={`review-diff-split${lineWrap ? " wrap-lines" : ""}`}>
+              <pre className="review-diff-pane review-diff-old">
+                {rows
+                  .filter((line) => !line.startsWith("+"))
+                  .map((line, i) => (
+                    <div key={i} className={line.startsWith("-") ? "diff-del" : "diff-ctx"}>
+                      {line}
+                    </div>
+                  ))}
+              </pre>
+              <pre className="review-diff-pane review-diff-new">
+                {rows
+                  .filter((line) => !line.startsWith("-"))
+                  .map((line, i) => (
+                    <div key={i} className={line.startsWith("+") ? "diff-add" : "diff-ctx"}>
+                      {line}
+                    </div>
+                  ))}
+              </pre>
             </div>
-          ))}
-        </pre>
+          ) : (
+            <pre className={`edit-diff-body${lineWrap ? " wrap-lines" : ""}`}>
+              {rows.map((line, i) => (
+                <div key={i} className={line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-del" : "diff-ctx"}>
+                  {line}
+                </div>
+              ))}
+            </pre>
+          )}
+          <div className="review-panel-toolbar">
+            <button type="button" className="review-toolbar-btn" aria-pressed={splitView} onClick={() => setSplitView((v) => !v)}>
+              Split view
+            </button>
+            <button type="button" className="review-toolbar-btn" aria-pressed={lineWrap} onClick={() => setLineWrap((v) => !v)}>
+              Line wrap
+            </button>
+            <button type="button" className="review-toolbar-btn" disabled title={NOT_IMPLEMENTED}>
+              Open {fileName} in sidebar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1061,11 +1484,13 @@ export function App() {
     [planReviewContinuation, resolveContinuation],
   );
 
-  // Sidebar auto-collapses below 1024px viewport width, matching the reference's
-  // SIDEBAR_AUTO_COLLAPSE breakpoint (product-characterization.md §2); a manual toggle can still
-  // re-expand it over a squeezed center column.
+  // Sidebar auto-collapses *below* 1024px viewport width, matching the reference's
+  // `SIDEBAR_AUTO_COLLAPSE = 1024px` breakpoint (product-characterization.md §2: "sidebar
+  // auto-collapses to rail below this width" — 1024px itself, the laptop checkpoint viewport, stays
+  // expanded; critic round-1 P0-2 confirmed the reference keeps the full sidebar at exactly
+  // 1024x768). A manual toggle can still re-expand it over a squeezed center column.
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1024px)");
+    const mq = window.matchMedia("(max-width: 1023px)");
     const apply = () => setCollapsed(mq.matches);
     apply();
     mq.addEventListener("change", apply);
@@ -1282,9 +1707,19 @@ export function App() {
                           title={session.title}
                         >
                           <span className="session-row-title">
-                            {planReviewPendingSessions.has(session.id) ? "Plan awaiting review " : ""}
+                            {planReviewPendingSessions.has(session.id)
+                              ? "Plan awaiting review "
+                              : session.lastStatus === "waiting" && !planReviewPendingSessions.has(session.id)
+                                ? "Waiting for approval "
+                                : ""}
                             {session.title || "New Session"}
                           </span>
+                          {session.lastStatus === "waiting" && !planReviewPendingSessions.has(session.id) && (
+                            <span className="approval-badge" title="Waiting for approval">
+                              <span className="approval-badge-dot" aria-hidden="true" />
+                              Approval
+                            </span>
+                          )}
                           <span className="session-row-time">{relativeTime(session.updatedAt)}</span>
                         </button>
                       ))}
@@ -1393,6 +1828,7 @@ export function App() {
       </main>
       {openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />}
       {showSettings && <SettingsModels onClose={() => setShowSettings(false)} />}
+      <FirstRunDialogs />
     </div>
   );
 }

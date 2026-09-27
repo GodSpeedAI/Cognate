@@ -1,12 +1,26 @@
 - complementary:
+  - text: Cognate Local Build
   - button "Collapse sidebar"
-  - button "New session"
+  - button "New session": New Session
   - navigation "Global panels":
     - button "Plugins" [disabled]
-  - button "Switch to dark theme"
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "cg-ws-laptop [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: cg-ws-laptop
+      - treeitem "[[scenario:delegate]] delegate this now now" [selected]
+      - treeitem "/plan make a plan now [[scenario:plan]] now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
+  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "Tool result: started subagent b4d484ad-a0d3-46c5-865a-2539b1655…"
+  - navigation "Session hierarchy": "[[scenario:delegate]] delegate this now"
   - button "1 subagent" [expanded]
   - text: Standard mode
   - button "Open in Files" [disabled]
@@ -18,15 +32,15 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 07:38 AM
+  - text: 08:23 AM
   - status: Worked
   - button "Took 1s" [disabled]
-  - paragraph: "Tool result: started subagent b4d484ad-a0d3-46c5-865a-2539b1655b6a"
+  - paragraph: "Tool result: started subagent 989d3258-6159-42b3-a7e7-09a0b59dcf15"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 07:38 AM
+  - text: Usage 0 tok 08:23 AM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

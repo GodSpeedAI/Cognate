@@ -9,18 +9,18 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - 'treeitem "cg-ws-desktop Tool result: started subagent c726f767-70e0-4c45-b770-f6d48b865daa now Tool result: Plan approved — plan mode exited; carry out the plan starting with… now Tool result: Error: the user rejected escalating this program to \"workspace-wri… now Tool result: (run_code completed with no output) now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+    - treeitem "cg-ws-desktop [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
       - text: cg-ws-desktop
-      - 'treeitem "Tool result: started subagent c726f767-70e0-4c45-b770-f6d48b865daa now" [selected]'
-      - 'treeitem "Tool result: Plan approved — plan mode exited; carry out the plan starting with… now"'
-      - 'treeitem "Tool result: Error: the user rejected escalating this program to \"workspace-wri… now"'
-      - 'treeitem "Tool result: (run_code completed with no output) now"'
-      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
-      - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
+      - treeitem "[[scenario:delegate]] delegate this now now" [selected]
+      - treeitem "/plan make a plan now [[scenario:plan]] now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
   - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "Tool result: started subagent c726f767-70e0-4c45-b770-f6d48b865…"
+  - navigation "Session hierarchy": "[[scenario:delegate]] delegate this now"
   - button "1 subagent" [expanded]
   - text: Standard mode
   - button "Open in Files" [disabled]
@@ -32,15 +32,15 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 07:37 AM
+  - text: 08:22 AM
   - status: Worked
   - button "Took 1s" [disabled]
-  - paragraph: "Tool result: started subagent c726f767-70e0-4c45-b770-f6d48b865daa"
+  - paragraph: "Tool result: started subagent c0f0b778-2144-4239-87c2-d87f4414b3e2"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 07:37 AM
+  - text: Usage 0 tok 08:22 AM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

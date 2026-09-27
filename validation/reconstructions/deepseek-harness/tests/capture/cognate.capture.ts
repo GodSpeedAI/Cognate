@@ -20,6 +20,7 @@
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { CognateDriver } from "../drivers/cognate";
+import { makeWorkspace } from "../../fixtures/workspace/make-workspace.ts";
 
 const [, , viewportName, widthStr, heightStr, homeDir, portStr, wsDir] = process.argv;
 const width = Number(widthStr);
@@ -31,6 +32,12 @@ const SHOT_DIR = `${ROOT}/cognate/screenshots/${viewportName}`;
 const ARIA_DIR = `${ROOT}/cognate/observations/aria`;
 mkdirSync(SHOT_DIR, { recursive: true });
 mkdirSync(ARIA_DIR, { recursive: true });
+// The workspace dir (`wsDir`, driver.chooseWorkspace's target) must exist — and, for the
+// `[[scenario:multi]]`/`[[scenario:edit]]` tool-execution checkpoints (08-10) to have anything to
+// read/edit, must contain the same `fixtures/workspace/template` fixture (`src/greet.ts`) the
+// `test/J-C-tool-execution.test.ts` journey test seeds via `makeWorkspace` — create/seed it here so
+// callers don't have to remember to do this before running the capture.
+if (wsDir) await makeWorkspace(wsDir);
 
 const DISABLE_ANIMATIONS_CSS = `
 *, *::before, *::after {
@@ -74,36 +81,39 @@ await ctx.addInitScript((css) => {
 const page = await ctx.newPage();
 
 try {
-  // 01 - first launch: no first-run dialogs in this app (single-operator local build) — the
-  // shell lands directly on the "no workspace" empty state.
-  await driver.authenticate(page);
+  // 01 - first launch: Cognate-branded "Internal Testing Notice" + "Add an API key to get
+  // started" dialog pair on a fresh COGNATE_HARNESS_HOME (critic round-1 P0-1) — captured with
+  // both dialogs still up, mirroring reference.capture.ts's authenticateRaw()+checkpoint pattern.
+  await driver.authenticateRaw(page);
   await checkpoint(page, "01-first-launch");
 
-  // 03 - no workspace: same state as 01 here (no intervening dialog) — captured separately to
-  // keep the checkpoint name set aligned with the reference for tests/visual/compare.ts.
+  await driver.dismiss(page, "Continue");
+
+  // 03 - no workspace: dialogs dismissed, composer still disabled ("Configure later" dismisses
+  // the second dialog so the underlying "no workspace" shell is visible for this checkpoint).
+  await driver.dismiss(page, "Configure later");
   await checkpoint(page, "03-no-workspace");
 
-  // 02 - model settings: Settings modal, empty form.
+  // 02 - model settings: Settings modal, provider list (empty — no provider configured yet).
   await driver.openSettingsModels(page);
   await checkpoint(page, "02-model-settings");
 
-  // 02b - the (single-step) Custom Model API form, filled in but not yet saved.
-  await page.getByLabel("Base URL").fill("http://127.0.0.1:4010/v1");
-  await page.getByLabel("Model").fill("mock-model-1");
-  await page.getByLabel("API key").fill("dummy-key-12345");
-  await checkpoint(page, "02b-model-settings-custom-form");
-
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await page.waitForTimeout(300);
+  // 02b - the "Add model provider" wizard's Custom model API tab, just opened (empty form).
+  await driver.configureModel(
+    page,
+    { baseUrl: "http://127.0.0.1:4010/v1", apiKey: "dummy-key-12345", protocol: "openai-completions" },
+    async (p) => checkpoint(p, "02b-model-settings-custom-form"),
+  );
   await checkpoint(page, "02c-model-settings-provider-created");
 
-  // Redaction check: close and reopen Settings; the saved API key must never be shown back —
-  // the field should carry only a placeholder hint (write-only credential contract).
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  // Redaction check: reopen Edit on the created provider; the API key field must show only a
+  // "Configured - enter a new value to replace" placeholder, never the plaintext value
+  // (write-only credential contract).
+  await page.getByRole("button", { name: /^Edit mock-model/ }).click();
   await page.waitForTimeout(200);
-  await driver.openSettingsModels(page);
   await checkpoint(page, "02d-model-settings-redacted-key");
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await driver.dismiss(page, "Cancel");
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await page.waitForTimeout(200);
 
   // 04 - workspace selected: composer becomes enabled.

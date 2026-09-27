@@ -9,28 +9,42 @@ this tranche — see APP/DEVIATIONS.md"`), so `tests/visual/compare.ts` diffs ar
 not missing-control differences. See `diffs/summary.md` for the measured per-checkpoint pixel-diff
 evidence this file explains.
 
-## No first-run dialog sequence (checkpoints 01, 03)
+## First-run dialog pair (fixed — critic round-1 P0-1)
 
-The reference shows an "Internal Testing Notice" dialog (DeepSeek-specific legal/testing-notice
-copy) on a fresh `DSH_HOME`, dismissed with "Continue", before landing on the same "no workspace"
-state Cognate shows immediately. Reproducing that dialog verbatim would mean copying DeepSeek's own
-notice text; reproducing it with placeholder Cognate copy would misrepresent what this app actually
-needs a first-run notice for (single-operator local app, `devTokenAuthenticator`, no external
-account). We do not ship an equivalent dialog. This accounts for nearly all of the 01/03 checkpoints'
-pixel-diff in `diffs/summary.md` (~76-85%) — the shell underneath (sidebar, empty state, chrome) is
-otherwise the reference's structure.
+A Cognate-branded "Internal Testing Notice" dialog (heading + two paragraphs + "Continue") and an
+"Add an API key to get started" dialog ("Configure later"/"Save and continue", disabled until a key
+is entered) now appear on a fresh `COGNATE_HARNESS_HOME`, matching the reference's structure/roles
+with Cognate's own wording (not DeepSeek's copy — see the spec's brand-substitution allowance).
+Dismissal is durable per-home: `onboarding.dismiss` (`src/capabilities/onboardingDismiss.ts`) records
+an `onboarding.dismissed` event via `agent.config`, folded by the `onboarding` projection
+(`src/projections/onboarding.ts`); absence of a dismissal row is what makes the pair reappear on a
+fresh home. "Save and continue" dismisses the apikey step the same as "Configure later" — this
+tranche has no default/preset provider to key-only configure (no DeepSeek-branded "official"
+provider), so the entered key is not persisted from this dialog; full provider setup happens in
+Settings → Models afterward. This was not an observed reference behavior for this specific case — an
+assumption, not a reproduction.
 
-## Settings > Models is a single always-open provider form, not a provider-list + add-wizard
+## Settings > Models provider list + add-provider wizard (fixed — critic round-1 P0-4/P1-4)
 
-The reference's Models pane lists configured providers as cards (name + collapsed "Customized
-settings"), with a separate "Add model provider" flow (a dialog with a "Custom model API" tab, a
-multi-step "Add model" -> per-model Model ID/Display name inputs, then "Create provider"). This
-tranche only ever has one provider ("mock"/custom), so `SettingsModels` in `src/ui/App.tsx` keeps a
-single inline form (Provider id / Base URL / Protocol / Model / API key) inside the same left-nav +
-"Models" panel chrome as the reference (checkpoints 02/02b/02c/02d), with a disabled "+ Add model
-provider" button present for structural parity. The write-only API key contract is implemented:
-reopening Settings after Save never shows the plaintext key back, only a "Configured — enter a new
-value to replace" placeholder (checkpoint 02d).
+`SettingsModels` (`src/ui/App.tsx`) now has a provider-list view (a card for the configured
+provider, or an empty state, plus "+ Add model provider") and a two-tab "Add model provider" wizard
+("Third-party model provider" / "Custom model API"), matching the reference's structure and button
+labels (list view: Cancel/Apply on the API-key row; wizard: Cancel/Create provider) — checkpoints
+02/02b/02c/02d. The "Third-party model provider" tab's combobox is a small, original list of generic
+OpenAI-compatible provider presets (OpenAI, OpenRouter, Azure OpenAI, Groq, Mistral, Together AI,
+Fireworks) — deliberately not a copy of the reference's ~35-entry DeepSeek-branded provider list;
+picking one pre-fills the Custom model API tab's fields. This tranche's backend (`model.configure`)
+still only ever holds one live provider config (the `model-config` projection's single `"current"`
+row), so: "Edit" reopens the wizard prefilled from that config; "Delete" is present with the
+reference's accessible-name pattern but disabled (no backend "unconfigure" capability this tranche —
+same "control present, feature stubbed" pattern used throughout this app); the Models sub-list
+supports multiple rows in the UI (Add model, per-row Model ID/display name, the P0-4 validation rule)
+but only the first row is actually wired through to `model.configure`'s single `model` field;
+"Fetch available models" is present (disabled until Base URL is set) but disabled outright — no live
+provider introspection capability exists this tranche. The write-only API key contract is unchanged:
+reopening Edit never shows the plaintext key back, only a "Configured — enter a new value to replace"
+placeholder (checkpoint 02d). An "Open configuration file" link is present in the titlebar (critic
+round-1 P1-1), disabled — no OS file-reveal capability this tranche.
 
 ## Settings General / Built-in plugins / Agent presets — inert nav items
 
@@ -74,16 +88,20 @@ wording pattern but always render `0 turns 0 steps · 0 tok/s` / `0% of context 
 turn/step/token/context accounting is implemented. Wiring this to real per-run counts is a backend
 change; tracked here rather than done silently.
 
-## Session title source (backend change made this tranche)
+## Session title source (fixed — critic round-1 P0-3)
 
-Confirmed against `reference/observations/aria/15-completed-session.desktop.txt`: the reference's
-sidebar session-tree label is derived from the session's first **assistant answer** (its raw
-markdown, truncated), not the user's first prompt, and reads "New Session" before any answer lands
-(`04-workspace-selected.desktop.txt`). `src/projections/sessions.ts` was changed to match: title is
-now set from the first `message.completed` text instead of the first `session.turn.started` message.
-Tests `J-B-basic-session.test.ts` and `J-G-persistence.test.ts` were updated accordingly. The
-reference's `all-prompts` LLM-re-titling cadence (session-title subsystem) is still not implemented
-— every session uses the `first-prompt`-equivalent single-answer title for its lifetime.
+Confirmed against `reference/observations/aria/06-user-message.desktop.txt` and
+`08-tool-running.desktop.txt` (not just the *completed*-session dump this tranche originally checked):
+the reference's sidebar session-tree label is the literal first **human message** text, verbatim
+(truncated), set at the moment the turn starts — not the assistant's answer, and not delayed until
+the run completes. `src/projections/sessions.ts` now sets the title from `session.turn.started`'s
+message text immediately, and `message.completed` no longer overwrites it. Tests
+`J-B-basic-session.test.ts` and `J-G-persistence.test.ts` were updated accordingly. The reference's
+`all-prompts` LLM-re-titling cadence (a separate, observed model request — see
+`reference-behavior-matrix.md` §0/§4) was not observed to visibly replace this literal-text title
+within the pinned pass's timeframe, so a second titling call is still not implemented — every session
+keeps its literal-first-message title for its lifetime; this is a documented assumption, not a gap
+the evidence contradicts.
 
 ## Cancel/error presentation — implemented, not reference-identical
 

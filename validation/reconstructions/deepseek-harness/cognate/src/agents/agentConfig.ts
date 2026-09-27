@@ -8,7 +8,8 @@ import type { AgentDefinition } from "@cognate/runtime-api";
 export type AgentConfigInput =
   | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
   | { readonly kind: "workspace.added"; readonly workspaceId: string; readonly path: string; readonly title: string }
-  | { readonly kind: "workspace.selected"; readonly workspaceId: string };
+  | { readonly kind: "workspace.selected"; readonly workspaceId: string }
+  | { readonly kind: "onboarding.dismissed"; readonly step: "notice" | "apikey" };
 
 export const AGENT_CONFIG = "agent.config";
 
@@ -32,6 +33,11 @@ export const agentConfigAgent: AgentDefinition = {
       case "workspace.selected": {
         const { kind: _kind, ...payload } = command;
         await ctx.emit("workspace.selected", payload);
+        return { ok: true };
+      }
+      case "onboarding.dismissed": {
+        const { kind: _kind, ...payload } = command;
+        await ctx.emit("onboarding.dismissed", payload);
         return { ok: true };
       }
       default: {

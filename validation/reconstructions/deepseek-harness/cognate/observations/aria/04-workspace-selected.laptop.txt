@@ -1,9 +1,16 @@
 - complementary:
+  - text: Cognate Local Build
   - button "Collapse sidebar"
-  - button "New session"
+  - button "New session": New Session
   - navigation "Global panels":
     - button "Plugins" [disabled]
-  - button "Switch to dark theme"
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "cg-ws-laptop" [expanded]
+  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": New Session

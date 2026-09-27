@@ -140,6 +140,33 @@ export const BranchIcon = (props: IconProps) =>
     props,
   );
 
+export const CheckIcon = (props: IconProps) => base(<path d="M3 8.5l3 3 7-7" />, props);
+
+export const EditIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M10.5 2.5l3 3-8 8-3.5.5.5-3.5z" />
+    </>,
+    props,
+  );
+
+export const TrashIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M4.5 4.5l.6 8.4a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.4" />
+    </>,
+    props,
+  );
+
+export const FileIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M4.5 1.5h5l2 2v11h-7z" />
+      <path d="M9.5 1.5v2h2" />
+    </>,
+    props,
+  );
+
 export const PanelRightIcon = (props: IconProps) =>
   base(
     <>

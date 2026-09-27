@@ -172,17 +172,17 @@ workspace), J-B-basic-session (one streamed turn, history into the next), J-C-to
 
 - No plan mode, no subagents, no cancel/retry (beyond the T5b UI-level Stop button) — later
   tranches (T9–T11) per `.agents/plans/deepseek-harness-reconstruction.md`.
-- The UI does not reproduce the reference's exact Astryx shell geometry (sidebar drag-resize,
-  collapse breakpoints, right sidebar) — it is a minimal shell using `@cognate/react` hooks with the
-  Astryx CSS loaded but not its component primitives, styled to the same rough proportions
-  (`src/ui/app.css`). A full Astryx-shell rebuild is a larger UI-only follow-up.
+- The UI does not reproduce the reference's exact Astryx shell geometry (sidebar drag-resize, right
+  sidebar) — it is a minimal shell using `@cognate/react` hooks with the Astryx CSS loaded but not
+  its component primitives, styled to the same rough proportions (`src/ui/app.css`); the sidebar's
+  1024px auto-collapse breakpoint itself matches the reference (critic round-1 P0-2 — see
+  `DEVIATIONS.md`). A full Astryx-shell rebuild is a larger UI-only follow-up.
 - `renderMarkdown` (`src/ui/markdown.ts`) is a small hand-rolled subset (headings, lists, inline
   code/bold/links, fenced code blocks) — enough for the mock model's `plain` scenario, not the
   reference's full CJK/table/math/gallery markdown feature set (product-characterization.md §6).
-- Session title generation uses a single-answer cadence (title = the session's first assistant
-  answer, truncated — matches the reference's displayed sidebar label; see
-  `src/projections/sessions.ts` and `DEVIATIONS.md`); the reference's `all-prompts` LLM re-titling
-  cadence is not implemented.
+- Session title is the literal first human message text, truncated, set immediately at turn start
+  (matches the reference — see `src/projections/sessions.ts` and `DEVIATIONS.md`, critic round-1
+  P0-3); the reference's separate `all-prompts` LLM re-titling cadence is not implemented.
 - Composer stats ("`N turns N steps · N tok/s`", "`N% of context used`") are present but static
   (`0`) — no turn/step/token/context accounting is computed yet. See `DEVIATIONS.md`.
 
@@ -214,13 +214,16 @@ bun run capture/cognate.capture.ts laptop 1024 768 /tmp/cg-home-laptop 3183 /tmp
 bun run visual/compare.ts
 ```
 
-As of this pass (3 capture/compare/fix rounds): every checkpoint from `04-workspace-selected`
-onward sits at 1.5-4% differing pixels (timestamps, static stats, and font-metric antialiasing
-account for the remainder). `01-first-launch`/`03-no-workspace` and the `02*-model-settings` family
-carry a large, expected diff — the former because this app has no DeepSeek-branded first-run notice
-dialog, the latter because Settings > Models is a single always-open form rather than the
-reference's provider-list + multi-step add-wizard; both are recorded in `DEVIATIONS.md`, not fixed
-silently.
+As of this pass (5 capture/compare/fix rounds, most recently addressing `critic/round-1.md`): every
+checkpoint from `04-workspace-selected` onward sits at 1.5-6% differing pixels (timestamps, static
+stats, and font-metric antialiasing account for the remainder). `01-first-launch`/`03-no-workspace`
+and the `02*-model-settings` family still carry a large, expected diff even after the round-1 fixes —
+both now have the reference's full control structure (first-run dialog pair; provider-list +
+add-provider wizard), but the *content* differs by design: Cognate's own branded copy for the
+dialogs, and a short original third-party-provider preset list instead of the reference's ~35-entry
+DeepSeek-branded one (see `DEVIATIONS.md`, critic round-1 P0-1/P0-4). Diff percentage was not used as
+pass/fail evidence for these two families, per the critic's own instructions — read the triptychs in
+`diffs/{desktop,laptop}/02*.png` and `01-first-launch.png` instead.
 
 T9's `13-plan-active`/`13b-plan-review-prompt`/`13c-plan-completed` (1 capture/compare round) sit at
 3.4-5.3% differing pixels — in the same range as the rest of the T5b-T8 checkpoints, with the largest
