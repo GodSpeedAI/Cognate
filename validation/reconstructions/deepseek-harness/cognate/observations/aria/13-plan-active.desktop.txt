@@ -1,0 +1,46 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - 'treeitem "cg-ws-desktop Plan awaiting review New Session now Tool result: Error: the user rejected escalating this program to \"workspace-wri… now Tool result: (run_code completed with no output) now Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now # Summary Here is what I found: - first point - second point ```ts export funct… now" [expanded]':
+      - text: cg-ws-desktop
+      - treeitem "Plan awaiting review New Session now" [selected]
+      - 'treeitem "Tool result: Error: the user rejected escalating this program to \"workspace-wri… now"'
+      - 'treeitem "Tool result: (run_code completed with no output) now"'
+      - treeitem "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" t… now"
+      - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export funct… now"'
+  - button "Switch to dark theme": Dark theme
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": New Session
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - status: plan · Plan mode on. Use /plan off to leave.
+  - paragraph: /plan make a plan now [[scenario:plan]]
+  - button "Copy"
+  - text: 03:32 AM
+  - status: Deep diving...
+  - status: Deep diving...
+  - button "Calling tools · exit_plan_mode" [disabled]
+  - region "To-dos":
+    - button "To-dos 1 in progress · 1 pending"
+  - region "Approve this plan and leave plan mode?":
+    - text: Plan review
+    - button "View full plan"
+    - heading "Update greeting" [level=3]
+    - paragraph: 1. Read src/greet.ts
+    - button "Request changes"
+    - button "Approve"

@@ -10,8 +10,17 @@ import type { ModelMessage, ModelResponse, ToolCall, ToolDefinition } from "@cog
 import type { Json } from "@cognate/events";
 import type { AgentDefinition, RunContext } from "@cognate/runtime-api";
 import { approvalDeniedToolResult, approvalGate } from "../domain/approvalGate.ts";
+import {
+  EXIT_PLAN_MODE_NOT_IN_PLAN_MODE,
+  PLAN_APPROVED_TOOL_RESULT,
+  extractPlanHeading,
+  isPlanOffCommand,
+  planRequestChangesToolResult,
+  splitPlanPrefix,
+} from "../domain/planGate.ts";
 import { PathEscapeError, fileExists } from "../capabilities/tools.ts";
 import type { ToolBashResult, ToolEditResult, ToolReadResult, ToolRunCodeResult } from "../capabilities/tools.ts";
+import type { PlanState, TodoItem } from "../projections/plans.ts";
 
 export const AGENT_CODING = "agent.coding";
 
@@ -50,6 +59,29 @@ const TOOL_DEFS: ToolDefinition[] = [
     name: "bash",
     description: "Run a shell command in the workspace.",
     inputSchema: { type: "object", properties: { command: { type: "string" }, description: { type: "string" } }, required: ["command"] },
+  },
+  {
+    name: "todo_write",
+    description: "Record or update the plan's to-do list.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        todos: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { content: { type: "string" }, status: { type: "string" } },
+            required: ["content", "status"],
+          },
+        },
+      },
+      required: ["todos"],
+    },
+  },
+  {
+    name: "exit_plan_mode",
+    description: "Present a markdown plan for review and, on approval, leave plan mode.",
+    inputSchema: { type: "object", properties: { plan: { type: "string" } }, required: ["plan"] },
   },
   {
     name: "run_code",
@@ -134,6 +166,27 @@ export const agentCodingAgent: AgentDefinition = {
   async run(input, ctx) {
     const { sessionId, workspaceId, message, mode } = input as unknown as AgentCodingInput;
     await ctx.emit("session.turn.started", { sessionId, workspaceId, message });
+
+    // Plan mode (J-E-plan): session state folded from this agent's own `plan.mode.changed`/
+    // `plan.todos.updated`/`plan.review.*` events by the `plans` projection (`planGate.ts` has the
+    // pure helpers; `planState.ts` is the read-side capability). "/plan off" is a pure control
+    // command handled without a model round trip; a leading "/plan " prefix (composer literal-
+    // insertion, reference-behavior-matrix.md §6.3) turns plan mode on for this and following turns
+    // without altering the text sent to the model.
+    let planState = (await ctx.invoke("plan.state", { sessionId })) as unknown as PlanState;
+
+    if (isPlanOffCommand(message)) {
+      if (planState.on) await ctx.emit("plan.mode.changed", { sessionId, on: false });
+      const text = "Plan mode off.";
+      await ctx.emit("message.completed", { sessionId, workspaceId, text });
+      return { text };
+    }
+
+    if (splitPlanPrefix(message) && !planState.on) {
+      await ctx.emit("plan.mode.changed", { sessionId, on: true });
+      planState = { ...planState, on: true };
+    }
+
     const history = (await ctx.invoke("session.history", { sessionId, excludeRunId: ctx.runId })) as unknown as ModelMessage[];
     const workspace = (await ctx.invoke("workspace.path", { workspaceId })) as unknown as { readonly path: string };
     const messages: ModelMessage[] = [...history, { role: "user", content: message }];
@@ -156,11 +209,42 @@ export const agentCodingAgent: AgentDefinition = {
         // pending approval with no visible "current tool" card at all (`useToolTimeline` keys tool
         // entries off this event; see `src/ui/App.tsx`).
         await ctx.emit("tool.call.started", { sessionId, toolCallId: call.id, tool: call.name, args: summarizeArgs(args) });
-        const decision = approvalGate({ tool: call.name, args, mode });
+        const approvalDecision = approvalGate({ tool: call.name, args, mode });
         let resultText: string;
-        if (decision.required) {
-          const permission = decision.permission ?? "";
-          const justification = decision.justification ?? "";
+        if (call.name === "todo_write") {
+          const todos = (Array.isArray(args.todos) ? args.todos : []) as TodoItem[];
+          await ctx.emit("plan.todos.updated", { sessionId, todos } as unknown as Json);
+          const inProgress = todos.filter((t) => t.status === "in_progress").length;
+          const pending = todos.filter((t) => t.status === "pending").length;
+          resultText = `Todos updated (${inProgress} in progress, ${pending} pending).`;
+          await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result: { todos } } as unknown as Json);
+        } else if (call.name === "exit_plan_mode") {
+          if (!planState.on) {
+            resultText = EXIT_PLAN_MODE_NOT_IN_PLAN_MODE;
+            await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: resultText });
+          } else {
+            const markdown = String(args.plan ?? "");
+            const heading = extractPlanHeading(markdown);
+            await ctx.emit("plan.review.requested", { sessionId, toolCallId: call.id, heading, markdown });
+            const decision = (await ctx.waitFor(`plan-review:${call.id}`, {
+              type: "plan-review",
+              condition: { kind: "human_approval" },
+              payload: { tool: call.name, toolCallId: call.id, heading, markdown } as unknown as Json,
+            })) as unknown as { readonly approved: boolean; readonly feedback?: string };
+            await ctx.emit("plan.review.decided", { sessionId, toolCallId: call.id, approved: decision.approved });
+            if (decision.approved) {
+              await ctx.emit("plan.mode.changed", { sessionId, on: false });
+              planState = { ...planState, on: false };
+              resultText = PLAN_APPROVED_TOOL_RESULT;
+              await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result: { approved: true } });
+            } else {
+              resultText = planRequestChangesToolResult(decision.feedback);
+              await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: resultText });
+            }
+          }
+        } else if (approvalDecision.required) {
+          const permission = approvalDecision.permission ?? "";
+          const justification = approvalDecision.justification ?? "";
           await ctx.emit("tool.approval.requested", {
             sessionId,
             toolCallId: call.id,

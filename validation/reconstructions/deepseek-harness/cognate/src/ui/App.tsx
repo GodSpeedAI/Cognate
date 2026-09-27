@@ -70,6 +70,18 @@ interface ToolEntry {
   readonly approval?: { readonly status: "pending" | "approved" | "denied"; readonly permission?: string; readonly justification?: string };
 }
 
+interface PlanTodo {
+  readonly content: string;
+  readonly status: string;
+}
+
+interface PlanStateRow {
+  readonly sessionId: string;
+  readonly on: boolean;
+  readonly todos: readonly PlanTodo[];
+  readonly review?: { readonly status: "pending" | "approved" | "changes_requested"; readonly toolCallId: string; readonly heading: string; readonly markdown: string };
+}
+
 interface ModelConfigRow {
   readonly providerId: string;
   readonly baseURL: string;
@@ -103,6 +115,31 @@ function useSessions(): readonly SessionRow[] {
         .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
     [rows],
   );
+}
+
+/** Reads the `plans` projection (`src/projections/plans.ts`) for one session — the To-dos widget,
+ *  the plan review card, and the sidebar's "Plan awaiting review <title>" prefix all key off this. */
+function usePlanState(sessionId: string | undefined): PlanStateRow | undefined {
+  const rows = useProjection("plans");
+  return useMemo(() => {
+    if (!sessionId) return undefined;
+    const row = rows?.find((r) => r.key === sessionId);
+    return row ? (row.value as unknown as PlanStateRow) : undefined;
+  }, [rows, sessionId]);
+}
+
+/** Session ids with a currently-pending plan review — for the sidebar's "Plan awaiting review
+ *  <title>" prefix (reference-behavior-matrix.md §6.3, `13b-plan-review-prompt`'s treeitem). */
+function usePlanReviewPendingSessions(): ReadonlySet<string> {
+  const rows = useProjection("plans");
+  return useMemo(() => {
+    const set = new Set<string>();
+    for (const row of rows ?? []) {
+      const value = row.value as unknown as PlanStateRow;
+      if (value?.review?.status === "pending") set.add(row.key);
+    }
+    return set;
+  }, [rows]);
 }
 
 function useModelConfig(): ModelConfigRow | undefined {
@@ -399,6 +436,10 @@ function toolActionLabel(entry: ToolEntry): string {
   if (entry.tool === "edit") return `Editing files · ${String(args.file_path ?? "")}`;
   if (entry.tool === "bash") return `Running commands · ${String(args.description ?? args.command ?? "")}`;
   if (entry.tool === "run_code") return `Running code · ${String(args.description ?? "")}`;
+  // reference-behavior-matrix.md §6.3: `13-plan-active` shows "Updating the plan · todo_write",
+  // `13b-plan-review-prompt` shows "Calling tools · exit_plan_mode".
+  if (entry.tool === "todo_write") return "Updating the plan · todo_write";
+  if (entry.tool === "exit_plan_mode") return "Calling tools · exit_plan_mode";
   return `Running ${entry.tool}`;
 }
 
@@ -459,6 +500,80 @@ function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly 
         </button>
         <button type="button" className="approval-btn approval-allow" onClick={() => onDecide(true)}>
           Allow once
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** "To-dos" region: a single summary button (`region "To-dos": button "To-dos N in progress · N
+ *  pending"`, reference-behavior-matrix.md §6.3) — renders as soon as `todo_write` has run, under
+ *  Standard mode too, and persists after plan mode exits (`13c-plan-completed`). Expandable to the
+ *  raw todo list; the reference's own expanded-state content was not captured, so this is this
+ *  app's own minimal rendering, not a copy — see DEVIATIONS.md. */
+function TodoWidget({ todos }: { readonly todos: readonly PlanTodo[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (todos.length === 0) return null;
+  const inProgress = todos.filter((t) => t.status === "in_progress").length;
+  const pending = todos.filter((t) => t.status === "pending").length;
+  return (
+    <div role="region" aria-label="To-dos" className="todo-widget">
+      <button type="button" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+        To-dos {inProgress} in progress · {pending} pending
+      </button>
+      {expanded && (
+        <ul className="todo-list">
+          {todos.map((todo, i) => (
+            <li key={i} className={`todo-status-${todo.status}`}>
+              {todo.content}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Plan review card (J-E-plan): docked where the composer normally sits, same pattern as
+ *  `ApprovalBar` — `region "Approve this plan and leave plan mode?"` (reference-behavior-matrix.md
+ *  §6.3, `13b-plan-review-prompt`). The reference also auto-opens the plan in a right-sidebar tab;
+ *  this tranche has no right sidebar (`DEVIATIONS.md` — "Open right sidebar" is already inert), so
+ *  the full plan is shown inline via "View full plan" instead. */
+function PlanReviewCard({
+  heading,
+  markdown,
+  onDecide,
+}: {
+  readonly heading: string;
+  readonly markdown: string;
+  readonly onDecide: (approved: boolean) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const firstLine = markdown
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => l.length > 0 && !l.startsWith("#"));
+  return (
+    <div className="plan-review-card" data-plan-panel role="region" aria-label="Approve this plan and leave plan mode?">
+      <div className="plan-review-header">
+        <span className="plan-review-dot" aria-hidden="true" />
+        <span className="plan-review-label">Plan review</span>
+      </div>
+      <button type="button" className="plan-review-disclosure" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+        View full plan
+      </button>
+      <h3 className="plan-review-heading">{heading}</h3>
+      {expanded ? (
+        <div className="plan-review-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(markdown) }} />
+      ) : (
+        firstLine && <p className="plan-review-preview">{firstLine}</p>
+      )}
+      <div className="plan-review-actions">
+        <button type="button" className="plan-review-btn plan-review-changes" onClick={() => onDecide(false)}>
+          Request changes
+        </button>
+        <button type="button" className="plan-review-btn plan-review-approve" onClick={() => onDecide(true)}>
+          Approve
         </button>
       </div>
     </div>
@@ -536,14 +651,21 @@ function Composer({
   disabled,
   sending,
   modelLabel,
+  planMode,
   onSend,
   onStop,
+  onTogglePlanMode,
 }: {
   readonly disabled: boolean;
   readonly sending: boolean;
   readonly modelLabel: string | undefined;
+  /** J-E-plan: whether the active session is currently in plan mode — swaps the composer
+   *  placeholder and shows the "Plan mode on, press to turn off" toggle (reference-behavior-matrix.md
+   *  §6.3, `13-plan-active`). */
+  readonly planMode: boolean;
   readonly onSend: (message: string) => void;
   readonly onStop: () => void;
+  readonly onTogglePlanMode: () => void;
 }) {
   const [message, setMessage] = useState("");
   const submit = useCallback(() => {
@@ -555,9 +677,15 @@ function Composer({
   return (
     <div className="composer-card">
       <textarea
-        aria-label="Message or run a task, / commands, @ files or sessions"
+        aria-label={planMode ? "describe your task to generate plan" : "Message or run a task, / commands, @ files or sessions"}
         disabled={disabled}
-        placeholder={disabled ? "Select a workspace and configure a model to start" : "Message or run a task, / commands, @ files or sessions"}
+        placeholder={
+          disabled
+            ? "Select a workspace and configure a model to start"
+            : planMode
+              ? "describe your task to generate plan"
+              : "Message or run a task, / commands, @ files or sessions"
+        }
         value={message}
         onChange={(e) => setMessage(e.currentTarget.value)}
         onKeyDown={(e) => {
@@ -575,6 +703,11 @@ function Composer({
           Workspace Write
           <ChevronDownIcon />
         </button>
+        {planMode && (
+          <button type="button" className="plan-mode-toggle" aria-label="Plan mode on, press to turn off" onClick={onTogglePlanMode}>
+            Plan
+          </button>
+        )}
         <button
           type="button"
           className="dropdown-btn"
@@ -717,6 +850,21 @@ export function App() {
   );
   const pendingApproval = toolEntries.find((e) => e.approval?.status === "pending");
 
+  // J-E-plan: the active session's plan state (`plans` projection) — used for the To-dos widget,
+  // the composer's plan-mode placeholder/toggle, and the review card below. A run's tool loop is
+  // sequential (same invariant as approvals above), so at most one `plan-review` continuation is
+  // ever open at a time.
+  const planState = usePlanState(activeSessionId);
+  const planReviewPendingSessions = usePlanReviewPendingSessions();
+  const planReviewContinuation = openContinuations.find((c) => c.type === "plan-review");
+  const decidePlanReview = useCallback(
+    async (approved: boolean) => {
+      if (!planReviewContinuation) return;
+      await resolveContinuation(planReviewContinuation.id, "resume", { approved });
+    },
+    [planReviewContinuation, resolveContinuation],
+  );
+
   // Sidebar auto-collapses below 1024px viewport width, matching the reference's
   // SIDEBAR_AUTO_COLLAPSE breakpoint (product-characterization.md §2); a manual toggle can still
   // re-expand it over a squeezed center column.
@@ -800,7 +948,16 @@ export function App() {
       if (!activeSessionId) setActiveSessionId(sessionId);
       rememberSession(currentWorkspaceId, sessionId);
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      setTranscript((prev) => [...prev, { role: "user", content: message, at }]);
+      // J-E-plan: a leading "/plan " prefix (composer literal-insertion, reference-behavior-
+      // matrix.md §6.3) enters plan mode server-side (`agent.coding`'s `plan.mode.changed` event) —
+      // mirror the reference's inline notice optimistically here so it appears with this turn
+      // rather than waiting a round trip for the `plans` projection to catch up.
+      const enteringPlan = /^\/plan\s+\S/i.test(message) && !planState?.on;
+      setTranscript((prev) => [
+        ...prev,
+        ...(enteringPlan ? [{ role: "system" as const, content: "plan · Plan mode on. Use /plan off to leave." }] : []),
+        { role: "user", content: message, at },
+      ]);
       runStartedAtRef.current = Date.now();
       const view = await client.startRun(
         "agent.coding",
@@ -809,13 +966,19 @@ export function App() {
       );
       setActiveRunId(view.runId);
     },
-    [client, currentWorkspaceId, activeSessionId, rememberSession],
+    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on],
   );
 
   const stop = useCallback(async () => {
     if (!activeRunId) return;
     await client.cancelRun(activeRunId, "user-cancelled");
   }, [client, activeRunId]);
+
+  // "Plan mode on, press to turn off" (composer toggle) — equivalent to typing "/plan off" and
+  // sending it: a new turn that `agent.coding` handles as a pure control command (no model call).
+  const togglePlanMode = useCallback(() => {
+    void send("/plan off");
+  }, [send]);
 
   useEffect(() => {
     if (streaming.status === "completed" && streaming.text) {
@@ -907,7 +1070,10 @@ export function App() {
                           onClick={() => openSession(session.id)}
                           title={session.title}
                         >
-                          <span className="session-row-title">{session.title || "New Session"}</span>
+                          <span className="session-row-title">
+                            {planReviewPendingSessions.has(session.id) ? "Plan awaiting review " : ""}
+                            {session.title || "New Session"}
+                          </span>
                           <span className="session-row-time">{relativeTime(session.updatedAt)}</span>
                         </button>
                       ))}
@@ -977,10 +1143,25 @@ export function App() {
                 </>
               )}
             </div>
+            {planState && planState.todos.length > 0 && <TodoWidget todos={planState.todos} />}
             {pendingApproval ? (
               <ApprovalBar entry={pendingApproval} onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)} />
+            ) : planReviewContinuation ? (
+              <PlanReviewCard
+                heading={String((planReviewContinuation.payload as { readonly heading?: string }).heading ?? "")}
+                markdown={String((planReviewContinuation.payload as { readonly markdown?: string }).markdown ?? "")}
+                onDecide={decidePlanReview}
+              />
             ) : (
-              <Composer disabled={composerDisabled} sending={streaming.status === "streaming"} modelLabel={modelLabel} onSend={send} onStop={stop} />
+              <Composer
+                disabled={composerDisabled}
+                sending={streaming.status === "streaming"}
+                modelLabel={modelLabel}
+                planMode={Boolean(planState?.on)}
+                onSend={send}
+                onStop={stop}
+                onTogglePlanMode={togglePlanMode}
+              />
             )}
           </>
         )}

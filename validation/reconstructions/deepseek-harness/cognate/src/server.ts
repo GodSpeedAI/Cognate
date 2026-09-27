@@ -15,7 +15,7 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 
-import { bindTranche5, bindTranche7, loadDomain } from "../domain/index.ts";
+import { bindTranche5, bindTranche7, bindTranche9, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
@@ -24,10 +24,12 @@ import { modelConfigureComponent } from "./capabilities/modelConfigure.ts";
 import { workspaceSelectComponent } from "./capabilities/workspaceSelect.ts";
 import { workspacePathComponent } from "./capabilities/workspacePath.ts";
 import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
+import { planStateComponent } from "./capabilities/planState.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
 import { sessionsProjection } from "./projections/sessions.ts";
+import { plansProjection } from "./projections/plans.ts";
 import { secretStore } from "./secrets.ts";
 
 export const LOCAL_OPERATOR = { actor: { id: "operator", kind: "user" as const }, tenant: "local" };
@@ -55,6 +57,7 @@ const GRANTED_CAPABILITIES = [
   "tool.edit",
   "tool.bash",
   "tool.run_code",
+  "plan.state",
 ];
 
 function buildPolicy(): Policy {
@@ -126,6 +129,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const domain = await loadDomain();
   const bindings = bindTranche5(domain);
   const toolBindings = bindTranche7(domain);
+  const planBindings = bindTranche9(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -144,11 +148,13 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       sessionHistoryComponent(getService, bindings.sessionHistory.semanticRef),
       workspacePathComponent(getService, toolBindings.workspacePath.semanticRef),
       toolCapabilitiesComponent(toolBindings.toolRead.semanticRef),
+      planStateComponent(getService, planBindings.planState.semanticRef),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
       { projection: workspacesProjection, public: true },
       { projection: sessionsProjection, public: true },
+      { projection: plansProjection, public: true },
     ],
     system: SYSTEM_CALLER.actor,
   });
