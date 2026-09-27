@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ws [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
-      - text: ws
+    - treeitem "cg-ws-laptop [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
+      - text: cg-ws-laptop
       - treeitem "[[scenario:delegate]] delegate this now now" [selected]
       - treeitem "/plan make a plan now [[scenario:plan]] now"
       - treeitem "[[scenario:approval]] run something risky now"
@@ -31,15 +31,15 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 01:37 PM
+  - text: 02:01 PM
   - status: Worked
   - button "Took 5s" [disabled]
-  - paragraph: "Tool result: started subagent 9277a1ca-0fc1-4aab-bc25-95a7ee815ab1"
+  - paragraph: "Tool result: started subagent d9c2b063-1679-4770-95e6-d6b0c2c29404"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 01:37 PM
+  - text: Usage 0 tok 02:01 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

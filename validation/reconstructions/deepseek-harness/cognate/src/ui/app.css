@@ -57,6 +57,10 @@
   --cg-sidebar-max: 420px;
   --cg-sidebar-collapsed: 56px;
   --cg-center-min: 400px;
+  /* Critic round-4 P1-1: the chat column's outer width (messages, composer, and the cards docked
+   * where the composer sits) — includes the column's own side padding, chosen so the rendered
+   * *content* measures ~742px, matching the reference (see app.css's `.messages` comment). */
+  --cg-chat-column-max-width: 790px;
 
   --cg-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   --cg-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -318,6 +322,9 @@ input:focus-visible {
 }
 
 .workspace-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
   color: var(--cg-text-muted);
@@ -325,6 +332,10 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.workspace-row-label svg {
+  flex-shrink: 0;
 }
 
 .session-rows {
@@ -390,7 +401,9 @@ input:focus-visible {
   min-width: var(--cg-center-min);
   display: flex;
   flex-direction: column;
-  background: var(--cg-bg);
+  /* Critic round-4 P1-2: the reference's center pane is pure white (`--cg-surface`) in every state
+   * — hero, pre-response, streaming, and completed — not the app-shell gray. */
+  background: var(--cg-surface);
 }
 
 .workspace-chooser {
@@ -480,9 +493,11 @@ input:focus-visible {
   gap: 8px;
 }
 
+/* Critic round-4 P2-1: the reference's hero heading is regular/medium weight, and the workspace/mode
+ * row beneath it is plain icon+text with no pill border/background — not bold/bordered chrome. */
 .hero-heading {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 500;
   margin: 0;
   color: var(--cg-text);
 }
@@ -491,10 +506,9 @@ input:focus-visible {
   font-size: 11px;
   font-weight: 500;
   color: var(--cg-text-muted);
-  background: var(--cg-surface-sunken);
-  border: 1px solid var(--cg-border);
-  border-radius: var(--cg-radius-xs);
-  padding: 2px 7px;
+  background: transparent;
+  border: none;
+  padding: 2px 0;
 }
 
 .hero-pills {
@@ -505,12 +519,11 @@ input:focus-visible {
 
 .hero-pill {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--cg-text-muted);
-  background: var(--cg-surface-sunken);
-  border: 1px solid var(--cg-border);
-  border-radius: var(--cg-radius-xs);
-  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
 }
 
 .hero-composer {
@@ -622,6 +635,11 @@ input:focus-visible {
 
 /* ---------- Messages ---------- */
 
+/* Critic round-4 P1-1: the reference's message column (text, code blocks, composer) is capped at
+ * roughly 742px and horizontally centered, not stretched to the pane edges — measured against
+ * `reference/screenshots/desktop/15-completed-session.png`. Applied to `.messages` and, below, to
+ * every docked-at-the-composer-position element (`.composer-card`, `.approval-card`,
+ * `.plan-review-card`, `.todo-widget`) so the whole column stays visually aligned. */
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -629,6 +647,9 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  max-width: var(--cg-chat-column-max-width, 790px);
+  margin-inline: auto;
 }
 
 .message {
@@ -707,20 +728,30 @@ input:focus-visible {
   margin-bottom: 8px;
 }
 
+/* Critic round-4 P1-5: the reference's per-turn status row carries no visible dot at all — the
+ * "Worked"/"Failed"/"Stopped" text is accessible (`role="status"`, `.sr-only` label) but not painted
+ * as a colored circle. Only the still-streaming state ("Deep diving for Ns") keeps a visible pill. */
 .status-pill {
-  width: 14px;
-  height: 14px;
+  width: 0;
+  height: 0;
   border-radius: 50%;
-  background: var(--cg-success);
+  background: transparent;
   flex-shrink: 0;
 }
 
-.status-pill.status-failed {
-  background: var(--cg-danger);
+.status-pill.status-streaming {
+  width: 14px;
+  height: 14px;
+  background: var(--cg-text-faint, #999);
 }
 
-.status-pill.status-streaming {
-  background: var(--cg-text-faint, #999);
+/* The in-progress "Deep diving" tool-activity indicator (08-tool-running/14b) keeps a visible green
+ * dot — critic round-4 batch B confirmed this is genuinely present in the reference, distinct from
+ * the completed/failed "Took Ns" line's now-invisible dot above. */
+.status-pill.status-active {
+  width: 14px;
+  height: 14px;
+  background: var(--cg-success);
 }
 
 .status-pill.status-cancelled {
@@ -741,13 +772,14 @@ input:focus-visible {
   border: 0;
 }
 
+/* Critic round-4 P1-5: plain unstyled text ("Took 6s"), no pill border/background — matches the
+ * reference for both completed and failed turns (cancelled's "Stopped" chip was already plain). */
 .took-btn {
-  border: 1px solid var(--cg-border);
-  background: var(--cg-surface-sunken);
+  border: none;
+  background: transparent;
   color: var(--cg-text-muted);
-  border-radius: var(--cg-radius-xs);
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 0;
+  font-size: 12px;
 }
 
 .message-divider {
@@ -813,6 +845,9 @@ input:focus-visible {
 /* Docked where the composer sits (reference `11-approval-pending`: the card replaces the composer
    at the bottom of the chat pane, not an inline message-list card). */
 .approval-card {
+  width: calc(100% - 48px);
+  max-width: calc(var(--cg-chat-column-max-width) - 48px);
+  margin: 0 auto 20px;
   border: 1px solid #f0b429;
   border-radius: var(--cg-radius-md);
   overflow: hidden;
@@ -876,6 +911,9 @@ input:focus-visible {
 /* J-E-plan: docked where the composer sits, same pattern as `.approval-card` (amber border per
    reference-behavior-matrix.md §6.3: "amber border, orange dot 'Plan review'"). */
 .plan-review-card {
+  width: calc(100% - 48px);
+  max-width: calc(var(--cg-chat-column-max-width) - 48px);
+  margin: 0 auto 20px;
   border: 1px solid #f0b429;
   border-radius: var(--cg-radius-md);
   overflow: hidden;
@@ -958,6 +996,9 @@ input:focus-visible {
 /* "To-dos" region (reference-behavior-matrix.md §6.3: `region "To-dos"` with a single summary
    button). */
 .todo-widget {
+  width: calc(100% - 48px);
+  max-width: calc(var(--cg-chat-column-max-width) - 48px);
+  margin: 0 auto;
   padding: 8px 0;
 }
 
@@ -1040,17 +1081,45 @@ input:focus-visible {
   padding: 8px 0;
 }
 
+/* Critic round-4 P1: a single flat, ellipsis-truncated row — the whole row is one click target
+ * ("Open ... in sidebar"), no internal divider/second box (that was a two-column split with a hard
+ * vertical divider, wrapping the description across 4 lines instead of truncating it). */
 .subagent-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  width: 100%;
+  gap: 10px;
   padding: 6px 14px;
   font-size: 13px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.subagent-row:hover {
+  background: var(--cg-hover);
 }
 
 .subagent-row-text {
+  flex: 1;
+  min-width: 0;
   color: var(--cg-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subagent-row-stat {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--cg-text-faint);
+}
+
+.subagent-tree svg {
+  flex-shrink: 0;
+  color: var(--cg-text-faint);
 }
 
 .plan-mode-toggle {
@@ -1099,6 +1168,16 @@ input:focus-visible {
   border-radius: var(--cg-radius-xs);
   background: var(--cg-surface-raised);
   color: var(--cg-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Colored-by-extension glyphs (critic round-4 P2): matches the reference's blue "TS" square,
+ * regardless of viewport width. */
+.edit-diff-icon[data-ext="ts"],
+.edit-diff-icon[data-ext="tsx"] {
+  background: #3178c6;
+  color: #ffffff;
 }
 
 .edit-diff-info {
@@ -1206,7 +1285,9 @@ input:focus-visible {
 /* ---------- Composer ---------- */
 
 .composer-card {
-  margin: 0 24px 20px;
+  width: calc(100% - 48px);
+  max-width: calc(var(--cg-chat-column-max-width) - 48px);
+  margin: 0 auto 20px;
   border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius-panel);
   background: var(--cg-surface);

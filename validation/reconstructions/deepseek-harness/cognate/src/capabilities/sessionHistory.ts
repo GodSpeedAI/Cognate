@@ -31,7 +31,13 @@ export function sessionHistoryComponent(getService: () => RuntimeService, semant
         const caller = { actor: ctx.actor, tenant: ctx.tenant ?? "local" };
         const runs = await service.listRuns(caller, { correlationId: `session:${input.sessionId}` });
         const subagentRows = await service.readProjection(caller, { name: "subagents" });
-        const messages: ModelMessage[] = [];
+        // Critic round-4 P1-3: the UI's "N turns M steps" footer counter (`App.tsx`'s `sessionSteps`)
+        // must read the same for a session reopened from history (`openSession` -> this capability)
+        // as it does for a turn that just finished live in-memory (`useToolTimeline(...).length + 1`,
+        // reference/observations/aria's "0 tools -> 1 step" rule). Since history discards the live
+        // `ToolEntry[]`, re-derive the same count from this run's own recorded `tool.call.started`
+        // events instead of leaving it unset (which rendered "0 steps").
+        const messages: (ModelMessage & { readonly stepCount?: number })[] = [];
         for (const run of runs) {
           if (run.runId === input.excludeRunId) continue;
           if (run.agent !== "agent.coding") continue;
@@ -39,7 +45,13 @@ export function sessionHistoryComponent(getService: () => RuntimeService, semant
           if (typeof runInput?.message === "string") messages.push({ role: "user", content: runInput.message });
           if (run.status === "completed") {
             const output = run.output as { readonly text?: string };
-            if (typeof output?.text === "string") messages.push({ role: "assistant", content: output.text });
+            if (typeof output?.text === "string") {
+              let toolCallCount = 0;
+              for await (const event of service.events(caller, { runId: run.runId })) {
+                if (event.eventType === "tool.call.started") toolCallCount += 1;
+              }
+              messages.push({ role: "assistant", content: output.text, stepCount: toolCallCount + 1 });
+            }
           }
           const children = subagentRows
             .filter((r) => r.key.startsWith(`${run.runId}/`))

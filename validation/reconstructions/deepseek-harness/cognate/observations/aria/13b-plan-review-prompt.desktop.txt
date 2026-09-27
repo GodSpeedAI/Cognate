@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ws Plan awaiting review /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: ws
+    - treeitem "cg-ws-desktop Plan awaiting review /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: cg-ws-desktop
       - treeitem "Plan awaiting review /plan make a plan now [[scenario:plan]] now" [selected]
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
@@ -30,7 +30,7 @@
   - status: plan · Plan mode on. Use /plan off to leave.
   - paragraph: /plan make a plan now [[scenario:plan]]
   - button "Copy"
-  - text: 01:35 PM
+  - text: 01:59 PM
   - status: Deep diving for 6s
   - status: Deep diving for 6s
   - button "Calling tools · exit_plan_mode" [disabled]

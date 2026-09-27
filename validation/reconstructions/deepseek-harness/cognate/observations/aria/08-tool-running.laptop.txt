@@ -9,8 +9,8 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "ws [[scenario:plain]] hello there now" [expanded]:
-      - text: ws
+    - treeitem "cg-ws-laptop [[scenario:plain]] hello there now" [expanded]:
+      - text: cg-ws-laptop
       - treeitem "[[scenario:plain]] hello there now"
   - button "Settings"
 - main:
@@ -25,7 +25,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:multi]] do the multi-step task now"
   - button "Copy"
-  - text: 01:36 PM
+  - text: 02:00 PM
   - status: Deep diving for 5s
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
