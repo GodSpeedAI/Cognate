@@ -55,7 +55,9 @@ describe("J-G-persistence", () => {
           const rows = await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
           const sessionRow = rows.find((r) => r.key === sessionId)?.value as { readonly title?: string; readonly lastStatus?: string } | undefined;
           expect(sessionRow?.lastStatus).toBe("completed");
-          expect(sessionRow?.title).toContain("remember this");
+          // Title is derived from the session's first assistant answer, not the user's prompt —
+          // matches the reference (reference/observations/aria/15-completed-session.desktop.txt).
+          expect(sessionRow?.title).toContain("Summary");
 
           const workspaceRows = await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" });
           const record = workspaceRows.find((r) => r.key === `record/${workspaceId}`);

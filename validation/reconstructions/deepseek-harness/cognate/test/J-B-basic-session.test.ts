@@ -50,7 +50,9 @@ describe("J-B-basic-session", () => {
         const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
         const sessionRow = sessionRows.find((r) => r.key === sessionId)?.value as { readonly title?: string; readonly lastStatus?: string } | undefined;
         expect(sessionRow?.lastStatus).toBe("completed");
-        expect(sessionRow?.title).toContain("please summarize");
+        // Title is derived from the session's first assistant answer, not the user's prompt —
+        // matches the reference (reference/observations/aria/15-completed-session.desktop.txt).
+        expect(sessionRow?.title).toContain("Summary");
 
         // Second turn: history must include the first turn.
         const view2 = await client.startRun(

@@ -75,7 +75,7 @@ export class ReferenceDriver implements Driver {
   async authenticateRaw(page: Page): Promise<void> {
     if (!this.tokenUrl) throw new Error("launch() must be called before authenticate()");
     await page.goto(this.tokenUrl, { waitUntil: "networkidle" });
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1500);
   }
 
   /** Public wrapper so capture/journey scripts can dismiss a specific dialog by button name. */
@@ -85,16 +85,28 @@ export class ReferenceDriver implements Driver {
 
   private async dismissIfPresent(page: Page, name: string): Promise<boolean> {
     const btn = page.getByRole("button", { name, exact: true });
-    if ((await btn.count()) > 0 && (await btn.first().isVisible().catch(() => false))) {
-      await btn.first().click();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const count = await btn.count().catch(() => 0);
+      if (count === 0) return false;
+      const first = btn.first();
+      const visible = await first.isVisible().catch(() => false);
+      const enabled = visible && (await first.isEnabled().catch(() => false));
+      if (visible && enabled) {
+        await first.click().catch(() => {});
+        await page.waitForTimeout(300);
+        return true;
+      }
       await page.waitForTimeout(300);
-      return true;
     }
     return false;
   }
 
   async openSettingsModels(page: Page): Promise<void> {
-    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await this.dismissIfPresent(page, "Continue");
+    await this.dismissIfPresent(page, "Configure later");
+    await page.getByRole("button", { name: "Settings", exact: true }).click({ timeout: 5000 }).catch(async () => {
+      await page.getByRole("button", { name: "Settings", exact: true }).click({ force: true });
+    });
     await page.waitForTimeout(300);
     await this.dismissIfPresent(page, "Configure later");
     await page.getByRole("button", { name: "Models", exact: true }).click();
@@ -178,18 +190,71 @@ export class ReferenceDriver implements Driver {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       const settled = page.getByRole("button", { name: /^Took \d/ });
-      const failed = page.getByText(/Failed|Error/i);
-      if ((await settled.count()) > 0 || (await failed.count()) > 0) return;
+      const stopGone = (await page.getByRole("button", { name: "Stop generating", exact: true }).count()) === 0;
+      if ((await settled.count()) > 0 && stopGone) return;
       await page.waitForTimeout(250);
     }
   }
 
+  /**
+   * Approve a pending sandbox-escalation ask (the "Waiting for approval" /
+   * "Allow this operation with <mode> permissions: <justification>" card).
+   * Confirmed button label is exactly "Allow once" (not "Allow" / "Approve").
+   */
   async approve(page: Page): Promise<void> {
-    await page.getByRole("button", { name: /^Allow/i }).first().click();
+    await page.getByRole("button", { name: "Allow once", exact: true }).click();
   }
 
+  /** Deny a pending sandbox-escalation ask. Confirmed button label is "Reject" (not "Deny"). */
   async deny(page: Page): Promise<void> {
-    await page.getByRole("button", { name: /^Deny|^Reject/i }).first().click();
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+  }
+
+  /**
+   * Switch the session's agent preset (Standard mode / PTC mode / Minimal
+   * mode / Creator mode) via the selector next to "Choose workspace" /
+   * the session banner. `run_code` (the tool the sandbox-escalation approval
+   * flow hangs off) is only registered as a callable tool under **PTC mode**
+   * - it is "unknown tool \"run_code\"" under the default Standard mode.
+   */
+  async switchAgentPreset(page: Page, preset: "Standard mode" | "PTC mode" | "Minimal mode" | "Creator mode"): Promise<void> {
+    await page.getByRole("button", { name: /Standard mode|PTC mode|Minimal mode|Creator mode/ }).click();
+    await page.waitForTimeout(200);
+    await page.getByRole("menuitem", { name: new RegExp(`^${preset}`) }).click();
+    await page.waitForTimeout(200);
+  }
+
+  /**
+   * Enter Plan Mode via the `/plan` slash command, then send `task` appended
+   * after the inserted "/plan " prefix (replacing the composer text loses the
+   * prefix and the mode never activates). Leaving mode: send with `/plan off`.
+   */
+  async sendInPlanMode(page: Page, task: string): Promise<void> {
+    const box = this.locators.composer(page);
+    await box.click();
+    await box.pressSequentially("/plan");
+    await page.waitForTimeout(300);
+    await page.getByRole("option", { name: /^Plan /, exact: false }).click();
+    await page.waitForTimeout(200);
+    await box.pressSequentially(` ${task}`);
+    await page.waitForTimeout(100);
+    await page.getByRole("button", { name: "Send message", exact: true }).click();
+  }
+
+  /** Approve a pending plan-review card ("Approve this plan and leave plan mode?"). */
+  async approvePlan(page: Page): Promise<void> {
+    await page.getByRole("button", { name: "Approve", exact: true }).click();
+  }
+
+  /** Request changes on a pending plan-review card (keeps the session in plan mode). */
+  async requestPlanChanges(page: Page): Promise<void> {
+    await page.getByRole("button", { name: "Request changes", exact: true }).click();
+  }
+
+  /** Expand the "N subagent(s)" disclosure in the session banner to list delegated child sessions. */
+  async openSubagentList(page: Page): Promise<void> {
+    await page.getByRole("button", { name: /\d+ subagents?/ }).click();
+    await page.waitForTimeout(300);
   }
 
   async openSession(page: Page, index: number): Promise<void> {
@@ -213,14 +278,21 @@ export class ReferenceDriver implements Driver {
     sendButton: (page: Page) => page.getByRole("button", { name: "Send message", exact: true }),
     sessionList: (page: Page) => page.getByRole("tree", { name: "Sessions" }),
     sessionListItem: (page: Page, index: number) => page.getByRole("treeitem").nth(index),
-    toolCard: (page: Page, index = 0) => page.locator('[class*="toolCard" i], [data-tool-card]').nth(index),
-    approvalPanel: (page: Page) => page.locator('[class*="approval" i]').first(),
-    approveButton: (page: Page) => page.getByRole("button", { name: /^Allow/i }).first(),
-    denyButton: (page: Page) => page.getByRole("button", { name: /^Deny|^Reject/i }).first(),
-    planPanel: (page: Page) => page.locator('[class*="plan" i]').first(),
-    subagentCard: (page: Page) => page.locator('[class*="subagent" i]').first(),
-    themeToggle: (page: Page) => page.getByRole("button", { name: /theme|appearance/i }).first(),
-    stopButton: (page: Page) => page.locator('button[aria-label*="Stop" i]').first(),
+    // Mid-run, the running/pending tool group renders as a single button
+    // ("Reading files · <path>", "Running commands · <description>",
+    // "Running code · <description>", "Coordinating subagents · <description>",
+    // "Updating the plan · todo_write"); once the turn completes this
+    // collapses away and only leaf artifacts remain (e.g. the "View changes
+    // to <path>" file-diff button, or "Open plan: <title>").
+    toolCard: (page: Page, index = 0) =>
+      page.getByRole("button", { name: /Reading files|Running commands|Running code|Coordinating subagents|Updating the plan|Read files|Ran code|Called tools|View changes to|Open plan:/ }).nth(index),
+    approvalPanel: (page: Page) => page.getByRole("group", { name: /^Allow this operation with/ }),
+    approveButton: (page: Page) => page.getByRole("button", { name: "Allow once", exact: true }),
+    denyButton: (page: Page) => page.getByRole("button", { name: "Reject", exact: true }),
+    planPanel: (page: Page) => page.getByRole("region", { name: /^Approve this plan and leave plan mode\?$/ }),
+    subagentCard: (page: Page) => page.getByRole("tree", { name: "Subagent sessions" }),
+    themeToggle: (page: Page) => page.getByRole("button", { name: /^(Light|Dark|System)$/, exact: true }).first(),
+    stopButton: (page: Page) => page.getByRole("button", { name: "Stop generating", exact: true }),
     retryButton: (page: Page) => page.getByRole("button", { name: /retry/i }).first(),
     errorBanner: (page: Page) => page.locator('[role="alert"]').first(),
   };
