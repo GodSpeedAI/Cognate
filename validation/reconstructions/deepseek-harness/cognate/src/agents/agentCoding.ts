@@ -9,6 +9,7 @@
 import type { ModelMessage, ModelResponse, ToolCall, ToolDefinition } from "@cognate/capabilities";
 import type { Json } from "@cognate/events";
 import type { AgentDefinition, RunContext } from "@cognate/runtime-api";
+import { spawnSubagent } from "@cognate/profile-harness";
 import { approvalDeniedToolResult, approvalGate } from "../domain/approvalGate.ts";
 import {
   EXIT_PLAN_MODE_NOT_IN_PLAN_MODE,
@@ -82,6 +83,19 @@ const TOOL_DEFS: ToolDefinition[] = [
     name: "exit_plan_mode",
     description: "Present a markdown plan for review and, on approval, leave plan mode.",
     inputSchema: { type: "object", properties: { plan: { type: "string" } }, required: ["plan"] },
+  },
+  {
+    name: "subagent",
+    description: "Delegate a task to a background subagent and wait for its result.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        description: { type: "string" },
+        prompt: { type: "string" },
+        run_in_background: { type: "boolean" },
+      },
+      required: ["description", "prompt"],
+    },
   },
   {
     name: "run_code",
@@ -241,6 +255,32 @@ export const agentCodingAgent: AgentDefinition = {
               resultText = planRequestChangesToolResult(decision.feedback);
               await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: resultText });
             }
+          }
+        } else if (call.name === "subagent") {
+          // J-F-delegation: a durable child run of `agent.coding`, correlated
+          // `subagent:<parentRunId>:<id>` (this app's own `subagent.start` capability, not the
+          // packaged one — see `src/capabilities/subagentStart.ts`), so it survives a restart and is
+          // excluded from the `sessions` projection's top-level session list. `spawnSubagent`
+          // (`@cognate/profile-harness`) durably resumes the `ctx.waitFor` across restarts too — a
+          // restart mid-delegation replays the same `subagent.start` invocation (idempotent: the
+          // same child run is returned, not a new one) and re-waits on its completion.
+          const description = String(args.description ?? "");
+          const childPrompt = String(args.prompt ?? "");
+          await ctx.emit("subagent.spawned", { sessionId, toolCallId: call.id, description, prompt: childPrompt });
+          try {
+            const childOutput = (await spawnSubagent(ctx, call.id, AGENT_CODING, {
+              sessionId: `${sessionId}:sub:${call.id}`,
+              workspaceId,
+              message: childPrompt,
+            } as unknown as Json)) as unknown as { readonly text?: string };
+            resultText = String(childOutput?.text ?? "");
+            await ctx.emit("subagent.completed", { sessionId, toolCallId: call.id, text: resultText });
+            await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result: { text: resultText } });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            resultText = `Error: subagent failed: ${message}`;
+            await ctx.emit("subagent.failed", { sessionId, toolCallId: call.id, error: message });
+            await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: message });
           }
         } else if (approvalDecision.required) {
           const permission = approvalDecision.permission ?? "";

@@ -15,7 +15,7 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 
-import { bindTranche5, bindTranche7, bindTranche9, loadDomain } from "../domain/index.ts";
+import { bindTranche5, bindTranche7, bindTranche9, bindTranche10, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
@@ -25,11 +25,13 @@ import { workspaceSelectComponent } from "./capabilities/workspaceSelect.ts";
 import { workspacePathComponent } from "./capabilities/workspacePath.ts";
 import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
 import { planStateComponent } from "./capabilities/planState.ts";
+import { subagentStartComponent } from "./capabilities/subagentStart.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
 import { sessionsProjection } from "./projections/sessions.ts";
 import { plansProjection } from "./projections/plans.ts";
+import { subagentsProjection } from "./projections/subagents.ts";
 import { secretStore } from "./secrets.ts";
 
 export const LOCAL_OPERATOR = { actor: { id: "operator", kind: "user" as const }, tenant: "local" };
@@ -58,6 +60,7 @@ const GRANTED_CAPABILITIES = [
   "tool.bash",
   "tool.run_code",
   "plan.state",
+  "subagent.start",
 ];
 
 function buildPolicy(): Policy {
@@ -130,6 +133,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const bindings = bindTranche5(domain);
   const toolBindings = bindTranche7(domain);
   const planBindings = bindTranche9(domain);
+  const subagentBindings = bindTranche10(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -149,12 +153,14 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       workspacePathComponent(getService, toolBindings.workspacePath.semanticRef),
       toolCapabilitiesComponent(toolBindings.toolRead.semanticRef),
       planStateComponent(getService, planBindings.planState.semanticRef),
+      subagentStartComponent({ getService, systemActor: SYSTEM_CALLER.actor, semanticRef: subagentBindings.subagentStart.semanticRef }),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
       { projection: workspacesProjection, public: true },
       { projection: sessionsProjection, public: true },
       { projection: plansProjection, public: true },
+      { projection: subagentsProjection, public: true },
     ],
     system: SYSTEM_CALLER.actor,
   });
@@ -193,8 +199,42 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     );
   }
 
-  // Track newly added workspaces (so workspace.select can tell "add" from "reselect") by following
-  // the tenant's event stream live; torn down on `stop()` via AbortController.
+  // T10 (J-F-delegation): `spawnSubagent` (`@cognate/profile-harness`) opens a `"subagent"`
+  // continuation with `condition: { kind: "run_completion", runId: <childRunId> }` and expects
+  // *something* to resolve it once the child run finishes — `createHarness` wires exactly this via
+  // a `runtime.store.onCommitted` subscriber (`profiles/harness/src/index.ts`
+  // `resolveSubagentCompletion`/`checkAlreadyResolved`). This app hand-composes `createRuntime`
+  // instead (see README.md "Why createRuntime, not createHarness"), so that watcher does not exist
+  // unless this app provides its own — without it, every parent run that calls `subagent` would wait
+  // on its child forever. Reproduced here against the same public `RuntimeService` API (`listRuns`/
+  // `listContinuations`/`resolveContinuation`), not a copy of the harness's internal `store`-level
+  // subscription.
+  async function resolveSubagentCompletion(childRunId: string): Promise<void> {
+    const view = await runtime.service.getRun(LOCAL_OPERATOR, { runId: childRunId }).catch(() => undefined);
+    if (!view || view.status === "running" || view.status === "waiting") return;
+    const output = view.status === "completed" ? view.output : { text: "", error: view.error ?? `child run ${view.status}` };
+    for (const continuation of await runtime.service.listContinuations(LOCAL_OPERATOR, { status: "OPEN" })) {
+      if (continuation.type !== "subagent") continue;
+      const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
+      if (condition.kind !== "run_completion" || condition.runId !== childRunId) continue;
+      await runtime.service
+        .resolveContinuation(LOCAL_OPERATOR, { continuationId: continuation.id, action: "resume", input: output, idempotencyKey: `subagent-complete:${continuation.id}` })
+        .catch(() => {});
+    }
+  }
+
+  // Startup catch-up: a child may have finished before its parent's continuation was durably opened
+  // (ordinary race) or before this process restarted (crash/restart window) — check every OPEN
+  // `"subagent"` continuation's child run now.
+  for (const continuation of await runtime.service.listContinuations(LOCAL_OPERATOR, { status: "OPEN" })) {
+    if (continuation.type !== "subagent") continue;
+    const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
+    if (condition.kind === "run_completion" && condition.runId) await resolveSubagentCompletion(condition.runId);
+  }
+
+  // Track newly added workspaces (so workspace.select can tell "add" from "reselect") and resolve
+  // subagent completions, by following the tenant's event stream live; torn down on `stop()` via
+  // AbortController.
   const eventsController = new AbortController();
   void (async () => {
     try {
@@ -202,6 +242,11 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
         if (event.eventType === "workspace.added") {
           const payload = event.payload as { readonly workspaceId: string };
           knownWorkspaceIds.add(payload.workspaceId);
+        } else if (
+          (event.eventType === "run.completed" || event.eventType === "run.failed" || event.eventType === "run.cancelled") &&
+          event.runId
+        ) {
+          void resolveSubagentCompletion(event.runId);
         }
       }
     } catch {

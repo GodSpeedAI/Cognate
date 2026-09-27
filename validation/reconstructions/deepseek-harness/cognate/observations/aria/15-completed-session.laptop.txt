@@ -6,7 +6,8 @@
   - button "Switch to dark theme"
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "Tool result: Plan approved — plan mode exited; carry out the pl…"
+  - navigation "Session hierarchy": "Tool result: The fixture workspace is a tiny, clean project wit…"
+  - button "1 subagent" [expanded]
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -15,23 +16,24 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory" [disabled]
-  - status: plan · Plan mode on. Use /plan off to leave.
-  - paragraph: /plan make a plan now [[scenario:plan]]
+  - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 03:33 AM
+  - text: 03:51 AM
   - status: Worked
-  - button "Took 6s" [disabled]
-  - paragraph: "Tool result: Plan approved — plan mode exited; carry out the plan starting with your next step."
+  - button "Took 2s" [disabled]
+  - paragraph: "Tool result: The fixture workspace is a tiny, clean project with a README, a greet() helper, and no pending changes."
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 03:33 AM
-  - region "To-dos":
-    - button "To-dos 1 in progress · 1 pending"
+  - text: Usage 0 tok 03:51 AM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
   - text: 0 turns 0 steps · 0 tok/s 0% of context used
+  - tree "Subagent sessions":
+    - treeitem "Summarize project status · Summarize the current state of the fixtu · continuable · completed · 0 tok · 0s Open Summarize project status in sidebar":
+      - text: Summarize project status · Summarize the current state of the fixtu · continuable · completed · 0 tok · 0s
+      - button "Open Summarize project status in sidebar" [disabled]

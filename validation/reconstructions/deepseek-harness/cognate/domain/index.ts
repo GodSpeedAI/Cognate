@@ -108,3 +108,19 @@ export function bindTranche9(domain: Domain) {
   const [planState] = contracts as [CapabilityContract];
   return { planState };
 }
+
+/**
+ * T10 addition: `Subagent` (`subagent.start`, this app's own capability the `subagent` tool's
+ * `spawnSubagent` call depends on — see `src/capabilities/subagentStart.ts` for why the packaged
+ * `@cognate/profile-harness` one is not reused directly).
+ */
+export function tranche10Bindings(domain: Domain): readonly CapabilityBinding[] {
+  return [{ semanticId: domain.semanticId("Subagent"), capability: { id: "subagent.start", version: "1.0.0" } }];
+}
+
+export function bindTranche10(domain: Domain) {
+  const contracts = bindCapabilities(domain.projection, tranche10Bindings(domain));
+  if (contracts.length !== 1) throw new Error(`domain: expected 1 bound contract, got ${contracts.length}`);
+  const [subagentStart] = contracts as [CapabilityContract];
+  return { subagentStart };
+}

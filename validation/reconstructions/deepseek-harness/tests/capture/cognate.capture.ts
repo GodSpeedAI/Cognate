@@ -207,6 +207,23 @@ try {
   await page.waitForTimeout(200);
   await checkpoint(page, "13c-plan-completed");
 
+  // --- T10: subagents/delegation (journey J-F-delegation) ---
+
+  // 14 - subagent active: `[[scenario:delegate]]` calls the `subagent` tool; capture while the
+  // "Coordinating subagents · ..." activity indicator is showing.
+  await driver.newSession(page);
+  await driver.send(page, "[[scenario:delegate]] delegate this now");
+  await page.getByRole("button", { name: /Coordinating subagents/ }).waitFor({ timeout: 5_000 }).catch(() => undefined);
+  await checkpoint(page, "14-subagent-active");
+
+  // 14b - subagent completed panel: the parent turn completes and the banner's "N subagent(s)"
+  // disclosure opens the "Subagent sessions" tree.
+  await driver.waitForIdle(page, { timeoutMs: 15_000 });
+  await page.waitForTimeout(150);
+  await driver.openSubagentPanel(page);
+  await page.waitForTimeout(150);
+  await checkpoint(page, "14b-subagent-completed-panel");
+
   // 15 - completed session (status dot, duration badge, full markdown rendering).
   await driver.waitForIdle(page, { timeoutMs: 30_000 });
   await page.waitForTimeout(300);

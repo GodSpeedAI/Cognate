@@ -66,6 +66,44 @@ Journey covered: `J-E-plan` (`test/J-E-plan.test.ts`: todos progression, the `pl
 continuation opening with the plan's heading/markdown, Approve; plus `exit_plan_mode` failing closed
 outside plan mode).
 
+## Subagents/delegation (T10)
+
+The `subagent` tool (`{description, prompt, run_in_background?}`) is built on `spawnSubagent`
+(`@cognate/profile-harness`): a durable `ctx.invoke("subagent.start", ...)` + `ctx.waitFor(id, {
+type: "subagent", condition: { kind: "run_completion", runId } })` that resumes across restarts.
+`subagent.start` itself is this app's own capability (`src/capabilities/subagentStart.ts`), not the
+packaged one — the packaged version starts the child with no `correlationId` at all, and this app
+needs the child correlated `subagent:<parentRunId>:<id>` specifically: both to be queryable as a
+subagent run, and so `sessions.ts`'s "only `session:`-correlated runs" guard excludes it from the
+top-level session list (children are not sessions). The child is a plain `agent.coding` run (fresh
+history, the delegated `prompt` as its message, same workspace as the parent).
+
+`spawnSubagent`'s `run_completion` continuation needs *something* to resolve it once the child
+finishes — `createHarness` wires this via an internal `store.onCommitted` subscriber
+(`profiles/harness/src/index.ts`); this app hand-composes `createRuntime` (see "Why createRuntime,
+not createHarness" above) so that watcher does not exist unless provided here. `src/server.ts`'s
+`resolveSubagentCompletion` reproduces it against the public `RuntimeService` API (`listRuns`/
+`listContinuations`/`resolveContinuation`): a startup catch-up pass over every `OPEN` `"subagent"`
+continuation, plus a live check on every `run.completed`/`run.failed`/`run.cancelled` event on the
+same tenant-event-stream subscription that already tracks `workspace.added`.
+
+The child's output becomes the parent's tool result, fed back to the model verbatim — a deliberate
+departure from the reference's fire-and-forget "`Tool result: started subagent <uuid>`" plus a
+separate next-turn reflection (not exercised in the reference capture); this reconstruction
+synchronously awaits the child via `spawnSubagent` instead, per this tranche's composition
+requirement. See `DEVIATIONS.md`.
+
+UI: the session banner's "N subagent(s)" disclosure (reference-behavior-matrix.md §6.4) opens a
+`tree "Subagent sessions"` with rows `"<title> · <desc> · continuable · <status> · 0 tok · 0s"` and
+an `"Open <title> in sidebar"` button — present with the reference's exact accessible name but
+disabled, since there is no separate child-transcript view this tranche (children are not sessions).
+While a `subagent` call is in flight, the tool activity indicator reads "Coordinating subagents ·
+`<description>`" (`src/ui/App.tsx` `toolActionLabel`).
+
+Journey covered: `J-F-delegation` (`test/J-F-delegation.test.ts`: child run created and completes,
+its output lands in the parent, parent completes, child excluded from `sessions`; plus a
+restart-mid-delegation test asserting no duplicate child run).
+
 ## Run it
 
 ```bash
@@ -188,3 +226,9 @@ T9's `13-plan-active`/`13b-plan-review-prompt`/`13c-plan-completed` (1 capture/c
 3.4-5.3% differing pixels — in the same range as the rest of the T5b-T8 checkpoints, with the largest
 contributor being the missing right-sidebar plan tab (see `DEVIATIONS.md` "Plan mode (T9)") rather
 than any missing control.
+
+T10's `14-subagent-active`/`14b-subagent-completed-panel` (1 capture/compare round) sit at 3.2-4.8%
+differing pixels, same range again. The banner button, "Subagent sessions" tree, row format, and
+"Open ... in sidebar" button all match the reference's structure; the main content difference is the
+completed turn's reflected text (this app's child-output text vs. the reference's "started subagent
+`<uuid>`" — see `DEVIATIONS.md` "Subagents (T10)").
