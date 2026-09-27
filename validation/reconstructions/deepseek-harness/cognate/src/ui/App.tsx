@@ -6,20 +6,21 @@ import {
   BranchIcon,
   CheckIcon,
   ChevronDownIcon,
+  CodeViewIcon,
   CollapseIcon,
   CopyIcon,
   EditIcon,
   GearIcon,
+  ListViewIcon,
   LogoIcon,
-  MoonIcon,
   PanelRightIcon,
   PluginIcon,
   PlusIcon,
   SearchIcon,
   SendIcon,
   SlidersIcon,
+  SplitViewIcon,
   StopIcon,
-  SunIcon,
   ThumbDownIcon,
   ThumbUpIcon,
   TrashIcon,
@@ -38,6 +39,9 @@ interface SessionRow {
   readonly lastStatus: string;
   readonly updatedAt: string;
   readonly runId?: string | null;
+  /** "ptc" once this session has ever needed a tool-approval escalation (sessions.ts) — drives the
+   *  header's "PTC mode" vs "Standard mode" badge. */
+  readonly mode?: string;
 }
 
 interface EditSummary {
@@ -63,6 +67,10 @@ interface ChatMessage {
   readonly retryCount?: number;
   /** The last successful `edit` tool call this turn made, if any (`10-file-change-*`). */
   readonly editSummary?: EditSummary;
+  /** Tool-call count for this turn (`useToolTimeline(activeRunId).length` at finalize time) — feeds
+   *  the composer footer's "N turns M steps" counter (critic round-2 batch A P1: counters must
+   *  reflect a cancelled turn too, not stay pinned at 0). */
+  readonly stepCount?: number;
   /** True for the live in-progress preview bubble — suppresses the "Worked"/"Took Ns" status row,
    *  which only makes sense once the turn has actually finished (also what `CognateDriver.waitForIdle`
    *  in the parity-capture suite keys off of — a status row on a still-streaming bubble made it
@@ -329,6 +337,9 @@ function WorkspaceChooser() {
         <p role="alert" className="empty-state">
           Unable to create default workspace. Use Choose workspace to select a folder.
         </p>
+        <button type="button" className="mode-badge mode-badge-btn" disabled title={NOT_IMPLEMENTED}>
+          Standard mode
+        </button>
         <input
           aria-label="Workspace directory path"
           placeholder="/path/to/project"
@@ -381,9 +392,21 @@ interface ModelRow {
  *  prefilled with the current config and "Delete" is present but disabled (no backend
  *  "unconfigure" capability exists this tranche) — same "control present, feature stubbed" pattern
  *  used throughout this app (see the Settings nav's inert items below). */
-function SettingsModels({ onClose }: { readonly onClose: () => void }) {
+function SettingsModels({
+  onClose,
+  theme,
+  onToggleTheme,
+}: {
+  readonly onClose: () => void;
+  /** Appearance section (critic round-2 batch A cross-cutting P2 — reference switches theme via
+   *  Settings -> General -> Appearance, not a persistent sidebar control; see
+   *  tests/capture/reference.capture.ts's 20-theme-variant step). */
+  readonly theme: string;
+  readonly onToggleTheme: () => void;
+}) {
   const client = useCognate();
   const config = useModelConfig();
+  const [section, setSection] = useState<"general" | "models">("models");
   const [view, setView] = useState<"list" | "wizard">("list");
   const [addTab, setAddTab] = useState<"third-party" | "custom">("custom");
   const [thirdParty, setThirdParty] = useState("");
@@ -526,10 +549,20 @@ function SettingsModels({ onClose }: { readonly onClose: () => void }) {
         </div>
         <div className="settings-body">
           <nav className="settings-nav" aria-label="Settings sections">
-            <button type="button" className="settings-nav-item" disabled title={NOT_IMPLEMENTED}>
+            <button
+              type="button"
+              className={section === "general" ? "settings-nav-item active" : "settings-nav-item"}
+              aria-current={section === "general" ? "page" : undefined}
+              onClick={() => setSection("general")}
+            >
               General
             </button>
-            <button type="button" className="settings-nav-item active" aria-current="page">
+            <button
+              type="button"
+              className={section === "models" ? "settings-nav-item active" : "settings-nav-item"}
+              aria-current={section === "models" ? "page" : undefined}
+              onClick={() => setSection("models")}
+            >
               Models
             </button>
             <button type="button" className="settings-nav-item" disabled title={NOT_IMPLEMENTED}>
@@ -540,7 +573,20 @@ function SettingsModels({ onClose }: { readonly onClose: () => void }) {
             </button>
           </nav>
           <div className="settings-content">
-            {view === "list" ? (
+            {section === "general" ? (
+              <>
+                <h3>General</h3>
+                <p className="settings-subtitle">Appearance</p>
+                <div role="group" aria-label="Appearance" className="appearance-group">
+                  <button type="button" aria-pressed={theme === "light"} onClick={() => theme !== "light" && onToggleTheme()}>
+                    Light
+                  </button>
+                  <button type="button" aria-pressed={theme === "dark"} onClick={() => theme !== "dark" && onToggleTheme()}>
+                    Dark
+                  </button>
+                </div>
+              </>
+            ) : view === "list" ? (
               <>
                 <h3>Models</h3>
                 <p className="settings-subtitle">Enter your API key to use models from the following provider.</p>
@@ -724,7 +770,7 @@ function SettingsModels({ onClose }: { readonly onClose: () => void }) {
             )}
           </div>
         </div>
-        {view === "wizard" && (
+        {section === "models" && view === "wizard" && (
           <div className="modal-actions">
             <button type="button" onClick={() => setView("list")}>
               Cancel
@@ -1137,69 +1183,151 @@ function PlanReviewCard({
  *  split-diff panel (reference-behavior-matrix.md §6.1: line-numbered old/new panes, red/green
  *  highlighted changed lines) plus its bottom toolbar — "Split view" and "Line wrap" toggles, and an
  *  "Open <file> in sidebar" button (critic round-1 P0-6). */
-function EditDiff({ summary }: { readonly summary: EditSummary }) {
-  const [expanded, setExpanded] = useState(false);
-  const [splitView, setSplitView] = useState(true);
-  const [lineWrap, setLineWrap] = useState(false);
-  const rows = summary.diffLines.length > 9 ? summary.diffLines.slice(0, 9) : summary.diffLines;
+/** The "Edited <file> +N -M" chip (critic round-2 batch B P0): opens the dedicated right-side
+ *  Review panel (`ReviewPanel` below) beside the chat — it must NOT render an inline diff in the
+ *  message itself (that was this app's pre-round-2 shape; the reference's `10-file-change-expanded`
+ *  is a real split panel with its own tab strip/toolbar/gutter'd diff, reused from the same
+ *  right-panel infrastructure the subagent child view already uses). */
+function EditDiff({
+  summary,
+  turnNumber,
+  onOpenReview,
+}: {
+  readonly summary: EditSummary;
+  readonly turnNumber: number;
+  readonly onOpenReview: (summary: EditSummary, turnNumber: number) => void;
+}) {
   const fileName = summary.file_path.split("/").pop() ?? summary.file_path;
   return (
     <div className="edit-diff">
-      <button type="button" className="edit-diff-toggle" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+      <button type="button" className="edit-diff-toggle" onClick={() => onOpenReview(summary, turnNumber)}>
         View changes to {summary.file_path}: Edited {fileName} +{summary.additions} -{summary.deletions}
       </button>
-      {expanded && (
-        <div className="review-panel" role="region" aria-label={`Review · ${summary.file_path}`}>
-          <div className="review-panel-header">
-            <span className="review-panel-file">{summary.file_path}</span>
-            <span className="review-panel-stat">
-              +{summary.additions} -{summary.deletions}
-            </span>
-          </div>
-          {splitView ? (
-            <div className={`review-diff-split${lineWrap ? " wrap-lines" : ""}`}>
-              <pre className="review-diff-pane review-diff-old">
-                {rows
-                  .filter((line) => !line.startsWith("+"))
-                  .map((line, i) => (
-                    <div key={i} className={line.startsWith("-") ? "diff-del" : "diff-ctx"}>
-                      {line}
-                    </div>
-                  ))}
-              </pre>
-              <pre className="review-diff-pane review-diff-new">
-                {rows
-                  .filter((line) => !line.startsWith("-"))
-                  .map((line, i) => (
-                    <div key={i} className={line.startsWith("+") ? "diff-add" : "diff-ctx"}>
-                      {line}
-                    </div>
-                  ))}
-              </pre>
-            </div>
-          ) : (
-            <pre className={`edit-diff-body${lineWrap ? " wrap-lines" : ""}`}>
-              {rows.map((line, i) => (
-                <div key={i} className={line.startsWith("+") ? "diff-add" : line.startsWith("-") ? "diff-del" : "diff-ctx"}>
-                  {line}
-                </div>
-              ))}
-            </pre>
-          )}
-          <div className="review-panel-toolbar">
-            <button type="button" className="review-toolbar-btn" aria-pressed={splitView} onClick={() => setSplitView((v) => !v)}>
-              Split view
-            </button>
-            <button type="button" className="review-toolbar-btn" aria-pressed={lineWrap} onClick={() => setLineWrap((v) => !v)}>
-              Line wrap
-            </button>
-            <button type="button" className="review-toolbar-btn" disabled title={NOT_IMPLEMENTED}>
-              Open {fileName} in sidebar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+/** Splits `EditSummary.diffLines` (context/`-`/`+` prefixed, no line numbers) into gutter'd rows for
+ *  `ReviewPanel` — a single hunk covering the whole reconstructed file (this app's `diffLines`
+ *  algorithm in `capabilities/tools.ts` always produces one contiguous change region bounded by
+ *  context on both sides, so one `@@` header for the full old/new line counts is accurate, not an
+ *  approximation). */
+function diffHunk(diffLines: readonly string[]) {
+  let oldNo = 1;
+  let newNo = 1;
+  const rows: { readonly kind: "ctx" | "add" | "del"; readonly oldNo?: number; readonly newNo?: number; readonly text: string }[] = [];
+  for (const line of diffLines) {
+    const text = line.slice(1);
+    if (line.startsWith("+")) {
+      rows.push({ kind: "add", newNo, text });
+      newNo++;
+    } else if (line.startsWith("-")) {
+      rows.push({ kind: "del", oldNo, text });
+      oldNo++;
+    } else {
+      rows.push({ kind: "ctx", oldNo, newNo, text });
+      oldNo++;
+      newNo++;
+    }
+  }
+  const oldCount = oldNo - 1;
+  const newCount = newNo - 1;
+  return { rows, header: `@@ -1,${oldCount} +1,${newCount} @@` };
+}
+
+/** The Review split-diff panel (critic round-2 batch B P0, `10-file-change-expanded`): a real
+ *  right-hand pane beside the chat — tab strip (`Review · turn N` + close + disabled "+" add-tab),
+ *  a toolbar (list/split/code view toggles + Line wrap), and a two-column diff with a line-number
+ *  gutter and an `@@` hunk header, matching reference/screenshots/*​/10-file-change-expanded.png's
+ *  layout. Geometry per product-characterization.md §2: `RIGHTBAR_MIN=300px`,
+ *  `RIGHTBAR_MAX_RATIO=0.7`, `RIGHTBAR_DEFAULT_RATIO=0.45` of the frame (see `.review-right-panel`
+ *  in app.css). Reuses the same `<aside class="right-panel">` shell the subagent child view
+ *  (`RightPanel` below) already opens beside the chat. */
+function ReviewPanel({
+  summary,
+  turnNumber,
+  onClose,
+}: {
+  readonly summary: EditSummary;
+  readonly turnNumber: number;
+  readonly onClose: () => void;
+}) {
+  const [splitView, setSplitView] = useState(true);
+  const [lineWrap, setLineWrap] = useState(false);
+  const { rows, header } = useMemo(() => diffHunk(summary.diffLines), [summary.diffLines]);
+  const fileName = summary.file_path.split("/").pop() ?? summary.file_path;
+  return (
+    <aside className="right-panel review-right-panel" role="tabpanel" aria-label={`Review · turn ${turnNumber}`}>
+      <div className="right-panel-tabs" role="tablist">
+        <span role="tab" aria-selected="true" className="right-panel-tab">
+          Review · turn {turnNumber}
+          <button type="button" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        </span>
+        <button type="button" className="right-panel-add-tab" aria-label="Add tab" disabled title={NOT_IMPLEMENTED}>
+          <PlusIcon />
+        </button>
+      </div>
+      <div className="review-panel-toolbar" role="toolbar" aria-label="Review view">
+        <button type="button" className="review-toolbar-btn icon-btn" aria-pressed={!splitView} onClick={() => setSplitView(false)} aria-label="List view" title="List view">
+          <ListViewIcon />
+        </button>
+        <button type="button" className="review-toolbar-btn icon-btn" aria-pressed={splitView} onClick={() => setSplitView(true)} aria-label="Split view" title="Split view">
+          <SplitViewIcon />
+        </button>
+        <button type="button" className="review-toolbar-btn icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Code view">
+          <CodeViewIcon />
+        </button>
+        <span className="review-panel-file">{summary.file_path}</span>
+        <span className="review-panel-stat">
+          +{summary.additions} -{summary.deletions}
+        </span>
+        <button type="button" className="review-toolbar-btn" aria-pressed={lineWrap} onClick={() => setLineWrap((v) => !v)}>
+          Line wrap
+        </button>
+        <button type="button" className="review-toolbar-btn" disabled title={NOT_IMPLEMENTED}>
+          Open {fileName} in sidebar
+        </button>
+      </div>
+      <div className="review-panel-body">
+        <div className="review-hunk-header">{header}</div>
+        {splitView ? (
+          <div className={`review-diff-split${lineWrap ? " wrap-lines" : ""}`}>
+            <div className="review-diff-pane review-diff-old">
+              {rows
+                .filter((r) => r.kind !== "add")
+                .map((r, i) => (
+                  <div key={i} className={`review-diff-row${r.kind === "del" ? " diff-del" : " diff-ctx"}`}>
+                    <span className="review-diff-gutter">{r.oldNo}</span>
+                    <span className="review-diff-text">{r.text}</span>
+                  </div>
+                ))}
+            </div>
+            <div className="review-diff-pane review-diff-new">
+              {rows
+                .filter((r) => r.kind !== "del")
+                .map((r, i) => (
+                  <div key={i} className={`review-diff-row${r.kind === "add" ? " diff-add" : " diff-ctx"}`}>
+                    <span className="review-diff-gutter">{r.newNo}</span>
+                    <span className="review-diff-text">{r.text}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ) : (
+          <div className={`review-diff-unified${lineWrap ? " wrap-lines" : ""}`}>
+            {rows.map((r, i) => (
+              <div key={i} className={`review-diff-row${r.kind === "add" ? " diff-add" : r.kind === "del" ? " diff-del" : " diff-ctx"}`}>
+                <span className="review-diff-gutter">{r.oldNo ?? ""}</span>
+                <span className="review-diff-gutter">{r.newNo ?? ""}</span>
+                <span className="review-diff-text">{r.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </aside>
   );
 }
 
@@ -1255,6 +1383,8 @@ function Composer({
   onSend,
   onStop,
   onTogglePlanMode,
+  turns = 0,
+  steps = 0,
 }: {
   readonly disabled: boolean;
   readonly sending: boolean;
@@ -1266,6 +1396,10 @@ function Composer({
   readonly onSend: (message: string) => void;
   readonly onStop: () => void;
   readonly onTogglePlanMode: () => void;
+  /** This session's completed-turn / tool-step counts (critic round-2 batch A P1) — derived from
+   *  the transcript's own `stepCount`s, not a stub 0. */
+  readonly turns?: number;
+  readonly steps?: number;
 }) {
   const [message, setMessage] = useState("");
   const submit = useCallback(() => {
@@ -1337,7 +1471,7 @@ function Composer({
       </div>
       <div className="composer-stats">
         <span className="stat-chip" title={NOT_IMPLEMENTED}>
-          0 turns 0 steps · 0 tok/s
+          {turns} turns {steps} steps · 0 tok/s
         </span>
         <span className="stat-chip" title={NOT_IMPLEMENTED}>
           0% of context used
@@ -1347,7 +1481,17 @@ function Composer({
   );
 }
 
-function MessageBubble({ message, elapsedSeconds }: { readonly message: ChatMessage; readonly elapsedSeconds?: number }) {
+function MessageBubble({
+  message,
+  elapsedSeconds,
+  turnNumber,
+  onOpenReview,
+}: {
+  readonly message: ChatMessage;
+  readonly elapsedSeconds?: number;
+  readonly turnNumber?: number;
+  readonly onOpenReview?: (summary: EditSummary, turnNumber: number) => void;
+}) {
   const bodyRef = useRef<HTMLDivElement>(null);
 
   if (message.role === "system") {
@@ -1387,13 +1531,12 @@ function MessageBubble({ message, elapsedSeconds }: { readonly message: ChatMess
           <span className={`status-pill${message.failed ? " status-failed" : ""}${message.failed ? " disabled" : ""}`} role="status">
             <span className="sr-only">{message.failed ? "Failed" : message.cancelled ? "Stopped" : "Worked"}</span>
           </span>
-          {/* T11 (J-H-cancellation): no duration badge on a stopped turn (reference-behavior-
-           *  matrix.md §7 — "no duration badge is shown"). */}
-          {!message.cancelled && (
-            <button type="button" className="took-btn" disabled>
-              Took {Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}s
-            </button>
-          )}
+          {/* T11 (J-H-cancellation): a disabled "Stopped" chip in place of the duration badge —
+           *  matches reference/observations/aria/19-cancelled.desktop.txt's `button "Stopped"
+           *  [disabled]` (no "Took Ns" text on a cancelled turn). */}
+          <button type="button" className="took-btn" disabled>
+            {message.cancelled ? "Stopped" : `Took ${Math.max(0, Math.round((message.tookMs ?? 0) / 1000))}s`}
+          </button>
         </div>
       )}
       {message.failed && message.retryCount !== undefined && (
@@ -1405,10 +1548,13 @@ function MessageBubble({ message, elapsedSeconds }: { readonly message: ChatMess
       <div className="message-divider" />
       <div className="message-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
       <CodeBlocks containerRef={bodyRef} />
-      {message.editSummary && <EditDiff summary={message.editSummary} />}
+      {message.editSummary && onOpenReview && (
+        <EditDiff summary={message.editSummary} turnNumber={turnNumber ?? 1} onOpenReview={onOpenReview} />
+      )}
       {message.failed && message.failureMessage && <FailureBlock code={message.failureCode ?? ""} message={message.failureMessage} />}
       {!message.failed && !message.streaming && (
         <div className="message-actions">
+          {message.cancelled && <span className="cancelled-tag">Stopped</span>}
           <button type="button" className="meta-action" aria-label="Copy" title="Copy">
             <CopyIcon />
           </button>
@@ -1428,6 +1574,60 @@ function MessageBubble({ message, elapsedSeconds }: { readonly message: ChatMess
         </div>
       )}
     </div>
+  );
+}
+
+/** "Into the Unknown" hero landing (critic round-2 batch A P0, checkpoints 04/05): a workspace is
+ *  selected but the active session has no messages yet — reference/observations/aria/
+ *  04-workspace-selected.desktop.txt and 05-empty-session.desktop.txt are byte-identical, both
+ *  showing this centered landing (logo, heading, "Preview" badge, workspace/mode pills, a centered
+ *  composer) with no tab bar or header actions. The session chrome (title bar, Chat/Trajectory
+ *  tabs) only appears once the session has an actual message (06-user-message onward). */
+function HeroLanding({
+  workspaceLabel,
+  modeLabel,
+  composerDisabled,
+  modelLabel,
+  onSend,
+}: {
+  readonly workspaceLabel: string;
+  readonly modeLabel: string;
+  readonly composerDisabled: boolean;
+  readonly modelLabel: string | undefined;
+  readonly onSend: (message: string) => void;
+}) {
+  return (
+    <>
+      <div className="hero-banner" role="banner">
+        <button type="button" className="icon-btn" disabled title={NOT_IMPLEMENTED} aria-label="Open right sidebar">
+          <PanelRightIcon />
+        </button>
+      </div>
+      <div className="hero-landing">
+        <LogoIcon className="hero-logo" />
+        <div className="hero-heading-row">
+          <h1 className="hero-heading">Into the Unknown</h1>
+          <span className="hero-preview-badge">Preview</span>
+        </div>
+        <div className="hero-pills">
+          <button type="button" className="hero-pill" disabled title={NOT_IMPLEMENTED}>
+            {workspaceLabel}
+          </button>
+          <span className="mode-badge">{modeLabel}</span>
+        </div>
+        <div className="hero-composer">
+          <Composer
+            disabled={composerDisabled}
+            sending={false}
+            modelLabel={modelLabel}
+            planMode={false}
+            onSend={onSend}
+            onStop={() => undefined}
+            onTogglePlanMode={() => undefined}
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -1475,6 +1675,13 @@ export function App() {
   const [subagentsExpanded, setSubagentsExpanded] = useState(false);
   const [openChildToolCallId, setOpenChildToolCallId] = useState<string | undefined>(undefined);
   const openChildRow = subagentRows.find((r) => r.toolCallId === openChildToolCallId);
+  // Review split-diff panel (critic round-2 batch B P0) — mutually exclusive with the subagent
+  // child-transcript panel; both reuse the same right-hand-pane slot beside the chat.
+  const [openReview, setOpenReview] = useState<{ readonly summary: EditSummary; readonly turnNumber: number } | undefined>(undefined);
+  const openReviewPanel = useCallback((summary: EditSummary, turnNumber: number) => {
+    setOpenChildToolCallId(undefined);
+    setOpenReview({ summary, turnNumber });
+  }, []);
   const planReviewContinuation = openContinuations.find((c) => c.type === "plan-review");
   const decidePlanReview = useCallback(
     async (approved: boolean) => {
@@ -1608,13 +1815,13 @@ export function App() {
       // The last successful `edit` this turn made, if any (`10-file-change-collapsed`/`-expanded`).
       const lastEdit = [...toolEntries].reverse().find((e) => e.tool === "edit" && e.status === "success");
       const editSummary = lastEdit ? (lastEdit.result as EditSummary | undefined) : undefined;
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary }]);
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, tookMs, editSummary, stepCount: toolEntries.length }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "cancelled") {
       // T11 (J-H-cancellation): the partial streamed text is kept, not discarded, with a "Stopped"
       // status pill and no duration badge (reference-behavior-matrix.md §7).
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true }]);
+      setTranscript((prev) => [...prev, { role: "assistant", content: streaming.text, at, cancelled: true, stepCount: toolEntries.length }]);
       setActiveRunId(undefined);
     } else if (streaming.status === "failed") {
       // T11 (J-H-provider-error): "This turn failed" / message / CODE, plus the settled retry
@@ -1631,6 +1838,7 @@ export function App() {
           retryCount,
           failureCode: streaming.failure?.code,
           failureMessage: streaming.failure?.message,
+          stepCount: toolEntries.length,
         },
       ]);
       setActiveRunId(undefined);
@@ -1640,6 +1848,12 @@ export function App() {
   const modelLabel = modelConfig ? `${modelConfig.model}` : undefined;
   const sessionTitle = currentSession?.title || "New Session";
   const breadcrumbTitle = sessionTitle.length > 64 ? `${sessionTitle.slice(0, 63)}…` : sessionTitle;
+  // 04/05 hero landing (see HeroLanding's doc comment above): a workspace is chosen but no turn has
+  // ever started in the active session — no transcript, nothing streaming, no run in flight.
+  const showHero =
+    Boolean(currentWorkspaceId) && transcript.length === 0 && streaming.status === "idle" && !activeRunId;
+  const sessionTurns = transcript.filter((m) => m.role === "assistant").length;
+  const sessionSteps = transcript.reduce((sum, m) => sum + (m.stepCount ?? 0), 0);
 
   return (
     <div className="app-shell" data-theme={theme}>
@@ -1733,10 +1947,6 @@ export function App() {
         )}
 
         <div className="sidebar-bottom">
-          <button type="button" className="icon-btn" aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"} onClick={toggleTheme}>
-            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-            {!collapsed && <span>{theme === "dark" ? "Light theme" : "Dark theme"}</span>}
-          </button>
           <button type="button" className="icon-btn" aria-label="Settings" onClick={() => setShowSettings(true)}>
             <GearIcon />
             {!collapsed && <span>Settings</span>}
@@ -1747,6 +1957,14 @@ export function App() {
       <main className="center-column">
         {!currentWorkspaceId ? (
           <WorkspaceChooser />
+        ) : showHero ? (
+          <HeroLanding
+            workspaceLabel={currentWorkspace?.title || currentWorkspace?.id || ""}
+            modeLabel={currentSession?.mode === "ptc" ? "PTC mode" : "Standard mode"}
+            composerDisabled={composerDisabled}
+            modelLabel={modelLabel}
+            onSend={send}
+          />
         ) : (
           <>
             <header className="session-header">
@@ -1754,16 +1972,30 @@ export function App() {
                 {breadcrumbTitle}
               </nav>
               {subagentRows.length > 0 && (
-                <button
-                  type="button"
-                  className="subagent-count-btn"
-                  aria-expanded={subagentsExpanded}
-                  onClick={() => setSubagentsExpanded((v) => !v)}
-                >
-                  {subagentRows.length} subagent{subagentRows.length === 1 ? "" : "s"}
-                </button>
+                <div className="subagent-count-wrap">
+                  <button
+                    type="button"
+                    className="subagent-count-btn"
+                    aria-expanded={subagentsExpanded}
+                    onClick={() => setSubagentsExpanded((v) => !v)}
+                  >
+                    {subagentRows.length} subagent{subagentRows.length === 1 ? "" : "s"}
+                  </button>
+                  {/* Anchored dropdown popover directly under the header badge (critic round-2
+                   *  batch B P1) — the reference renders this as a small floating card at the
+                   *  button's position, not a bottom banner above the composer. */}
+                  {subagentsExpanded && (
+                    <SubagentTree
+                      rows={subagentRows}
+                      onOpen={(row) => {
+                        setOpenReview(undefined);
+                        setOpenChildToolCallId(row.toolCallId);
+                      }}
+                    />
+                  )}
+                </div>
               )}
-              <span className="mode-badge">Standard mode</span>
+              <span className="mode-badge">{currentSession?.mode === "ptc" ? "PTC mode" : "Standard mode"}</span>
               <div className="header-actions">
                 <button type="button" disabled title={NOT_IMPLEMENTED}>
                   Open in Files
@@ -1790,7 +2022,7 @@ export function App() {
             <div className="messages">
               {transcript.length === 0 && streaming.status === "idle" && <p className="empty-state">Start the conversation below.</p>}
               {transcript.map((message, index) => (
-                <MessageBubble key={index} message={message} />
+                <MessageBubble key={index} message={message} turnNumber={index + 1} onOpenReview={openReviewPanel} />
               ))}
               {streaming.status === "streaming" && (
                 <>
@@ -1818,16 +2050,19 @@ export function App() {
                 onSend={send}
                 onStop={stop}
                 onTogglePlanMode={togglePlanMode}
+                turns={sessionTurns}
+                steps={sessionSteps}
               />
-            )}
-            {subagentsExpanded && subagentRows.length > 0 && (
-              <SubagentTree rows={subagentRows} onOpen={(row) => setOpenChildToolCallId(row.toolCallId)} />
             )}
           </>
         )}
       </main>
-      {openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />}
-      {showSettings && <SettingsModels onClose={() => setShowSettings(false)} />}
+      {openReview ? (
+        <ReviewPanel summary={openReview.summary} turnNumber={openReview.turnNumber} onClose={() => setOpenReview(undefined)} />
+      ) : (
+        openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />
+      )}
+      {showSettings && <SettingsModels onClose={() => setShowSettings(false)} theme={theme} onToggleTheme={toggleTheme} />}
       <FirstRunDialogs />
     </div>
   );

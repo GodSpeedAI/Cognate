@@ -9,13 +9,12 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-l [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cap-ws-l
+    - treeitem "ck-cog-laptop-ws [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: ck-cog-laptop-ws
       - treeitem "[[scenario:approval]] run something risky now" [selected]
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
@@ -29,7 +28,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 12:25 PM
+  - text: 01:11 PM
   - status: Worked
   - button "Took 13s" [disabled]
   - paragraph: "Tool result: Error: the user rejected escalating this program to \"workspace-write\"; it stays denied, so stop and explain instead of working around it"
@@ -37,10 +36,10 @@
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 12:25 PM
+  - text: Usage 0 tok 01:11 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
-  - text: 0 turns 0 steps · 0 tok/s 0% of context used
+  - text: 1 turns 1 steps · 0 tok/s 0% of context used

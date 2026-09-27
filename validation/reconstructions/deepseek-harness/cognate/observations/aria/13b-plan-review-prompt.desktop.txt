@@ -9,14 +9,13 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-d Plan awaiting review /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cap-ws-d
+    - treeitem "ck-cog-desktop-ws Plan awaiting review /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: ck-cog-desktop-ws
       - treeitem "Plan awaiting review /plan make a plan now [[scenario:plan]] now" [selected]
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": /plan make a plan now [[scenario:plan]]
@@ -31,7 +30,7 @@
   - status: plan · Plan mode on. Use /plan off to leave.
   - paragraph: /plan make a plan now [[scenario:plan]]
   - button "Copy"
-  - text: 12:24 PM
+  - text: 01:10 PM
   - status: Deep diving for 6s
   - status: Deep diving for 6s
   - button "Calling tools · exit_plan_mode" [disabled]

@@ -9,16 +9,15 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-d Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
-      - text: cap-ws-d
+    - treeitem "ck-cog-desktop-ws Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: ck-cog-desktop-ws
       - treeitem "Waiting for approval [[scenario:approval]] run something risky Approval now" [selected]
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there now"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
-  - text: Standard mode
+  - text: PTC mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
   - button "More actions" [disabled]: …
@@ -28,7 +27,7 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:approval]] run something risky"
   - button "Copy"
-  - text: 12:24 PM
+  - text: 01:09 PM
   - status: Deep diving for 7s
   - status: Deep diving for 7s
   - button "Running code · Clear stale scratch cache outside the workspace" [disabled]
@@ -36,3 +35,17 @@
   - group "Approval details": "Allow this operation with workspace-write permissions: Need to remove a stale cache directory outside the default workspace sandbox.."
   - button "Reject"
   - button "Allow once"
+- tabpanel "Review · turn 2":
+  - tablist:
+    - tab "Review · turn 2 Close" [selected]:
+      - text: Review · turn 2
+      - button "Close": ×
+    - button "Add tab" [disabled]
+  - toolbar "Review view":
+    - button "List view"
+    - button "Split view" [pressed]
+    - button "Code view" [disabled]
+    - text: src/greet.ts +1 -1
+    - button "Line wrap"
+    - button "Open greet.ts in sidebar" [disabled]
+  - text: "@@ -1,4 +1,4 @@ 1 export function greet(name: string): string { 2 return `Hello, ${name}!`; 3 } 4 1 export function greet(name: string): string { 2 return `Howdy, ${name}!`; 3 } 4"

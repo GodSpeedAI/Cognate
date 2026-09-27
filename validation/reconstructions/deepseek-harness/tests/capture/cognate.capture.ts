@@ -89,10 +89,13 @@ try {
 
   await driver.dismiss(page, "Continue");
 
-  // 03 - no workspace: dialogs dismissed, composer still disabled ("Configure later" dismisses
-  // the second dialog so the underlying "no workspace" shell is visible for this checkpoint).
-  await driver.dismiss(page, "Configure later");
+  // 03 - no workspace: reference/observations/aria/03-no-workspace.desktop.txt confirms the
+  // reference still has its own second onboarding dialog ("Internal Testing Notice"'s follow-up)
+  // open on top of the no-workspace shell at this checkpoint — only the *first* dialog has been
+  // dismissed. Mirror that sequencing (critic round-2 capture-script fault: dismissing both dialogs
+  // before this screenshot showed the fully-unblocked shell instead of the still-gated one).
   await checkpoint(page, "03-no-workspace");
+  await driver.dismiss(page, "Configure later");
 
   // 02 - model settings: Settings modal, provider list (empty — no provider configured yet).
   await driver.openSettingsModels(page);
@@ -234,19 +237,65 @@ try {
   await page.waitForTimeout(150);
   await checkpoint(page, "14b-subagent-completed-panel");
 
-  // 15 - completed session (status dot, duration badge, full markdown rendering).
+  // The delegated child (J-F-delegation) is fire-and-forget: the parent turn completes immediately
+  // with "started subagent ..." while the child keeps streaming in the background. Root-caused via
+  // app.sqlite's `events` table: this app's runtime processes runs off a single execution lane, so a
+  // still-streaming background child can starve a *later* run's body from executing at all for a long
+  // time — a run.cancelled with no matching session.turn.started ever committed for it was observed
+  // downstream at 19-cancelled when this child was left running. Drain it here (poll the popover's own
+  // row text for "· completed ·") so no heavy background work carries into the timing-sensitive
+  // checkpoints that follow.
+  await page
+    .waitForFunction(() => document.querySelector(".subagent-row-text")?.textContent?.includes("completed"), { timeout: 60_000 })
+    .catch(() => undefined);
+  await page.waitForTimeout(150);
+
+  // 15 - completed session (status dot, duration badge, full markdown rendering). Reference's
+  // 15-completed-session is the earlier `[[scenario:plain]] hello there` session, not whatever
+  // session was active most recently — reselect it explicitly before screenshotting (critic
+  // round-2 capture-script fault: without this the checkpoint landed on the `delegate` session
+  // instead, from the still-open subagent panel above).
+  // Session rows truncate their accessible name to the rendered (ellipsized) text, so match the
+  // full untruncated `title` attribute instead of the accessible name.
+  await page.locator('button.session-row[title*="hello there"]').click();
+  await page.waitForTimeout(150);
   await driver.waitForIdle(page, { timeoutMs: 30_000 });
   await page.waitForTimeout(300);
   await checkpoint(page, "15-completed-session");
 
-  // 19 - cancelled: start another stream and click Stop mid-flight.
+  // 19 - cancelled: start another stream and click Stop mid-flight. Root-caused (not just a capture
+  // artifact, though the fix lives in the capture script): the Composer's Stop button appears the
+  // instant `client.startRun()`'s promise resolves (App.tsx sets `activeRunId` optimistically), but
+  // `agent.coding`'s `run()` — and its very first line, `ctx.emit("session.turn.started", ...)` —
+  // only actually executes on the runtime's own tick loop (packages/runtime-bun/src/runtime.ts,
+  // `tickMs=10`). Clicking Stop the instant the button renders can therefore race ahead of that
+  // first tick and cancel the run before `session.turn.started` is ever durably committed —
+  // confirmed by querying app.sqlite's `events` table after a run using the original 60ms-wait
+  // script: a `run.cancelled` row with no matching `session.turn.started` for the same
+  // `session:<id>` correlation. This is the same race the reference's own capture script avoids by
+  // waiting ~600ms after Send before looking for Stop (tests/capture/reference.capture.ts) rather
+  // than clicking the instant the control appears — mirror that here.
   await driver.newSession(page);
   await driver.send(page, "[[scenario:plain]] cancel me please");
-  await page.waitForTimeout(60);
+  await page.waitForTimeout(600);
   const stopBtn = page.getByRole("button", { name: "Stop generating", exact: true });
+  await stopBtn.waitFor({ timeout: 10_000 }).catch(() => undefined);
   if ((await stopBtn.count()) > 0 && (await stopBtn.isVisible().catch(() => false))) {
     await stopBtn.click();
-    await page.waitForTimeout(300);
+    // Wait for the actual "Stopped" render (title update, sidebar listing, and status chip are all
+    // downstream of the `run.cancelled` event round-tripping back to the client) rather than a fixed
+    // sleep — mirrors tests/journeys/H-cancellation.spec.ts's own
+    // `expect(page.getByText(/^Stopped$/).first()).toBeVisible(...)` wait (critic round-2 capture-
+    // script fault: a 300ms fixed wait raced past this and captured a stale frame).
+    await page.getByText(/^Stopped$/).first().waitFor({ timeout: 10_000 }).catch(() => undefined);
+    // The session's title/sidebar-listing come from the `sessions` projection, which is applied
+    // asynchronously off the event log (see packages/runtime-bun/src/runtime.ts's `idle()`/`kick()` —
+    // there is no synchronous guarantee it has caught up the instant `run.cancelled` is observable
+    // client-side). Poll for the breadcrumb to move off "New Session" instead of a fixed sleep.
+    await page
+      .waitForFunction(() => !document.querySelector(".breadcrumb")?.textContent?.includes("New Session"), { timeout: 5_000 })
+      .catch(() => undefined);
+    await page.waitForTimeout(150);
     await checkpoint(page, "19-cancelled");
   } else {
     console.log("[capture] 19-cancelled: run settled before Stop could be clicked — capturing final state instead");
@@ -274,10 +323,16 @@ try {
   await page.waitForTimeout(500);
   await checkpoint(page, "17-restored-after-reload");
 
-  // 20 - theme variant: sidebar theme toggle -> Dark.
-  await page.getByRole("button", { name: "Switch to dark theme", exact: true }).click();
+  // 20 - theme variant: Settings -> General -> Appearance -> Dark (matches
+  // tests/capture/reference.capture.ts's own "Settings -> General -> Appearance -> Dark" step —
+  // the theme switch lives in Settings now, not a persistent sidebar control; critic round-2 batch A
+  // cross-cutting P2).
+  await driver.openSettingsGeneral(page);
+  await page.getByRole("button", { name: "Dark", exact: true }).click();
   await page.waitForTimeout(200);
   await checkpoint(page, "20-theme-variant");
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
+  await page.waitForTimeout(150);
 } finally {
   await browser.close();
   await driver.stop();

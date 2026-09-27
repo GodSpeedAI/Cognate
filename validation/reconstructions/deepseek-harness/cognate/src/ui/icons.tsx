@@ -175,3 +175,33 @@ export const PanelRightIcon = (props: IconProps) =>
     </>,
     props,
   );
+
+/** Review panel toolbar (critic round-2 batch B P0, `10-file-change-expanded`). */
+export const ListViewIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M4 4h9M4 8h9M4 12h9" />
+      <circle cx="1.5" cy="4" r="0.6" fill="currentColor" />
+      <circle cx="1.5" cy="8" r="0.6" fill="currentColor" />
+      <circle cx="1.5" cy="12" r="0.6" fill="currentColor" />
+    </>,
+    props,
+  );
+
+export const SplitViewIcon = (props: IconProps) =>
+  base(
+    <>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
+      <path d="M8 2.5v11" />
+    </>,
+    props,
+  );
+
+export const CodeViewIcon = (props: IconProps) =>
+  base(
+    <>
+      <path d="M5.5 4 2 8l3.5 4" />
+      <path d="M10.5 4 14 8l-3.5 4" />
+    </>,
+    props,
+  );

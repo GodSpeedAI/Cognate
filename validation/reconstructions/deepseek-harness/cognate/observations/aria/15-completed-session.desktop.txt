@@ -9,19 +9,17 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-d [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
-      - text: cap-ws-d
-      - treeitem "[[scenario:delegate]] delegate this now now" [selected]
+    - treeitem "ck-cog-desktop-ws [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now 1m [[scenario:plain]] hello there 1m" [expanded]:
+      - text: ck-cog-desktop-ws
+      - treeitem "[[scenario:delegate]] delegate this now now"
       - treeitem "/plan make a plan now [[scenario:plan]] now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
-      - treeitem "[[scenario:multi]] do the multi-step task now now"
-      - treeitem "[[scenario:plain]] hello there 1m"
-  - button "Switch to dark theme": Dark theme
+      - treeitem "[[scenario:multi]] do the multi-step task now 1m"
+      - treeitem "[[scenario:plain]] hello there 1m" [selected]
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": "[[scenario:delegate]] delegate this now"
-  - button "1 subagent" [expanded]
+  - navigation "Session hierarchy": "[[scenario:plain]] hello there"
   - text: Standard mode
   - button "Open in Files" [disabled]
   - button "More ways to open" [disabled]
@@ -30,24 +28,28 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory" [disabled]
-  - paragraph: "[[scenario:delegate]] delegate this now"
+  - paragraph: "[[scenario:plain]] hello there"
   - button "Copy"
-  - text: 12:24 PM
+  - text: 01:10 PM
   - status: Worked
-  - button "Took 5s" [disabled]
-  - paragraph: "Tool result: started subagent 1fa3252f-2654-40a0-b8ee-dbdc12f2e805"
+  - button "Took 0s" [disabled]
+  - heading "Summary" [level=1]
+  - paragraph: "Here is what I found:"
+  - list:
+    - listitem: first point
+    - listitem: second point
+  - text: ts
+  - button "Wrap lines" [pressed]
+  - button "Copy"
+  - code: "export function greet(name: string): string { return `Hello, ${name}!`; }"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 12:24 PM
+  - text: Usage 0 tok 01:10 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
-  - text: 0 turns 0 steps · 0 tok/s 0% of context used
-  - tree "Subagent sessions":
-    - treeitem "Summarize project status · Summarize the current state of the fixtu · continuable · running · 0 tok · 0s Open Summarize project status in sidebar":
-      - text: Summarize project status · Summarize the current state of the fixtu · continuable · running · 0 tok · 0s
-      - button "Open Summarize project status in sidebar"
+  - text: 1 turns 0 steps · 0 tok/s 0% of context used

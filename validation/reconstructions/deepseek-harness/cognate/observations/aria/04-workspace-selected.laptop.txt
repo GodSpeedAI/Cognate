@@ -9,20 +9,15 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-l" [expanded]
-  - button "Switch to dark theme": Dark theme
+    - treeitem "ck-cog-laptop-ws" [expanded]
   - button "Settings"
 - main:
-  - navigation "Session hierarchy": New Session
+  - banner:
+    - button "Open right sidebar" [disabled]
+  - heading "Into the Unknown" [level=1]
+  - text: Preview
+  - button "ck-cog-laptop-ws" [disabled]
   - text: Standard mode
-  - button "Open in Files" [disabled]
-  - button "More ways to open" [disabled]
-  - button "More actions" [disabled]: …
-  - button "Open right sidebar" [disabled]
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory" [disabled]
-  - paragraph: Start the conversation below.
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write

@@ -9,15 +9,14 @@
   - button "View options" [disabled]
   - button "Add workspace" [disabled]
   - tree "Sessions":
-    - treeitem "cap-ws-l [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
-      - text: cap-ws-l
+    - treeitem "ck-cog-laptop-ws [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there 1m" [expanded]:
+      - text: ck-cog-laptop-ws
       - treeitem "[[scenario:delegate]] delegate this now now" [selected]
       - treeitem "/plan make a plan now [[scenario:plan]] now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:approval]] run something risky now"
       - treeitem "[[scenario:multi]] do the multi-step task now now"
       - treeitem "[[scenario:plain]] hello there 1m"
-  - button "Switch to dark theme": Dark theme
   - button "Settings"
 - main:
   - navigation "Session hierarchy": "[[scenario:delegate]] delegate this now"
@@ -32,18 +31,18 @@
     - tab "Trajectory" [disabled]
   - paragraph: "[[scenario:delegate]] delegate this now"
   - button "Copy"
-  - text: 12:26 PM
+  - text: 01:11 PM
   - status: Worked
   - button "Took 5s" [disabled]
-  - paragraph: "Tool result: started subagent 488a995d-e634-4092-8bf6-d356d4a58f8d"
+  - paragraph: "Tool result: started subagent fdcc6315-3899-417d-9288-a20c0f0f0144"
   - button "Copy"
   - button "Good response" [disabled]
   - button "Bad response" [disabled]
   - button "Branch into a new conversation" [disabled]
-  - text: Usage 0 tok 12:26 PM
+  - text: Usage 0 tok 01:11 PM
   - textbox "Message or run a task, / commands, @ files or sessions"
   - button "Add files or run commands" [disabled]
   - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
   - button "Select model, current mock-model-1" [disabled]: mock-model-1
   - button "Send message" [disabled]
-  - text: 0 turns 0 steps · 0 tok/s 0% of context used
+  - text: 1 turns 1 steps · 0 tok/s 0% of context used
