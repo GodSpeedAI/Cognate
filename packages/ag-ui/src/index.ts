@@ -326,6 +326,46 @@ function sseResponse(events: readonly AgUiEvent[]): Response {
 }
 
 /**
+ * Project a durable event cursor as SSE. Cancelling the HTTP body only aborts this
+ * projection: it never cancels the run whose committed history remains resumable.
+ */
+function liveSseResponse(produce: (emit: (event: AgUiEvent) => boolean, signal: AbortSignal) => Promise<void>): Response {
+  const aborted = new AbortController();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const bytes = new TextEncoder();
+      const emit = (event: AgUiEvent): boolean => {
+        if (aborted.signal.aborted) return false;
+        try {
+          controller.enqueue(bytes.encode(encoder.encodeSSE(event as never)));
+          return true;
+        } catch {
+          aborted.abort();
+          return false;
+        }
+      };
+      void produce(emit, aborted.signal)
+        .catch((error: unknown) => {
+          if (!aborted.signal.aborted) controller.error(error);
+        })
+        .finally(() => {
+          if (!aborted.signal.aborted) {
+            try {
+              controller.close();
+            } catch {
+              // The consumer may have already cancelled the body.
+            }
+          }
+        });
+    },
+    cancel() {
+      aborted.abort();
+    },
+  });
+  return new Response(body, { status: 200, headers: { "content-type": encoder.getContentType() } });
+}
+
+/**
  * HTTP endpoint for AG-UI clients: POST RunAgentInput → SSE stream of AG-UI events. Inbound actions (user message,
  * tool results for frontend capabilities, continuation responses, cancellation) go through RuntimeService with the
  * authenticated caller. `forwardedProps.cognate.cursor` resumes from a durable position; an invalid cursor yields
@@ -361,15 +401,24 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
       if (latest) return latest.runId;
       throw new ServiceError("not_found", `no Cognate run is known for thread ${input.threadId}`);
     };
+    const positionBeforeAction = async (runId: string): Promise<number> => {
+      let position = 0;
+      for await (const event of service.events(caller, { runId, afterPosition: 0 })) position = event.position;
+      return position;
+    };
 
     let cognateRunId: string;
     let mode: "full" | "reconnect";
+    let afterInboundAction = 0;
     try {
       if (props.cancel) {
         cognateRunId = await resolveRunId();
+        afterInboundAction = await positionBeforeAction(cognateRunId);
         await service.cancelRun(caller, { runId: cognateRunId, reason: props.cancel.reason ?? "cancelled", idempotencyKey: `agui:${input.threadId}:${input.runId}:cancel` });
         mode = "full";
       } else if (props.resolve) {
+        cognateRunId = await resolveRunId();
+        afterInboundAction = await positionBeforeAction(cognateRunId);
         await service.resolveContinuation(caller, {
           continuationId: props.resolve.continuationId,
           action: props.resolve.action,
@@ -377,7 +426,6 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
           idempotencyKey: `agui:resolve:${props.resolve.continuationId}:${props.resolve.action}`,
           ...(props.resolve.expectedVersion !== undefined ? { expectedVersion: props.resolve.expectedVersion } : {}),
         });
-        cognateRunId = await resolveRunId();
         mode = "full";
       } else if (input.messages.some((m) => m.role === "tool")) {
         const toolMessage = [...input.messages].reverse().find((m) => m.role === "tool")!;
@@ -387,8 +435,9 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
         } catch {
           value = String(toolMessage.content ?? "");
         }
-        await service.resolveContinuation(caller, { continuationId: toolMessage.toolCallId!, action: "resume", input: { ok: true, value }, idempotencyKey: `agui:resolve:${toolMessage.toolCallId}:tool` });
         cognateRunId = await resolveRunId();
+        afterInboundAction = await positionBeforeAction(cognateRunId);
+        await service.resolveContinuation(caller, { continuationId: toolMessage.toolCallId!, action: "resume", input: { ok: true, value }, idempotencyKey: `agui:resolve:${toolMessage.toolCallId}:tool` });
         mode = "full";
       } else if (input.messages.some((m) => m.role === "user")) {
         const userMessage = [...input.messages].reverse().find((m) => m.role === "user")!;
@@ -413,62 +462,69 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
       throw error;
     }
 
-    // Wait for the run to settle (terminal, or waiting with nothing further pending) before reading its
-    // history: the runtime processes a kicked run asynchronously (a status read right after an action may
-    // still show the run's *previous* resting state), so the adapter waits for the event count and status
-    // to both hold steady across two reads rather than racing the background executor.
+    // The runtime cursor is the source of both catch-up and live delivery. It subscribes before reading
+    // history, so a commit between those phases is neither lost nor duplicated. Do not wait for settlement:
+    // an SSE consumer must see each committed projection while the run is still executing.
     const readHistory = async (): Promise<StoredEvent[]> => {
       const events: StoredEvent[] = [];
       for await (const event of service.events(caller, { runId: cognateRunId, afterPosition: 0 })) events.push(event);
       return events;
     };
-    let view = await service.getRun(caller, { runId: cognateRunId });
-    let history = await readHistory();
-    for (let i = 0, stable = 0; i < 3000 && stable < 2; i++) {
-      await Bun.sleep(3);
-      const nextView = await service.getRun(caller, { runId: cognateRunId });
-      const nextHistory = await readHistory();
-      stable = nextView.status !== "running" && nextHistory.length === history.length ? stable + 1 : 0;
-      view = nextView;
-      history = nextHistory;
-    }
+    return liveSseResponse(async (emit, signal) => {
+      let continuationViews: ContinuationView[] = [];
+      const byId = new Map<string, ContinuationView>();
+      const projector = createProjector({ threadId: input.threadId, runId: input.runId, continuation: (id) => byId.get(id) });
+      let settled = false;
 
-    const continuationViews = await service.listContinuations(caller, { runId: cognateRunId });
-    const byId = new Map(continuationViews.map((v) => [v.id, v] as const));
-    const projector = createProjector({ threadId: input.threadId, runId: input.runId, continuation: (id) => byId.get(id) });
+      const refreshContinuations = async (): Promise<void> => {
+        continuationViews = await service.listContinuations(caller, { runId: cognateRunId });
+        byId.clear();
+        for (const continuation of continuationViews) byId.set(continuation.id, continuation);
+      };
+      const finishWaiting = (): void => {
+        const open = continuationViews.filter((v) => v.status === "OPEN");
+        const supported = open.every((v) => {
+          const kind = conditionKindOf(v);
+          return kind !== undefined && SUPPORTED_CONTINUATION_KINDS.has(kind);
+        });
+        emit({ type: "RUN_FINISHED", threadId: input.threadId, runId: input.runId, result: { status: supported ? "waiting" : "waiting_unsupported", continuations: open.map((v) => ({ id: v.id, type: v.type, version: v.version })) } });
+        settled = true;
+      };
+      const project = async (event: StoredEvent): Promise<void> => {
+        if (event.eventType === "run.waiting") await refreshContinuations();
+        for (const projected of projector.push(event)) if (!emit(projected)) return;
+        if (event.eventType === "run.waiting") finishWaiting();
+        else if (event.eventType === "run.completed" || event.eventType === "run.failed" || event.eventType === "run.cancelled") settled = true;
+      };
 
-    const out: AgUiEvent[] = [];
-    if (mode === "reconnect") {
-      const cursor = props.cursor;
-      const maxPosition = history.at(-1)?.position ?? 0;
-      const validCursor = typeof cursor === "number" && cursor >= 0 && cursor <= maxPosition;
-      if (validCursor) {
-        for (const event of history) if (event.position <= cursor) projector.push(event);
-        out.push(...projector.stateOnly());
-        for (const event of history) if (event.position > cursor) out.push(...projector.push(event));
-      } else {
-        const started = history[0];
-        out.push({ type: "RUN_STARTED", threadId: input.threadId, runId: input.runId, rawEvent: started ? { cognate: { eventId: started.eventId, position: started.position, runId: started.runId } } : undefined });
-        for (const event of history) if (event.eventType === "message.delta" || event.eventType === "state.changed") projector.push(event);
-        out.push(...projector.snapshot());
-        for (const event of history) {
-          if (event.eventType === "run.started" || event.eventType === "message.delta" || event.eventType === "state.changed") continue;
-          out.push(...projector.push(event));
+      let afterPosition = afterInboundAction;
+      if (mode === "reconnect") {
+        const history = await readHistory();
+        const cursor = props.cursor;
+        const maxPosition = history.at(-1)?.position ?? 0;
+        const validCursor = typeof cursor === "number" && cursor >= 0 && cursor <= maxPosition;
+        if (validCursor) {
+          for (const event of history) if (event.position <= cursor) projector.push(event);
+          for (const event of projector.stateOnly()) if (!emit(event)) return;
+          afterPosition = cursor;
+        } else {
+          const started = history[0];
+          if (!emit({ type: "RUN_STARTED", threadId: input.threadId, runId: input.runId, rawEvent: started ? { cognate: { eventId: started.eventId, position: started.position, runId: started.runId } } : undefined })) return;
+          for (const event of history) if (event.eventType === "message.delta" || event.eventType === "state.changed") projector.push(event);
+          for (const event of projector.snapshot()) if (!emit(event)) return;
+          for (const event of history) {
+            if (event.eventType === "run.started" || event.eventType === "message.delta" || event.eventType === "state.changed") continue;
+            await project(event);
+            if (settled || signal.aborted) return;
+          }
+          afterPosition = maxPosition;
         }
       }
-    } else {
-      for (const event of history) out.push(...projector.push(event));
-    }
 
-    if (view.status === "waiting") {
-      const open = continuationViews.filter((v) => v.status === "OPEN");
-      const supported = open.every((v) => {
-        const kind = conditionKindOf(v);
-        return kind !== undefined && SUPPORTED_CONTINUATION_KINDS.has(kind);
-      });
-      out.push({ type: "RUN_FINISHED", threadId: input.threadId, runId: input.runId, result: { status: supported ? "waiting" : "waiting_unsupported", continuations: open.map((v) => ({ id: v.id, type: v.type, version: v.version })) } });
-    }
-
-    return sseResponse(out);
+      for await (const event of service.events(caller, { runId: cognateRunId, afterPosition, follow: true, signal })) {
+        await project(event);
+        if (settled || signal.aborted) return;
+      }
+    });
   };
 }
