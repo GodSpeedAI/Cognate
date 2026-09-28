@@ -1,0 +1,29 @@
+{
+  "name": "copilotkit-reconstruction",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cognate/ag-ui": "workspace:*",
+    "@cognate/client": "workspace:*",
+    "@cognate/domainforge": "workspace:*",
+    "@cognate/kernel-api": "workspace:*",
+    "@cognate/provider-local": "workspace:*",
+    "@cognate/provider-openai-compatible": "workspace:*",
+    "@cognate/projections": "workspace:*",
+    "@cognate/react": "workspace:*",
+    "@cognate/runtime-api": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*",
+    "@cognate/ui-astryx": "workspace:*",
+    "react": "19.3.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "20.14.5",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0"
+  }
+}
