@@ -2,7 +2,7 @@
 // All exposed state is DERIVED from durable events -- nothing here is authoritative, everything can be rebuilt
 // by replaying the tenant's event stream from position 0. No React import (framework-neutral).
 import type { Json, StoredEvent } from "@cognate/events";
-import { applyStateUpdate, type Caller, type ContinuationView, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@cognate/runtime-api";
+import { applyStateUpdate, type Caller, type ContinuationView, type RemoteCapabilityOffer, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@cognate/runtime-api";
 
 /** A minimal observable value, framework-neutral (React bindings adapt it with useSyncExternalStore). */
 export interface Readable<T> {
@@ -36,6 +36,7 @@ export interface ClientOptions {
 }
 
 export type FrontendHandler = (input: Json, context: { readonly runId: string; readonly continuationId: string }) => Json | Promise<Json>;
+export type RemoteCapabilityOfferInput = Omit<RemoteCapabilityOffer, "id" | "scopeId" | "expiresAt"> & { readonly ttlMs?: number };
 
 export interface CognateClient {
   readonly status: Readable<ConnectionStatus>;
@@ -55,6 +56,8 @@ export interface CognateClient {
    * resolved with `{ ok, value | error }`. Returns an unregister function.
    */
   provideCapability(capability: string, handler: FrontendHandler): () => void;
+  /** Publish a handler's contract for one agent while this client surface is mounted. */
+  offerCapability(offer: RemoteCapabilityOfferInput, handler: FrontendHandler): Promise<() => Promise<void>>;
   /** Perform a semantic action through the runtime's authorized capability path. */
   invoke(capability: string, input: Json): Promise<Json>;
   artifact(artifactId: string, representation?: string): Promise<{ readonly name: string; readonly mediaType: string; readonly bytes: Uint8Array }>;
@@ -305,8 +308,11 @@ interface Subscriber {
 
 interface CapabilityEntry {
   readonly capability: string;
+  readonly offerId?: string;
+  readonly leaseId?: string;
   handler: FrontendHandler;
   unregistered: boolean;
+  renewal?: ReturnType<typeof setInterval>;
 }
 
 /** Owns the single reconnecting event stream that every derived Readable is built from. */
@@ -320,6 +326,7 @@ class Engine {
   private readonly projectionStores = new Map<string, ProjectionStore>();
   private readonly subscribers = new Set<Subscriber>();
   private readonly capabilities = new Set<CapabilityEntry>();
+  private readonly remoteOfferIds = new Set<string>();
   private readonly resolvedFrontend = new Set<string>();
   private readonly inFlightFrontend = new Set<string>();
   private readonly loopDone: Promise<void>;
@@ -358,10 +365,20 @@ class Engine {
   close(): void {
     this.closed = true;
     this.controller.abort();
+    for (const entry of this.capabilities) {
+      entry.unregistered = true;
+      if (entry.renewal) clearInterval(entry.renewal);
+    }
+    this.capabilities.clear();
   }
 
   async waitClosed(): Promise<void> {
     await this.loopDone;
+  }
+
+  async revokeRemoteOffers(): Promise<void> {
+    await Promise.allSettled([...this.remoteOfferIds].map((offerId) => this.service.revokeRemoteOffer(this.caller, { offerId })));
+    this.remoteOfferIds.clear();
   }
 
   private dispatch(event: StoredEvent): void {
@@ -423,6 +440,35 @@ class Engine {
     };
   }
 
+  async offerCapability(offer: RemoteCapabilityOfferInput, handler: FrontendHandler): Promise<() => Promise<void>> {
+    const request = {
+      leaseId: offer.leaseId,
+      agent: offer.agent,
+      contract: offer.contract,
+      description: offer.description,
+      inputSchema: offer.inputSchema,
+      ...(offer.outputSchema === undefined ? {} : { outputSchema: offer.outputSchema }),
+      ttlMs: offer.ttlMs ?? 30_000,
+    };
+    const published = await this.service.publishRemoteOffer(this.caller, request);
+    const entry: CapabilityEntry = { capability: published.contract.id, offerId: published.id, leaseId: published.leaseId, handler, unregistered: false };
+    // Unary transports cannot observe a tab crash. Renewing before expiry makes the lease a
+    // bounded liveness claim; clean disposal still revokes immediately.
+    entry.renewal = setInterval(() => {
+      if (!entry.unregistered) void this.service.publishRemoteOffer(this.caller, request).catch(() => {});
+    }, Math.max(1, Math.floor(request.ttlMs / 2)));
+    this.capabilities.add(entry);
+    this.remoteOfferIds.add(published.id);
+    void this.scanCapabilities();
+    return async () => {
+      entry.unregistered = true;
+      if (entry.renewal) clearInterval(entry.renewal);
+      this.capabilities.delete(entry);
+      this.remoteOfferIds.delete(published.id);
+      await this.service.revokeRemoteOffer(this.caller, { offerId: published.id }).catch(() => {});
+    };
+  }
+
   private async scanCapabilities(): Promise<void> {
     if (this.capabilities.size === 0) return;
     let list: ContinuationView[];
@@ -432,11 +478,15 @@ class Engine {
       return;
     }
     for (const continuation of list) {
-      const condition = continuation.condition as { readonly kind?: string; readonly capability?: string } | null;
+      const condition = continuation.condition as { readonly kind?: string; readonly capability?: string; readonly offerId?: string; readonly leaseId?: string } | null;
       if (!condition || condition.kind !== "frontend_capability") continue;
       if (this.resolvedFrontend.has(continuation.id) || this.inFlightFrontend.has(continuation.id)) continue;
       for (const entry of this.capabilities) {
         if (entry.unregistered || entry.capability !== condition.capability) continue;
+        // A lease-bound continuation can only be handled by the exact offering registration.
+        // The legacy unscoped handler remains valid only for legacy continuations with no offer id.
+        if (condition.offerId !== undefined && (entry.offerId !== condition.offerId || entry.leaseId !== condition.leaseId)) continue;
+        if (condition.offerId === undefined && entry.offerId !== undefined) continue;
         this.inFlightFrontend.add(continuation.id);
         void this.executeCapability(entry, continuation);
         break;
@@ -528,6 +578,10 @@ export function createClient(options: ClientOptions): CognateClient {
       return engine.provideCapability(capability, handler);
     },
 
+    async offerCapability(offer, handler) {
+      return engine.offerCapability(offer, handler);
+    },
+
     async invoke(capability, input) {
       return service.invoke(caller, { capability, input, idempotencyKey: crypto.randomUUID() });
     },
@@ -540,6 +594,7 @@ export function createClient(options: ClientOptions): CognateClient {
     async close() {
       engine.close();
       await engine.waitClosed();
+      await engine.revokeRemoteOffers();
     },
   };
 }

@@ -11,7 +11,7 @@ const PAGE = 500;
 export function createService(core: Core, publicProjections: ReadonlySet<string>): RuntimeService {
   const { store } = core;
 
-  const authorize = (caller: Caller, action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update", resource: string) => {
+  const authorize = (caller: Caller, action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke", resource: string) => {
     const decision = core.actions.authorize({ caller, action, resource });
     if (!decision.allow) throw new ServiceError("permission_denied", decision.reason);
   };
@@ -299,6 +299,28 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       }
       throw new ServiceError("unavailable", `too much contention updating state for run ${request.runId}`);
     },
+
+    async publishRemoteOffer(caller, request) {
+      authorize(caller, "remote.offer.publish", `${request.agent}:${request.contract.id}`);
+      if (!core.agents.has(request.agent)) throw new ServiceError("not_found", `agent ${request.agent} not found`);
+      try {
+        return core.remoteOffers.publish(caller, core.scopeId, request);
+      } catch (error) {
+        throw new ServiceError("invalid_argument", error instanceof Error ? error.message : "invalid remote offer");
+      }
+    },
+
+    async listRemoteOffers(caller, request) {
+      authorize(caller, "remote.offer.list", request.agent);
+      if (!core.agents.has(request.agent)) throw new ServiceError("not_found", `agent ${request.agent} not found`);
+      return core.remoteOffers.list(caller, request.agent).filter((offer) => core.actions.authorize({ caller, action: "remote.offer.invoke", resource: offer.id }).allow);
+    },
+
+    async revokeRemoteOffer(caller, request) {
+      authorize(caller, "remote.offer.revoke", request.offerId);
+      // Hide cross-tenant or foreign-owner offers exactly like other service reads.
+      if (!core.remoteOffers.revoke(caller, request.offerId)) throw new ServiceError("not_found", `remote offer ${request.offerId} not found`);
+    },
   };
 }
 
@@ -349,4 +371,3 @@ async function* eventStream(core: Core, caller: Caller, request: { readonly afte
     signal?.removeEventListener("abort", notify);
   }
 }
-

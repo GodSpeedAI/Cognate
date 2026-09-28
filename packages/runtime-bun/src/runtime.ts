@@ -14,6 +14,7 @@ import type { Runtime, RuntimeOptions } from "./index.ts";
 import { inspectCorrelation } from "./inspect.ts";
 import { Invoker } from "./invoker.ts";
 import { createService } from "./service.ts";
+import { RemoteOfferRegistry } from "./remote-offers.ts";
 
 const DELIVERY = { baseMs: 50, maxMs: 5_000, maxAttempts: 10 };
 const TOPICS = [RUN_EXECUTE_TOPIC, "continuation.resume"];
@@ -56,6 +57,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     recall: recallFor(store, options.cognition),
     outboxFor: options.outboxFor ?? (() => []),
     controllers: new Map(),
+    remoteOffers: new RemoteOfferRegistry(),
     execute,
     kick: () => kick(),
   };

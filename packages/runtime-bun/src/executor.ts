@@ -3,7 +3,7 @@
 // RunContext call that already has a recorded result from the stream instead of repeating it.
 import { ConcurrencyError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
 import type { Principal, SemanticRef } from "@cognate/kernel-api";
-import { type ArtifactInput, ContinuationClosedError, foldState, InvocationFailedError, type RunContext, type WaitSpec } from "@cognate/runtime-api";
+import { type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, type WaitSpec } from "@cognate/runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
 import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, toJson } from "./fold.ts";
 
@@ -268,6 +268,44 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId } });
       return result;
     },
+
+    async remoteOffers(id: string): Promise<readonly RemoteCapabilityOffer[]> {
+      guard();
+      const stepId = `remote-offers:${id}`;
+      const done = find(stepId);
+      if (done) return (field(done.payload, "result") as unknown as readonly RemoteCapabilityOffer[] | null) ?? [];
+      const caller = { tenant: view.tenant, actor: context.actor };
+      const result = core.remoteOffers.list(caller, view.agent).filter((offer) => core.actions.authorize({ caller, action: "remote.offer.invoke", resource: offer.id }).allow);
+      await append({ eventType: "run.remote_offers", payload: { result: toJson(result as unknown as Json) }, metadata: { stepId } });
+      return result;
+    },
+
+    async invokeRemoteOffer(id: string, offerId: string, input: Json, options: { readonly expiresAt?: number } = {}): Promise<Json> {
+      guard();
+      const waitStep = `wait:remote:${id}`;
+      // Availability is checked only before the durable selection. A replay resumes the same
+      // continuation even after a browser has disconnected or its offer has expired.
+      let offer: RemoteCapabilityOffer | undefined;
+      if (!find(waitStep, "run.waiting")) {
+        offer = core.remoteOffers.take({ tenant: view.tenant, actor: context.actor }, view.agent, offerId);
+        if (!offer) throw new FrontendCapabilityError(`remote offer ${offerId} is unavailable`);
+        const decision = core.actions.authorize({ caller: { tenant: view.tenant, actor: context.actor }, action: "remote.offer.invoke", resource: offer.id });
+        if (!decision.allow) throw new FrontendCapabilityError(`remote offer ${offerId} denied: ${decision.reason}`);
+      }
+      const selected = offer;
+      // On a replay this condition is ignored by waitFor because its recorded wait controls the
+      // durable result; use a neutral shape solely to retain the original method contract.
+      const result = (await context.waitFor(`remote:${id}`, {
+        type: `remote:${selected?.contract.id ?? "selected"}`,
+        condition: selected
+          ? { kind: "frontend_capability", capability: selected.contract.id, offerId: selected.id, leaseId: selected.leaseId, contractVersion: selected.contract.version }
+          : { kind: "frontend_capability" },
+        payload: toJson(input),
+        ...(options.expiresAt === undefined ? {} : { expiresAt: options.expiresAt }),
+      })) as { ok?: boolean; value?: Json; error?: string } | null;
+      if (!result || result.ok !== true) throw new FrontendCapabilityError(`remote offer ${offerId} failed: ${result?.error ?? "no result"}`);
+      return result.value ?? null;
+    },
   };
 
   try {
@@ -293,4 +331,3 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     if (core.controllers.get(runId) === controller) core.controllers.delete(runId);
   }
 }
-

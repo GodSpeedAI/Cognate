@@ -122,6 +122,27 @@ describe("headless client (§25.1)", () => {
     expect(new TextDecoder().decode((await client.artifact(done.artifacts[0]!)).bytes)).toBe("done");
   });
 
+  test("a mounted remote offer renews its lease and close revokes it", async () => {
+    await setup();
+    const stop = await client.offerCapability({
+      leaseId: "editor-mounted", agent: "agent.chat", contract: { id: "editor.focus", version: "1.0.0" },
+      description: "Focus an open editor", inputSchema: { type: "object" }, ttlMs: 20,
+    }, () => ({ focused: true }));
+    const first = (await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" }))[0]!;
+    await Bun.sleep(70);
+    const renewed = (await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" }))[0]!;
+    expect(renewed.id).toBe(first.id);
+    expect(renewed.expiresAt).toBeGreaterThan(first.expiresAt);
+    await stop();
+    expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" })).toEqual([]);
+    await client.offerCapability({
+      leaseId: "editor-remounted", agent: "agent.chat", contract: { id: "editor.focus", version: "1.0.0" },
+      description: "Focus an open editor", inputSchema: { type: "object" }, ttlMs: 20,
+    }, () => ({ focused: true }));
+    await client.close();
+    expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" })).toEqual([]);
+  });
+
   test("subscriptions resume from the last position after a network cut, without gaps or duplicates", async () => {
     const f = await setup();
     const seen: StoredEvent[] = [];
