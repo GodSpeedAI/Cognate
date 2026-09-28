@@ -16,7 +16,7 @@ export type ConnectionStatus = "connecting" | "live" | "reconnecting" | "closed"
 export interface RunState {
   readonly runId: string;
   readonly status: RunView["status"] | "unknown";
-  /** Concatenated `message.delta` text in stream order. */
+  /** Concatenated durable assistant text deltas in stream order. */
   readonly text: string;
   /** Shared state object built from `state.changed` events: `{ patch: JsonPatch }` or `{ snapshot: Json }` payloads. */
   readonly state: Json;
@@ -182,6 +182,13 @@ class RunStore implements Readable<RunState> {
         this.publish();
         return;
       case "message.delta": {
+        const text = payloadField<string>(event, "text");
+        if (typeof text === "string") this.text += text;
+        this.publish();
+        return;
+      }
+      case "run.invocation.progress": {
+        if (event.metadata?.capability !== "model.generate" || payloadField<string>(event, "type") !== "text") return;
         const text = payloadField<string>(event, "text");
         if (typeof text === "string") this.text += text;
         this.publish();

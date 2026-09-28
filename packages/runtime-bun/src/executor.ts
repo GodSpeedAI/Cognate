@@ -143,7 +143,7 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
         let seq = 0;
         const progress = async (payload: Json): Promise<void> => {
           guard();
-          await append({ eventType: "run.invocation.progress", payload: toJson(payload), metadata: { stepId, attempt, seq: seq++ } });
+          await append({ eventType: "run.invocation.progress", payload: toJson(payload), metadata: { stepId, capability, attempt, seq: seq++ } });
         };
         const outcome = await core.invoker.invoke({
           capability,

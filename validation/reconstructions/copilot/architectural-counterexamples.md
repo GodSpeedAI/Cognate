@@ -3,7 +3,7 @@
 Reference: `CopilotKit/CopilotKit` at `6e452e5342db53e9ab23d8b3c0a4592ec25ff554`.
 These findings are about the pinned v2 source and the current Cognate checkout. They do not claim UI or journey parity.
 
-## C1 — Scoped client capability discovery (open)
+## C1 — Scoped client capability discovery (runtime repair implemented; journey proof pending)
 
 **Reference behavior.** A mounted v2 `useFrontendTool` contributes a tool definition to the agent's available tools; registration can change during the component lifecycle. The pinned `packages/core/src/core/run-handler.ts` keeps hook registrations separate from provider registrations and sends `buildFrontendTools(agent.agentId)` into `connectAgent`. Its `run-handler-tool-registry.test.ts` proves a hook tool survives provider resync and is advertised to the agent. The reconstruction must also prove removal on unmount against the selected reference surface.
 
@@ -20,6 +20,22 @@ These findings are about the pinned v2 source and the current Cognate checkout. 
 **Invariant.** An offer never grants authority: selection and invocation still check the caller, scope, policy, contract version, and live lease. A previously committed invocation and continuation remain replayable after the offering client disconnects. Tenant isolation and deterministic replay must hold.
 
 **Required proof before closure.** Conformance tests for mount/replace/unmount/expiry, per-agent and tenant isolation, stale offer rejection, in-flight disconnect/resume, and no authority expansion; then run the Copilot and DeepSeek Harness reconstructions.
+
+## C2 — State that survives a completed run (open)
+
+**Reference behavior.** The pinned LangGraph starter canvas reads `agent.state?.todos` and writes changes with `agent.setState({ todos: updatedTodos })` in `examples/integrations/langgraph-js/src/components/example-canvas/index.tsx`. The v2 `useAgent` reference says `setState` makes a value available to both application and agent. Journey C requires an agent todo write, a later user canvas edit, and a later agent turn that observes the edit. The user edit can occur after the first run has completed.
+
+**Why existing primitives fail.** Cognate's `RunContext.state(id)` folds only the current run and its run-state stream. `RuntimeService.updateState` is addressed by `runId` and rejects a terminal run. A second run with the same thread correlation has a fresh state fold. An Event and public Projection can display prior state, but they cannot provide an atomic, authorized read/compare-and-set/write contract shared by the user and a later agent run. The current Journey C local test proves only an active run that waits and resumes; it is deliberately insufficient for this checkpoint.
+
+**Workaround rejected.** Rehydrate a new run from an app-owned projection or carry the canvas value in the next prompt. This duplicates state authority, loses atomic version checks across concurrent clients, and lets an agent silently act on a different value from the one the canvas edited.
+
+**Smallest general repair.** A tenant- and thread-scoped durable state stream with authorized read and atomic versioned updates from both a caller and an executing agent. Agent reads and writes must retain deterministic step replay. Run state and thread state remain distinct because their lifetimes and writers differ.
+
+**Other use case.** A long-lived incident response workspace lets an operator amend a remediation checklist between completed agent runs; the next run must read that exact version and reject a stale competing edit.
+
+**Invariant.** One committed version orders every agent and caller update for a tenant/thread. Terminal runs cannot make state inaccessible. A stale expected version must fail without a write; replay cannot duplicate an agent update; a thread identifier cannot cross tenant or authorization boundaries. Projections and AG-UI may expose the committed state but do not become its authority.
+
+**Required proof before closure.** Complete run 1, edit from the canvas, start run 2 on the same thread and observe the edit; test CAS conflict, replay, tenancy, reconnect, and DeepSeek Harness regression.
 
 ## A1 — Live AG-UI delivery (adapter defect repaired)
 

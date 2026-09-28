@@ -29,9 +29,9 @@ export const matrix: readonly MatrixRow[] = [
   row(EventType.TEXT_MESSAGE_CONTENT, "outbound", true, "message.delta"),
   row(EventType.TEXT_MESSAGE_END, "outbound", true, "message.delta (closed before any non-delta projection)"),
   row(EventType.TEXT_MESSAGE_CHUNK, "none", false, "Cognate always emits explicit start/content/end; the chunk shorthand is unused"),
-  row(EventType.TOOL_CALL_START, "outbound", true, "run.invocation (kernel capability), or a frontend_capability continuation (toolCallId = continuation id)"),
-  row(EventType.TOOL_CALL_ARGS, "outbound", true, "run.invocation payload.input (kernel invocations; '{}' after erasure) or the continuation payload (frontend capabilities)"),
-  row(EventType.TOOL_CALL_END, "outbound", true, "run.invocation / frontend_capability continuation"),
+  row(EventType.TOOL_CALL_START, "outbound", true, "run.invocation, model invocation progress, or a frontend capability continuation"),
+  row(EventType.TOOL_CALL_ARGS, "outbound", true, "run.invocation input, streamed model arguments, or continuation payload"),
+  row(EventType.TOOL_CALL_END, "outbound", true, "run.invocation, model invocation progress, or frontend capability continuation"),
   row(EventType.TOOL_CALL_CHUNK, "none", false, "the chunk shorthand is unused"),
   row(EventType.TOOL_CALL_RESULT, "outbound", true, "run.invocation result or failure, JSON-stringified"),
   row(EventType.STATE_SNAPSHOT, "outbound", true, "state.changed{snapshot}, or a folded snapshot synthesized on reconnect/resync"),
@@ -150,6 +150,7 @@ export function createProjector(options: { readonly threadId: string; readonly r
   stateOnly(): readonly AgUiEvent[];
 } {
   let openMessageId: string | undefined;
+  const openToolCalls = new Set<string>();
   let text = "";
   let state: Json = null;
 
@@ -163,7 +164,7 @@ export function createProjector(options: { readonly threadId: string; readonly r
   }
 
   function updateFold(event: StoredEvent): void {
-    if (event.eventType === "message.delta") {
+    if (event.eventType === "message.delta" || (event.eventType === "run.invocation.progress" && metaField<string>(event, "capability") === "model.generate" && payloadField<string>(event, "type") === "text")) {
       const t = payloadField<string>(event, "text");
       if (typeof t === "string") text += t;
     } else if (event.eventType === "state.changed") {
@@ -209,7 +210,37 @@ export function createProjector(options: { readonly threadId: string; readonly r
         out.push({ type: "CUSTOM", name: "cognate.artifact", value: { artifactId: metaField<string>(event, "artifactId") ?? payloadField<string>(event, "artifactId") ?? null }, rawEvent: { cognate } });
         break;
       }
+      case "run.invocation.progress": {
+        if (metaField<string>(event, "capability") !== "model.generate") break;
+        const kind = payloadField<string>(event, "type");
+        if (kind === "text") {
+          const delta = payloadField<string>(event, "text");
+          if (typeof delta !== "string") break;
+          if (!openMessageId) {
+            openMessageId = event.eventId;
+            out.push({ type: "TEXT_MESSAGE_START", messageId: openMessageId, role: "assistant", rawEvent: { cognate } });
+          }
+          out.push({ type: "TEXT_MESSAGE_CONTENT", messageId: openMessageId, delta, rawEvent: { cognate } });
+          break;
+        }
+        const callId = payloadField<string>(event, "callId");
+        if (!callId) break;
+        if (kind === "tool_call_start") {
+          const name = payloadField<string>(event, "name");
+          if (!name) break;
+          closeText(out, cognate);
+          openToolCalls.add(callId);
+          out.push({ type: "TOOL_CALL_START", toolCallId: callId, toolCallName: name, rawEvent: { cognate } });
+        } else if (kind === "tool_call_args" && openToolCalls.has(callId)) {
+          const delta = payloadField<string>(event, "delta");
+          if (typeof delta === "string") out.push({ type: "TOOL_CALL_ARGS", toolCallId: callId, delta, rawEvent: { cognate } });
+        } else if (kind === "tool_call_end" && openToolCalls.delete(callId)) {
+          out.push({ type: "TOOL_CALL_END", toolCallId: callId, rawEvent: { cognate } });
+        }
+        break;
+      }
       case "run.invocation": {
+        if (metaField<string>(event, "capability") === "model.generate") break;
         closeText(out, cognate);
         const stepId = metaField<string>(event, "stepId") ?? event.eventId;
         const capability = metaField<string>(event, "capability") ?? "capability";
@@ -226,11 +257,15 @@ export function createProjector(options: { readonly threadId: string; readonly r
         const continuationId = metaField<string>(event, "continuationId") ?? "";
         const waitType = payloadField<string>(event, "type") ?? "";
         const view = options.continuation?.(continuationId);
-        if (waitType.startsWith("frontend:")) {
-          const capability = waitType.slice("frontend:".length);
-          out.push({ type: "TOOL_CALL_START", toolCallId: continuationId, toolCallName: capability, rawEvent: { cognate } });
-          out.push({ type: "TOOL_CALL_ARGS", toolCallId: continuationId, delta: JSON.stringify(view?.payload ?? {}), rawEvent: { cognate } });
-          out.push({ type: "TOOL_CALL_END", toolCallId: continuationId, rawEvent: { cognate } });
+        if (waitType.startsWith("frontend:") || waitType.startsWith("remote:")) {
+          const remoteId = metaField<string>(event, "stepId")?.match(/^wait:remote:(.+)$/)?.[1];
+          const toolCallId = remoteId ?? continuationId;
+          const capability = waitType.slice(waitType.indexOf(":") + 1);
+          if (!openToolCalls.has(toolCallId)) {
+            out.push({ type: "TOOL_CALL_START", toolCallId, toolCallName: capability, rawEvent: { cognate } });
+            out.push({ type: "TOOL_CALL_ARGS", toolCallId, delta: JSON.stringify(view?.payload ?? {}), rawEvent: { cognate } });
+          } else openToolCalls.delete(toolCallId);
+          out.push({ type: "TOOL_CALL_END", toolCallId, rawEvent: { cognate } });
         } else {
           const kind = conditionKindOf(view);
           const supported = kind !== undefined && SUPPORTED_CONTINUATION_KINDS.has(kind);
@@ -513,10 +548,10 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
         } else {
           const started = history[0];
           if (!emit({ type: "RUN_STARTED", threadId: input.threadId, runId: input.runId, rawEvent: started ? { cognate: { eventId: started.eventId, position: started.position, runId: started.runId } } : undefined })) return;
-          for (const event of history) if (event.eventType === "message.delta" || event.eventType === "state.changed") projector.push(event);
+          for (const event of history) if (event.eventType === "message.delta" || event.eventType === "state.changed" || (event.eventType === "run.invocation.progress" && payloadField<string>(event, "type") === "text")) projector.push(event);
           for (const event of projector.snapshot()) if (!emit(event)) return;
           for (const event of history) {
-            if (event.eventType === "run.started" || event.eventType === "message.delta" || event.eventType === "state.changed") continue;
+            if (event.eventType === "run.started" || event.eventType === "message.delta" || event.eventType === "state.changed" || (event.eventType === "run.invocation.progress" && payloadField<string>(event, "type") === "text")) continue;
             await project(event, false);
             if (settled || signal.aborted) return;
           }
