@@ -1,0 +1,41 @@
+{
+  "repository": "CopilotKit/CopilotKit",
+  "referenceUrl": "https://github.com/CopilotKit/CopilotKit",
+  "commit": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
+  "commitTimestamp": "2026-09-28T10:26:02Z",
+  "captureTimestamp": "2026-09-28T08:55:35-04:00",
+  "clonePath": "/home/sprime01/projects/cognate/.tmp/ref/copilotkit",
+  "checkout": {
+    "head": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
+    "detached": true,
+    "workingTreeModified": false
+  },
+  "requirements": {
+    "node": ">=20",
+    "packageManager": "pnpm@10.33.4",
+    "workspace": "Nx 22.7.5"
+  },
+  "hostVersions": {
+    "nodeInvokedFromShell": "v26.8.2",
+    "nodeResolvedByPnpm": "v22.23.3",
+    "bun": "1.4.0",
+    "browser": "Google Chrome 151.0.7922.75"
+  },
+  "selectedSurfaces": {
+    "canonicalAgentApplication": "examples/integrations/langgraph-js",
+    "generativeUiPlayground": "examples/showcases/generative-ui",
+    "uiComponentReference": "packages/react-core/src/v2 and showcase/shell-docs current v2 reference"
+  },
+  "commands": {
+    "pin": "gh api repos/CopilotKit/CopilotKit/commits/main --jq '{sha,...}'",
+    "clone": "git clone https://github.com/CopilotKit/CopilotKit.git .tmp/ref/copilotkit",
+    "install": "pnpm install --frozen-lockfile --ignore-scripts",
+    "canonicalStarter": "cd examples/integrations/langgraph-js && npm install && cp .env.example .env && npm run dev",
+    "componentFixtures": "pnpm nx run @copilotkit/react-core:test -- src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx"
+  },
+  "executionStatus": {
+    "referenceApplication": "NOT_YET_EXECUTED",
+    "officialFixtures": "NOT_YET_EXECUTED",
+    "note": "The first two locked workspace install attempts populated the pnpm store but did not complete package linking; no test result is represented as executable evidence."
+  }
+}
