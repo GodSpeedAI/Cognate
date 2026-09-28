@@ -5,6 +5,10 @@ setup:
     @bun --version
     @just --version
 
+# Launch the Artifact Viewer over the documentation tree (loopback only; Ctrl+C to stop)
+show-documents *args:
+    bun scripts/show-documents.ts {{args}}
+
 # Show the latest complete agent status without reading its history
 status:
     @tail -n 1 .agents/CURRENT_STATUS.yaml

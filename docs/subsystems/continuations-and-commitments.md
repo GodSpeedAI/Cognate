@@ -87,12 +87,19 @@ Continuations: see [continuation-and-resume](../workflows/continuation-and-resum
 
 Commitments:
 
-```text
-INTENDED → DISPATCHING → SUCCEEDED
-                 ├───→ FAILED
-                 └───→ UNKNOWN_RECONCILIATION_REQUIRED → reconcile() / resolveManually()
-                                                      └──→ compensate()
+```mermaid
+stateDiagram-v2
+    [*] --> INTENDED: intend
+    INTENDED --> DISPATCHING: dispatch
+    DISPATCHING --> SUCCEEDED: confirmed
+    DISPATCHING --> FAILED: rejected
+    DISPATCHING --> UNKNOWN_RECONCILIATION_REQUIRED: timeout or lost response
+    UNKNOWN_RECONCILIATION_REQUIRED --> SUCCEEDED: reconcile confirms success
+    UNKNOWN_RECONCILIATION_REQUIRED --> FAILED: reconcile confirms failure
 ```
+
+`compensate()` is available only after `SUCCEEDED`; it creates a new commitment that refers to
+the original rather than moving the original commitment into another state.
 
 ## Failure modes
 

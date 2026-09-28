@@ -19,9 +19,13 @@ A `CognitiveEntry` preserves a link back to its authoritative source (`source_re
 
 ## Retrieval pipeline (spec §16)
 
-```text
-execution context → cognitive query → index retrieval → candidate source refs
-    → authorization / scope filtering → authoritative object fetch → consumer
+```mermaid
+flowchart LR
+    context["Execution context"] --> query["Cognitive query"]
+    query --> scope["Tenant / scope prefilter"] --> index["Index retrieval"]
+    index --> refs["Candidate source refs"] --> authorize{"Provenance and authorization"}
+    authorize -- allowed --> source["Fetch authoritative source"] --> consumer["Consumer"]
+    authorize -- denied or missing --> drop["Drop candidate"]
 ```
 
 Filtering happens as early as the implementation safely permits. `CG-COG-002` proves retrieval filters by scope and authorizes each dereference without leaking a restricted candidate's existence.

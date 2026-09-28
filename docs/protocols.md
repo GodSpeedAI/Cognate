@@ -16,15 +16,11 @@ Wire representation is not semantic ontology (spec §3.7): every adapter here ma
 
 Default RPC is Connect over standard HTTP (spec §22), chosen so the framework does not depend on Node-only server adapters — the transport must be isolated from `RuntimeService` itself, which is why `@cognate/runtime-api` exists independently ([ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md), [architecture.md](architecture.md)):
 
-```text
-RuntimeService (framework-owned)
-        │
-        ▼
-    RPC adapter
-        │
-   ┌────┴─────┐
-   ▼          ▼
-Connect     future
+```mermaid
+flowchart LR
+    service["RuntimeService · framework-owned"] --> adapter["Protocol adapter"]
+    adapter --> connect["Connect RPC"] --> bun["Bun HTTP binding"]
+    adapter -. replaceable transport .-> other["Future transport"]
 ```
 
 [`@cognate/protocol-connect`](../packages/protocol-connect/README.md) maps `RuntimeService` to the generated `cognate.v1.RuntimeService`, independent of the HTTP server:
