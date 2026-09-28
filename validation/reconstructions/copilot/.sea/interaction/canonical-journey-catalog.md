@@ -1,47 +1,40 @@
 # CopilotKit Reconstruction — Canonical Journey Catalog
 
-Evidence classes follow the IDM workflow. This is deliberately a thin first tranche, not a claim
-that the full CopilotKit reference has been characterized.
+Pinned reference: `CopilotKit/CopilotKit@6e452e5342db53e9ab23d8b3c0a4592ec25ff554`.
+All current-reference entries below are **DOCUMENTED_REFERENCE**: selected fixtures and surfaces
+have not executed. `proposed_repair` describes a Cognate repair candidate, never a parity claim.
 
-## J-A-chat-turn (`j_a_chat_turn`)
+| Journey | Evidence | Transformation and settlement | Cognate interpretation |
+| --- | --- | --- | --- |
+| `J-A-chat-turn` | R-A03, documented | Send; show text before completion; retain terminal thread evidence. | Agent → events → thread projection → client projection. |
+| `J-B-front-capability` | R-A04–R-A06, documented; C1 open | Mount offers browser capability; agent invokes partial args; unmount removes new-call availability while history remains renderable. | C1 general lease-bound remote capability offer. No static tool manifest or app registry. |
+| `J-C-shared-state` | R-A01–R-A02, documented | Agent changes canvas state; user commits edit; next turn sees it. | Versioned `state.changed` and durable projection. |
+| `J-D-agent-context` | R-A07, documented | Mounted UI supplies current context to next run; unmount removes it. | Immutable invocation input, separate from agent-writable state. |
+| `J-E-controlled-rendering` | R-A08, documented | Backend/control renderer shows pending and terminal state without browser-handler execution for backend work. | Invocation evidence projected through renderer catalog. |
+| `J-F-tool-human-decision` | R-A09, documented | Inline UI returns an answer to waiting tool and execution continues. | Continuation resolved as tool result. |
+| `J-G-runtime-interrupt` | R-A10, documented | Runtime exposes interrupt; human resolves/cancels; suspended run resumes or ends. | Separate continuation condition and outcome. |
+| `J-H-declarative-ui` | R-A11, documented | Catalog validates operation, renders data-bound UI, returns interaction. | Validated declarative projection and return event. |
+| `J-J-rich-thread` | R-A05, R-A12–R-A13, documented | Thread replay retains chat/tools/UI but never reauthorizes stale offers. | Event replay plus renderer provenance. |
+| `J-K-live-recovery` | R-A03, proposed repair | Deliver committed progress before terminalization; resume from cursor without loss/duplication. | General event subscription/AG-UI repair. |
 
-- **Purpose**: exchange one user message for a visible streamed agent response in a conversation.
-- **Actor / role**: application user / conversation participant.
-- **Initiating condition**: the user has a reachable agent-chat affordance and supplies a message.
-- **Current → desired state**: no active response → a terminal assistant response visible in the
-  selected chat projection, with thread evidence available for later observation.
-- **Preconditions**: a deterministic reference scenario is selected; a conversation identity is
-  supplied or created. Authentication and hosted infrastructure are outside this tranche.
-- **Material payment**: user attention and a submitted message; runtime execution capacity.
-- **Steps**: open or create thread → submit user message → execution starts → assistant text is
-  projected incrementally → terminal response is visible → thread evidence can be observed.
-- **Capabilities / actions (proposed)**: `conversation.start`, `conversation.send`,
-  `conversation.stream`, `conversation.observe`.
-- **Authority**: default Cognate invocation authority applies; no external commitment is implied.
-- **Artifacts / resources**: `UserMessage`, `AssistantMessage`, `StreamEvidence`, `ThreadHistory`.
-- **Outcome and evidence**: a visible terminal assistant message and durable event/projection
-  evidence keyed by conversation identity.
-- **Settlement**: terminal response is rendered and the same identity can retrieve the resulting
-  thread evidence. A completed network response without visible or durable evidence does not settle.
-- **Failure / recovery**: pending pinned-reference characterization. The model does not yet assert
-  retry, cancellation, reconnect, or error rendering behavior.
-- **Next affordances**: send another message; later tranches may add thread restoration,
-  interruption, tools, shared state, and generative UI as independently settled journeys.
-- **Variants**: inline chat, popup, and sidebar are interface projections, not different canonical
-  interactions. Their exact current-v2 behavior remains `UNKNOWN` until reference capture.
-- **Evidence class**: `declared` for the prompt's required agent chat and streaming scope;
-  `proposed` for names and Cognate bindings.
+## Canonicalization decisions
 
-## Pending canonicalization
+- Inline chat, popup, sidebar, responsive drawer, and chat/application mode are projections or
+  state variants. They do not create distinct canonical interactions.
+- Tool-based response (`J-F`) and runtime interruption (`J-G`) have different origin, result, and
+  settlement, so they remain distinct.
+- Rich restoration (`J-J`) is separate from a chat turn because replay must preserve renderer
+  provenance while refusing a previously unmounted client capability.
+- Managed hosted thread list mutations, Open-JSON-UI, MCP Apps/open-ended UI, attachments, and
+  visual accessibility detail remain pending characterization/execution and are not settled.
 
-The following prompt-required candidates cannot be admitted to the catalog until the pinned
-reference provides observed or declared detail: frontend and backend tools; bidirectional and
-streaming state; agent-readable frontend context; controlled, declarative, and open-ended
-generative UI; tool-based HITL; interrupt-based HITL; durable/resumable conversations; thread
-management; reconnect; outside-chat agent access; AG-UI projection; component-gallery controls.
+Every journey needs a named test and capture before settlement. Documented recovery claims stop at
+C1 lease revocation and ordered cursor resume; exact reference error/cancel/reconnect UI is still
+unexecuted.
 
 > The Interaction Domain Model should not yet be treated as canonical because the following unresolved semantic issues remain.
 
-1. The exact pinned CopilotKit revision and selected current surfaces have not been recorded.
-2. The reference-visible lifecycle, failure, reconnect, and persistence behavior has not yet been observed.
-3. The remaining required prompt behaviors have not yet been canonicalized into independently settleable journeys.
+1. Every matrix row is DOCUMENTED_REFERENCE; no official fixture or black-box surface has run.
+2. C1 remote capability offer is an open general Cognate gap, blocking natural J-B implementation.
+3. Live AG-UI delivery and cursor recovery proof are not yet complete.
+4. Open-ended UI and managed hosted thread-list behavior lack executable local reference evidence.

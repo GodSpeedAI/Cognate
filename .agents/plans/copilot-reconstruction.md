@@ -23,6 +23,11 @@ Model and prove frontend-tool registration/invocation/result/unregistration, bac
 rendering, UI-to-agent context, bidirectional shared state, and partial state streaming. Test the
 scope/disposal boundary and state versioning rather than substituting React-local state.
 
+T2 begins with the C1 general repair: a caller/scope/lease-bound remote capability offer must make
+only live authorized browser capabilities eligible to agent planning. Unmount/disconnect revokes
+new calls while a committed continuation and renderer provenance remain replayable. Static tool
+lists and an application registry fail this tranche.
+
 ## T3 — Generative UI and human decisions
 
 Model controlled, declarative, and open-ended UI separately. Add tool-based HITL and backend

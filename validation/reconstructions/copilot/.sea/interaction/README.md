@@ -1,8 +1,8 @@
 # CopilotKit Reconstruction Interaction Model
 
-This directory is the canonical interaction-model location for the reconstruction. T0 contains a
-validated thin agent-chat journey and explicitly records the uncharacterized scope still required
-by the reconstruction prompt.
+This directory is the canonical interaction-model location for the reconstruction. T1–T4 now add
+documented-reference journeys; C1 remote capability discovery and live AG-UI delivery remain
+explicitly unresolved instead of being hidden in reconstruction glue.
 
 Files:
 

@@ -1,21 +1,21 @@
-# IDM-to-Cognate Handoff — T0
+# IDM-to-Cognate Handoff — T1–T4
 
-This handoff authorizes only `J-A-chat-turn` implementation after its pin and behavior matrix row
-are present. Do not implement pending candidates from the prompt without first adding them to the
-catalog and revalidating the model.
+Bind capabilities explicitly and carry semantic references through events. A projection never
+becomes authority or a second source of thread/run truth.
 
-| IDM element | Cognate realization | Traceability requirement |
+| Journey | Required composition | Prohibited workaround / proof |
 | --- | --- | --- |
-| `ConversationThread` | durable event-backed projection keyed by stable correlation/thread id | events retain the semantic reference for the model digest that justified them |
-| `J-A-chat-turn` | deterministic `AgentDefinition.run` | one journey test named `J-A-chat-turn.test.ts` |
-| proposed capabilities | explicit `bindCapabilities` entries and Components | no implicit capability publication from `.sea` |
-| `StreamEvidence` | `ctx.emit` events and client projection | test observes incremental text and terminal settlement |
-| chat layouts | Astryx/client projections over the same journey | UI identity does not redefine the journey |
+| J-A | recorded stream events, durable thread projection, client layout projection | terminal-only buffering; test incremental plus terminal evidence |
+| J-B | **C1 general remote capability offer** and durable frontend continuation | static manifest/per-prompt registry; conformance covers lease, revoke, isolation, in-flight recovery |
+| J-C | `updateState` with idempotency and expected version | React-only shared state; prove both directions and next-turn visibility |
+| J-D | mount-scoped input captured at invocation start | `state.changed` context; prove mount/change/unmount boundaries |
+| J-E | invocation events plus renderer projection/provenance | browser handler for backend work; prove pending/complete/failure |
+| J-F | continuation as tool result | interrupt substitution; prove approve/reject/structured answer |
+| J-G | interrupt continuation plus explicit resume/cancel | tool result substitution; prove no early resume |
+| J-H | validated catalog/schema projection and returned interaction | arbitrary component/HTML execution; rejected catalog entry cannot render |
+| J-J | event/artifact replay keyed by thread/correlation | re-offering unmounted client capability; historical renderer remains independent |
+| J-K | follow subscription through AG-UI with cursor recovery | terminal-only SSE aggregation; live/cursor regression tests required |
 
-The expected path is `Context → deterministic agent run → Capability/Effect → Event → durable
-Projection → client surface`. The event log remains authoritative. A client must not keep a second
-authoritative message or run state machine merely to imitate chat behavior.
-
-**No gap found in T0.** If later reference characterization shows a lifecycle that cannot be
-expressed by the constructs above, stop the local implementation and write the required
-domain-independent counterexample before adding application glue.
+Before settlement, run the named journey test, update matrix evidence, and capture asserted visual
+behavior. A general repair requires conformance/property tests plus Copilot and DeepSeek Harness
+regressions.
