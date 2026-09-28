@@ -84,6 +84,13 @@ describe("OpenAI-compatible provider (§26)", () => {
     for await (const d of provider().stream({ messages: [{ role: "user", content: "find" }], tools: [{ name: "lookup", description: "look up", inputSchema: { type: "object" } }] })) deltas.push(d);
     const toolCall = deltas.find((d) => d.type === "tool_call");
     expect(toolCall).toMatchObject({ type: "tool_call", call: { id: "call_9", name: "lookup", arguments: { key: "abc" } } });
+    expect(deltas.filter((d) => d.type === "tool_call_args")).toEqual([
+      { type: "tool_call_args", callId: "call_9", delta: '{"ke' },
+      { type: "tool_call_args", callId: "call_9", delta: 'y":"a' },
+      { type: "tool_call_args", callId: "call_9", delta: 'bc"}' },
+    ]);
+    expect(deltas).toContainEqual({ type: "tool_call_start", callId: "call_9", name: "lookup" });
+    expect(deltas).toContainEqual({ type: "tool_call_end", callId: "call_9" });
     expect(deltas.at(-1)).toMatchObject({ type: "done", response: { toolCalls: [{ id: "call_9", name: "lookup", arguments: { key: "abc" } }], finishReason: "tool_calls" } });
   });
 

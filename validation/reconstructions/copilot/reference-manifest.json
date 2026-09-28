@@ -6,9 +6,9 @@
   "captureTimestamp": "2026-09-28T08:55:35-04:00",
   "clonePath": "/home/sprime01/projects/cognate/.tmp/ref/copilotkit",
   "checkout": {
-    "head": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
-    "detached": true,
-    "workingTreeModified": false
+    "archiveCommit": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
+    "format": "GitHub commit tarball",
+    "gitDirectory": false
   },
   "requirements": {
     "node": ">=20",
@@ -28,14 +28,14 @@
   },
   "commands": {
     "pin": "gh api repos/CopilotKit/CopilotKit/commits/main --jq '{sha,...}'",
-    "clone": "git clone https://github.com/CopilotKit/CopilotKit.git .tmp/ref/copilotkit",
-    "install": "pnpm install --frozen-lockfile --ignore-scripts",
+    "clone": "gh api repos/CopilotKit/CopilotKit/tarball/6e452e5342db53e9ab23d8b3c0a4592ec25ff554 (extract into .tmp/ref/copilotkit)",
+    "install": "pnpm install --filter '@copilotkit/react-core...' --frozen-lockfile --ignore-scripts",
     "canonicalStarter": "cd examples/integrations/langgraph-js && npm install && cp .env.example .env && npm run dev",
-    "componentFixtures": "pnpm nx run @copilotkit/react-core:test -- src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx"
+    "componentFixtures": "cd packages/react-core && pnpm exec vitest run src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx src/v2/hooks/__tests__/use-agent-context-timing.e2e.test.tsx"
   },
   "executionStatus": {
     "referenceApplication": "NOT_YET_EXECUTED",
-    "officialFixtures": "NOT_YET_EXECUTED",
-    "note": "The first two locked workspace install attempts populated the pnpm store but did not complete package linking; no test result is represented as executable evidence."
+    "officialFixtures": "PASSED_21_OF_21",
+    "note": "Two pinned React-core official Vitest fixture files passed. The Nx wrapper encountered local plugin-worker startup failure; the direct official Vitest runner completed. The canonical starter application remains unexecuted."
   }
 }

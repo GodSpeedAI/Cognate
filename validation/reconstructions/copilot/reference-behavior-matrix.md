@@ -1,15 +1,19 @@
 # CopilotKit reference behavior matrix
 
 Pinned reference: `CopilotKit/CopilotKit@6e452e5342db53e9ab23d8b3c0a4592ec25ff554`.
-All rows below are **DOCUMENTED_REFERENCE** until the cited pinned fixture or
-application is executed. This matrix deliberately does not call source review
+Rows R-A04, R-A06, and R-A07 now have **OFFICIAL_FIXTURE_REFERENCE** evidence:
+the pinned React-core frontend-tool and agent-context timing suites passed
+21/21 tests on 2026-09-28. The other rows remain **DOCUMENTED_REFERENCE**.
+These fixtures prove their named hook behavior, not starter-application or
 black-box parity.
 
 Execution feasibility at this milestone: `examples/integrations/langgraph-js`
 needs `OPENAI_API_KEY` for its documented normal launch, while the focused
-React-core fixtures do not require a paid model. The locked workspace install
-has not completed package linking (`node_modules/.bin/nx` is absent), so the
-fixture rows remain documented rather than fixture-executed.
+React-core fixtures do not require a paid model. The focused package fixture
+command was `pnpm exec vitest run src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx src/v2/hooks/__tests__/use-agent-context-timing.e2e.test.tsx`
+from `packages/react-core`; it passed 2 files and 21 tests. The Nx wrapper
+encountered local plugin-worker startup failure, so the direct official Vitest
+runner was used.
 
 | ID | Priority | Surface | User/action and required visible behavior | State, persistence, protocol behavior | Exact pinned evidence |
 | --- | --- | --- | --- | --- | --- |

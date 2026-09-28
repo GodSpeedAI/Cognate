@@ -155,7 +155,7 @@ export function openAICompatible(options: OpenAICompatibleOptions): ModelProvide
     let finishReason: ModelResponse["finishReason"] = "stop";
     let model = options.model;
     let usage: ModelResponse["usage"];
-    const toolCallAcc = new Map<number, { id?: string; name?: string; arguments: string }>();
+    const toolCallAcc = new Map<number, { id?: string; name?: string; arguments: string; emittedArguments: number; started: boolean }>();
 
     outer: while (true) {
       let value: Uint8Array | undefined;
@@ -197,10 +197,24 @@ export function openAICompatible(options: OpenAICompatibleOptions): ModelProvide
           if (Array.isArray(delta.tool_calls)) {
             for (const call of delta.tool_calls) {
               const index = call.index ?? 0;
-              const acc = toolCallAcc.get(index) ?? { arguments: "" };
+              const acc = toolCallAcc.get(index) ?? { arguments: "", emittedArguments: 0, started: false };
               if (call.id) acc.id = call.id;
               if (call.function?.name) acc.name = call.function.name;
-              if (call.function?.arguments) acc.arguments += call.function.arguments;
+              if (!acc.started && acc.id && acc.name) {
+                acc.started = true;
+                yield { type: "tool_call_start", callId: acc.id, name: acc.name };
+                if (acc.arguments.length > 0) {
+                  yield { type: "tool_call_args", callId: acc.id, delta: acc.arguments };
+                  acc.emittedArguments = acc.arguments.length;
+                }
+              }
+              if (typeof call.function?.arguments === "string" && call.function.arguments.length > 0) {
+                acc.arguments += call.function.arguments;
+                if (acc.started) {
+                  yield { type: "tool_call_args", callId: acc.id ?? `index:${index}`, delta: call.function.arguments };
+                  acc.emittedArguments = acc.arguments.length;
+                }
+              }
               toolCallAcc.set(index, acc);
             }
           }
@@ -211,7 +225,18 @@ export function openAICompatible(options: OpenAICompatibleOptions): ModelProvide
 
     const toolCalls: ToolCall[] = [...toolCallAcc.entries()]
       .sort(([a], [b]) => a - b)
-      .map(([, acc]) => ({ id: acc.id ?? "", name: acc.name ?? "", arguments: parseToolCallArguments(acc.arguments || "{}") }));
+      .map(([index, acc]) => ({ id: acc.id ?? `index:${index}`, name: acc.name ?? "", arguments: parseToolCallArguments(acc.arguments || "{}") }));
+    for (const [index, acc] of [...toolCallAcc.entries()].sort(([a], [b]) => a - b)) {
+      const callId = acc.id ?? `index:${index}`;
+      if (!acc.started && acc.name) {
+        yield { type: "tool_call_start", callId, name: acc.name };
+        acc.started = true;
+      }
+      if (acc.arguments.length > acc.emittedArguments) {
+        yield { type: "tool_call_args", callId, delta: acc.arguments.slice(acc.emittedArguments) };
+      }
+      yield { type: "tool_call_end", callId };
+    }
     for (const call of toolCalls) yield { type: "tool_call", call };
 
     const response2: ModelResponse = { message: { role: "assistant", content }, toolCalls, finishReason, model };
@@ -228,7 +253,17 @@ export function modelComponent(provider: ModelProvider): Component {
     id: `model:${provider.id}`,
     provides: [contract],
     activate(fiber) {
-      fiber.provide(contract, async (input, ctx) => provider.generate(input as ModelRequest, ctx.signal));
+      fiber.provide(contract, async (input, ctx) => {
+        const request = input as unknown as ModelRequest;
+        if (!request.stream || !provider.features.stream) return provider.generate(request, ctx.signal);
+        let response: ModelResponse | undefined;
+        for await (const delta of provider.stream(request, ctx.signal)) {
+          if (delta.type === "done") response = delta.response;
+          else await ctx.progress?.(delta as unknown as Json);
+        }
+        if (!response) throw new ModelProviderError("malformed_response", "stream ended without a final response");
+        return response;
+      });
     },
   };
 }
