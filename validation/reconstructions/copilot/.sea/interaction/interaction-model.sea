@@ -1,0 +1,52 @@
+@namespace "copilotkit-reconstruction.interaction"
+@version "0.1.0"
+@owner "cognate-reconstruction"
+@profile "default"
+
+Entity "ApplicationUser"
+
+Entity "AgentRuntime"
+
+Entity "ConversationThread"
+
+Entity "ChatSurface"
+
+Entity "CanonicalJourney"
+
+Resource "UserMessage" units
+
+Resource "AssistantMessage" units
+
+Resource "StreamEvidence" units
+
+Resource "ThreadHistory" units
+
+Role "ConversationParticipant"
+
+Flow "UserMessage" from "ApplicationUser" to "AgentRuntime" quantity 1
+
+Flow "AssistantMessage" from "AgentRuntime" to "ChatSurface" quantity 1
+
+Flow "StreamEvidence" from "AgentRuntime" to "ConversationThread" quantity 1
+
+Flow "ThreadHistory" from "ConversationThread" to "ApplicationUser" quantity 1
+
+Instance j_a_chat_turn of "CanonicalJourney" {
+    actor: "ApplicationUser",
+    capabilities: "conversation.start, conversation.send, conversation.stream, conversation.observe",
+    evidence_class: "declared",
+    initiating_condition: "A user has an available agent-chat affordance and supplies a message",
+    journey_id: "J-A-chat-turn",
+    precondition: "The selected deterministic reference scenario is available; thread identity is supplied or created",
+    purpose: "Exchange a user message for a visible streamed agent response in a conversation",
+    settlement: "The visible assistant response reaches a terminal state and durable thread evidence can be read by the same conversation identity",
+    steps: "open or create thread -> submit user message -> execution starts -> assistant text is projected incrementally -> terminal response is visible -> thread evidence is available for later observation",
+    variants: "inline chat, popup, and sidebar are interface projections of the same journey; empty/welcome content is pending reference characterization"
+}
+
+Policy every_modeled_flow_has_positive_quantity as:
+    forall f in flows: (f.quantity > 0)
+
+Metric "canonical_journey_count" as:
+    COUNT(instances)
+    @unit "count"
