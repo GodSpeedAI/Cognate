@@ -1,6 +1,6 @@
 // React 19 bindings over the headless client (spec §25.2). All hooks are thin useSyncExternalStore
 // adapters over the client's framework-neutral Readables; the client remains the single source of truth.
-import type { CognateClient, ConnectionStatus, FrontendHandler, RunState } from "@cognate/client";
+import type { CognateClient, ConnectionStatus, FrontendHandler, RemoteCapabilityOfferInput, RunState } from "@cognate/client";
 import type { Json } from "@cognate/events";
 import type { ContinuationView, RunView, StateUpdate } from "@cognate/runtime-api";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -79,6 +79,42 @@ export function useCapability(capability: string, handler: FrontendHandler): voi
   useEffect(() => {
     return client.provideCapability(capability, (input, context) => handlerRef.current(input, context));
   }, [client, capability]);
+}
+
+/** Publish a descriptor-backed remote capability for the mounted component lifetime. */
+export function useRemoteCapability(offer: Omit<RemoteCapabilityOfferInput, "leaseId">, handler: FrontendHandler): { readonly status: "publishing" | "available" | "error"; readonly error: Error | null } {
+  const client = useCognate();
+  const handlerRef = useRef(handler);
+  const leaseRef = useRef<string>(crypto.randomUUID());
+  const offerKey = JSON.stringify(offer);
+  const [status, setStatus] = useState<"publishing" | "available" | "error">("publishing");
+  const [error, setError] = useState<Error | null>(null);
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
+  useEffect(() => {
+    let disposed = false;
+    let unregister: (() => Promise<void>) | undefined;
+    setStatus("publishing");
+    setError(null);
+    void client.offerCapability({ ...offer, leaseId: leaseRef.current }, (input, context) => handlerRef.current(input, context)).then((stop) => {
+      if (disposed) void stop();
+      else {
+        unregister = stop;
+        setStatus("available");
+      }
+    }).catch((cause: unknown) => {
+      if (!disposed) {
+        setError(cause instanceof Error ? cause : new Error(String(cause)));
+        setStatus("error");
+      }
+    });
+    return () => {
+      disposed = true;
+      if (unregister) void unregister();
+    };
+  }, [client, offerKey]);
+  return { status, error };
 }
 
 /** Open continuations of a run plus a resolver. */

@@ -22,7 +22,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cognate/v1/runtime.proto.
  */
 export const file_cognate_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("Chhjb2duYXRlL3YxL3J1bnRpbWUucHJvdG8SCmNvZ25hdGUudjEidQoTU3RyZWFtRXZlbnRzUmVxdWVzdBIbCg5hZnRlcl9wb3NpdGlvbhgBIAEoBEgAiAEBEhMKBnJ1bl9pZBgCIAEoCUgBiAEBEg4KBmZvbGxvdxgDIAEoCEIRCg9fYWZ0ZXJfcG9zaXRpb25CCQoHX3J1bl9pZCIlChVSZWFkUHJvamVjdGlvblJlcXVlc3QSDAoEbmFtZRgBIAEoCSJFCg9Qcm9qZWN0aW9uRW50cnkSCwoDa2V5GAEgASgJEiUKBXZhbHVlGAIgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlIkYKFlJlYWRQcm9qZWN0aW9uUmVzcG9uc2USLAoHZW50cmllcxgBIAMoCzIbLmNvZ25hdGUudjEuUHJvamVjdGlvbkVudHJ5MsIGCg5SdW50aW1lU2VydmljZRI4CghTdGFydFJ1bhIbLmNvZ25hdGUudjEuU3RhcnRSdW5SZXF1ZXN0Gg8uY29nbmF0ZS52MS5SdW4SNAoGR2V0UnVuEhkuY29nbmF0ZS52MS5HZXRSdW5SZXF1ZXN0Gg8uY29nbmF0ZS52MS5SdW4SOgoJQ2FuY2VsUnVuEhwuY29nbmF0ZS52MS5DYW5jZWxSdW5SZXF1ZXN0Gg8uY29nbmF0ZS52MS5SdW4SRAoMU3RyZWFtRXZlbnRzEh8uY29nbmF0ZS52MS5TdHJlYW1FdmVudHNSZXF1ZXN0GhEuY29nbmF0ZS52MS5FdmVudDABEmAKEUxpc3RDb250aW51YXRpb25zEiQuY29nbmF0ZS52MS5MaXN0Q29udGludWF0aW9uc1JlcXVlc3QaJS5jb2duYXRlLnYxLkxpc3RDb250aW51YXRpb25zUmVzcG9uc2USZgoTUmVzb2x2ZUNvbnRpbnVhdGlvbhImLmNvZ25hdGUudjEuUmVzb2x2ZUNvbnRpbnVhdGlvblJlcXVlc3QaJy5jb2duYXRlLnYxLlJlc29sdmVDb250aW51YXRpb25SZXNwb25zZRI/CgZJbnZva2USGS5jb2duYXRlLnYxLkludm9rZVJlcXVlc3QaGi5jb2duYXRlLnYxLkludm9rZVJlc3BvbnNlEkMKC0dldEFydGlmYWN0Eh4uY29nbmF0ZS52MS5HZXRBcnRpZmFjdFJlcXVlc3QaFC5jb2duYXRlLnYxLkFydGlmYWN0ElcKDlJlYWRQcm9qZWN0aW9uEiEuY29nbmF0ZS52MS5SZWFkUHJvamVjdGlvblJlcXVlc3QaIi5jb2duYXRlLnYxLlJlYWRQcm9qZWN0aW9uUmVzcG9uc2USRQoITGlzdFJ1bnMSGy5jb2duYXRlLnYxLkxpc3RSdW5zUmVxdWVzdBocLmNvZ25hdGUudjEuTGlzdFJ1bnNSZXNwb25zZRJOCgtVcGRhdGVTdGF0ZRIeLmNvZ25hdGUudjEuVXBkYXRlU3RhdGVSZXF1ZXN0Gh8uY29nbmF0ZS52MS5VcGRhdGVTdGF0ZVJlc3BvbnNlYgZwcm90bzM", [file_google_protobuf_struct, file_cognate_v1_artifact, file_cognate_v1_capability, file_cognate_v1_continuation, file_cognate_v1_event, file_cognate_v1_execution]);
+  fileDesc("Chhjb2duYXRlL3YxL3J1bnRpbWUucHJvdG8SCmNvZ25hdGUudjEidQoTU3RyZWFtRXZlbnRzUmVxdWVzdBIbCg5hZnRlcl9wb3NpdGlvbhgBIAEoBEgAiAEBEhMKBnJ1bl9pZBgCIAEoCUgBiAEBEg4KBmZvbGxvdxgDIAEoCEIRCg9fYWZ0ZXJfcG9zaXRpb25CCQoHX3J1bl9pZCIlChVSZWFkUHJvamVjdGlvblJlcXVlc3QSDAoEbmFtZRgBIAEoCSJFCg9Qcm9qZWN0aW9uRW50cnkSCwoDa2V5GAEgASgJEiUKBXZhbHVlGAIgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlIkYKFlJlYWRQcm9qZWN0aW9uUmVzcG9uc2USLAoHZW50cmllcxgBIAMoCzIbLmNvZ25hdGUudjEuUHJvamVjdGlvbkVudHJ5Is0CChVSZW1vdGVDYXBhYmlsaXR5T2ZmZXISCgoCaWQYASABKAkSEAoIbGVhc2VfaWQYAiABKAkSDQoFYWdlbnQYAyABKAkSEAoIc2NvcGVfaWQYBCABKAkSEgoKY2FwYWJpbGl0eRgFIAEoCRIYChBjb250cmFjdF92ZXJzaW9uGAYgASgJEioKCmF0dHJpYnV0ZXMYByABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSEwoLZGVzY3JpcHRpb24YCCABKAkSLAoMaW5wdXRfc2NoZW1hGAkgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEjIKDW91dHB1dF9zY2hlbWEYCiABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWVIAIgBARISCgpleHBpcmVzX2F0GAsgASgEQhAKDl9vdXRwdXRfc2NoZW1hIq8CChlQdWJsaXNoUmVtb3RlT2ZmZXJSZXF1ZXN0EhAKCGxlYXNlX2lkGAEgASgJEg0KBWFnZW50GAIgASgJEhIKCmNhcGFiaWxpdHkYAyABKAkSGAoQY29udHJhY3RfdmVyc2lvbhgEIAEoCRIqCgphdHRyaWJ1dGVzGAUgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhMKC2Rlc2NyaXB0aW9uGAYgASgJEiwKDGlucHV0X3NjaGVtYRgHIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZRIyCg1vdXRwdXRfc2NoZW1hGAggASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlSACIAQESDgoGdHRsX21zGAkgASgEQhAKDl9vdXRwdXRfc2NoZW1hIigKF0xpc3RSZW1vdGVPZmZlcnNSZXF1ZXN0Eg0KBWFnZW50GAEgASgJIk0KGExpc3RSZW1vdGVPZmZlcnNSZXNwb25zZRIxCgZvZmZlcnMYASADKAsyIS5jb2duYXRlLnYxLlJlbW90ZUNhcGFiaWxpdHlPZmZlciIsChhSZXZva2VSZW1vdGVPZmZlclJlcXVlc3QSEAoIb2ZmZXJfaWQYASABKAkiGwoZUmV2b2tlUmVtb3RlT2ZmZXJSZXNwb25zZTLjCAoOUnVudGltZVNlcnZpY2USOAoIU3RhcnRSdW4SGy5jb2duYXRlLnYxLlN0YXJ0UnVuUmVxdWVzdBoPLmNvZ25hdGUudjEuUnVuEjQKBkdldFJ1bhIZLmNvZ25hdGUudjEuR2V0UnVuUmVxdWVzdBoPLmNvZ25hdGUudjEuUnVuEjoKCUNhbmNlbFJ1bhIcLmNvZ25hdGUudjEuQ2FuY2VsUnVuUmVxdWVzdBoPLmNvZ25hdGUudjEuUnVuEkQKDFN0cmVhbUV2ZW50cxIfLmNvZ25hdGUudjEuU3RyZWFtRXZlbnRzUmVxdWVzdBoRLmNvZ25hdGUudjEuRXZlbnQwARJgChFMaXN0Q29udGludWF0aW9ucxIkLmNvZ25hdGUudjEuTGlzdENvbnRpbnVhdGlvbnNSZXF1ZXN0GiUuY29nbmF0ZS52MS5MaXN0Q29udGludWF0aW9uc1Jlc3BvbnNlEmYKE1Jlc29sdmVDb250aW51YXRpb24SJi5jb2duYXRlLnYxLlJlc29sdmVDb250aW51YXRpb25SZXF1ZXN0GicuY29nbmF0ZS52MS5SZXNvbHZlQ29udGludWF0aW9uUmVzcG9uc2USPwoGSW52b2tlEhkuY29nbmF0ZS52MS5JbnZva2VSZXF1ZXN0GhouY29nbmF0ZS52MS5JbnZva2VSZXNwb25zZRJDCgtHZXRBcnRpZmFjdBIeLmNvZ25hdGUudjEuR2V0QXJ0aWZhY3RSZXF1ZXN0GhQuY29nbmF0ZS52MS5BcnRpZmFjdBJXCg5SZWFkUHJvamVjdGlvbhIhLmNvZ25hdGUudjEuUmVhZFByb2plY3Rpb25SZXF1ZXN0GiIuY29nbmF0ZS52MS5SZWFkUHJvamVjdGlvblJlc3BvbnNlEkUKCExpc3RSdW5zEhsuY29nbmF0ZS52MS5MaXN0UnVuc1JlcXVlc3QaHC5jb2duYXRlLnYxLkxpc3RSdW5zUmVzcG9uc2USTgoLVXBkYXRlU3RhdGUSHi5jb2duYXRlLnYxLlVwZGF0ZVN0YXRlUmVxdWVzdBofLmNvZ25hdGUudjEuVXBkYXRlU3RhdGVSZXNwb25zZRJeChJQdWJsaXNoUmVtb3RlT2ZmZXISJS5jb2duYXRlLnYxLlB1Ymxpc2hSZW1vdGVPZmZlclJlcXVlc3QaIS5jb2duYXRlLnYxLlJlbW90ZUNhcGFiaWxpdHlPZmZlchJdChBMaXN0UmVtb3RlT2ZmZXJzEiMuY29nbmF0ZS52MS5MaXN0UmVtb3RlT2ZmZXJzUmVxdWVzdBokLmNvZ25hdGUudjEuTGlzdFJlbW90ZU9mZmVyc1Jlc3BvbnNlEmAKEVJldm9rZVJlbW90ZU9mZmVyEiQuY29nbmF0ZS52MS5SZXZva2VSZW1vdGVPZmZlclJlcXVlc3QaJS5jb2duYXRlLnYxLlJldm9rZVJlbW90ZU9mZmVyUmVzcG9uc2ViBnByb3RvMw", [file_google_protobuf_struct, file_cognate_v1_artifact, file_cognate_v1_capability, file_cognate_v1_continuation, file_cognate_v1_event, file_cognate_v1_execution]);
 
 /**
  * @generated from message cognate.v1.StreamEventsRequest
@@ -106,6 +106,194 @@ export type ReadProjectionResponse = Message<"cognate.v1.ReadProjectionResponse"
  */
 export const ReadProjectionResponseSchema: GenMessage<ReadProjectionResponse> = /*@__PURE__*/
   messageDesc(file_cognate_v1_runtime, 3);
+
+/**
+ * @generated from message cognate.v1.RemoteCapabilityOffer
+ */
+export type RemoteCapabilityOffer = Message<"cognate.v1.RemoteCapabilityOffer"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string lease_id = 2;
+   */
+  leaseId: string;
+
+  /**
+   * @generated from field: string agent = 3;
+   */
+  agent: string;
+
+  /**
+   * @generated from field: string scope_id = 4;
+   */
+  scopeId: string;
+
+  /**
+   * @generated from field: string capability = 5;
+   */
+  capability: string;
+
+  /**
+   * @generated from field: string contract_version = 6;
+   */
+  contractVersion: string;
+
+  /**
+   * @generated from field: google.protobuf.Value attributes = 7;
+   */
+  attributes?: Value | undefined;
+
+  /**
+   * @generated from field: string description = 8;
+   */
+  description: string;
+
+  /**
+   * @generated from field: google.protobuf.Value input_schema = 9;
+   */
+  inputSchema?: Value | undefined;
+
+  /**
+   * @generated from field: optional google.protobuf.Value output_schema = 10;
+   */
+  outputSchema?: Value | undefined;
+
+  /**
+   * @generated from field: uint64 expires_at = 11;
+   */
+  expiresAt: bigint;
+};
+
+/**
+ * Describes the message cognate.v1.RemoteCapabilityOffer.
+ * Use `create(RemoteCapabilityOfferSchema)` to create a new message.
+ */
+export const RemoteCapabilityOfferSchema: GenMessage<RemoteCapabilityOffer> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 4);
+
+/**
+ * @generated from message cognate.v1.PublishRemoteOfferRequest
+ */
+export type PublishRemoteOfferRequest = Message<"cognate.v1.PublishRemoteOfferRequest"> & {
+  /**
+   * @generated from field: string lease_id = 1;
+   */
+  leaseId: string;
+
+  /**
+   * @generated from field: string agent = 2;
+   */
+  agent: string;
+
+  /**
+   * @generated from field: string capability = 3;
+   */
+  capability: string;
+
+  /**
+   * @generated from field: string contract_version = 4;
+   */
+  contractVersion: string;
+
+  /**
+   * @generated from field: google.protobuf.Value attributes = 5;
+   */
+  attributes?: Value | undefined;
+
+  /**
+   * @generated from field: string description = 6;
+   */
+  description: string;
+
+  /**
+   * @generated from field: google.protobuf.Value input_schema = 7;
+   */
+  inputSchema?: Value | undefined;
+
+  /**
+   * @generated from field: optional google.protobuf.Value output_schema = 8;
+   */
+  outputSchema?: Value | undefined;
+
+  /**
+   * @generated from field: uint64 ttl_ms = 9;
+   */
+  ttlMs: bigint;
+};
+
+/**
+ * Describes the message cognate.v1.PublishRemoteOfferRequest.
+ * Use `create(PublishRemoteOfferRequestSchema)` to create a new message.
+ */
+export const PublishRemoteOfferRequestSchema: GenMessage<PublishRemoteOfferRequest> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 5);
+
+/**
+ * @generated from message cognate.v1.ListRemoteOffersRequest
+ */
+export type ListRemoteOffersRequest = Message<"cognate.v1.ListRemoteOffersRequest"> & {
+  /**
+   * @generated from field: string agent = 1;
+   */
+  agent: string;
+};
+
+/**
+ * Describes the message cognate.v1.ListRemoteOffersRequest.
+ * Use `create(ListRemoteOffersRequestSchema)` to create a new message.
+ */
+export const ListRemoteOffersRequestSchema: GenMessage<ListRemoteOffersRequest> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 6);
+
+/**
+ * @generated from message cognate.v1.ListRemoteOffersResponse
+ */
+export type ListRemoteOffersResponse = Message<"cognate.v1.ListRemoteOffersResponse"> & {
+  /**
+   * @generated from field: repeated cognate.v1.RemoteCapabilityOffer offers = 1;
+   */
+  offers: RemoteCapabilityOffer[];
+};
+
+/**
+ * Describes the message cognate.v1.ListRemoteOffersResponse.
+ * Use `create(ListRemoteOffersResponseSchema)` to create a new message.
+ */
+export const ListRemoteOffersResponseSchema: GenMessage<ListRemoteOffersResponse> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 7);
+
+/**
+ * @generated from message cognate.v1.RevokeRemoteOfferRequest
+ */
+export type RevokeRemoteOfferRequest = Message<"cognate.v1.RevokeRemoteOfferRequest"> & {
+  /**
+   * @generated from field: string offer_id = 1;
+   */
+  offerId: string;
+};
+
+/**
+ * Describes the message cognate.v1.RevokeRemoteOfferRequest.
+ * Use `create(RevokeRemoteOfferRequestSchema)` to create a new message.
+ */
+export const RevokeRemoteOfferRequestSchema: GenMessage<RevokeRemoteOfferRequest> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 8);
+
+/**
+ * @generated from message cognate.v1.RevokeRemoteOfferResponse
+ */
+export type RevokeRemoteOfferResponse = Message<"cognate.v1.RevokeRemoteOfferResponse"> & {
+};
+
+/**
+ * Describes the message cognate.v1.RevokeRemoteOfferResponse.
+ * Use `create(RevokeRemoteOfferResponseSchema)` to create a new message.
+ */
+export const RevokeRemoteOfferResponseSchema: GenMessage<RevokeRemoteOfferResponse> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 9);
 
 /**
  * Runtime service (ADR-0011). Caller identity comes from transport authentication, never from messages (§32).
@@ -201,6 +389,30 @@ export const RuntimeService: GenService<{
     methodKind: "unary";
     input: typeof UpdateStateRequestSchema;
     output: typeof UpdateStateResponseSchema;
+  },
+  /**
+   * @generated from rpc cognate.v1.RuntimeService.PublishRemoteOffer
+   */
+  publishRemoteOffer: {
+    methodKind: "unary";
+    input: typeof PublishRemoteOfferRequestSchema;
+    output: typeof RemoteCapabilityOfferSchema;
+  },
+  /**
+   * @generated from rpc cognate.v1.RuntimeService.ListRemoteOffers
+   */
+  listRemoteOffers: {
+    methodKind: "unary";
+    input: typeof ListRemoteOffersRequestSchema;
+    output: typeof ListRemoteOffersResponseSchema;
+  },
+  /**
+   * @generated from rpc cognate.v1.RuntimeService.RevokeRemoteOffer
+   */
+  revokeRemoteOffer: {
+    methodKind: "unary";
+    input: typeof RevokeRemoteOfferRequestSchema;
+    output: typeof RevokeRemoteOfferResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_cognate_v1_runtime, 0);

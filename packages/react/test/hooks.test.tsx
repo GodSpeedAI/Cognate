@@ -9,9 +9,18 @@ import { type AgentDefinition, invokeFrontend } from "@cognate/runtime-api";
 import { alice } from "@cognate/runtime-api/conformance";
 import { createRuntime, type Runtime } from "@cognate/runtime-bun";
 import type { Projection } from "@cognate/projections";
-import { CognateProvider, useAgent, useArtifact, useCapability, useContinuations, useProjection, useSharedState } from "../src/index.tsx";
+import { CognateProvider, useAgent, useArtifact, useCapability, useContinuations, useProjection, useRemoteCapability, useSharedState } from "../src/index.tsx";
 
 const agents: AgentDefinition[] = [
+  {
+    id: "agent.remote",
+    version: "1.0.0",
+    async run(_input, ctx) {
+      const offers = await ctx.remoteOffers("available");
+      if (offers.length === 0) return { offered: false, result: null };
+      return { offered: true, result: await ctx.invokeRemoteOffer("focus", offers[0]!.id, { city: "Lisbon" }) };
+    },
+  },
   {
     id: "agent.ui",
     version: "1.0.0",
@@ -98,6 +107,45 @@ describe("React bindings (§25.2)", () => {
     await waitFor(async () => expect((await runtime.service.listContinuations(alice, { runId, status: "OPEN" })).map((x) => x.type)).toEqual(["frontend:map.focus"]), { timeout: 5000 });
     await Bun.sleep(100);
     expect((await runtime.service.getRun(alice, { runId })).status).toBe("waiting");
+    await client.close();
+  });
+
+  test("useRemoteCapability advertises only while mounted and returns the browser result", async () => {
+    runtime = await createRuntime({ store: ":memory:", policy: { authorize: () => ({ allow: true, policyId: "p", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) }, agents });
+    const client = createClient({ service: runtime.service, caller: alice });
+    const received: unknown[] = [];
+    function Editor() {
+      const offer = useRemoteCapability({ agent: "agent.remote", contract: { id: "selection.focus", version: "1.0.0" }, description: "Focus selected city", inputSchema: { type: "object" } }, (input) => {
+        received.push(input);
+        return { focused: true };
+      });
+      return <span>Editor {offer.status}</span>;
+    }
+    const view = render(<CognateProvider client={client}><Editor /></CognateProvider>);
+    await waitFor(async () => expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.remote" })).toHaveLength(1), { timeout: 5000 });
+    await waitFor(() => expect(view.getByText("Editor available")).toBeDefined(), { timeout: 5000 });
+    const { runId } = await client.startRun("agent.remote", {});
+    await waitFor(async () => expect((await runtime.service.getRun(alice, { runId })).status).toBe("completed"), { timeout: 5000 });
+    expect((await runtime.service.getRun(alice, { runId })).output).toEqual({ offered: true, result: { focused: true } });
+    expect(received).toEqual([{ city: "Lisbon" }]);
+    view.unmount();
+    await waitFor(async () => expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.remote" })).toEqual([]), { timeout: 5000 });
+    const remounted = render(<CognateProvider client={client}><Editor /></CognateProvider>);
+    await waitFor(async () => expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.remote" })).toHaveLength(1), { timeout: 5000 });
+    remounted.unmount();
+    await client.close();
+  });
+
+  test("useRemoteCapability reports rejected publication to the component", async () => {
+    runtime = await createRuntime({ store: ":memory:", policy: { authorize: () => ({ allow: true, policyId: "p", reason: "ok" }) }, actions: { authorize: ({ action }) => ({ allow: action !== "remote.offer.publish", reason: "offer denied" }) }, agents });
+    const client = createClient({ service: runtime.service, caller: alice });
+    function Editor() {
+      const offer = useRemoteCapability({ agent: "agent.remote", contract: { id: "selection.focus", version: "1.0.0" }, description: "Focus selected city", inputSchema: { type: "object" } }, () => null);
+      return <span>{offer.status}: {offer.error?.message ?? ""}</span>;
+    }
+    const view = render(<CognateProvider client={client}><Editor /></CognateProvider>);
+    await waitFor(() => expect(view.getByText("error: offer denied")).toBeDefined(), { timeout: 5000 });
+    expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.remote" })).toEqual([]);
     await client.close();
   });
 

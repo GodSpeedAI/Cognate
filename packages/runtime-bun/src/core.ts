@@ -6,6 +6,7 @@ import type { Kernel, Principal } from "@cognate/kernel-api";
 import type { AgentDefinition } from "@cognate/runtime-api";
 import type { Invoker } from "./invoker.ts";
 import type { ActionPolicy, PendingEvent } from "./index.ts";
+import type { RemoteOfferRegistry } from "./remote-offers.ts";
 
 export interface RecallResultJson {
   readonly status: "ok" | "degraded";
@@ -26,6 +27,7 @@ export interface Core {
   readonly outboxFor: (event: PendingEvent) => readonly OutboxIntent[];
   /** Abort controllers of executions in progress, by run id (cancellation aborts `RunContext.signal`). */
   readonly controllers: Map<string, AbortController>;
+  readonly remoteOffers: RemoteOfferRegistry;
   /** Serialize and (re-)run a run's execution; replay-safe and idempotent. */
   execute(runId: string): Promise<void>;
   /** Ask the background loop to run soon. */

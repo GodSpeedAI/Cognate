@@ -61,6 +61,7 @@ export const ignoredFrameworkEvents: readonly string[] = [
   "run.resumed",
   "run.wait.closed",
   "run.recall",
+  "run.remote_offers",
 ];
 
 /** AG-UI event as a plain object; `rawEvent.cognate` carries `{ eventId, position, runId }` of the durable source. */
