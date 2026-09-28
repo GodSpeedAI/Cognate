@@ -1,4 +1,4 @@
-# T0 Validation Record
+# T0–T4 Validation Record
 
 Executed from repository root with DomainForge CLI `0.16.0`:
 
@@ -7,7 +7,8 @@ Executed from repository root with DomainForge CLI `0.16.0`:
 2. `domainforge parse validation/reconstructions/copilot/.sea/interaction/interaction-model.sea --format human`
    → graph parsed successfully; 5 entities, 4 resources, 4 flows, 1 role.
 3. `domainforge parse --ast --format json validation/reconstructions/copilot/.sea/interaction/interaction-model.sea`
-   → AST contains `j_a_chat_turn`, the structural policy, and the metric.
+   → AST contains the ten journey records (`J-A`, `J-B`, `J-C`, `J-D`, `J-E`, `J-F`, `J-G`,
+   `J-H`, `J-J`, `J-K`), structural policy, and metric.
 
 `domainforge fmt --check` reports a reformat. Applying this CLI's formatter rewrites the valid
 `forall f in flows:` policy into `ForAll(f in flows:)`, which the same `0.16.0` parser rejects.
