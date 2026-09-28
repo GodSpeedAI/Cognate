@@ -490,10 +490,10 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
         emit({ type: "RUN_FINISHED", threadId: input.threadId, runId: input.runId, result: { status: supported ? "waiting" : "waiting_unsupported", continuations: open.map((v) => ({ id: v.id, type: v.type, version: v.version })) } });
         settled = true;
       };
-      const project = async (event: StoredEvent): Promise<void> => {
+      const project = async (event: StoredEvent, finishOnWait = true): Promise<void> => {
         if (event.eventType === "run.waiting") await refreshContinuations();
         for (const projected of projector.push(event)) if (!emit(projected)) return;
-        if (event.eventType === "run.waiting") finishWaiting();
+        if (event.eventType === "run.waiting" && finishOnWait) finishWaiting();
         else if (event.eventType === "run.completed" || event.eventType === "run.failed" || event.eventType === "run.cancelled") settled = true;
       };
 
@@ -514,10 +514,17 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
           for (const event of projector.snapshot()) if (!emit(event)) return;
           for (const event of history) {
             if (event.eventType === "run.started" || event.eventType === "message.delta" || event.eventType === "state.changed") continue;
-            await project(event);
+            await project(event, false);
             if (settled || signal.aborted) return;
           }
           afterPosition = maxPosition;
+          // Historical waits are interaction episodes, not terminal history. Only the run's
+          // current waiting status should end a resync; an earlier wait may have been resumed.
+          if ((await service.getRun(caller, { runId: cognateRunId })).status === "waiting") {
+            await refreshContinuations();
+            finishWaiting();
+            return;
+          }
         }
       }
 
