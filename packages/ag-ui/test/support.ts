@@ -6,6 +6,11 @@ import { createAgUiHandler } from "../src/index.ts";
 
 export const agents: AgentDefinition[] = [
   {
+    id: "agent.context",
+    version: "1.0.0",
+    async run(input) { return input; },
+  },
+  {
     id: "agent.copilot",
     version: "1.0.0",
     async run(input, ctx) {

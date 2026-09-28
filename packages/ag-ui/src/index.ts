@@ -294,7 +294,7 @@ export interface EndpointOptions {
 }
 
 type Message = { readonly id: string; readonly role: string; readonly content?: unknown; readonly toolCallId?: string };
-type RunAgentInput = { readonly threadId: string; readonly runId: string; readonly messages: readonly Message[]; readonly forwardedProps?: Record<string, unknown>; readonly state?: Record<string, unknown> };
+type RunAgentInput = { readonly threadId: string; readonly runId: string; readonly messages: readonly Message[]; readonly context?: readonly { readonly description: string; readonly value: string }[]; readonly forwardedProps?: Record<string, unknown>; readonly state?: Record<string, unknown> };
 type CognateProps = { readonly agent?: string; readonly cancel?: { readonly reason?: string }; readonly resolve?: { readonly continuationId: string; readonly action: "resume" | "cancel"; readonly input?: Json; readonly expectedVersion?: number }; readonly cursor?: number };
 
 function cognateProps(input: RunAgentInput): CognateProps {
@@ -446,7 +446,9 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
         const seedState = input.state && typeof input.state === "object" && Object.keys(input.state).length > 0 ? (input.state as Json) : undefined;
         const view = await service.startRun(caller, {
           agent: props.agent ?? options.defaultAgent,
-          input: { message: text },
+          // Context is a read-only observation captured at run start. It is distinct from the
+          // caller/agent writable `state.changed` stream and remains immutable on replay.
+          input: { message: text, context: (input.context ?? []).map(({ description, value }) => ({ description, value })) },
           idempotencyKey: `agui:${input.threadId}:${input.runId}`,
           correlationId: threadCorrelation,
           ...(seedState !== undefined ? { state: seedState } : {}),
