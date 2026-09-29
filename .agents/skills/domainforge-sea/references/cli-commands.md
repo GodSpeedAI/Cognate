@@ -85,7 +85,7 @@ Export a model to other formats.
 domainforge project --format <format> [options] input.sea output
 ```
 
-Run `domainforge project --help` for the full format list (29 formats at 0.17.0). Single-file
+Run `domainforge project --help` for the full format list (29 formats at 0.18.1). Single-file
 outputs: `calm`, `kg` (legacy Turtle/RDF-XML; prefer `rdf`), `protobuf`, `proto` (alias).
 Directory outputs: `ai-llm`, `ai-graph-ml`, `cep-eval`, `ai-learning`, `lean`, `rdf`, `bpmn`,
 `cmmn`, `archimate`, `otel-semconv`, `baml`, `dspy`, `zenml`, `cloudevents`, `asyncapi`,

@@ -8,7 +8,7 @@ before trusting this table for anything it doesn't cover.
 ## What `packages/domainforge` actually does
 
 `loadSemanticProjection(source, { uri })` (`packages/domainforge/src/index.ts`) calls
-`Graph.parse(source)` from the pinned `@godspeedai/domainforge@0.17.0` binding — **not** a
+`Graph.parse(source)` from the pinned `@godspeedai/domainforge@0.18.1` binding — **not** a
 DomainForge CLI subprocess; the adapter links the Rust/native binding directly. It walks
 `graph.allEntities() / allResources() / allFlows() / allRoles() / allRelations() / allInstances()`
 and produces a `SemanticProjection`: a flat list of read-only `SemanticObject`s (`{ ref, kind,

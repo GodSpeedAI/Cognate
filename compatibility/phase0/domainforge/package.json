@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Phase 0 compatibility fixture: exact-pinned @godspeedai/domainforge under Bun 1.4. Not part of the workspace; scoped install only.",
   "dependencies": {
-    "@godspeedai/domainforge": "0.17.0"
+    "@godspeedai/domainforge": "0.18.1"
   },
   "scripts": {
     "test": "bun test domainforge.test.ts"

@@ -29,7 +29,7 @@ When working inside the DomainForge repository, also follow that repo's `AGENTS.
 4. Draft or edit `.sea` with metadata first, declarations before references, and policies/metrics after graph elements.
 5. Prefer the `domainforge` binary. If the user or older docs say `sea`, verify that `sea` exists locally before using it; otherwise translate to `domainforge`.
 6. Validate with the CLI. Use JSON output when tooling or exact diagnostics matter.
-7. Format with `domainforge fmt --check` or `domainforge fmt --out` when the formatter supports the file.
+7. Format with `domainforge fmt --check` or `domainforge fmt --out` when the formatter supports the file. As of CLI 0.18.1 the formatter rewrites `forall` policies into `ForAll(...)`, which the parser rejects, and drops `//` comments; do not run `fmt --out` on files with quantifier policies or comments you need, and treat a non-clean `fmt --check` on such files as the known formatter defect.
 8. For projection/import/pack work, run the target command and validate generated outputs when the reference gives a validator.
 9. Report changed files and exact proof commands with pass/fail outcomes.
 
