@@ -64,17 +64,22 @@ way). No claim in one source was found to directly contradict a claim in another
 
 ## Grammar/tooling limitations encountered (not IDM semantics)
 
-- DomainForge 0.16.0's `fmt` command rewrites `forall`-quantifier `Policy` bodies into an invalid
-  `ForAll(...)` call form that the same binary's parser then rejects. Reproduced independently on
-  the repository's own `packages/domainforge/test/fixtures/all-kinds.sea` fixture (not specific to
-  this file). Worked around by not running `fmt --out` on this file; `forall`/`count` syntax as
-  written validates and parses correctly. See `validation/limitations.md`.
-- `parse --format human` on this CLI build (0.16.0) does not print the "Entity instances:"/
-  "Resource instances:" split lines that `write-in-sea.md` describes for a newer build; it printed
-  `Instances: 0` and omitted a `Policies:`/`Metrics:` count line in the human-readable summary even
-  though the JSON graph and validator both correctly report 10 `entity_instances`, 1 `policies`,
-  and 1 `metrics`. This is a display-only limitation of the installed CLI version, not a modeling
-  defect — confirmed by cross-checking `parse --format json` and the live
-  `@cognate/domainforge` adapter (`packages/domainforge/src/index.ts`, pinned to
-  `@godspeedai/domainforge@0.18.1`), both of which report the correct counts. See
+- DomainForge 0.18.1's `fmt` command still rewrites `forall`-quantifier `Policy` bodies into an
+  invalid `ForAll(...)` call form that the same binary's parser then rejects, and also drops this
+  file's `//` comments outright when it reformats. Reproduced independently on the repository's
+  own `packages/domainforge/test/fixtures/all-kinds.sea` fixture and on a minimal one-policy
+  fixture (not specific to this file). This is an upstream DomainForge formatter defect that the
+  `0.16.0` → `0.18.1` upgrade does not address — DomainForge's ADR-016 covers units/mapping
+  round-trip fidelity in `fmt`, not quantifier round-trip or comment preservation. Worked around
+  by not running `fmt --out` on this file (reproductions used throwaway copies under `.tmp/`);
+  `forall`/`count` syntax as written validates and parses correctly. See
+  `validation/limitations.md`.
+- RESOLVED in 0.18.1: `parse --format human` on the previously installed CLI build (0.16.0) did
+  not print the "Entity instances:"/"Resource instances:" split lines that `write-in-sea.md`
+  describes; it printed `Instances: 0` and omitted a `Policies:`/`Metrics:` count line in the
+  human-readable summary even though the JSON graph and validator both correctly reported 10
+  `entity_instances`, 1 `policies`, and 1 `metrics`. After upgrading the CLI to 0.18.1, `parse
+  --format human` now prints `Entity instances: 10` and `Policies: 1` directly, matching
+  `parse --format json` and the live `@cognate/domainforge` adapter
+  (`packages/domainforge/src/index.ts`, pinned to `@godspeedai/domainforge@0.18.1`). See
   `validation/domainforge-output.txt`.

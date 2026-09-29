@@ -5,6 +5,12 @@ directory; snippets are copied from working test/probe code, not the
 package's own docs. See `domainforge.test.ts` for the runnable proof and
 `.agents/evidence/phase0-domainforge.md` for the full evidence log.
 
+**2026-09-28:** this fixture now pins `@godspeedai/domainforge@0.18.1`
+(bumped from 0.17.0; `bun.lock` regenerated via scoped `bun install` here).
+The notes below still characterize 0.16.0 behaviour as originally verified —
+no observed-behaviour changes; the suite passes unmodified against 0.18.1
+(3/3 runs, 9 pass / 0 fail each).
+
 ## Import
 
 ```ts
