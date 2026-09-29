@@ -6,17 +6,14 @@ import { modelComponent } from "@cognate/provider-openai-compatible";
 import type { Projection } from "@cognate/projections";
 import type { AgentDefinition, Caller } from "@cognate/runtime-api";
 import { createRuntime, type Runtime } from "@cognate/runtime-bun";
-import { loadJourneyABindings } from "./domain.ts";
+import { loadJourneyABindings, loadJourneyCBindings } from "./domain.ts";
+import { sharedStateAgent, sharedStateCanvasProjection } from "./shared-state.ts";
 
 export const JOURNEY_A_AGENT = "copilotkit-reconstruction.chat";
 export const DEFAULT_THREAD_ID = "thread:demo";
 
 type ThreadRun = { readonly runId: string; readonly status: "running" | "completed"; readonly text: string };
 type ThreadHistory = { readonly threadId: string; readonly runs: readonly ThreadRun[] };
-
-function chunks(text: string): readonly string[] {
-  return Array.from({ length: Math.ceil(text.length / 8) }, (_, index) => text.slice(index * 8, index * 8 + 8));
-}
 
 /** A durable, deterministic transcript projection. It is a view, never a second chat state machine. */
 export const threadHistoryProjection: Projection = {
@@ -32,6 +29,13 @@ export const threadHistoryProjection: Projection = {
     const index = history.runs.findIndex((run) => run.runId === event.runId);
     if (index < 0) return [];
     const run = history.runs[index]!;
+    if (event.eventType === "run.invocation.progress" && event.metadata?.capability === "model.generate") {
+      const payload = event.payload as { type?: unknown; text?: unknown };
+      if (payload.type !== "text" || typeof payload.text !== "string") return [];
+      const runs = [...history.runs];
+      runs[index] = { ...run, text: run.text + payload.text };
+      return [{ key, value: { ...history, runs } }];
+    }
     if (event.eventType === "message.delta") {
       const payload = event.payload as { text?: unknown };
       if (typeof payload.text !== "string") return [];
@@ -62,10 +66,7 @@ const agent: AgentDefinition = {
   version: "1.0.0",
   async run(input, ctx) {
     const message = String((input as { readonly message?: unknown }).message ?? "");
-    const response = (await ctx.invoke("model.generate", { messages: [{ role: "user", content: message }] })) as unknown as ModelResponse;
-    for (const text of chunks(response.message.content)) {
-      await ctx.emit("message.delta", { text });
-    }
+    const response = (await ctx.invoke("model.generate", { messages: [{ role: "user", content: message }], stream: true })) as unknown as ModelResponse;
     return { answer: response.message.content };
   },
 };
@@ -86,13 +87,17 @@ export async function createJourneyAApp(store: string): Promise<JourneyAApp> {
   // durable events realize those actions here; `model.generate` is the only kernel capability
   // this thin agent needs, so no no-op conversation providers are introduced.
   await loadJourneyABindings();
+  await loadJourneyCBindings();
   const runtime = await createRuntime({
     store,
     policy: policy(),
     actions: { authorize: () => ({ allow: true, reason: "J-A has no external commitment" }) },
-    agents: [agent],
+    agents: [agent, sharedStateAgent],
     components: [deterministicModelComponent()],
-    projections: [{ projection: threadHistoryProjection, public: true }],
+    projections: [
+      { projection: threadHistoryProjection, public: true },
+      { projection: sharedStateCanvasProjection, public: true },
+    ],
   });
   return {
     runtime,

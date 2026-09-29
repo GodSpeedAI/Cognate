@@ -1,13 +1,40 @@
 # Current status
 
-**Status revision:** 11
+**Status revision:** 16
 
-**Stage:** Build v0 complete; Artifact Viewer documentation mode refined and verified.
+**Stage:** CopilotKit reconstruction: reference verified, mock-LLM path enabled, instructions revised
 
-**Summary:** The dirty Artifact Viewer now keeps its header and mode bar in view, shows only the selected projection, handles narrow screens, displays revision provenance accurately, and preserves unsaved edits during navigation. Eight purposeful Mermaid diagrams now appear across six canonical documentation pages. Hallmark and independent Impeccable reviews found and resolved material interface issues. No commit or documentation corpus restructure was made. See the [viewer evidence](evidence/2026-09-27-artifact-viewer-refinement.md).
+**Summary:** Correction and enablement. Revisions 13-15 wrongly recorded the pinned reference checkout as absent from .tmp/ref/copilotkit; it is present and was just verified byte-identical to the pinned SHA (all 21,195 files from the pinned tarball present, zero differing; the 1,098 extra files are dist build outputs), so that inherited claim is retracted. The reconstruction's biggest blocker is also cleared: CopilotKit ships its own fixture-based LLM mock, @copilotkit/aimock 1.37.4, installed here and proven to serve both non-streaming and streaming OpenAI-shaped traffic from fixtures with no API key, which makes BLACK_BOX_REFERENCE evidence achievable for the reference application instead of unreachable. The reconstruction instructions were revised to require that mechanism rather than a live paid endpoint. No reconstruction journey code changed in this revision; J-A, J-B and J-C remain the only implemented journeys and the wider parity work is still open.
 
-**Verified:** `just verify` passed typecheck and 78/78 implemented gates. The viewer server and browser suites passed 56 tests with 518 assertions. Live Chromium covered J0–J11, including real Git history and revision rendering, Mermaid, search, compare, edit/save, recovery, desktop/tablet/mobile layouts, and zero console or page errors. `CG-DOC-001` passed. The previous [DeepSeek redesign evidence](evidence/2026-09-27-deepseek-harness-redesign-decision.md) remains valid.
+**Verified:** The pinned reference checkout at `.tmp/ref/copilotkit` was verified byte-identical to
+the pinned commit by downloading the pinned tarball and comparing: **21,195 of 21,195 files
+content-identical, zero differing, zero missing**. The 1,098 local-only files are all `dist/` build
+artifacts. `@copilotkit/aimock` **1.37.4** installs from `showcase/scripts` and ships two bins whose
+CLIs match the pinned repository's own forbidden-pattern test exactly. A smoke test proved the mock
+serves `GET /v1/models` (200), returns fixture content (`OK`) for a non-streaming chat completion,
+and emits well-formed SSE deltas plus `[DONE]` for `stream:true` — **with no `OPENAI_API_KEY` set**.
+The reconstruction instructions were revised in six places to require this mechanism. `just verify`
+passes 78/78 gates and `just check` passes; J-A, J-B and J-C still pass their 4 tests.
 
-**Limits:** Artifact Viewer remains local Documentation Mode; GitHub enrichment and other artifact types are deferred. DeepSeek approval, plan-review, streaming, and tool-call states had code review only; three Settings buttons and the Review toolbar remain untouched; disclosure UI is not one shared component; tablet range was not live tested; the parity report is stale by design. Framework limits remain: Connect unary/server streaming only (DEBT-004), single SQLite writer (DEBT-011), erasure copies (DEBT-014), polling loop (DEBT-015), unpublished packages (DEBT-016), Bun `toMatchObject` mutation (DEBT-017), intermittent RVF `FsyncFailed` (DEBT-018), and the scoped subagent resolver (DEBT-020). The ledger remains a candidate. See [the debt register](DEBT.md).
+**Limits:** A claim I carried into revisions 13–15 is **retracted**: they reported the reference
+clone as absent. It was present the whole time — the claim came from the interrupted session's own
+narration rather than verification, and it propagated into three snapshots. No reconstruction
+journey work was done in this revision: J-A, J-B and J-C remain the only implemented journeys of the
+10 in the IDM catalog, and J-D, J-E, J-F, J-G, J-H, J-J and J-K are modeled but unbuilt. The
+reference application has **still never been executed end to end** — the mock makes that achievable
+but it is not done, so there is still no `BLACK_BOX_REFERENCE` evidence, no screenshots, and no
+parity report. The fixtures for the ten journeys have not been surveyed (only shared fixtures were
+smoke-tested), and `showcase/scripts` blocked the esbuild postinstall under npm `allowScripts`.
+DEBT-021 remains open. The thread-shared-state tranche and the J-C fix remain uncommitted, with the
+fix living only in an untracked file. Carried-forward framework limits (DEBT-004, DEBT-011,
+DEBT-014 through DEBT-017, DEBT-020, process-local remote offer leases, candidate ledger) still
+apply, as does the transient unreproduced CG-PRF-002 observation from revision 15.
 
-**Next:** Operator review of the dirty Artifact Viewer and DeepSeek UI changes; optionally finish the disclosed DeepSeek UI limitations and decide the ledger freeze (OPEN_QUESTIONS 3).
+**Next:** Proceed from Phase 1 with the reference verified and the mock path working: run the
+canonical starter and selected reference surfaces against fixtures and capture the Phase 6
+screenshots, converting `DOCUMENTED_REFERENCE` matrix rows into `BLACK_BOX_REFERENCE`. Then work the
+unbuilt journeys in dependency order (J-D, J-E, J-F, J-G, J-H, J-J, J-K), add the missing artifacts
+(`primitive-provenance.md`, `parity-report.md/json`, `diffs/`, screenshots, `tests/protocol`,
+`tests/visual`, `tests/architecture`), and re-audit the 32 settlement gates as each closes. Get
+operator intent before committing the uncommitted tranche. Treat DEBT-021 as a separate framework
+change.

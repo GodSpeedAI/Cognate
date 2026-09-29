@@ -22,6 +22,8 @@ service RuntimeService {
   rpc ReadProjection(ReadProjectionRequest) returns (ReadProjectionResponse);
   rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
   rpc UpdateState(UpdateStateRequest) returns (UpdateStateResponse);
+  rpc ReadSharedState(ReadSharedStateRequest) returns (ReadSharedStateResponse);
+  rpc UpdateSharedState(UpdateSharedStateRequest) returns (UpdateSharedStateResponse);
   rpc PublishRemoteOffer(PublishRemoteOfferRequest) returns (RemoteCapabilityOffer);
   rpc ListRemoteOffers(ListRemoteOffersRequest) returns (ListRemoteOffersResponse);
   rpc RevokeRemoteOffer(RevokeRemoteOfferRequest) returns (RevokeRemoteOfferResponse);
@@ -31,6 +33,23 @@ message StreamEventsRequest {
   optional uint64 after_position = 1;
   optional string run_id = 2;
   bool follow = 3;
+  optional string correlation_id = 4;
+}
+
+message ReadSharedStateRequest { string thread_id = 1; }
+message ReadSharedStateResponse {
+  google.protobuf.Value state = 1;
+  uint64 version = 2;
+}
+message UpdateSharedStateRequest {
+  string thread_id = 1;
+  StateUpdate update = 2;
+  string idempotency_key = 3;
+  optional uint64 expected_version = 4;
+}
+message UpdateSharedStateResponse {
+  google.protobuf.Value state = 1;
+  uint64 version = 2;
 }
 
 message ReadProjectionRequest {

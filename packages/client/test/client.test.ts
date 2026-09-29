@@ -29,6 +29,13 @@ const agents: AgentDefinition[] = [
       return { seen: await ctx.state("seen") };
     },
   },
+  {
+    id: "agent.threadStateWriter",
+    version: "1.0.0",
+    async run(_input, ctx) {
+      return await ctx.updateSharedState("write", { snapshot: { source: "agent" } });
+    },
+  },
 ];
 
 /** Wraps a service so the event stream can be severed on demand, simulating network loss. */
@@ -101,6 +108,42 @@ describe("headless client (§25.1)", () => {
     await client.resolveContinuation(state.get().openContinuations[0]!.id, "resume");
     const done = await until(() => state.get(), (s) => s.status === "completed", "completed");
     expect(done.output).toEqual({ seen: { flag: true } });
+  });
+
+  test("thread shared state observes caller and agent writes and hydrates a new client from the canonical snapshot", async () => {
+    await setup();
+    const threadId = "thread-shared-client";
+    const shared = client.threadSharedState(threadId);
+    const callerWrite = await client.updateThreadSharedState(threadId, { snapshot: { source: "caller" } }, { expectedVersion: 0 });
+    expect(callerWrite).toEqual({ state: { source: "caller" }, version: 1 });
+    await until(() => shared.get(), (value) => value.version === 1, "caller thread state event");
+
+    const run = await client.startRun("agent.threadStateWriter", null, { correlationId: threadId });
+    await until(() => shared.get(), (value) => value.version === 2 && (value.state as { source?: string }).source === "agent", "agent thread state event");
+    expect((await runtime.service.getRun(alice, { runId: run.runId })).runId).toBe(run.runId);
+
+    const reloaded = createClient({ service: runtime.service, caller: alice, reconnect: { baseMs: 10, maxMs: 50 } });
+    try {
+      const reloadedState = reloaded.threadSharedState(threadId);
+      await until(() => reloadedState.get(), (value) => value.version === 2, "canonical thread state after reload");
+      expect(reloadedState.get().state).toEqual({ source: "agent" });
+    } finally {
+      await reloaded.close();
+    }
+  });
+
+  test("thread state catches durable updates made while the client event stream reconnects", async () => {
+    const f = await setup();
+    const threadId = "thread-shared-reconnect";
+    const shared = client.threadSharedState(threadId);
+    const statuses: string[] = [];
+    client.status.subscribe((status) => statuses.push(status));
+    await until(() => client.status.get(), (status) => status === "live", "client live");
+    f.cut();
+    await until(() => statuses, (seen) => seen.includes("reconnecting"), "client reconnecting");
+    await runtime.service.updateSharedState(alice, { threadId, update: { snapshot: { afterReconnect: true } }, idempotencyKey: "thread-reconnect" });
+    await until(() => shared.get(), (value) => value.version === 1, "replayed thread update");
+    expect(shared.get().state).toEqual({ afterReconnect: true });
   });
 
   test("frontend capabilities are served by the client and the run resumes; unregistered ones stay open", async () => {

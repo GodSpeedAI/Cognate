@@ -62,6 +62,13 @@ export interface RunContext {
    * returns the value that was read rather than re-reading state that may have changed since.
    */
   state(id: string): Promise<Json>;
+  /**
+   * A replay-safe snapshot of durable state shared by every run in this correlation/thread. The snapshot is
+   * recorded under `id`, so a replay returns the value originally observed rather than a later caller edit.
+   */
+  sharedState(id: string): Promise<Json>;
+  /** Atomically update durable thread state. The result is recorded under `id` and is replay-safe. */
+  updateSharedState(id: string, update: StateUpdate): Promise<{ readonly state: Json; readonly version: number }>;
   /** Snapshot currently valid remote offers for this run's caller and agent. Recorded for replay. */
   remoteOffers(id: string): Promise<readonly RemoteCapabilityOffer[]>;
   /** Commit a call to a live remote offer as a durable continuation. */
@@ -164,7 +171,7 @@ export interface RuntimeService {
    * Committed events visible to the caller's tenant, in store position order, starting after `afterPosition`.
    * Follows live commits until `signal` aborts. Resume after disconnect by passing the last seen position.
    */
-  events(caller: Caller, request: { readonly afterPosition?: number; readonly runId?: string; readonly signal?: AbortSignal; readonly follow?: boolean }): AsyncIterable<StoredEvent>;
+  events(caller: Caller, request: { readonly afterPosition?: number; readonly runId?: string; readonly correlationId?: string; readonly signal?: AbortSignal; readonly follow?: boolean }): AsyncIterable<StoredEvent>;
   listContinuations(caller: Caller, request: { readonly runId?: string; readonly status?: ContinuationView["status"] }): Promise<ContinuationView[]>;
   resolveContinuation(
     caller: Caller,
@@ -188,6 +195,16 @@ export interface RuntimeService {
   updateState(
     caller: Caller,
     request: { readonly runId: string; readonly update: StateUpdate; readonly idempotencyKey: string; readonly expectedVersion?: number },
+  ): Promise<{ readonly state: Json; readonly version: number }>;
+  /** Read durable state shared by all runs in one caller-authorized thread. */
+  readSharedState(caller: Caller, request: { readonly threadId: string }): Promise<{ readonly state: Json; readonly version: number }>;
+  /**
+   * Atomically update durable state shared by all runs in one caller-authorized thread. `expectedVersion` guards
+   * against stale writers; `idempotencyKey` replays the recorded result without a second event.
+   */
+  updateSharedState(
+    caller: Caller,
+    request: { readonly threadId: string; readonly update: StateUpdate; readonly idempotencyKey: string; readonly expectedVersion?: number },
   ): Promise<{ readonly state: Json; readonly version: number }>;
   /** Publish or renew a caller-owned, lease-bound remote capability offer. */
   publishRemoteOffer(caller: Caller, request: { readonly leaseId: string; readonly agent: string; readonly contract: RemoteCapabilityOffer["contract"]; readonly description: string; readonly inputSchema: Json; readonly outputSchema?: Json; readonly ttlMs: number }): Promise<RemoteCapabilityOffer>;

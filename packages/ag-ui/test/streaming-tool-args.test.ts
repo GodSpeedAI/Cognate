@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { createRuntime } from "@cognate/runtime-bun";
-import { createAgUiHandler } from "../src/index.ts";
+import { createAgUiHandler, createProjector } from "../src/index.ts";
+import { EventSchema } from "@ag-ui/core/schemas";
 
 test("AG-UI exposes incomplete model tool arguments before the invocation completes", async () => {
   let release!: () => void;
@@ -61,4 +62,24 @@ test("AG-UI exposes incomplete model tool arguments before the invocation comple
     release();
     await runtime.close();
   }
+});
+
+test("a streamed tool call keeps one identity through remote execution and result", () => {
+  const continuation = { id: "continuation-1", runId: "r", type: "remote:lookup", status: "RESUMED" as const, condition: { kind: "frontend_capability" }, payload: { name: "Ada" }, version: 1, expiresAt: null };
+  const projector = createProjector({ threadId: "t", runId: "r", continuation: () => continuation });
+  const base = { streamId: "run:r", streamSequence: 1, position: 1, recordedAt: "2026-09-28T00:00:00Z", occurredAt: "2026-09-28T00:00:00Z", schemaVersion: 1, tenant: "tenant-a", correlationId: "t", causationId: null, runId: "r", scopeId: "root" };
+  let position = 0;
+  const push = (eventType: string, payload: unknown, metadata: unknown) => projector.push({ ...base, position: ++position, eventId: `event:${position}`, eventType, payload, metadata } as never);
+  const events = [
+    ...push("run.invocation.progress", { type: "tool_call_start", callId: "call-1", name: "lookup" }, { capability: "model.generate" }),
+    ...push("run.invocation.progress", { type: "tool_call_args", callId: "call-1", delta: '{"na' }, { capability: "model.generate" }),
+    ...push("run.invocation.progress", { type: "tool_call_args", callId: "call-1", delta: 'me":"Ada"}' }, { capability: "model.generate" }),
+    ...push("run.invocation.progress", { type: "tool_call_end", callId: "call-1" }, { capability: "model.generate" }),
+    ...push("run.waiting", { type: "remote:lookup" }, { continuationId: "continuation-1", stepId: "wait:remote:call-1" }),
+    ...push("run.resumed", { input: { ok: true, value: { found: true } } }, { stepId: "wait:remote:call-1", continuationId: "continuation-1" }),
+  ];
+  expect(events.map((event) => event.type)).toEqual(["TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_ARGS", "TOOL_CALL_END", "TOOL_CALL_RESULT"]);
+  expect(events.every((event) => EventSchema.safeParse(event).success)).toBe(true);
+  expect(events.map((event) => "toolCallId" in event ? event.toolCallId : undefined)).toEqual(Array(5).fill("call-1"));
+  expect(events.at(-1)).toMatchObject({ type: "TOOL_CALL_RESULT", content: '{"found":true}' });
 });

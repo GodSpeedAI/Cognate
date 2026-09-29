@@ -31,11 +31,11 @@
     "clone": "gh api repos/CopilotKit/CopilotKit/tarball/6e452e5342db53e9ab23d8b3c0a4592ec25ff554 (extract into .tmp/ref/copilotkit)",
     "install": "pnpm install --filter '@copilotkit/react-core...' --frozen-lockfile --ignore-scripts",
     "canonicalStarter": "cd examples/integrations/langgraph-js && npm install && cp .env.example .env && npm run dev",
-    "componentFixtures": "cd packages/react-core && pnpm exec vitest run src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx src/v2/hooks/__tests__/use-agent-context-timing.e2e.test.tsx"
+    "componentFixtures": "cd packages/react-core && pnpm exec vitest run src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx src/v2/hooks/__tests__/use-agent-context-timing.e2e.test.tsx; pnpm exec vitest run src/v2/hooks/__tests__/use-agent.e2e.test.tsx"
   },
   "executionStatus": {
     "referenceApplication": "NOT_YET_EXECUTED",
-    "officialFixtures": "PASSED_21_OF_21",
-    "note": "Two pinned React-core official Vitest fixture files passed. The Nx wrapper encountered local plugin-worker startup failure; the direct official Vitest runner completed. The canonical starter application remains unexecuted."
+    "officialFixtures": "PASSED_23_OF_23",
+    "note": "Three pinned React-core official Vitest fixture files passed (21 frontend-tool/context timing tests and 2 useAgent tests). The Nx wrapper encountered local plugin-worker startup failure; the direct official Vitest runner completed. The canonical starter application remains unexecuted."
   }
 }
