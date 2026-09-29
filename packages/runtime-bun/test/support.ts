@@ -8,7 +8,7 @@ export function kitPolicies(setup: KitSetup): { policy: Policy; actions: ActionP
     // Per KitSetup: the denied principal may start runs but may not invoke capabilities, act on continuations, or write run state.
     actions: {
       authorize: ({ caller, action }) =>
-        caller.actor.id === setup.deniedPrincipal && (action.startsWith("continuation.") || action.startsWith("run.state."))
+        caller.actor.id === setup.deniedPrincipal && (action.startsWith("continuation.") || action.startsWith("run.state.") || action.startsWith("thread.state."))
           ? { allow: false, reason: `${caller.actor.id} denied` }
           : { allow: true, reason: "allowed" },
     },

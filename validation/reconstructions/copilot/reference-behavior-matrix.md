@@ -3,7 +3,10 @@
 Pinned reference: `CopilotKit/CopilotKit@6e452e5342db53e9ab23d8b3c0a4592ec25ff554`.
 Rows R-A04, R-A06, and R-A07 now have **OFFICIAL_FIXTURE_REFERENCE** evidence:
 the pinned React-core frontend-tool and agent-context timing suites passed
-21/21 tests on 2026-09-28. The other rows remain **DOCUMENTED_REFERENCE**.
+21/21 tests on 2026-09-28. R-A02 has partial **OFFICIAL_FIXTURE_REFERENCE**
+evidence for `setState` reaching a subsequent run (`use-agent.e2e.test.tsx`,
+2/2 tests passed); agent-to-canvas writes remain documented. The other rows
+remain **DOCUMENTED_REFERENCE**.
 These fixtures prove their named hook behavior, not starter-application or
 black-box parity.
 
@@ -13,7 +16,7 @@ React-core fixtures do not require a paid model. The focused package fixture
 command was `pnpm exec vitest run src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx src/v2/hooks/__tests__/use-agent-context-timing.e2e.test.tsx`
 from `packages/react-core`; it passed 2 files and 21 tests. The Nx wrapper
 encountered local plugin-worker startup failure, so the direct official Vitest
-runner was used.
+runner was used. The additional `use-agent.e2e.test.tsx` file passed 2/2 tests.
 
 | ID | Priority | Surface | User/action and required visible behavior | State, persistence, protocol behavior | Exact pinned evidence |
 | --- | --- | --- | --- | --- | --- |

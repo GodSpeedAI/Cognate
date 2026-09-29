@@ -151,6 +151,7 @@ export function createProjector(options: { readonly threadId: string; readonly r
 } {
   let openMessageId: string | undefined;
   const openToolCalls = new Set<string>();
+  const knownToolCalls = new Set<string>();
   let text = "";
   let state: Json = null;
 
@@ -230,6 +231,7 @@ export function createProjector(options: { readonly threadId: string; readonly r
           if (!name) break;
           closeText(out, cognate);
           openToolCalls.add(callId);
+          knownToolCalls.add(callId);
           out.push({ type: "TOOL_CALL_START", toolCallId: callId, toolCallName: name, rawEvent: { cognate } });
         } else if (kind === "tool_call_args" && openToolCalls.has(callId)) {
           const delta = payloadField<string>(event, "delta");
@@ -261,11 +263,13 @@ export function createProjector(options: { readonly threadId: string; readonly r
           const remoteId = metaField<string>(event, "stepId")?.match(/^wait:remote:(.+)$/)?.[1];
           const toolCallId = remoteId ?? continuationId;
           const capability = waitType.slice(waitType.indexOf(":") + 1);
-          if (!openToolCalls.has(toolCallId)) {
+          if (!knownToolCalls.has(toolCallId)) {
             out.push({ type: "TOOL_CALL_START", toolCallId, toolCallName: capability, rawEvent: { cognate } });
             out.push({ type: "TOOL_CALL_ARGS", toolCallId, delta: JSON.stringify(view?.payload ?? {}), rawEvent: { cognate } });
-          } else openToolCalls.delete(toolCallId);
-          out.push({ type: "TOOL_CALL_END", toolCallId, rawEvent: { cognate } });
+            out.push({ type: "TOOL_CALL_END", toolCallId, rawEvent: { cognate } });
+          } else if (openToolCalls.delete(toolCallId)) {
+            out.push({ type: "TOOL_CALL_END", toolCallId, rawEvent: { cognate } });
+          }
         } else {
           const kind = conditionKindOf(view);
           const supported = kind !== undefined && SUPPORTED_CONTINUATION_KINDS.has(kind);
@@ -276,6 +280,15 @@ export function createProjector(options: { readonly threadId: string; readonly r
             rawEvent: { cognate },
           });
         }
+        break;
+      }
+      case "run.resumed": {
+        const stepId = metaField<string>(event, "stepId");
+        const callId = stepId?.match(/^wait:remote:(.+)$/)?.[1];
+        if (!callId) break;
+        const resolution = payloadField<Json>(event, "input") ?? null;
+        const result = resolution && typeof resolution === "object" && !Array.isArray(resolution) && resolution.ok === true ? (resolution.value ?? null) : resolution;
+        out.push({ type: "TOOL_CALL_RESULT", messageId: `${callId}:result`, toolCallId: callId, content: JSON.stringify(result), role: "tool", rawEvent: { cognate } });
         break;
       }
       case "run.completed": {
@@ -426,6 +439,8 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
 
     const props = cognateProps(input);
     const threadCorrelation = threadCorrelationId(input.threadId);
+    const belongsToRunOrThreadState = (event: StoredEvent, runId: string): boolean =>
+      event.runId === runId || (event.eventType === "state.changed" && event.metadata?.scope === "thread" && event.correlationId === threadCorrelation);
 
     // Thread -> run mapping is served by the runtime's run index (DEBT-019), maintained atomically with
     // run.started, not by scanning the event log: runs started for a thread carry its correlation id, so a
@@ -505,7 +520,9 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
     // an SSE consumer must see each committed projection while the run is still executing.
     const readHistory = async (): Promise<StoredEvent[]> => {
       const events: StoredEvent[] = [];
-      for await (const event of service.events(caller, { runId: cognateRunId, afterPosition: 0 })) events.push(event);
+      for await (const event of service.events(caller, { correlationId: threadCorrelation, afterPosition: 0 })) {
+        if (belongsToRunOrThreadState(event, cognateRunId)) events.push(event);
+      }
       return events;
     };
     return liveSseResponse(async (emit, signal) => {
@@ -536,6 +553,21 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
       };
 
       let afterPosition = afterInboundAction;
+      let emitSeededThreadState = false;
+      if (mode === "full" && afterInboundAction === 0) {
+        const history = await readHistory();
+        const started = history.find((event) => event.eventType === "run.started" && event.runId === cognateRunId);
+        if (started) {
+          for (const event of history) {
+            if (event.position >= started.position) break;
+            if (event.eventType === "state.changed" && event.metadata?.scope === "thread") {
+              projector.push(event);
+              emitSeededThreadState = true;
+            }
+          }
+          afterPosition = started.position - 1;
+        }
+      }
       if (mode === "reconnect") {
         const history = await readHistory();
         const cursor = props.cursor;
@@ -546,7 +578,7 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
           for (const event of projector.stateOnly()) if (!emit(event)) return;
           afterPosition = cursor;
         } else {
-          const started = history[0];
+          const started = history.find((event) => event.eventType === "run.started" && event.runId === cognateRunId);
           if (!emit({ type: "RUN_STARTED", threadId: input.threadId, runId: input.runId, rawEvent: started ? { cognate: { eventId: started.eventId, position: started.position, runId: started.runId } } : undefined })) return;
           for (const event of history) if (event.eventType === "message.delta" || event.eventType === "state.changed" || (event.eventType === "run.invocation.progress" && payloadField<string>(event, "type") === "text")) projector.push(event);
           for (const event of projector.snapshot()) if (!emit(event)) return;
@@ -566,8 +598,13 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
         }
       }
 
-      for await (const event of service.events(caller, { runId: cognateRunId, afterPosition, follow: true, signal })) {
+      for await (const event of service.events(caller, { correlationId: threadCorrelation, afterPosition, follow: true, signal })) {
+        if (!belongsToRunOrThreadState(event, cognateRunId)) continue;
         await project(event);
+        if (event.eventType === "run.started" && emitSeededThreadState) {
+          for (const snapshot of projector.stateOnly()) if (!emit(snapshot)) return;
+          emitSeededThreadState = false;
+        }
         if (settled || signal.aborted) return;
       }
     });

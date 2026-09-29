@@ -7,7 +7,7 @@ import { startRuntime } from "./runtime.ts";
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
-  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke" | "remote.offer.invoke"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
+  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "thread.state.read" | "thread.state.update" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke" | "remote.offer.invoke"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
 }
 
 export interface CognitionOptions {

@@ -1,11 +1,11 @@
 // Durable run execution by deterministic replay (ADR-0011, spec §11, §12).
 // Each execution re-reads the run stream, re-enters the agent from the top, and answers every
 // RunContext call that already has a recorded result from the stream instead of repeating it.
-import { ConcurrencyError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
 import type { Principal, SemanticRef } from "@cognate/kernel-api";
-import { type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, type WaitSpec } from "@cognate/runtime-api";
+import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@cognate/runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
-import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, toJson } from "./fold.ts";
+import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 /** Internal control flow: the execution stops here (suspended, cancelled, or lost a write race). */
 class Halt {
@@ -267,6 +267,66 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       const result = foldState([...runEvents, ...stateEvents]);
       await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId } });
       return result;
+    },
+
+    async sharedState(id: string): Promise<Json> {
+      guard();
+      const caller = { tenant: view.tenant, actor: context.actor };
+      const decision = core.actions.authorize({ caller, action: "thread.state.read", resource: view.correlationId });
+      if (!decision.allow) throw new Error(`thread state read denied: ${decision.reason}`);
+      return context.step(`shared-state:${id}`, async () => foldState(await core.store.readStream(threadStateStream(view.tenant, view.correlationId))));
+    },
+
+    async updateSharedState(id: string, update): Promise<{ readonly state: Json; readonly version: number }> {
+      guard();
+      const caller = { tenant: view.tenant, actor: context.actor };
+      const decision = core.actions.authorize({ caller, action: "thread.state.update", resource: view.correlationId });
+      if (!decision.allow) throw new Error(`thread state update denied: ${decision.reason}`);
+      return context.step(`shared-state.update:${id}`, async () => {
+        const streamId = threadStateStream(view.tenant, view.correlationId);
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const events = await core.store.readStream(streamId);
+          let state: Json;
+          try {
+            state = applyStateUpdate(foldState(events), update);
+          } catch (error) {
+            if (error instanceof StatePatchError) throw new Error(`invalid thread state update: ${error.message}`);
+            throw error;
+          }
+          try {
+            const outcome = await core.store.commit({
+              idempotency: {
+                scope: `${view.tenant}:${runId}:thread.state.update`,
+                key: id,
+                fingerprint: fingerprint({ threadId: view.correlationId, update: toJson(update) }),
+              },
+              appends: [{
+                streamId,
+                expectedVersion: events.length,
+                events: [{
+                  eventType: "state.changed",
+                  schemaVersion: 1,
+                  occurredAt: new Date().toISOString(),
+                  tenant: view.tenant,
+                  correlationId: view.correlationId,
+                  causationId: events.at(-1)?.eventId ?? lastEventId,
+                  runId,
+                  scopeId: started.scopeId,
+                  payload: toJson(update),
+                  metadata: { scope: "thread", threadId: view.correlationId, source: "agent", actor: context.actor.id, stepId: `shared-state.update:${id}` },
+                }],
+              }],
+              result: { state, version: events.length + 1 },
+            });
+            return outcome.result as { readonly state: Json; readonly version: number };
+          } catch (error) {
+            if (error instanceof ConcurrencyError) continue;
+            if (error instanceof IdempotencyMismatchError) throw new Error(`thread state update ${id} was replayed with different input`);
+            throw error;
+          }
+        }
+        throw new Error(`too much contention updating thread state for ${view.correlationId}`);
+      });
     },
 
     async remoteOffers(id: string): Promise<readonly RemoteCapabilityOffer[]> {

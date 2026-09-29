@@ -403,6 +403,7 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
         const iterable = service.events(caller, {
           afterPosition: toNumber(req.afterPosition),
           runId: req.runId,
+          correlationId: req.correlationId,
           follow: req.follow,
           signal: context.signal,
         });
@@ -494,6 +495,25 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
         throwConnectError(e);
       }
     },
+    async readSharedState(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const result = await withDeadline(context, service.readSharedState(caller, { threadId: req.threadId }));
+        return { state: jsonToValue(result.state), version: BigInt(result.version) };
+      } catch (e) { throwConnectError(e); }
+    },
+    async updateSharedState(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const result = await withDeadline(context, service.updateSharedState(caller, {
+          threadId: req.threadId,
+          update: stateUpdateFromWire(req.update),
+          idempotencyKey: req.idempotencyKey,
+          expectedVersion: toNumber(req.expectedVersion),
+        }));
+        return { state: jsonToValue(result.state), version: BigInt(result.version) };
+      } catch (e) { throwConnectError(e); }
+    },
     async publishRemoteOffer(req, context) {
       try {
         const caller = await requireCaller(options, context);
@@ -565,7 +585,7 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
       return (async function* () {
         try {
           const stream = client.streamEvents(
-            { afterPosition: toBigInt(request.afterPosition), runId: request.runId, follow: request.follow ?? false },
+            { afterPosition: toBigInt(request.afterPosition), runId: request.runId, correlationId: request.correlationId, follow: request.follow ?? false },
             { headers, signal },
           );
           for await (const event of stream) {
@@ -651,6 +671,23 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
       } catch (e) {
         throwServiceError(e);
       }
+    },
+    async readSharedState(caller, request) {
+      try {
+        const response = await client.readSharedState({ threadId: request.threadId }, { headers: headersFor(caller) });
+        return { state: valueToJson(response.state), version: Number(response.version) };
+      } catch (e) { throwServiceError(e); }
+    },
+    async updateSharedState(caller, request) {
+      try {
+        const response = await client.updateSharedState({
+          threadId: request.threadId,
+          update: stateUpdateFieldInit(request.update),
+          idempotencyKey: request.idempotencyKey,
+          expectedVersion: toBigInt(request.expectedVersion),
+        }, { headers: headersFor(caller) });
+        return { state: valueToJson(response.state), version: Number(response.version) };
+      } catch (e) { throwServiceError(e); }
     },
     async publishRemoteOffer(caller, request) {
       try {

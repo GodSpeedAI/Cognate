@@ -73,8 +73,8 @@ describe("J-A-chat-turn", () => {
     expect(run.output).toEqual({ answer: "Hello from the deterministic Cognate chat." });
     const events = [] as { eventType: string; payload: unknown }[];
     for await (const event of journey.runtime.service.events(alice, { runId: run.runId })) events.push(event);
-    expect(events.map((event) => event.eventType)).toEqual(expect.arrayContaining(["run.started", "run.invocation", "message.delta", "run.completed"]));
-    expect(events.filter((event) => event.eventType === "message.delta").map((event) => (event.payload as { text: string }).text).join("")).toBe("Hello from the deterministic Cognate chat.");
+    expect(events.map((event) => event.eventType)).toEqual(expect.arrayContaining(["run.started", "run.invocation.progress", "run.invocation", "run.completed"]));
+    expect(events.filter((event) => event.eventType === "run.invocation.progress").map((event) => (event.payload as { text: string }).text).join("")).toBe("Hello from the deterministic Cognate chat.");
 
     const projection = await journey.runtime.service.readProjection(alice, { name: "conversation-thread-history" });
     expect(projection).toContainEqual(expect.objectContaining({ key: `thread/${threadId}`, value: expect.objectContaining({ threadId, runs: [expect.objectContaining({ runId: run.runId, status: "completed", text: "Hello from the deterministic Cognate chat." })] }) }));

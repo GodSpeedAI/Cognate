@@ -102,6 +102,22 @@ export function kitAgents(counters: Counters): AgentDefinition[] {
         return { before, after };
       },
     },
+    {
+      id: "agent.threadStateReader",
+      version: "1.0.0",
+      async run(_input, ctx): Promise<Json> {
+        return ctx.sharedState("thread");
+      },
+    },
+    {
+      id: "agent.threadStateWriter",
+      version: "1.0.0",
+      async run(_input, ctx): Promise<Json> {
+        const updated = await ctx.updateSharedState("thread", { snapshot: { agent: true } });
+        await ctx.waitFor("replay", { type: "thread-state-replay", condition: {}, payload: {} });
+        return updated;
+      },
+    },
   ];
 }
 
@@ -357,6 +373,43 @@ export function runtimeServiceConformance(name: string, factory: RuntimeFactory,
       const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st8" });
       await until(service, alice, runId, "waiting");
       expect(await code(service.updateState(mallory, { runId, update: { snapshot: {} }, idempotencyKey: "u8" }))).toBe("permission_denied");
+    });
+
+    test("thread shared state survives completed runs, is CAS guarded and tenant-isolated", async () => {
+      const { service } = await open();
+      const threadId = "thread-shared-state";
+      const first = await service.startRun(alice, { agent: "agent.threadStateReader", input: null, idempotencyKey: "thread-1", correlationId: threadId });
+      expect((await until(service, alice, first.runId, "completed")).output).toEqual({});
+
+      const changed = await service.updateSharedState(alice, { threadId, update: { snapshot: { edited: true } }, idempotencyKey: "thread-edit", expectedVersion: 0 });
+      expect(changed).toEqual({ state: { edited: true }, version: 1 });
+      expect(await service.updateSharedState(alice, { threadId, update: { snapshot: { edited: true } }, idempotencyKey: "thread-edit", expectedVersion: 0 })).toEqual(changed);
+      expect(await code(service.updateSharedState(alice, { threadId, update: { snapshot: { edited: false } }, idempotencyKey: "thread-stale", expectedVersion: 0 }))).toBe("failed_precondition");
+      expect(await code(service.readSharedState(mallory, { threadId }))).toBe("permission_denied");
+      expect(await service.readSharedState(bob, { threadId })).toEqual({ state: {}, version: 0 });
+      await service.updateSharedState(alice, { threadId: "other-thread", update: { snapshot: { separate: true } }, idempotencyKey: "thread-other" });
+
+      const second = await service.startRun(alice, { agent: "agent.threadStateReader", input: null, idempotencyKey: "thread-2", correlationId: threadId });
+      expect((await until(service, alice, second.runId, "completed")).output).toEqual({ edited: true });
+
+      const [event] = (await collect(service.events(alice, {}))).filter((candidate) => candidate.eventType === "state.changed" && candidate.metadata?.threadId === threadId && candidate.metadata?.source === "caller");
+      expect(event).toMatchObject({ correlationId: threadId, runId: null, metadata: { threadId, source: "caller" } });
+      expect((await collect(service.events(alice, { correlationId: threadId }))).every((candidate) => candidate.correlationId === threadId)).toBe(true);
+    });
+
+    test("agent thread shared-state writes are replay-safe and durable", async () => {
+      const { service } = await open();
+      const threadId = "thread-agent-replay";
+      const { runId } = await service.startRun(alice, { agent: "agent.threadStateWriter", input: null, idempotencyKey: "thread-agent", correlationId: threadId });
+      await until(service, alice, runId, "waiting");
+      const [continuation] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      await service.resolveContinuation(alice, { continuationId: continuation!.id, action: "resume", input: {}, idempotencyKey: "thread-agent-go" });
+      expect((await until(service, alice, runId, "completed")).output).toEqual({ state: { agent: true }, version: 1 });
+      expect(await service.readSharedState(alice, { threadId })).toEqual({ state: { agent: true }, version: 1 });
+      const events = await collect(service.events(alice, {}));
+      const changes = events.filter((event) => event.eventType === "state.changed" && event.metadata?.threadId === threadId);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]).toMatchObject({ correlationId: threadId, runId, metadata: { threadId, source: "agent" } });
     });
 
     test("listRuns returns the caller's tenant runs oldest-first, filterable by correlationId and agent", async () => {
