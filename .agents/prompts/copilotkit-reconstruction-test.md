@@ -220,7 +220,8 @@ Record:
 * repository/package versions relevant to the test;
 * Node/pnpm requirements;
 * browser version;
-* commands used to run each selected reference surface.
+* commands used to run each selected reference surface;
+* the mock LLM version, install command, fixture set, and base-URL override used to execute those surfaces (Phase 1B).
 
 Write:
 
@@ -229,6 +230,67 @@ Write:
 Do not allow upstream changes to move the target after characterization begins.
 
 All parity claims apply to this exact SHA.
+
+The pinned checkout must remain restorable at that SHA for the whole reconstruction, and its
+integrity must be verified rather than assumed: confirm the extracted tree corresponds to the pinned
+SHA before treating either an executed fixture or an unexecuted surface as evidence.
+
+---
+
+# Phase 1B — Make the Reference Executable Without a Paid Model API
+
+Reference behavior must be executable locally. Do not gate any parity work on a live, paid model
+endpoint, and do not classify a behavior `DOCUMENTED_REFERENCE` merely because an `OPENAI_API_KEY`
+is absent.
+
+The pinned repository ships its own fixture-based LLM mock for exactly this purpose. Use it.
+
+**Package.** `@copilotkit/aimock` (pinned at `1.37.4` by `showcase/scripts`; the root
+`package.json` script is `"aimock": "showcase/scripts/node_modules/.bin/llmock"`). Verify the pinned
+version from the checkout rather than trusting this document.
+
+**Invoke it only through the workspace bin.** From the pinned repository root:
+
+```text
+pnpm aimock --fixtures <path> ...
+```
+
+The package ships two bins whose CLIs differ; measured on the pinned version:
+
+* `llmock` — accepts `-f/--fixtures`, `--validate-on-load`, `--record`, `--watch`. This is the bin the
+  root `aimock` script resolves to.
+* `aimock` — requires `-c/--config`, accepts `-p/--port` and `-h/--host`, and has no `--fixtures`.
+
+So `aimock --fixtures ...` is wrong even with the scoped package installed.
+
+**Never use `npx` for either name.** Both names are owned on the public registry by unrelated
+projects (`aimock@0.2.9`, `llmock@3.3.6`), and a wrong mock LLM server is plausible enough to look
+like it is working. The pinned repository enforces this in
+`showcase/scripts/__tests__/aimock-bin-invocation.test.ts`; mirror that constraint here.
+
+**Fixtures.** Live under `showcase/aimock/`, organized as
+`showcase/aimock/<dimension>/<agent-slug>/<scenario>.json`, plus shared
+`showcase/aimock/shared/common.json` and `shared/smoke.json`. Reuse the existing fixtures for the
+surfaces under test, and add scenario fixtures only where a required scenario has none.
+
+**Wiring.** The mocked endpoint is reached by base-URL override, not by patching application code:
+`OPENAI_BASE_URL=http://<host>:4010/v1` (host and port per the harness; the shipped default is
+`127.0.0.1:4010`, and the container default is the `aimock` service on port `4010`). Fixture
+selection for a turn is keyed by the `X-AIMock-Context` request header. Unmatched requests are
+served by fallback unless strictness is enabled — control that with the mock's own `--strict` flag
+or its per-request `X-AIMock-Strict` header, and note the harness additionally exposes a
+`SHOWCASE_AIMOCK_STRICT` variable. Consult `showcase/.env.example` and
+`showcase/harness/src/probes/drivers/` in the pinned checkout for the current variables rather than
+hardcoding them from this list.
+
+**Evidence consequence.** Running the canonical starter and the selected reference surfaces against
+these fixtures yields `BLACK_BOX_REFERENCE` evidence for the scenarios those fixtures cover. That
+makes the side-by-side screenshot and diff work in Phases 6 and 11 achievable without a paid key.
+Reserve `DOCUMENTED_REFERENCE` for behavior that the fixtures genuinely cannot reach, such as
+features requiring hosted CopilotKit Intelligence, and say which fixture or mechanism is missing.
+
+Installing the mock is a prerequisite, not a finding: if the bin is absent, install the pinned
+package and record the install command in the reference manifest.
 
 ---
 
@@ -381,7 +443,8 @@ The Cognate reconstruction should expose Cognate-native equivalents through its 
 
 # Phase 4 — Deterministic Reference Agents
 
-Do not require paid model APIs for parity tests.
+Do not require paid model APIs for parity tests. Run the reference surfaces against the pinned
+repository's own mock LLM per Phase 1B, so these scenarios are executable locally.
 
 Build deterministic scenario drivers.
 
@@ -672,6 +735,10 @@ At minimum:
 ---
 
 # Phase 6 — Capture Reference UI
+
+Run the pinned reference surfaces against the mock LLM from Phase 1B so these captures are
+reproducible without a paid model key. A capture that could not be produced must say which fixture or
+mechanism was missing.
 
 Use Playwright against pinned official reference surfaces.
 
@@ -1327,6 +1394,9 @@ The report must distinguish:
 
 Actually executed against pinned CopilotKit.
 
+Achievable for any scenario the pinned repository's own mock LLM (Phase 1B) covers. An absent
+`OPENAI_API_KEY` is not a reason to leave a scenario in a lower class.
+
 ## OFFICIAL_FIXTURE_REFERENCE
 
 Executed using official CopilotKit test fixtures/mocks.
@@ -1334,6 +1404,9 @@ Executed using official CopilotKit test fixtures/mocks.
 ## DOCUMENTED_REFERENCE
 
 Supported by current official docs/source but not executable locally because it depends on unavailable external/proprietary infrastructure.
+
+The mock LLM exists precisely to shrink this class. If a behavior stays here, name the fixture or
+mechanism that is missing, rather than the paid endpoint that is not configured.
 
 Do not mix those evidence levels.
 
@@ -1352,6 +1425,11 @@ For every P0/P1 feature include:
 # Settlement Gates
 
 The CopilotKit Reconstruction settles only when ALL applicable conditions hold:
+
+Reference behavior must be executed against the pinned repository's own mock LLM (Phase 1B)
+wherever the fixtures can express the scenario. An unconfigured paid model endpoint is not an
+accepted reason for leaving reference behavior unexecuted or for classifying it below
+`BLACK_BOX_REFERENCE`.
 
 1. Reference commit is pinned.
 2. Current consolidated examples, not legacy v1/v2 examples, define the primary reference suite.
