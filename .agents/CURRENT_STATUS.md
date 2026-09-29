@@ -1,40 +1,42 @@
 # Current status
 
-**Status revision:** 16
+**Status revision:** 17
 
-**Stage:** CopilotKit reconstruction: reference verified, mock-LLM path enabled, instructions revised
+**Stage:** CopilotKit reconstruction: tranche committed, session torn down, mock-LLM path ready
 
-**Summary:** Correction and enablement. Revisions 13-15 wrongly recorded the pinned reference checkout as absent from .tmp/ref/copilotkit; it is present and was just verified byte-identical to the pinned SHA (all 21,195 files from the pinned tarball present, zero differing; the 1,098 extra files are dist build outputs), so that inherited claim is retracted. The reconstruction's biggest blocker is also cleared: CopilotKit ships its own fixture-based LLM mock, @copilotkit/aimock 1.37.4, installed here and proven to serve both non-streaming and streaming OpenAI-shaped traffic from fixtures with no API key, which makes BLACK_BOX_REFERENCE evidence achievable for the reference application instead of unreachable. The reconstruction instructions were revised to require that mechanism rather than a live paid endpoint. No reconstruction journey code changed in this revision; J-A, J-B and J-C remain the only implemented journeys and the wider parity work is still open.
+**Summary:** The interrupted session's work is committed and its leftovers are gone. Three commits landed: the thread-shared-state tranche including the J-C fix (a1d72f7), the revised reconstruction instructions that require CopilotKit's own mock LLM (b8d3331), and the DomainForge 0.18.1 revalidation records (3212b4e). The J-C fix is no longer trapped in an untracked file. The stale dev server on port 4178 is stopped and the interrupted session's /tmp artifacts are removed, and a second inherited claim is retracted: that server was not from the interrupted session at all but a two-day-old dev server belonging to the separate sea-rs project. The reference is verified and the mock is proven to serve both streaming and non-streaming OpenAI-shaped traffic with no API key, so the next step is executing the reference application against it.
 
-**Verified:** The pinned reference checkout at `.tmp/ref/copilotkit` was verified byte-identical to
-the pinned commit by downloading the pinned tarball and comparing: **21,195 of 21,195 files
-content-identical, zero differing, zero missing**. The 1,098 local-only files are all `dist/` build
-artifacts. `@copilotkit/aimock` **1.37.4** installs from `showcase/scripts` and ships two bins whose
-CLIs match the pinned repository's own forbidden-pattern test exactly. A smoke test proved the mock
-serves `GET /v1/models` (200), returns fixture content (`OK`) for a non-streaming chat completion,
-and emits well-formed SSE deltas plus `[DONE]` for `stream:true` — **with no `OPENAI_API_KEY` set**.
-The reconstruction instructions were revised in six places to require this mechanism. `just verify`
-passes 78/78 gates and `just check` passes; J-A, J-B and J-C still pass their 4 tests.
+**Verified:** Three commits landed: `a1d72f7` (the durable thread-scoped shared-state tranche,
+including the J-C fix), `b8d3331` (the revised instructions requiring CopilotKit's own mock LLM),
+and `3212b4e` (the DomainForge 0.18.1 revalidation records). Only `.jolli/jollimemory/debug.log`
+remains modified and it was deliberately left out. `just verify` ran **78/78 gates, exit 0**
+immediately before committing - with `CG-PRF-002` passing, confirming revision 15's transient
+failure was load-related. The port 4178 dev server is stopped and the interrupted session's 41 MB of
+`/tmp` artifacts are removed. The reference checkout is verified byte-identical to the pinned commit
+(21,195/21,195 files), and the mock serves both streaming and non-streaming OpenAI-shaped traffic
+with no API key.
 
-**Limits:** A claim I carried into revisions 13–15 is **retracted**: they reported the reference
-clone as absent. It was present the whole time — the claim came from the interrupted session's own
-narration rather than verification, and it propagated into three snapshots. No reconstruction
-journey work was done in this revision: J-A, J-B and J-C remain the only implemented journeys of the
-10 in the IDM catalog, and J-D, J-E, J-F, J-G, J-H, J-J and J-K are modeled but unbuilt. The
-reference application has **still never been executed end to end** — the mock makes that achievable
-but it is not done, so there is still no `BLACK_BOX_REFERENCE` evidence, no screenshots, and no
-parity report. The fixtures for the ten journeys have not been surveyed (only shared fixtures were
-smoke-tested), and `showcase/scripts` blocked the esbuild postinstall under npm `allowScripts`.
-DEBT-021 remains open. The thread-shared-state tranche and the J-C fix remain uncommitted, with the
-fix living only in an untracked file. Carried-forward framework limits (DEBT-004, DEBT-011,
-DEBT-014 through DEBT-017, DEBT-020, process-local remote offer leases, candidate ledger) still
-apply, as does the transient unreproduced CG-PRF-002 observation from revision 15.
+**Limits:** A **second inherited claim is retracted**: revision 15 recorded the port 4178 dev server
+as a leftover from the interrupted session. It was not - it had run since 2026-09-26 17:52 from
+`projects/sea-rs/apps/godspeed-cognitive-ui`, an unrelated project, about two days before the
+session began, and it was stopped only after explicit operator authorization for that process.
+Revisions 13-15's claim that the reference clone was absent stays retracted as well. No reconstruction
+journey work was done here: J-A, J-B and J-C remain the only implemented journeys of 10, with J-D,
+J-E, J-F, J-G, J-H, J-J and J-K modeled but unbuilt. The reference application has **still never been
+executed end to end** - the mock is proven in isolation but not yet wired into the starter, so there
+is no `BLACK_BOX_REFERENCE` evidence, no screenshot, and no parity report. The journey fixtures have
+not been surveyed. 294 tiny `/tmp/deepseek-harness-*` directories from the earlier DeepSeek session
+remain, and a separate cognate process still listens on port 4177 (`scripts/show-documents.ts`, from
+the earlier Artifact Viewer work) - both left in place. DEBT-021 remains open, `showcase/scripts`
+blocked the esbuild postinstall under npm `allowScripts`, and the carried-forward framework limits
+(DEBT-004, DEBT-011, DEBT-014 through DEBT-017, DEBT-020, process-local remote offer leases, unfrozen
+ledger) still apply.
 
-**Next:** Proceed from Phase 1 with the reference verified and the mock path working: run the
-canonical starter and selected reference surfaces against fixtures and capture the Phase 6
-screenshots, converting `DOCUMENTED_REFERENCE` matrix rows into `BLACK_BOX_REFERENCE`. Then work the
-unbuilt journeys in dependency order (J-D, J-E, J-F, J-G, J-H, J-J, J-K), add the missing artifacts
+**Next:** Execute the reference. Survey the `showcase/aimock` fixture tree for the ten canonical
+journeys, start the canonical starter against the mock by overriding `OPENAI_BASE_URL`, drive it
+under Playwright at fixed viewports, and capture the Phase 6 screenshots - converting the
+`DOCUMENTED_REFERENCE` matrix rows to `BLACK_BOX_REFERENCE`. Then build the remaining journeys in
+dependency order (J-D, J-E, J-F, J-G, J-H, J-J, J-K) and add the missing artifacts
 (`primitive-provenance.md`, `parity-report.md/json`, `diffs/`, screenshots, `tests/protocol`,
-`tests/visual`, `tests/architecture`), and re-audit the 32 settlement gates as each closes. Get
-operator intent before committing the uncommitted tranche. Treat DEBT-021 as a separate framework
-change.
+`tests/visual`, `tests/architecture`), re-auditing the 32 settlement gates as each closes. Treat
+DEBT-021 as a separate framework change, not an app workaround.
