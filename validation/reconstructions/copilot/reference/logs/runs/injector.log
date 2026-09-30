@@ -3,72 +3,11 @@ HIT  GET / -> 404
 TALLY hit=1 miss=0
 TALLY hit=1 miss=0
 TALLY hit=1 miss=0
-HIT  GET / -> 404
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=false toolResults=[] stateField=false markersSeen=[] bytes=32468
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=true toolResults=["call_fp_beautiful_chat_enable_app_mode_001"] stateField=false markersSeen=[] bytes=57479
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=true toolResults=["call_fp_beautiful_chat_enable_app_mode_001","call_fp_beautiful_chat_manage_todos_001"] stateField=false markersSeen=[] bytes=58328
-TALLY hit=5 miss=0
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=false toolResults=["call_fp_beautiful_chat_enable_app_mode_001","call_fp_beautiful_chat_manage_todos_001"] stateField=false markersSeen=[] bytes=83252
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-TALLY hit=6 miss=0
-HIT  GET / -> 404
-TALLY hit=7 miss=0
-TALLY hit=7 miss=0
-TALLY hit=7 miss=0
-TALLY hit=7 miss=0
-HIT  GET / -> 404
-TALLY hit=8 miss=0
-TALLY hit=8 miss=0
-TALLY hit=8 miss=0
-TALLY hit=8 miss=0
-TALLY hit=8 miss=0
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=false toolResults=[] stateField=false markersSeen=[] bytes=32468
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=true toolResults=["call_fp_beautiful_chat_enable_app_mode_001"] stateField=false markersSeen=[] bytes=57479
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=true toolResults=["call_fp_beautiful_chat_enable_app_mode_001","call_fp_beautiful_chat_manage_todos_001"] stateField=false markersSeen=[] bytes=58328
-HIT  POST /v1/chat/completions -> 200
-STATE user="three todos about learning CopilotKit" type=string turnTool=false toolResults=["call_fp_beautiful_chat_enable_app_mode_001","call_fp_beautiful_chat_manage_todos_001"] stateField=false markersSeen=[] bytes=83252
-HIT  GET / -> 404
-TALLY hit=13 miss=0
-TALLY hit=13 miss=0
-TALLY hit=13 miss=0
-TALLY hit=13 miss=0
-TALLY hit=13 miss=0
-MISS POST /v1/chat/completions user="What is a good name for a goldfish?" -> no_fixture_match (uncovered behavior)
-STATE user="What is a good name for a goldfish?" type=string turnTool=false toolResults=[] stateField=false markersSeen=[] bytes=32466
-TALLY hit=13 miss=1
-TALLY hit=13 miss=1
-TALLY hit=13 miss=1
-TALLY hit=13 miss=1
-HIT  GET / -> 404
-TALLY hit=14 miss=1
-TALLY hit=14 miss=1
-TALLY hit=14 miss=1
-TALLY hit=14 miss=1
-HIT  POST /v1/chat/completions -> 200
-STATE user="good name for a goldfish" type=string turnTool=false toolResults=[] stateField=false markersSeen=[] bytes=32455
-TALLY hit=15 miss=1
-HIT  GET / -> 404
-TALLY hit=16 miss=1
-TALLY hit=16 miss=1
-TALLY hit=16 miss=1
-TALLY hit=16 miss=1
-HIT  POST /v1/chat/completions -> 200
-STATE user="good name for a goldfish" type=string turnTool=false toolResults=[] stateField=false markersSeen=[] bytes=32455
-TALLY hit=17 miss=1
-TALLY hit=17 miss=1
-TALLY hit=17 miss=1
-TALLY hit=17 miss=1
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0
+TALLY hit=1 miss=0

@@ -88,10 +88,161 @@ token-usage accounting is computed).
 
 ## Composer permission-mode and model dropdowns — inert, single-value
 
-`button[aria-label="Access mode, current: Workspace Write"]` and `button[aria-label="Select model,
-current <model>"]` are present with the reference's accessible-name pattern but disabled — there is
-only one implicit access mode and the currently-configured model in this tranche, so there is
-nothing to switch between yet.
+> **Usage pass U2 update:** the access-mode dropdown is now **functional** — a per-session control
+> (the composer's `SettingMenu`, aria-label `Access mode, current: <label>`) whose value rides each
+> turn into `AgentCodingInput.mode` → `approvalGate`, seeded from the durable Settings → General →
+> Permission default for new sessions (hero composer: a pending choice consumed by the
+> session-creating send). The `sessions` projection folds the last run's mode back
+> (`session.turn.started`'s `mode` field), so it restores after a reload. A run with NO mode still
+> fails closed to `read-only` (the J-D contract, unchanged). The **model** dropdown remains a
+> single-value label: `model.configure` still holds exactly one live provider config.
+
+(Pre-U2 this entry read: both dropdowns present with the reference's accessible-name pattern but
+disabled — one implicit access mode, one configured model, nothing to switch between.)
+
+## Settings → General inventory (usage pass U2, reference-behavior-matrix.md §11)
+
+The full §11 inventory is implemented — Permission (with the Full-access confirmation dialog,
+checkpoint 22f), Language, Appearance (Light/Dark/System), Font size (1px stepper, floor 12),
+Work details, Performance & usage, Coding Tools, Keyboard shortcuts (dialog), Send behavior while
+busy — each a durable `settings.change*` capability writing its own field into the `settings`
+projection's merged "current" row (`test/J-SET-settings.test.ts` proves all fields survive a full
+runtime restart). Intentional deviations within it:
+
+- **Language is display-only persistence.** 中文 is selectable and durable, but the app has no
+  i18n strings — every other surface stays English. The reference actually re-languages its UI.
+- **Appearance's "System"** follows `prefers-color-scheme` live; the pre-U2
+  `localStorage["cognate.theme"]` value seeds `appearance` until the first explicit durable choice.
+- **Font size ceiling is 32px** (this app's own sane bound — the reference's ceiling was never
+  characterized; its floor 12 is reproduced exactly). Applies to conversation content only
+  (`.messages` inherits `--cg-content-font-size`); chrome keeps fixed sizes.
+- **Keyboard shortcuts**: the dialog lists this app's real actions/bindings only (4 editable +
+  3 fixed regions) — not the reference's 17-action Application list. "Open keyboard shortcuts
+  Ctrl /" is the one real binding; per-action Edit buttons and "Restore all defaults" are inert
+  (`NOT_IMPLEMENTED`).
+- **Send behavior — Queue is real, Steer is real but coarser than the reference's.** While a run
+  streams, the composer stays typeable: Enter performs the configured behavior (Queue parks the
+  message — a "Queued" chip shows it and it dispatches when the run settles; Steer cancels the run
+  and sends immediately), and Cmd/Ctrl+Enter performs the other behavior. The reference's exact
+  Steer semantics (mid-stream steering of the running generation, if richer than interrupt+resend)
+  were not characterized; this app's Steer is cancel-then-send. The send *button* position still
+  shows Stop while streaming (this app's own stop affordance), so busy-sends go through Enter —
+  the reference's "Enter and the Send button" wording is not reproduced literally.
+- **Coding Tools** is durable and gates nothing yet — the Trajectory surface it exists to expose
+  lands with the developer-tools tranche (usage plan U5); until then its only observable effect is
+  the persisted value (same as the reference's setting being meaningful only with a tab strip).
+- **The General pane footer** shows this app's own version constant, not the reference's.
+
+## Sidebar Workspaces section (usage pass U3, reference-behavior-matrix.md §12)
+
+The full multi-workspace sidebar is implemented: every `workspace.added` record renders as its own
+expandable treeitem with its sessions nested (no longer just the current workspace's), the header
+gains Search sessions (live title filter + Clear), View options, and Add workspace, the
+composer-area workspace pill became a functional "Choose workspace" dropdown (added workspaces +
+"Add workspace…"), and each workspace row has hover actions — "New session in <name>" (idempotent
+re-select + fresh session) and a "Workspace actions" menu with Rename and Delete workspace
+(durable `workspace.rename` / `workspace.delete` → `agent.config` events → the `workspaces`
+projection; deleting the active workspace clears the current pointer and drops the app back to the
+no-workspace chooser). `test/J-WS2-multi-workspace.test.ts` proves the durable behavior including a
+full-runtime-restart. Intentional deviations:
+
+- **Add workspace is a path-input dialog**, not the reference's full directory-browser
+  (`dialog "Select Workspace Directory"` with breadcrumb/home/new-folder/hidden-files) — out of
+  scope this pass, consistent with the app's pre-U3 chooser; the structural entry points (sidebar
+  button + hero "Add workspace…") match the reference.
+- **View options**: Group by "Workspace Tree" and "In one list" are real; "WorkSpace" (the
+  reference's distinction from Workspace Tree was never characterized beyond the label) and both
+  "Filter sessions" items (no archive feature exists) are present but inert (`NOT_IMPLEMENTED`).
+  Order by "Manual" (projection order) and "Last updated" are real.
+- **Delete workspace has no confirmation dialog** — the reference's menu item deletes directly
+  (as observed, §12); this app matches that. Sessions of a deleted workspace stay in the event
+  log; only the sidebar group disappears.
+- The workspace treeitem expands/collapses per the local UI state (the reference's expansion
+  behavior was not characterized in detail).
+
+## Built-in plugins + Agent presets (usage pass U4, reference-behavior-matrix.md §14–15)
+
+- **Built-in plugins is an inspect-only inventory of this app's own plugins** — Session plugins =
+  the model-facing tool catalog an agent preset composes (`agentCoding.ts`'s `PRESET_TOOLS` is the
+  single source of truth), Global plugins = the always-on capabilities (provider hot-swap, session
+  history, workspace scoping, approvals, preferences) plus RealityTrace observations (listed
+  Disabled until its tranche wires it). There are NO enable/disable toggles of real capabilities:
+  the entries are informational, unlike the reference's panel (whose plugin rows were also purely
+  informational — its toggles live in the sidebar Plugins panel, whose switches this app renders
+  inert since nothing is genuinely toggleable yet).
+- **The sidebar Plugins global panel** replaces the center column when toggled (the reference's
+  panel surface per the 25b checkpoint) and lists the same honest inventory with View buttons +
+  Enable switches (inert, `NOT_IMPLEMENTED`); Refresh/Add plugin are inert too — no plugin
+  install backend exists.
+- **Agent presets: three of the reference's four.** Standard/PTC/Minimal are real and behavioral —
+  a preset scopes the turn's model-facing tool catalog (`PRESET_TOOLS`), the composer sends the
+  per-session choice (`AgentCodingInput.preset`), the Settings default (`settings.changePreset`)
+  seeds NEW sessions, and the `sessions` projection folds the last run's preset into the row's
+  `mode` badge (replacing the approval-derived sticky "ptc" as the primary source; that sticky
+  fold remains the fallback for direct-API runs without a preset). A model call for a tool outside
+  the preset fails closed with the reference's own wording (`Error: unknown tool "run_code"` —
+  §6.2), proven by `test/J-PLG-panels.test.ts`. **Creator mode is out of scope** (it customizes
+  the harness through conversation — no equivalent surface here); the "Mode details"/"View
+  configuration" dialogs show this app's own copy and its real per-preset tool composition, not
+  the reference's plugin YAML.
+- A run WITHOUT a preset (direct `startRun` calls, all pre-U4 tests) keeps the FULL tool catalog —
+  the preset scope applies only where the composer/UI contract sends one.
+
+## Trajectory tab — developer tools (usage pass U5, reference-behavior-matrix.md §13)
+
+The session header gains the Chat/Trajectory tab strip (gated on the Coding Tools setting), a
+role-badged trace table (USER rows; one ASSISTANT "Request #N" row per recorded `model.generate`
+invocation; TOOL rows `tool{args} → result` with mono args), a Collapse-turns toggle + live
+"Search trajectory" filter, and the right-hand "Event details" panel (TOOL:
+Summary/Payload/Result/Schema/Timing; Request: Summary/Options/Timing). Data source: the public
+`session-trace` projection (`src/projections/sessionTrace.ts`) folding the session's own durable
+events — live during a run via the usual `useProjection` subscription, byte-stable after a reload
+or a full runtime restart (`test/J-T-trajectory.test.ts` proves the restart). Intentional
+deviations:
+
+- **No SYSTEM/CONTEXT rows.** This app sends no system prompt and no runtime-context snapshot, so
+  the trace honestly has no such rows (the reference's rows show its agent's own prompt
+  construction). The row-kind vocabulary is the same; the rows that don't apply simply don't occur.
+- **Timeline strip approximated away.** The reference's `region "Trajectory timeline"` (colored
+  duration segments) and the Calls toggle are not reproduced; Collapse turns + Search + per-row
+  durations (TOOL rows carry exact event-derived durations; requests get the next-event bound)
+  cover the toggle's substance. The reference's "Use actual duration" toggle defaults on here.
+- **Event details' Payload/Schema render formatted JSON**, not the reference's expandable JSON
+ *tree* widget; Schema comes from this app's own `TOOL_DEFS` entry (the same catalog the preset
+ scopes), not the reference's tool docs. Request "Usage" is folded into the request's Summary
+ (Status/Tool calls/Result) — no token accounting exists (same honest-zero policy as the composer
+ footer), so the reference's separate Usage tab is not reproduced.
+- **"Hierarchy → Assistant Message"** is present on the TOOL Summary but is currently a no-op
+  button (the parent request jump is unimplemented).
+- The trace includes failed tool calls (status Failed with the error text) and runs' failed model
+  requests (`run.invocation` failures render as failed Request rows with the failure message).
+
+## RealityTrace enrichment (usage pass U6, Option A — operator decision 2026-09-29)
+
+The trace stays Cognate's (the `session-trace` projection over the authoritative event log);
+RealityTrace adds the evidence layer. Trace-worthy events (`tool.call.started/completed/failed`,
+`message.completed`, `run.failed`) get an observation intent committed atomically with the event
+via the runtime's generic `outboxFor` hook — no runtime dependency on RealityTrace — and an
+`ObservationDelivery` drains them at-least-once in the background to the pinned SXR CLI v0.3.0
+(`just setup-realitytrace`; overridable via `SXR_BIN`). The Event details panel gains a
+RealityTrace tab: per-event receipt state, observation id, SXR ledger position, attempts, and the
+"View SXR record" drill-down (the CEP `extensions.cognate` correlation payload, via the port's
+`readCorrelation`). `test/J-RT-realitytrace.test.ts` proves accepted receipts + ledger positions +
+the drill-down against the REAL binary, and the Option A invariant: without the binary the harness
+runs unchanged (the read side stays mounted and reports honest `queued` states; the trace folds
+normally). Notes:
+
+- **The read capabilities (`observation.status` / `observation.record`) are client-invoke and
+  unrecorded** — receipts live in the DurableStore `observations` collection, not the event log,
+  so a projection never sees them (and the capability's own invocation must not either). They are
+  deliberately unbound in `.sea` (the `onboarding.dismiss` precedent — a diagnostic read, not a
+  domain capability; see BINDINGS.md).
+- **No pending/retrying surface in the UI yet beyond the state string** — the tab shows
+  queued/retrying/failed/accepted as text with attempts; a richer reconciliation view is out of
+  scope this pass.
+- **SXR ingest is a subprocess pair per observation** (plan create + ingest), so a busy session's
+  deliveries trail the run by seconds; the tab's states make that lag visible rather than hiding
+  it.
 
 ## Composer stats footer — static
 

@@ -1,41 +1,81 @@
-// `settings.changeWorkDetails`: the capability Settings -> General -> "Work details" invokes on
-// selecting a mode (reference-behavior-matrix.md §10 — "Choose how much detail to show for tool
-// calls", default "Standard"). Like `onboarding.dismiss` / `workspace.select` / `model.configure`,
-// this is a `client.invoke` capability whose only side effect is starting a deterministic
-// `agent.config` run so the durable event log — not component-local memory — is what the current
-// work-details preference is derived from: it survives a reload AND a full runtime restart, the
-// same durability every other setting in this app has.
+// `settings.change*`: one client-invoke capability per Settings -> General setting group
+// (usage pass U2, reference-behavior-matrix.md §11), extending the Work-details pattern
+// (`settings.changeWorkDetails`, which keeps its id/behavior unchanged): like
+// `onboarding.dismiss` / `workspace.select`, each capability's only side effect is starting a
+// deterministic `agent.config` run whose `settings.changed` event carries just that setting's
+// field — the durable event log, not component-local memory, is what the preference is derived
+// from, so every setting survives a reload AND a full runtime restart. The `settings` projection
+// merges the partial patches into its single "current" row (see `src/projections/settings.ts`).
 import { randomUUID } from "node:crypto";
+import type { Json } from "@cognate/events";
 import type { Component, SemanticRef } from "@cognate/kernel-api";
 import type { Caller, RuntimeService } from "@cognate/runtime-api";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 import { isWorkDetailsMode } from "../workDetails.ts";
+import {
+  isAgentPreset,
+  isAppearanceMode,
+  isFontSizePx,
+  isLanguageCode,
+  isPerformanceDetailMode,
+  isPermissionMode,
+  isSendBehavior,
+  type SettingsPatch,
+} from "../settings.ts";
 
-export interface SettingsChangeWorkDetailsInput {
-  readonly workDetails: string;
+/** One descriptor per capability: the durable field it writes and the guard that validates the
+ *  client's value before any event is recorded. Kept declarative so the component's `provides`
+ *  list and its `fiber.provide` wiring stay in lockstep. */
+interface SettingField {
+  readonly capability: string;
+  readonly field: keyof SettingsPatch;
+  readonly validate: (value: unknown) => boolean;
 }
 
-export function settingsChangeWorkDetailsComponent(options: {
+const SETTING_FIELDS: readonly SettingField[] = [
+  { capability: "settings.changeWorkDetails", field: "workDetails", validate: isWorkDetailsMode },
+  { capability: "settings.changePermission", field: "permission", validate: isPermissionMode },
+  { capability: "settings.changeLanguage", field: "language", validate: isLanguageCode },
+  { capability: "settings.changeAppearance", field: "appearance", validate: isAppearanceMode },
+  { capability: "settings.changeFontSize", field: "fontSize", validate: isFontSizePx },
+  { capability: "settings.changePerformanceDetail", field: "performanceDetail", validate: isPerformanceDetailMode },
+  { capability: "settings.changeCodingTools", field: "codingTools", validate: (v) => typeof v === "boolean" },
+  { capability: "settings.changeSendBehavior", field: "sendBehavior", validate: isSendBehavior },
+  { capability: "settings.changePreset", field: "preset", validate: isAgentPreset },
+];
+
+export function settingsChangeComponent(options: {
   readonly getService: () => RuntimeService;
   readonly systemCaller: Caller;
-  readonly semanticRef?: SemanticRef;
+  /** Per-capability semantic refs from `bindUsage2` (`domain/index.ts`), in SETTING_FIELDS order. */
+  readonly semanticRefs: readonly (SemanticRef | undefined)[];
 }): Component {
+  const contract = (index: number) => ({
+    id: SETTING_FIELDS[index]!.capability,
+    version: "1.0.0",
+    semanticRef: options.semanticRefs[index],
+  });
   return {
-    id: "settings:changeWorkDetails",
-    provides: [{ id: "settings.changeWorkDetails", version: "1.0.0", semanticRef: options.semanticRef }],
+    id: "settings:change",
+    provides: SETTING_FIELDS.map((_, i) => contract(i)),
     activate(fiber) {
-      fiber.provide({ id: "settings.changeWorkDetails", version: "1.0.0", semanticRef: options.semanticRef }, async (rawInput) => {
-        const input = rawInput as SettingsChangeWorkDetailsInput;
-        if (!isWorkDetailsMode(input.workDetails)) {
-          throw new Error("settings.changeWorkDetails: workDetails must be one of compact, standard, detailed, verbose");
-        }
-        const service = options.getService();
-        await service.startRun(options.systemCaller, {
-          agent: AGENT_CONFIG,
-          input: { kind: "settings.changed", workDetails: input.workDetails },
-          idempotencyKey: randomUUID(),
+      SETTING_FIELDS.forEach((field, i) => {
+        fiber.provide(contract(i), async (rawInput) => {
+          const input = rawInput as Partial<Record<keyof SettingsPatch, unknown>>;
+          const value = input[field.field];
+          if (!field.validate(value)) {
+            throw new Error(`settings.change*: ${field.field} failed validation`);
+          }
+          const service = options.getService();
+          const eventInput: Record<string, unknown> = { kind: "settings.changed" };
+          eventInput[field.field] = value;
+          await service.startRun(options.systemCaller, {
+            agent: AGENT_CONFIG,
+            input: eventInput as unknown as Json,
+            idempotencyKey: randomUUID(),
+          });
+          return { ok: true };
         });
-        return { ok: true };
       });
     },
   };

@@ -1,7 +1,7 @@
 import { useCognate, useProjection, useRun } from "@cognate/react";
 import { CognateShell } from "@cognate/ui-astryx";
 import { type FormEvent, useState } from "react";
-import { DEFAULT_THREAD_ID, JOURNEY_A_AGENT } from "./journey.ts";
+import { DEFAULT_THREAD_ID, JOURNEY_A_AGENT } from "./constants.ts";
 
 /** Inline Astryx projection of J-A. The runtime event fold remains the message authority. */
 export function ChatSurface({ threadId = DEFAULT_THREAD_ID, tenant = "tenant-a" }: { readonly threadId?: string; readonly tenant?: string }) {

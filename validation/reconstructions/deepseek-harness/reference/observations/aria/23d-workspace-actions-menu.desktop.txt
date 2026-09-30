@@ -1,0 +1,34 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "u0-ws-b" [expanded]
+  - treeitem "New Session" [selected]
+  - treeitem "[[scenario:multi]] another task 7min"
+  - treeitem "[[scenario:multi]] review and fix the 7min"
+  - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export functi 10min"'
+  - treeitem "u0-ws-a Workspace actions for u0-ws-a New session in u0-ws-a":
+    - text: u0-ws-a
+    - button "Workspace actions for u0-ws-a"
+    - button "New session in u0-ws-a"
+- button "Settings"
+- banner:
+  - button "Open right sidebar"
+- text: Into the Unknown Preview
+- button "Choose workspace": u0-ws-b
+- button "Standard mode"
+- textbox "Describe what you want to build, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- menu:
+  - menuitem "Rename"
+  - menuitem "Delete workspace"

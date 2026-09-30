@@ -432,7 +432,117 @@ J-I-work-details.test.ts`), which is the stronger guarantee.
 
 ---
 
-## Uncertainties resolved (vs. `product-characterization.md` §13)
+## 11. Settings → General — full inventory (usage-features pass, 2026-09-30)
+
+Captured against the re-cloned pinned SHA (build `pnpm run build`, `DSH_HOME` fresh), checkpoints
+`22*`. Every control, exact label/description/default:
+
+| Control | Description (verbatim) | Type / options | Default |
+|---|---|---|---|
+| Permission | "Choose the default permission mode for new sessions" | menu button labelled with current value: Read Only / Workspace Write / Full access | Workspace Write |
+| Language | — | menu button: 中文 / English | English |
+| Appearance | — | Light / Dark / System buttons, `aria-pressed` | System `[pressed]` |
+| Font size | "Only affects conversation content" | 1px stepper (`Increase font size` / `Decrease font size`), current value shown before "px" | 14 px; **floor 12 px** (Decrease `[disabled]` at 12, checkpoint 22h2) |
+| Work details | "Choose how much detail to show for tool calls" | menu: Compact / Standard / Detailed / Verbose | Standard (§10a) |
+| Performance & usage | "Choose how much performance and usage information to show" | menu: Compact / Detailed | Detailed |
+| Coding Tools | "Shows trajectory, code diffs, and Agent preset switching in new chats" | `switch "Coding Tools"` | checked |
+| Keyboard shortcuts | "View and edit available shortcuts and input actions" | `Edit shortcuts` button → `dialog "Keyboard shortcuts"` | — |
+| Send behavior while busy | "What Enter and the Send button do while the agent is running; Cmd/Ctrl+Enter uses the other behavior" | menu: Queue / Steer | Queue |
+| (footer) | "Current version: 0.1.7-rc.2" | text | — |
+
+Behaviors observed:
+
+- **Selecting Full access opens a confirmation dialog** (`dialog "Enable Full access?"`, checkpoint
+  22f): heading, Close, the paragraph "Full access lets new sessions reduce confirmation steps and
+  perform more actions directly, including sensitive operations, file changes, or external
+  commands. Only use it when you trust subsequent tasks.", `checkbox "I understand the risks and
+  want to continue"`, `Cancel` / `Enable Full access` — the confirm button stays `[disabled]` until
+  the checkbox is checked. While the dialog is open, the Permission control renders `[disabled]`.
+- **Coding Tools OFF removes the session tab strip entirely** (checkpoint 22e): a session with a
+  completed turn shows NO `tablist` (no Chat/Trajectory tabs) — the header degrades to breadcrumb +
+  plain-text mode label + the usual actions (Open in Files / More ways to open / More actions /
+  Open right sidebar). With Coding Tools ON, the same session header has `tablist` →
+  `tab "Chat"` + `tab "Trajectory"` (see §13).
+- **Keyboard shortcuts dialog** (checkpoint 22d): `search "Search shortcuts"` searchbox; region
+  "Application" — a `list` of actions each with `button "Edit shortcut for <action>"` + current
+  binding ("Open keyboard shortcuts Ctrl /"; New Session, Toggle left sidebar, Search sessions,
+  Add workspace, Rename session, Fork session, Archive session, Open settings, Open locally,
+  Toggle right sidebar, Workspace files, New terminal, Split, Toggle panel fullscreen, Refresh
+  current page, Close current page or window — all "No shortcut"); region "Message input" —
+  "Use the complementary Queue / Steer action Ctrl Enter", "Open reference menu @", "New line
+  Shift Enter", "Send message Enter", "Open command menu /", "Stop generating Esc Esc"; region
+  "Menus and dialogs" — "Close menu or top dialog Esc", "Move menu selection ↑ ↓", "Select menu
+  item Enter"; region "Approval area" — "Allow once Enter", "Reject Esc"; contentfooter
+  `button "Restore all defaults" [disabled]`. Close control: `button "Close keyboard shortcuts"`.
+- The settings nav itself: `General` / `Models` / `Built-in plugins` / `Agent presets` + `Open
+  configuration file` + `Close` (titlebar buttons, unchanged from §2).
+- Class: **P1** for these features' reconstruction (operator-commissioned usage pass), with
+  Permission, Coding Tools, and Send-behavior the behaviorally load-bearing ones.
+
+## 12. Workspaces sidebar section — multi-workspace (usage-features pass)
+
+Checkpoints `23*`. Resolves §3's unresolved "exact shape of Choose workspace when a workspace is
+already added".
+
+| Feature | Evidence |
+|---|---|
+| Sidebar header | `text: Workspaces` + `button "Search sessions"` + `textbox "Search session names"` + `button "View options"` + `button "Add workspace"` (checkpoints 01/23). |
+| Search sessions | Expands (aria-expanded) to show the textbox + `button "Clear search"`; **filters session names live** across workspaces (typing a non-matching string empties the tree; checkpoint 03c/03d in the capture script's /tmp probe logs). |
+| View options | `menu`: **Group by** — WorkSpace / Workspace Tree / In one list; **Order by** — Manual / Last updated; **Filter sessions** — Hide archived / All conversations (show archived) (checkpoint 23c). |
+| Add workspace (sidebar button) | Opens `dialog "Select Workspace Directory"` — the full directory browser: `navigation` with `button "Home"`, `button "Edit path"`, directory `list` of subfolder buttons, `New folder`, `Show hidden files`, `Cancel` / `Open` (Open disabled until a valid existing directory is selected/typed) — i.e. the same dialog as first-run §3. |
+| Choose workspace (composer area, ≥1 workspace) | A **dropdown `menu`**, not the file browser: one `menuitem` per added workspace (basename label) + `menuitem "Add workspace…"` (checkpoint 23b). A fresh home with no workspace still opens the directory dialog (§3). |
+| Sessions tree | `tree "Sessions"`: one `treeitem` **per workspace** (basename label, `[expanded]`, most-recently-used first), its sessions nested as child treeitems (title + relative time). Two workspaces ⇒ two group treeitems, each with its own sessions (checkpoint 23). |
+| Per-workspace hover actions | Each workspace treeitem exposes `button "Workspace actions for <name>"` → `menu` with **Rename** and **Delete workspace**, plus `button "New session in <name>"` (checkpoint 23d; buttons appear on hover/focus — captured by clicking the treeitem). |
+| Switching | Via `Choose workspace` menu → `menuitem`: the active workspace changes (`Choose workspace` button label updates), a fresh `New Session` is auto-created and selected in it, and the previously active workspace's treeitem stays with its sessions (checkpoint 23b→switch). |
+| Persistence | Both workspaces, their sessions, and the selection survive `page.reload()` (checkpoint 03k probe; same shape as §5). |
+| Class | P1 (operator-commissioned). |
+
+## 13. Trajectory tab — developer tools / execution traces (usage-features pass)
+
+Resolves "Still unresolved" #4. Checkpoints `24*`. Present on a session's header as
+`tablist` → `tab "Chat"` + `tab "Trajectory"` whenever **Coding Tools is enabled** (§11) and the
+session has content; Coding Tools OFF removes the whole tab strip (§11, checkpoint 22e).
+
+| Feature | Evidence |
+|---|---|
+| Toolbar | `toolbar "Trajectory toolbar"`: `button "Use actual duration": Duration`, `button "Collapse turns": Turns`, `button "Collapse calls": Calls`, `searchbox "Search trajectory"` (checkpoint 24). |
+| Timeline | `region "Trajectory timeline"` — a visual horizontal duration bar above the table (colored segments per step: gray system/context, blue user, purple assistant requests, amber tool calls; screenshot 24). |
+| Trace table | A `table` of role-badged rows: `row "SYSTEM, Initial System Prompt"`; `row "USER, <message>"` (cell "Turn N USER"); `row "CONTEXT, <text>"` — the runtime-context snapshot ("Current DSH file policy: workspace-write … Approval policy: ask. …") and the skills `<system-reminder>`; one `row "Request N, ASSISTANT, <text or '(tool call only)'>"` per model round-trip, its first cell a `button "Request #N"`; `row "TOOL, <name> {<json args>}"` per tool call with cell text `<name>{<args>} → <result text>` (checkpoint 24). |
+| Event details (TOOL) | Selecting a TOOL row opens a `complementary "Event details"` panel beside the table: `separator "Resize event details"`, header `TOOL Turn 1 · Step 1` + `Close details`, `tablist "Event details"` → **Summary / Payload / Result / Schema / Timing**. Summary: Hierarchy (`button "Assistant Message"` — jumps to the parent request) + Status (Completed). Payload: args as an expandable JSON `tree "Payload JSON"`. Result: the tool result text. Schema: the tool's own heading + description paragraph + `Parameters` JSON-Schema tree (expandable `properties`/`required`). Timing: `Started` timestamp button + duration (checkpoint 24c). |
+| Event details (Request) | Clicking `button "Request #N"` (`[pressed]` when open) opens the same panel with tabs **Summary / Options / Usage / Timing**: Summary — Status, Provider, Model, Tool calls, Result (`Assistant Message` button); Options — request options JSON tree (`provider`, `model`); Usage — Input/Other/Output tok; Timing — Started, Total duration, TTFT, Generation, Throughput (checkpoint 24b). |
+| Toolbar toggles | `Collapse turns` folds a turn's rows into `row "Collapsed turn summary, 4 steps · 3 tool calls"`; `Collapse calls` folds tool-call rows (subsumed by collapsed turns); `Use actual duration` renders real durations on rows (e.g. "1,408 ms") — button labels reflect their action (Collapse/Expand). `Search trajectory` filters rows to matches (checkpoint 24d + probe logs). |
+| Live + reload | The tab renders mid-run (checkpoint 24e) and the completed trace survives `page.reload()` (checkpoint 24f). |
+| Footer counters | The composer footer counts the turn's steps — "1 turns 4 steps · 0 tok/s" for the 3-tool `multi` scenario (the `+1` generation step rule again, §"Round-3 critic fixes"). |
+| vs. marketing image | The current product's marketing shot (`/tmp/dsh-trace.png`, dark theme) shows the same row taxonomy (SYSTEM/USER/CONTEXT/ASSISTANT/TOOL badges, `toolname {json}` rows, "Turn 1 · Step 1" inspector) plus an Export control and a mini-map rail; the pinned build's inspector tabs for TOOL steps are exactly the marketing's Summary/Payload/Result/Schema/Timing. |
+| Class | P0 for the developer-tools reconstruction (operator-commissioned). |
+
+## 14. Settings → Built-in plugins + sidebar Plugins panel (usage-features pass)
+
+Checkpoints `25*`.
+
+| Feature | Evidence |
+|---|---|
+| Settings tab | `heading "Built-in plugins"` + "Inspect the plugins this deployment ships." + `searchbox "Search plugins"`; two collapsible sections (checkpoint 25). |
+| Session plugins section | `button "Session plugins"` (disclosure) + `button "Choose the agent preset to inspect"` (labelled `Standard mode (default)`) + "Composed per session by agent presets · **29 plugins**" (30 under PTC mode); expanded, a `list` of per-plugin `button "<name>, <name>, Enabled\|Disabled"` rows — `strong` name, Enabled/Disabled state inline in the accessible name, one-line description, `code` id (e.g. `persona` "Composition-authored deployment persona section…", `agent-instructions` "Workspace context loader for AGENTS.md/CLAUDE.md instruction files", `tool-bash`, `tool-pwsh` [Disabled], `tool-fs`, `tool-fs-search`, `tool-jobs`, `skill-filesystem`, `tool-skill`, …). |
+| Global plugins section | "Shared by the system and every session · **185 plugins**" — same row shape. |
+| Sidebar Plugins panel | `navigation "Global panels"` → `button "Plugins"` opens the panel: `heading "Plugins"` + "Add and manage plugins" + `Refresh` + `Add plugin`; `heading "Official"` with 7 plugins, each a `list` entry: `button "View <Name>"`, an "Experimental" tag where applicable, a one-line description, and `switch "Enable <Name>"` (checkpoint 25b). Official list: **Agent Teams** (Experimental, "Enable team collaboration, team tools, the member roster, and the shared task board."), **Auto Authorization Review** (Experimental, "Add an Auto review permission mode that uses the model to assess authorization before each tool call."), **Voice input** (Experimental, "Transcribe recordings locally with SenseVoice; first use requires installing dependencies"), **Shell**, **Agent loop**, **Subagent**, **Web search**. |
+| Search | "Search plugins" filters both sections (e.g. "terminal" narrows to 2 entries). |
+| Class | P1 (operator-commissioned). |
+
+## 15. Settings → Agent presets (usage-features pass)
+
+Checkpoints `26*`.
+
+| Feature | Evidence |
+|---|---|
+| Panel | `heading "Agent presets"` + "Choose the agent's tools and how it works. Use Standard mode for everyday tasks, or Creator mode to add capabilities to DSH."; `heading "Built-in"`; a `list` of preset cards (checkpoint 26). |
+| Preset cards | Each `listitem`: `button "Set as new task default: <name>"` (the current default renders `button "New task default: <name>" [disabled] [pressed]`) whose content is the preset name + badge ("New task default" / "Built-in") + `code` id + description, followed by `button "Mode details: <name>"`, `button "How to use: <name>"`, `button "View configuration: <name>"`. |
+| Built-in presets | **Standard mode** (`standard`, "Work with code, files, and information. Suitable for most tasks, with search, editing, terminal commands, and other tools available as needed."), **PTC mode** (`ptc`, "Includes all Standard mode capabilities. Better suited to tasks that call tools in batches and then filter, organize, deduplicate, count, or summarize the results."), **Minimal mode** (`minimal`, "The agent works using only a terminal tool. Useful for testing and comparing its basic performance."), **Creator mode** (`cordis`, "Customize DSH through conversation. Let the agent write plugins that add features or UI, or combine tools and prompts to create your own mode."). |
+| View configuration | `dialog "View configuration · <name>"` — a read-only dump of the preset's plugin-composition YAML (plugin ids, names, configs, groups) + `Close` (checkpoint 26b). |
+| In-session selector | The composer-area `button "<current> mode"` opens a `menu` of 4 `menuitem`s, each "name + description" (same four presets); selecting switches the session's preset (existing `switchAgentPreset` driver flow, §6.2). On a header with content the mode label renders as plain text "Standard mode" (checkpoint 24b/03j); preset *switching* is exposed "in new chats" per the Coding Tools description (§11). |
+| Class | P1 (operator-commissioned). |
+
+---
 
 - **#7** ARIA role/name inventory for composer, send button, session list
   items, sidebar toggle — captured concretely throughout this document and
@@ -488,18 +598,22 @@ J-I-work-details.test.ts`), which is the stronger guarantee.
    title (a real, separate title-generation call was proven to happen — see
    §0 — but its effect on the visible title was not confirmed within this
    pass's session lifetimes).
-4. "Trajectory" tab contents (present whenever "Coding Tools" is enabled,
-   which is the default) — not explored.
-5. Exact shape of "Choose workspace" when a workspace is already added
-   (dropdown vs. file browser) — noted in §3, not screenshotted.
+4. ~~"Trajectory" tab contents~~ — **resolved 2026-09-30 (usage-features pass), see §13.**
+5. ~~Exact shape of "Choose workspace" when a workspace is already added~~ —
+   **resolved 2026-09-30: a dropdown `menu` of added workspaces +
+   "Add workspace…"; the directory browser opens from the sidebar "Add
+   workspace" button or a fresh home (§12).**
 6. Theme preference persistence across reload/restart — plausible but not
    re-verified.
 7. Original uncertainty #2 (full Settings tab inventory beyond
    General/Models — Built-in plugins/Agent presets tabs exist per the aria
-   dump but their contents weren't opened) and #1 (the plan-mode *badge*'s
-   exact English copy beyond "To-dos" is otherwise resolved) remain open.
+   dump but their contents weren't opened) — **largely resolved 2026-09-30
+   (§14, §15); the "Mode details" / "How to use" sub-views and the plugin
+   detail ("View <Name>") targets were not opened.**
 8. Subagent-child persistence across parent-session reload was not
    specifically re-verified (only whole-session reload/restart in general).
+9. (New, 2026-09-30) The workspace "Rename" / "Delete workspace" actions
+   (§12) were observed in the actions menu but not executed end-to-end.
 
 ---
 

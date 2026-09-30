@@ -29,6 +29,8 @@ Entity "Subagent"
 
 Entity "Composer"
 
+Entity "UserPreferences"
+
 Entity "CanonicalJourney"
 
 Resource "ModelConfig" units

@@ -24,6 +24,29 @@ import type { PlanState, TodoItem } from "../projections/plans.ts";
 
 export const AGENT_CODING = "agent.coding";
 
+/** Usage pass U4 (reference-behavior-matrix.md §15): agent presets. A preset scopes which tools the
+ *  model may call this turn — `standard` is the everyday catalog (no `run_code`), `ptc` adds
+ *  batch-style privileged execution (`run_code`, the approval-escalation tool), `minimal` reduces
+ *  the agent to the terminal tool only. A run WITHOUT a preset (direct API calls, existing tests)
+ *  keeps the full catalog — the composer always sends one. */
+export type AgentPreset = "standard" | "ptc" | "minimal";
+
+export const PRESET_TOOLS: Readonly<Record<AgentPreset, readonly string[]>> = {
+  standard: ["read", "edit", "bash", "todo_write", "exit_plan_mode", "subagent"],
+  ptc: ["read", "edit", "bash", "todo_write", "exit_plan_mode", "subagent", "run_code"],
+  minimal: ["bash"],
+};
+
+export function isAgentPreset(value: unknown): value is AgentPreset {
+  return typeof value === "string" && (value === "standard" || value === "ptc" || value === "minimal");
+}
+
+export function toolsForPreset(preset: string | undefined, catalog: readonly ToolDefinition[]): readonly ToolDefinition[] {
+  if (!isAgentPreset(preset)) return catalog;
+  const allowed = new Set(PRESET_TOOLS[preset]);
+  return catalog.filter((t) => allowed.has(t.name));
+}
+
 export interface AgentCodingInput {
   readonly sessionId: string;
   readonly workspaceId: string;
@@ -31,6 +54,10 @@ export interface AgentCodingInput {
   /** Session access mode for `approvalGate`'s comparison; defaults to `"read-only"`. See
    *  `approvalGate.ts` and `DEVIATIONS.md` ("access-mode dropdown is inert this tranche"). */
   readonly mode?: string;
+  /** Usage pass U4 (§15): the session's agent preset — scopes the turn's tool catalog (see
+   *  `PRESET_TOOLS`); the composer sends the per-session choice, defaulting to the Settings →
+   *  Agent presets "new task default". Absent (direct API runs) keeps the full catalog. */
+  readonly preset?: string;
 }
 
 const MAX_TOOL_STEPS = 20;
@@ -79,10 +106,10 @@ function classifyModelFailure(error: InvocationFailedError): { readonly code: st
  * returns the recorded result/failure. `callIndex` (the tool-loop step number) keys the backoff step
  * id so concurrent... (sequential, actually) model calls within one turn don't collide.
  */
-async function invokeModelGenerate(ctx: RunContext, callIndex: number, messages: ModelMessage[]): Promise<ModelResponse> {
+async function invokeModelGenerate(ctx: RunContext, callIndex: number, messages: ModelMessage[], tools: readonly ToolDefinition[]): Promise<ModelResponse> {
   for (let attempt = 1; attempt <= MAX_MODEL_RETRIES + 1; attempt++) {
     try {
-      return (await ctx.invoke("model.generate", { messages, tools: TOOL_DEFS } as unknown as Json)) as unknown as ModelResponse;
+      return (await ctx.invoke("model.generate", { messages, tools } as unknown as Json)) as unknown as ModelResponse;
     } catch (error) {
       // A cancelled run must stop retrying immediately, not spend its remaining backoff/attempts —
       // `ctx.emit`/`ctx.step` would throw the runtime's internal halt sentinel anyway (via `guard()`),
@@ -108,7 +135,7 @@ async function invokeModelGenerate(ctx: RunContext, callIndex: number, messages:
   throw new Error("unreachable");
 }
 
-const TOOL_DEFS: ToolDefinition[] = [
+export const TOOL_DEFS: ToolDefinition[] = [
   {
     name: "read",
     description: "Read a file's contents from the workspace.",
@@ -250,8 +277,18 @@ export const agentCodingAgent: AgentDefinition = {
   id: AGENT_CODING,
   version: "1.0.0",
   async run(input, ctx) {
-    const { sessionId, workspaceId, message, mode } = input as unknown as AgentCodingInput;
-    await ctx.emit("session.turn.started", { sessionId, workspaceId, message });
+    const { sessionId, workspaceId, message, mode, preset } = input as unknown as AgentCodingInput;
+    // Usage pass U4 (§15): the preset scopes this turn's tool catalog; an absent preset (direct API
+    // runs) keeps the full TOOL_DEFS list.
+    const turnTools = toolsForPreset(preset, TOOL_DEFS);
+    // `mode` rides the turn event so the `sessions` projection can fold the session's CURRENT
+    // access mode from run inputs (usage pass U2 — the composer's per-session access-mode dropdown
+    // becomes this input's source); absent (direct API runs) keeps whatever the projection already
+    // folded, and `approvalGate` independently defaults an absent mode to "read-only".
+    const turnPayload: Record<string, string> = { sessionId, workspaceId, message };
+    if (typeof mode === "string") turnPayload.mode = mode;
+    if (isAgentPreset(preset)) turnPayload.preset = preset;
+    await ctx.emit("session.turn.started", turnPayload as unknown as Json);
 
     // Plan mode (J-E-plan): session state folded from this agent's own `plan.mode.changed`/
     // `plan.todos.updated`/`plan.review.*` events by the `plans` projection (`planGate.ts` has the
@@ -279,7 +316,7 @@ export const agentCodingAgent: AgentDefinition = {
     const readFiles = new Set<string>();
 
     for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-      const response = await invokeModelGenerate(ctx, step, messages);
+      const response = await invokeModelGenerate(ctx, step, messages, turnTools);
       if (response.toolCalls.length === 0) {
         await ctx.emit("message.completed", { sessionId, workspaceId, text: response.message.content });
         return { text: response.message.content };
@@ -295,6 +332,15 @@ export const agentCodingAgent: AgentDefinition = {
         // pending approval with no visible "current tool" card at all (`useToolTimeline` keys tool
         // entries off this event; see `src/ui/App.tsx`).
         await ctx.emit("tool.call.started", { sessionId, toolCallId: call.id, tool: call.name, args: summarizeArgs(args) });
+        // Usage pass U4 (SS15): a preset scopes the catalog the model was given - a call for a tool
+        // outside it fails closed with the reference's own observed wording (`Error: unknown tool
+        // "run_code"` under Standard mode, reference-behavior-matrix.md SS6.2 precondition 1).
+        if (!turnTools.some((t) => t.name === call.name)) {
+          const unknownTool = `Error: unknown tool "${call.name}"`;
+          await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: unknownTool });
+          messages.push({ role: "tool", content: unknownTool, toolCallId: call.id });
+          continue;
+        }
         const approvalDecision = approvalGate({ tool: call.name, args, mode });
         let resultText: string;
         if (call.name === "todo_write") {

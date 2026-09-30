@@ -7,19 +7,19 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import type { StoredEvent } from "@cognate/events";
 import { LOCAL_OPERATOR, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 import { makeWorkspace } from "../../fixtures/workspace/make-workspace.ts";
 
 describe("J-C-tool-execution", () => {
   test("read -> bash -> edit -> final answer; the file is actually mutated", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       const workspaceDir = join(home, "ws-cap-tools");
       try {
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mock.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimock.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: "",
@@ -59,20 +59,20 @@ describe("J-C-tool-execution", () => {
         unsubscribe();
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });
 
   test("a path escape is rejected without touching the filesystem", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       const workspaceDir = join(home, "ws-escape");
       try {
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mock.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimock.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: "",
@@ -90,7 +90,7 @@ describe("J-C-tool-execution", () => {
         expect(String((threw as Error)?.message ?? threw)).toMatch(/escapes workspace root/);
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });

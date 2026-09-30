@@ -3,9 +3,9 @@
 // delegation (reference-behavior-matrix.md §6.4): `agent.coding` starts a durable child
 // `agent.coding` run via this app's own `subagent.start` capability
 // (`src/capabilities/subagentStart.ts`), correlated `subagent:<parentRunId>:<toolCallId>`, and
-// returns immediately with the reference's exact reflection text (`started subagent <uuid>`) — it
-// does not wait on the child. Covers: the child run is actually created and completes independently
-// (visible via the `subagents` projection), the parent completes right away with that exact text,
+// returns immediately with the reflection text (`Tool result: started subagent ...`) — it does not
+// wait on the child. Covers: the child run is actually created and completes independently (visible
+// via the `subagents` projection), the parent completes right away with that text,
 // the child does NOT show up in the `sessions` projection (top-level session list), the completed
 // child's result appears in the parent session's *next* turn history (`session.history`), and a
 // restart mid-delegation resumes the child without spawning a duplicate.
@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 async function configureAndSelect(client: Awaited<ReturnType<typeof bootApp>>["client"], mockPort: number, workspaceDir: string) {
   await client.invoke("model.configure", {
@@ -66,11 +66,11 @@ const CHILD_TEXT = "The fixture workspace is a tiny, clean project with a README
 describe("J-F-delegation", () => {
   test("child is started, parent completes with the reflection text, child completes, result lands in the parent's next turn", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-delegate");
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         const sessionId = randomUUID();
 
         const run = await client.startRun(
@@ -84,9 +84,11 @@ describe("J-F-delegation", () => {
         const finalRun = await waitForCompletion(app, run.runId);
         expect(finalRun.status).toBe("completed");
         const output = finalRun.output as { readonly text?: string };
-        const match = output.text?.match(/^Tool result: started subagent (.+)$/);
-        expect(match).toBeTruthy();
-        const childRunId = match![1]!;
+        // aimock divergence: the old mock reflected the tool result verbatim (`Tool result: started
+        // subagent <runtime-minted uuid>`); aimock fixtures are static, so the parent's final text
+        // carries a stable placeholder instead of the real id. Assert the stable prefix here and
+        // derive the child run id from the durable correlation below.
+        expect(output.text?.startsWith("Tool result: started subagent ")).toBe(true);
 
         // The `subagents` projection has one row for this session, initially not yet completed
         // (the child's own model call hasn't finished by the time the parent already has).
@@ -98,7 +100,7 @@ describe("J-F-delegation", () => {
         const toolCallId = mine[0]!.key.split("/").pop()!;
         const childRuns = await app.runtime.service.listRuns(LOCAL_OPERATOR, { correlationId: `subagent:${run.runId}:${toolCallId}` });
         expect(childRuns).toHaveLength(1);
-        expect(childRuns[0]!.runId).toBe(childRunId);
+        const childRunId = childRuns[0]!.runId;
 
         // The child completes independently; the `subagents` projection reflects it directly from
         // the child's own events (no parent-side wait or emission).
@@ -122,7 +124,7 @@ describe("J-F-delegation", () => {
         expect(history.some((m) => m.content.includes(`Subagent "Summarize project status" completed: ${CHILD_TEXT}`))).toBe(true);
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });
@@ -131,11 +133,11 @@ describe("J-F-delegation", () => {
     "restart mid-delegation resumes the child without spawning a duplicate run",
     async () => {
       await withTempHome(async (home) => {
-        const mock = await bootMockModel();
+        const aimock = await bootAimock();
         const { app, client } = await bootApp(home);
         try {
           const workspaceDir = join(home, "ws-delegate-restart");
-          const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+          const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
           const sessionId = randomUUID();
 
           const run = await client.startRun(
@@ -173,7 +175,7 @@ describe("J-F-delegation", () => {
             await restarted.stop();
           }
         } finally {
-          await mock.stop();
+          await aimock.stop();
         }
       });
     },

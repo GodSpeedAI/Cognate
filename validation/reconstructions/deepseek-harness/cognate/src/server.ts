@@ -15,7 +15,7 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 
-import { bindTranche5, bindTranche7, bindTranche9, bindTranche10, loadDomain } from "../domain/index.ts";
+import { bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
@@ -27,7 +27,9 @@ import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
 import { planStateComponent } from "./capabilities/planState.ts";
 import { subagentStartComponent } from "./capabilities/subagentStart.ts";
 import { onboardingDismissComponent } from "./capabilities/onboardingDismiss.ts";
-import { settingsChangeWorkDetailsComponent } from "./capabilities/settingsChange.ts";
+import { settingsChangeComponent } from "./capabilities/settingsChange.ts";
+import { observationCapabilityComponent, observationOutboxFor, wireObservations, defaultSxrBin, type ObservationWiring } from "./observations.ts";
+import { workspaceManageComponent } from "./capabilities/workspaceManage.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
@@ -36,6 +38,7 @@ import { plansProjection } from "./projections/plans.ts";
 import { subagentsProjection } from "./projections/subagents.ts";
 import { onboardingProjection } from "./projections/onboarding.ts";
 import { settingsProjection } from "./projections/settings.ts";
+import { sessionTraceProjection } from "./projections/sessionTrace.ts";
 import { secretStore } from "./secrets.ts";
 
 export const LOCAL_OPERATOR = { actor: { id: "operator", kind: "user" as const }, tenant: "local" };
@@ -58,6 +61,8 @@ const GRANTED_CAPABILITIES = [
   "secret.put",
   "workspace.select",
   "workspace.path",
+  "workspace.rename",
+  "workspace.delete",
   "session.history",
   "tool.read",
   "tool.edit",
@@ -67,6 +72,16 @@ const GRANTED_CAPABILITIES = [
   "subagent.start",
   "onboarding.dismiss",
   "settings.changeWorkDetails",
+  "settings.changePermission",
+  "settings.changeLanguage",
+  "settings.changeAppearance",
+  "settings.changeFontSize",
+  "settings.changePerformanceDetail",
+  "settings.changeCodingTools",
+  "settings.changeSendBehavior",
+  "settings.changePreset",
+  "observation.status",
+  "observation.record",
 ];
 
 function buildPolicy(): Policy {
@@ -143,6 +158,8 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const toolBindings = bindTranche7(domain);
   const planBindings = bindTranche9(domain);
   const subagentBindings = bindTranche10(domain);
+  const usage2 = bindUsage2(domain);
+  const usage3 = bindUsage3(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -153,6 +170,10 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
 
   const runtime = await createRuntime({
     store: storePath,
+    // Usage pass U6 (RealityTrace, Option A): trace-worthy events get an observation intent
+    // committed atomically with the event (the runtime's generic hook — no runtime dependency on
+    // RealityTrace; the adapter only drains the outbox).
+    outboxFor: observationOutboxFor,
     policy: buildPolicy(),
     actions: buildActionPolicy(),
     agents: [agentConfigAgent, agentCodingAgent],
@@ -164,7 +185,8 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       planStateComponent(getService, planBindings.planState.semanticRef),
       subagentStartComponent({ getService, systemActor: SYSTEM_CALLER.actor, semanticRef: subagentBindings.subagentStart.semanticRef }),
       onboardingDismissComponent({ getService, systemCaller: SYSTEM_CALLER }),
-      settingsChangeWorkDetailsComponent({ getService, systemCaller: SYSTEM_CALLER }),
+      settingsChangeComponent({ getService, systemCaller: SYSTEM_CALLER, semanticRefs: usage2.settingsChange }),
+      workspaceManageComponent({ getService, systemCaller: SYSTEM_CALLER, semanticRefs: usage3 }),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
@@ -174,6 +196,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       { projection: subagentsProjection, public: true },
       { projection: onboardingProjection, public: true },
       { projection: settingsProjection, public: true },
+      { projection: sessionTraceProjection, public: true },
     ],
     system: SYSTEM_CALLER.actor,
   });
@@ -211,6 +234,33 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       secrets,
     );
   }
+
+  // Usage pass U6: the RealityTrace observation adapter — an at-least-once background drain from
+  // the committed outbox to the pinned SXR CLI. SXR-down never blocks or breaks the app (the
+  // adapter retries, then poisons for reconciliation); without the binary the app boots with
+  // observations queued and the dev tools fully working (traces come from the event log, not SXR).
+  let observations: ObservationWiring | undefined;
+  const sxrBin = defaultSxrBin();
+  if (sxrBin) {
+    try {
+      observations = await wireObservations({
+        store: runtime.store,
+        bin: sxrBin,
+        repoDir: join(home, "sxr-repo"),
+        env: { XDG_DATA_HOME: join(home, "sxr-data"), XDG_STATE_HOME: join(home, "sxr-state") },
+      });
+    } catch (error) {
+      console.warn(`[deepseek-harness] realitytrace: wiring failed (${error instanceof Error ? error.message : String(error)}); observations stay queued`);
+      observations = undefined;
+    }
+  } else {
+    console.warn("[deepseek-harness] realitytrace: SXR binary not found; observations stay queued (dev tools unaffected)");
+  }
+  // The read side is mounted unconditionally: the inspector shows honest queued states when no SXR
+  // target is configured, instead of erroring.
+  await runtime.kernel.mount(
+    observationCapabilityComponent({ getService, delivery: observations?.delivery, port: observations?.port, operatorCaller: LOCAL_OPERATOR }),
+  );
 
   // Track newly added workspaces (so workspace.select can tell "add" from "reselect") by following
   // the tenant's event stream live; torn down on `stop()` via AbortController. (T10's `subagent` tool
@@ -282,6 +332,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     runtime,
     async stop() {
       eventsController.abort();
+      observations?.stop();
       server.stop(true);
       await runtime.close();
     },

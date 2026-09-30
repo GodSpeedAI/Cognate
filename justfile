@@ -41,3 +41,21 @@ gates:
 # Install the pinned RealityTrace CLI release (v0.3.0, adds ingest --extensions) used by AK-006 and CG-RT-002 (no local checkout needed)
 setup-realitytrace:
     cargo install --git https://github.com/GodSpeedAI/RealityTrace --tag realitytrace-v0.3.0 realitytrace --locked --root .tmp/realitytrace
+
+# Launch the DeepSeek reconstruction harness (mock model on :4010, workspace, and Cognate Console on :3180)
+harness-up *args:
+    bun scripts/harness.ts up {{args}}
+
+# Tear down the running DeepSeek reconstruction harness
+harness-down *args:
+    bun scripts/harness.ts down {{args}}
+
+# Launch the reconstructed Cognate Copilot app (Cognate UI & Runtime on :3190, AG-UI on :3190/agui)
+copilot-up *args:
+    bun scripts/copilot.ts up {{args}}
+
+# Tear down the running reconstructed Cognate Copilot app
+copilot-down *args:
+    bun scripts/copilot.ts down {{args}}
+
+

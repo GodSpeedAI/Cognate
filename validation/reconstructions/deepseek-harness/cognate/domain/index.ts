@@ -124,3 +124,54 @@ export function bindTranche10(domain: Domain) {
   const [subagentStart] = contracts as [CapabilityContract];
   return { subagentStart };
 }
+
+/**
+ * Usage pass U2: `UserPreferences` — the durable Settings -> General inventory
+ * (reference-behavior-matrix.md §11). One `settings.change*` capability per setting group, all
+ * realized by the single `settingsChangeComponent` (`src/capabilities/settingsChange.ts`): each
+ * validates its field and starts a deterministic `agent.config` run whose `settings.changed`
+ * event the `settings` projection folds into its one "current" row. `settings.changeWorkDetails`
+ * predates the entity (it was unbound, like `onboarding.dismiss`); creating `UserPreferences`
+ * this tranche retroactively gives the whole family its semantic anchor. Order matches
+ * SETTING_FIELDS in `src/capabilities/settingsChange.ts`.
+ */
+export function usage2Bindings(domain: Domain): readonly CapabilityBinding[] {
+  return [
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeWorkDetails", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changePermission", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeLanguage", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeAppearance", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeFontSize", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changePerformanceDetail", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeCodingTools", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeSendBehavior", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changePreset", version: "1.0.0" } },
+  ];
+}
+
+export function bindUsage2(domain: Domain) {
+  const contracts = bindCapabilities(domain.projection, usage2Bindings(domain));
+  if (contracts.length !== 9) throw new Error(`domain: expected 9 bound contracts, got ${contracts.length}`);
+  return { settingsChange: contracts.map((c) => c.semanticRef) };
+}
+
+/**
+ * Usage pass U3: the sidebar's per-workspace actions (reference-behavior-matrix.md §12 — Rename /
+ * Delete workspace), anchored on the existing `WorkspaceRecord` entity. Realized by
+ * `workspaceManageComponent` (`src/capabilities/workspaceManage.ts`); each validates against the
+ * live `workspaces` projection and starts a deterministic `agent.config` run whose
+ * `workspace.renamed` / `workspace.deleted` event the projection folds (a deleted current
+ * workspace clears the pointer — the UI falls back to the no-workspace state).
+ */
+export function usage3Bindings(domain: Domain): readonly CapabilityBinding[] {
+  return [
+    { semanticId: domain.semanticId("WorkspaceRecord"), capability: { id: "workspace.rename", version: "1.0.0" } },
+    { semanticId: domain.semanticId("WorkspaceRecord"), capability: { id: "workspace.delete", version: "1.0.0" } },
+  ];
+}
+
+export function bindUsage3(domain: Domain) {
+  const contracts = bindCapabilities(domain.projection, usage3Bindings(domain));
+  if (contracts.length !== 2) throw new Error(`domain: expected 2 bound contracts, got ${contracts.length}`);
+  return { rename: contracts[0]!.semanticRef, remove: contracts[1]!.semanticRef };
+}

@@ -1,7 +1,9 @@
-// Journey J-H-provider-error: the mock's `error` scenario always fails (HTTP 500) — `agent.coding`
+// Journey J-H-provider-error: aimock's `error` fixture always fails (HTTP 500) — `agent.coding`
 // retries `model.generate` up to 5 times, emitting `model.request.retried` before each retry, then
-// `turn.failed` and ends the run `failed`. The `retry` scenario fails once, then succeeds. A restart
-// mid-retry (SQLite persistence) must not duplicate the recorded retry events.
+// `turn.failed` and ends the run `failed`. The `retry` scenario fails once, then succeeds (two
+// `sequenceIndex` fixture variants over the same match key; the per-test llmock process starts the
+// counter at zero, replacing the old mock's `POST /__reset` dance). A restart mid-retry (SQLite
+// persistence) must not duplicate the recorded retry events.
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import type { StoredEvent } from "@cognate/events";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 async function waitForCompletion(app: AppServer, runId: string, maxIterations = 400) {
   for (let i = 0; i < maxIterations; i++) {
@@ -39,12 +41,12 @@ describe("J-H-provider-error", () => {
   test("error scenario: exactly 5 retries then turn.failed, run ends failed", async () => {
     process.env.MODEL_RETRY_BACKOFF_MS = "10";
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mock.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimock.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: "",
@@ -83,7 +85,7 @@ describe("J-H-provider-error", () => {
         expect(sessionRow?.lastStatus).toBe("failed");
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
         delete process.env.MODEL_RETRY_BACKOFF_MS;
       }
     });
@@ -92,13 +94,12 @@ describe("J-H-provider-error", () => {
   test("retry scenario: fails once, recovers on the 1st retry", async () => {
     process.env.MODEL_RETRY_BACKOFF_MS = "10";
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
-        await fetch(`http://127.0.0.1:${mock.port}/__reset`, { method: "POST" });
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mock.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimock.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: "",
@@ -123,7 +124,7 @@ describe("J-H-provider-error", () => {
         expect(events.some((e) => e.eventType === "turn.failed")).toBe(false);
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
         delete process.env.MODEL_RETRY_BACKOFF_MS;
       }
     });
@@ -132,7 +133,7 @@ describe("J-H-provider-error", () => {
   test("replay: restarting the runtime mid-retry does not duplicate retry events", async () => {
     process.env.MODEL_RETRY_BACKOFF_MS = "150";
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const workspaceDir = await mkdtemp(join(tmpdir(), "deepseek-harness-error-replay-"));
       const sessionId = randomUUID();
       let workspaceId!: string;
@@ -144,7 +145,7 @@ describe("J-H-provider-error", () => {
           try {
             await client.invoke("model.configure", {
               providerId: "mock",
-              baseURL: `http://127.0.0.1:${mock.port}/v1`,
+              baseURL: `http://127.0.0.1:${aimock.port}/v1`,
               protocol: "openai-compatible",
               model: "mock-model-1",
               apiKey: "",
@@ -180,7 +181,7 @@ describe("J-H-provider-error", () => {
           await reopened.stop();
         }
       } finally {
-        await mock.stop();
+        await aimock.stop();
         delete process.env.MODEL_RETRY_BACKOFF_MS;
       }
     });

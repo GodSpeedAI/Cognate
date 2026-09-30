@@ -8,7 +8,8 @@
     "packages/*",
     "profiles/*",
     "tests/e2e",
-    "validation/reconstructions/deepseek-harness/cognate"
+    "validation/reconstructions/deepseek-harness/cognate",
+    "validation/reconstructions/copilot/cognate"
   ],
   "scripts": {
     "check": "bun scripts/check-substrate.ts",

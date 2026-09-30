@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import { LOCAL_OPERATOR, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 async function configureAndSelect(client: Awaited<ReturnType<typeof bootApp>>["client"], mockPort: number, workspaceDir: string) {
   await client.invoke("model.configure", {
@@ -44,11 +44,11 @@ async function waitForCompletion(app: AppServer, runId: string) {
 describe("J-E-plan", () => {
   test("todos progression, review continuation, approve", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-plan");
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         const sessionId = randomUUID();
 
         const run = await client.startRun(
@@ -113,18 +113,18 @@ describe("J-E-plan", () => {
         expect(stateAfter.review?.status).toBe("approved");
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });
 
   test("exit_plan_mode outside plan mode fails with the reference's exact error text", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-plan-not-on");
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         const sessionId = randomUUID();
 
         // No leading "/plan " prefix this time, so plan mode is never entered — the same `plan`
@@ -143,7 +143,7 @@ describe("J-E-plan", () => {
         expect(continuations.some((c) => c.type === "plan-review")).toBe(false);
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });

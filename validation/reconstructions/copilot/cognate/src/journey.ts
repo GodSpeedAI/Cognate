@@ -52,7 +52,7 @@ export const threadHistoryProjection: Projection = {
   },
 };
 
-function deterministicModelComponent() {
+export function deterministicModelComponent() {
   const provider = localProvider({
     id: "journey-a",
     rules: [{ respond: () => ({ message: { role: "assistant", content: "Hello from the deterministic Cognate chat." }, toolCalls: [], finishReason: "stop" }) }],
@@ -61,7 +61,7 @@ function deterministicModelComponent() {
   return modelComponent(provider);
 }
 
-const agent: AgentDefinition = {
+export const chatAgent: AgentDefinition = {
   id: JOURNEY_A_AGENT,
   version: "1.0.0",
   async run(input, ctx) {
@@ -92,7 +92,7 @@ export async function createJourneyAApp(store: string): Promise<JourneyAApp> {
     store,
     policy: policy(),
     actions: { authorize: () => ({ allow: true, reason: "J-A has no external commitment" }) },
-    agents: [agent, sharedStateAgent],
+    agents: [chatAgent, sharedStateAgent],
     components: [deterministicModelComponent()],
     projections: [
       { projection: threadHistoryProjection, public: true },

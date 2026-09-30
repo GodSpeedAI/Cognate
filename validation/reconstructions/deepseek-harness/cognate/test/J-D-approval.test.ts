@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 async function configureAndSelect(client: Awaited<ReturnType<typeof bootApp>>["client"], mockPort: number, workspaceDir: string) {
   await client.invoke("model.configure", {
@@ -46,11 +46,11 @@ async function waitForCompletion(app: AppServer, runId: string) {
 describe("J-D-approval", () => {
   test("allow branch: waiting status + open continuation, then resolve and completion", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-approve-allow");
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         const sessionId = randomUUID();
 
         const run = await client.startRun(
@@ -81,18 +81,18 @@ describe("J-D-approval", () => {
         expect(output.text).toContain("no output");
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });
 
   test("deny branch: denial text is fed back to the model and the run completes", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-approve-deny");
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         const sessionId = randomUUID();
 
         const run = await client.startRun(
@@ -116,7 +116,7 @@ describe("J-D-approval", () => {
         expect(output.text).toContain("stop and explain instead of working around it");
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });
@@ -125,11 +125,11 @@ describe("J-D-approval", () => {
     "a pending approval survives a full server restart (Cognate durable-continuation invariant; deviation from the reference)",
     async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-approve-restart");
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         const sessionId = randomUUID();
 
         const run = await client.startRun(
@@ -169,7 +169,7 @@ describe("J-D-approval", () => {
           await restarted.stop();
         }
       } finally {
-        await mock.stop();
+        await aimock.stop();
       }
     });
     },
@@ -180,7 +180,7 @@ describe("J-D-approval", () => {
     "replay after a mid-run restart executes no tool call twice (bash side effect counted via an appended-to file)",
     async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const workspaceDir = join(home, "ws-replay");
@@ -191,7 +191,7 @@ describe("J-D-approval", () => {
         // many times the *edit* tool call actually mutated the file (idempotent replacement would
         // otherwise silently succeed twice and go unnoticed) by asserting the file is edited exactly
         // once even after a restart mid-run.
-        const { workspaceId } = await configureAndSelect(client, mock.port, workspaceDir);
+        const { workspaceId } = await configureAndSelect(client, aimock.port, workspaceDir);
         await writeFile(join(workspaceDir, "counter.txt"), "Hello\n", "utf8");
 
         const sessionId = randomUUID();
@@ -227,7 +227,7 @@ describe("J-D-approval", () => {
           await restarted.stop();
         }
       } finally {
-        await mock.stop();
+        await aimock.stop();
       }
     });
     },

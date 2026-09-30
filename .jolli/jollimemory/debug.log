@@ -10,3 +10,34 @@
 [2026-09-28T05:24:22.887Z] INFO  [McpServer] [trace=211ce9db1e97e1cc6bc218a4a5582fa8] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
 [2026-09-28T12:31:42.680Z] INFO  [StorageFactory] [trace=65e96c9f14399e4877f0415b1aeb6063] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
 [2026-09-28T12:31:42.702Z] INFO  [McpServer] [trace=65e96c9f14399e4877f0415b1aeb6063] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-28T13:01:45.701Z] INFO  [StorageFactory] [trace=3a9809aca23a036dbcc94e4ccc01a9a7] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-28T13:01:45.727Z] INFO  [McpServer] [trace=3a9809aca23a036dbcc94e4ccc01a9a7] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-28T23:20:39.607Z] INFO  [StorageFactory] [trace=06b3b6a579bf91bac39c4f857adeed82] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-28T23:20:39.918Z] INFO  [McpServer] [trace=06b3b6a579bf91bac39c4f857adeed82] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-28T23:49:51.732Z] INFO  [UpdateCheck] [trace=036849520d077e91269b985eef1d4400] Spawned detached update-check refresh (PID: 3465769)
+[2026-09-28T23:49:51.806Z] INFO  [StorageFactory] [trace=036849520d077e91269b985eef1d4400] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-28T23:49:51.852Z] INFO  [McpServer] [trace=036849520d077e91269b985eef1d4400] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-28T23:50:14.555Z] INFO  [StorageFactory] [trace=115af6e8b08d5ea61e18073a9a5d138d] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-28T23:50:14.609Z] INFO  [McpServer] [trace=115af6e8b08d5ea61e18073a9a5d138d] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T00:47:45.563Z] INFO  [StorageFactory] [trace=54823018fc64bd234d07ba6b29758920] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T00:47:45.589Z] INFO  [McpServer] [trace=54823018fc64bd234d07ba6b29758920] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T08:33:11.995Z] INFO  [StorageFactory] [trace=2701e2118cd6a74650ee8e4e1fedce05] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T08:33:12.147Z] INFO  [McpServer] [trace=2701e2118cd6a74650ee8e4e1fedce05] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T17:05:48.244Z] INFO  [StorageFactory] [trace=0c406a96e9c091ebd39ef69f0f2b6638] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T17:05:48.270Z] INFO  [McpServer] [trace=0c406a96e9c091ebd39ef69f0f2b6638] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T17:05:58.860Z] INFO  [StorageFactory] [trace=a633b1c569eae7015f4ab7d9cef0ce2f] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T17:05:58.884Z] INFO  [McpServer] [trace=a633b1c569eae7015f4ab7d9cef0ce2f] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T23:35:28.341Z] INFO  [StorageFactory] [trace=2c44f5f99fc12031c631555067cadeac] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T23:35:28.384Z] INFO  [McpServer] [trace=2c44f5f99fc12031c631555067cadeac] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T23:37:53.911Z] INFO  [StorageFactory] [trace=62af5a8f3782749d1f2f85fa1b7c627c] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T23:37:53.931Z] INFO  [McpServer] [trace=62af5a8f3782749d1f2f85fa1b7c627c] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-29T23:38:20.871Z] INFO  [StorageFactory] [trace=cb76ef98aa2d934866fa985644a7a0ac] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-29T23:38:20.910Z] INFO  [McpServer] [trace=cb76ef98aa2d934866fa985644a7a0ac] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-30T00:16:27.237Z] INFO  [StorageFactory] [trace=0fa593b21eec6596986be1d8c15f9d22] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-30T00:16:27.324Z] INFO  [McpServer] [trace=0fa593b21eec6596986be1d8c15f9d22] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-30T00:16:32.437Z] INFO  [StorageFactory] [trace=3879d23575218253d59c35bce32f84d2] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-30T00:16:32.453Z] INFO  [McpServer] [trace=3879d23575218253d59c35bce32f84d2] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-30T00:17:29.553Z] INFO  [StorageFactory] [trace=e8fe2c8b24669a2815d48b8f660c3c8d] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-30T00:17:29.576Z] INFO  [McpServer] [trace=e8fe2c8b24669a2815d48b8f660c3c8d] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)
+[2026-09-30T01:12:24.591Z] INFO  [StorageFactory] [trace=501548e87aa044d6bbba3cb684867597] StorageFactory.create: route=uncutover, projectPath=/home/sprime01/projects/cognate
+[2026-09-30T01:12:24.622Z] INFO  [McpServer] [trace=501548e87aa044d6bbba3cb684867597] MCP server connected over stdio (cwd=/home/sprime01/projects/cognate)

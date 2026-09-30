@@ -1,0 +1,83 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "u0-ws-b" [expanded]
+  - treeitem "[[scenario:multi]] another task now" [selected]
+  - treeitem "[[scenario:multi]] review and fix the now"
+  - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export functi 3min"'
+  - treeitem "u0-ws-a"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:multi]] another task"
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat"
+    - tab "Trajectory" [selected]
+- toolbar "Trajectory toolbar":
+  - button "Use actual duration": Duration
+  - button "Collapse turns": Turns
+  - button "Collapse calls": Calls
+  - searchbox "Search trajectory"
+- region "Trajectory timeline"
+- table:
+  - rowgroup:
+    - row "SYSTEM, Initial System Prompt":
+      - cell "SYSTEM"
+      - cell "Initial System Prompt"
+    - row "USER, [[scenario:multi]] another task":
+      - cell "Turn 1 USER": USER
+      - cell "[[scenario:multi]] another task"
+    - 'row "CONTEXT, Current runtime context. This snapshot supersedes earlier runtime-context snapshots. Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/tmp/u0-ws-b\". Some platform temporary areas may also be writable. Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed."':
+      - cell "CONTEXT"
+      - 'cell "Current runtime context. This snapshot supersedes earlier runtime-context snapshots. Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/tmp/u0-ws-b\". Some platform temporary areas may also be writable. Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed."'
+    - 'row "CONTEXT, <system-reminder> A skill is a reusable set of task-specific instructions. The following skills are available in this session: <available_skills> advise-project-approach: Research and advise on the best way to approach a software project, including architecture, tech stack, implementation strategy, pricing/operating-cost tradeoffs, benchmark research, and comparisons with similar real-world projects. Use before building, mid-build, or after completion when the user asks for project strategy, optimal approac…"':
+      - cell "CONTEXT"
+      - 'cell "<system-reminder> A skill is a reusable set of task-specific instructions. The following skills are available in this session: <available_skills> advise-project-approach: Research and advise on the best way to approach a software project, including architecture, tech stack, implementation strategy, pricing/operating-cost tradeoffs, benchmark research, and comparisons with similar real-world projects. Use before building, mid-build, or after completion when the user asks for project strategy, optimal approac…"'
+    - row "Request 1, ASSISTANT, (tool call only)":
+      - 'cell "Request #1 ASSISTANT"':
+        - 'button "Request #1"'
+        - text: ASSISTANT
+      - cell "(tool call only)"
+    - 'row "TOOL, read {\"file_path\":\"src/greet.ts\"}"':
+      - cell "TOOL"
+      - 'cell "read{\"file_path\":\"src/greet.ts\"} → <path>/tmp/u0-ws-b/src/greet.ts</path> <type>file</type> <content> 1: export function greet(name: string): string { 2: return Howdy, ${name}!; 3: } (End of file - total 3 lines) </content>"'
+    - row "Request 2, ASSISTANT, (tool call only)":
+      - 'cell "Request #2 ASSISTANT"':
+        - 'button "Request #2"'
+        - text: ASSISTANT
+      - cell "(tool call only)"
+    - 'row "TOOL, bash {\"command\":\"git status --short\",\"description\":\"Show working tree status\"}"':
+      - cell "TOOL"
+      - 'cell "bash{\"command\":\"git status --short\",\"description\":\"Show working tree status\"} → M src/greet.ts"'
+    - row "Request 3, ASSISTANT, (tool call only)":
+      - 'cell "Request #3 ASSISTANT"':
+        - 'button "Request #3"'
+        - text: ASSISTANT
+      - cell "(tool call only)"
+    - 'row "TOOL, edit {\"file_path\":\"src/greet.ts\",\"old_string\":\"Hello\",\"new_string\":\"Howdy\",\"replace_all\":false}"':
+      - cell "TOOL"
+      - 'cell "edit{\"file_path\":\"src/greet.ts\",\"old_string\":\"Hello\",\"new_string\":\"Howdy\",\"replace_all\":false} → FS_EDIT_NOT_FOUND"'
+    - row "Request 4, ASSISTANT, Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" to \"Howdy\".":
+      - 'cell "Request #4 ASSISTANT"':
+        - 'button "Request #4"'
+        - text: ASSISTANT
+      - cell "Read greet.ts, confirmed a clean tree, then updated the greeting from \"Hello\" to \"Howdy\"."
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 4 steps · 0 tok/s": 1 turns 4 steps0 tok/s
+- button "0% of context used": 0%

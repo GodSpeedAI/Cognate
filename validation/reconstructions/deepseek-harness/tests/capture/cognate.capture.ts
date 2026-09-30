@@ -15,7 +15,8 @@
  * Usage:
  *   bun run tests/capture/cognate.capture.ts <viewport-name> <width> <height> <home-dir> <port> <ws-dir>
  *
- * Requires: mock-model server already running at http://127.0.0.1:4010.
+ * Requires: the mock model (aimock/llmock serving fixtures/aimock/fixtures.json) already running
+ * at http://127.0.0.1:4010 — `just harness-up` from the repo root boots exactly that.
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
