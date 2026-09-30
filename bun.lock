@@ -487,6 +487,34 @@
         "@types/react-dom": "19.2.2",
       },
     },
+    "validation/reconstructions/copilot/cognate": {
+      "name": "copilotkit-reconstruction",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/ag-ui": "workspace:*",
+        "@cognate/client": "workspace:*",
+        "@cognate/domainforge": "workspace:*",
+        "@cognate/kernel-api": "workspace:*",
+        "@cognate/projections": "workspace:*",
+        "@cognate/protocol-connect": "workspace:*",
+        "@cognate/protocol-connect-bun": "workspace:*",
+        "@cognate/provider-local": "workspace:*",
+        "@cognate/provider-openai-compatible": "workspace:*",
+        "@cognate/react": "workspace:*",
+        "@cognate/runtime-api": "workspace:*",
+        "@cognate/runtime-bun": "workspace:*",
+        "@cognate/ui-astryx": "workspace:*",
+        "@connectrpc/connect": "2.2.0",
+        "react": "19.3.0",
+        "react-dom": "19.3.0",
+      },
+      "devDependencies": {
+        "@happy-dom/global-registrator": "20.14.5",
+        "@testing-library/react": "16.3.3",
+        "@types/react": "19.3.0",
+        "@types/react-dom": "19.2.2",
+      },
+    },
     "validation/reconstructions/deepseek-harness/cognate": {
       "name": "deepseek-harness-reconstruction",
       "version": "0.0.0",
@@ -502,6 +530,7 @@
         "@cognate/protocol-connect-bun": "workspace:*",
         "@cognate/provider-openai-compatible": "workspace:*",
         "@cognate/react": "workspace:*",
+        "@cognate/realitytrace": "workspace:*",
         "@cognate/runtime-api": "workspace:*",
         "@cognate/runtime-bun": "workspace:*",
         "@cognate/ui-astryx": "workspace:*",
@@ -510,6 +539,7 @@
         "react-dom": "19.3.0",
       },
       "devDependencies": {
+        "@copilotkit/aimock": "1.43.0",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.2.2",
       },
@@ -633,6 +663,8 @@
     "@connectrpc/connect": ["@connectrpc/connect@2.2.0", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, "sha512-M63OQ1ZFcPUm85CuewJ9G9CMV8LjzGR9935xOnXNQGSazAbwMb3x2W7vXBYM1zqrP7XFD8uxp/dUAhirclgwnQ=="],
 
     "@connectrpc/connect-web": ["@connectrpc/connect-web@2.2.0", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect": "2.2.0" } }, "sha512-uuBUcBTYfb/r1o98LzCCZk1H90yx0vmZ5m21dpw/q4EUwsKwkCDGI8H0aEdjcZld+Q2jJ5A5ADvPqfb6lzQ/sg=="],
+
+    "@copilotkit/aimock": ["@copilotkit/aimock@1.43.0", "", { "peerDependencies": { "jest": ">=29", "vitest": ">=3" }, "optionalPeers": ["jest", "vitest"], "bin": { "aimock": "dist/aimock-cli.js", "llmock": "dist/cli.js" } }, "sha512-V8D8cjSMtAR4rHaD2ulp3DR/ZguXQjDNOqwKDNvjb/OJL/KR1I0SDf5xpRCd+TYKjhmf9fM8Xpg3QBKPmV9Kmw=="],
 
     "@fontsource-variable/inter": ["@fontsource-variable/inter@5.3.0", "", {}, "sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA=="],
 
@@ -853,6 +885,8 @@
     "cookie": ["cookie@0.7.2", "", {}, "sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w=="],
 
     "cookie-signature": ["cookie-signature@1.2.2", "", {}, "sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg=="],
+
+    "copilotkit-reconstruction": ["copilotkit-reconstruction@workspace:validation/reconstructions/copilot/cognate"],
 
     "cordis": ["cordis@4.0.0-rc.10", "", { "dependencies": { "@standard-schema/spec": "^1.1.0", "cosmokit": "^1.8.1" }, "peerDependencies": { "@cordisjs/plugin-include": "^1.1.0", "@cordisjs/plugin-loader": "^1.0.0-rc.7" }, "optionalPeers": ["@cordisjs/plugin-include", "@cordisjs/plugin-loader"], "bin": "bin.js" }, "sha512-xG90nPNQxR272cC4lR/m5LHevegIJvdddQBlKdEAdGz3n+zgH5lsgkg8o9fc2P3T/f+pO5D7FN1HZvkNBiABnw=="],
 

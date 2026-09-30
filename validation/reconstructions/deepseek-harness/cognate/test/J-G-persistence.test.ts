@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 async function waitForCompletion(app: AppServer, runId: string) {
   for (let i = 0; i < 200; i++) {
@@ -20,7 +20,7 @@ async function waitForCompletion(app: AppServer, runId: string) {
 describe("J-G-persistence", () => {
   test("session + messages survive a runtime restart against the same store", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       try {
         const workspaceDir = await mkdtemp(join(tmpdir(), "deepseek-harness-persist-"));
         const sessionId = randomUUID();
@@ -31,7 +31,7 @@ describe("J-G-persistence", () => {
           try {
             await client.invoke("model.configure", {
               providerId: "mock",
-              baseURL: `http://127.0.0.1:${mock.port}/v1`,
+              baseURL: `http://127.0.0.1:${aimock.port}/v1`,
               protocol: "openai-compatible",
               model: "mock-model-1",
               apiKey: "",
@@ -73,7 +73,7 @@ describe("J-G-persistence", () => {
           await reopened.stop();
         }
       } finally {
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });

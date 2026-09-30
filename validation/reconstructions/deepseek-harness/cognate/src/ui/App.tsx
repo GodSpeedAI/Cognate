@@ -3,6 +3,8 @@ import type { RefObject } from "react";
 import type { Json } from "@cognate/events";
 import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
+import type { TraceRow, TraceRequest, TraceTool, TraceTurn } from "../projections/sessionTrace.ts";
+import { TOOL_DEFS } from "../agents/agentCoding.ts";
 import {
   DEFAULT_WORK_DETAILS_MODE,
   WORK_DETAILS_LABELS,
@@ -12,10 +14,36 @@ import {
   type WorkDetailsMode,
 } from "../workDetails.ts";
 import {
+  AGENT_PRESETS,
+  AGENT_PRESET_LABELS,
+  APPEARANCE_MODES,
+  LANGUAGE_CODES,
+  LANGUAGE_LABELS,
+  MAX_FONT_SIZE_PX,
+  MIN_FONT_SIZE_PX,
+  PERFORMANCE_DETAIL_LABELS,
+  PERMISSION_LABELS,
+  PERMISSION_MODES,
+  SEND_BEHAVIOR_LABELS,
+  SEND_BEHAVIORS,
+  isAppearanceMode,
+  isPermissionMode,
+  resolveGeneralSettings,
+  type AgentPreset,
+  type AppearanceMode,
+  type GeneralSettings,
+  type PermissionMode,
+  type SendBehavior,
+} from "../settings.ts";
+import {
   CheckIcon,
   ChevronDownIcon,
+  PluginIcon,
   ChevronRightIcon,
   CodeViewIcon,
+  MoreIcon,
+  SearchIcon,
+  SlidersIcon,
   CollapseIcon,
   CopyIcon,
   EditIcon,
@@ -49,6 +77,11 @@ interface SessionRow {
   /** "ptc" once this session has ever needed a tool-approval escalation (sessions.ts) — drives the
    *  header's "PTC mode" vs "Standard mode" badge. */
   readonly mode?: string;
+  /** The session's CURRENT access mode ("read-only"/"workspace-write"/"full-access"), folded by the
+   *  `sessions` projection from the run input of its latest turn (usage pass U2 — the composer's
+   *  access-mode dropdown). Absent for a session whose runs never carried a mode (direct API runs)
+   *  or before its first run; the UI then falls back to the settings default. */
+  readonly accessMode?: string;
 }
 
 interface EditSummary {
@@ -211,17 +244,45 @@ function useModelConfig(): ModelConfigRow | undefined {
   return current ? (current.value as unknown as ModelConfigRow) : undefined;
 }
 
-/** Settings -> General -> "Work details" (reference-behavior-matrix.md §10 — "Choose how much
- *  detail to show for tool calls", default "Standard"): the current mode, folded from durable
- *  `settings.changed` events (`settings` projection's "current" row), defaulting to "standard"
- *  before any preference has ever been saved for this `COGNATE_HARNESS_HOME` — same durability as
- *  every other setting in this app (model-config, onboarding), so it survives both a reload and a
- *  full runtime restart. */
-function useWorkDetails(): WorkDetailsMode {
+/** Settings -> General inventory (usage pass U2, reference-behavior-matrix.md §11): the current
+ *  values of every General setting, folded from durable `settings.changed` events (the `settings`
+ *  projection's single "current" row) with per-field defaults for a fresh home — same durability
+ *  as every other setting in this app (model-config, onboarding), so each survives both a reload
+ *  and a full runtime restart. The legacy `localStorage["cognate.theme"]` value seeds `appearance`
+ *  only until the first explicit choice (theme persistence moved into this durable row this
+ *  tranche, matching the reference's persisted Appearance). */
+function useGeneralSettings(): GeneralSettings {
   const rows = useProjection("settings");
   const current = rows?.find((r) => r.key === "current");
-  const value = (current?.value as { readonly workDetails?: unknown } | undefined)?.workDetails;
-  return isWorkDetailsMode(value) ? value : DEFAULT_WORK_DETAILS_MODE;
+  return useMemo(() => {
+    let legacyAppearance: string | undefined;
+    try {
+      legacyAppearance = localStorage.getItem("cognate.theme") ?? undefined;
+    } catch {
+      legacyAppearance = undefined;
+    }
+    return resolveGeneralSettings(current?.value, legacyAppearance);
+  }, [current]);
+}
+
+/** Resolves the durable `appearance` setting ("light"/"dark"/"system") to the concrete theme the
+ *  shell renders with, following the OS color scheme live while "system" is selected (usage pass
+ *  U2 — "System" is the new third Appearance option; default per reference §11). */
+function useTheme(appearance: AppearanceMode): string {
+  const [systemDark, setSystemDark] = useState<boolean>(() =>
+    typeof window.matchMedia === "function" ? window.matchMedia("(prefers-color-scheme: dark)").matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  const theme = appearance === "system" ? (systemDark ? "dark" : "light") : appearance;
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+  return theme;
 }
 
 /** Whether the given first-run step (`"notice"` | `"apikey"`) has already been dismissed for this
@@ -252,21 +313,84 @@ function relativeTime(iso: string, nowMs: number = Date.now()): string {
   return `${diffDay}d`;
 }
 
+/** Usage pass U3 (§12): the sidebar session search matches session titles case-insensitively; an
+ *  empty query matches everything. */
+function sessionMatchesSearch(session: SessionRow, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (session.title || "New Session").toLowerCase().includes(q);
+}
+
+/** Usage pass U3 (§12): "Order by" — Manual keeps the `sessions` projection's own order (newest
+ *  session first, as recorded); Last updated sorts by each row's `updatedAt` descending. */
+function orderSessions(rows: readonly SessionRow[], orderBy: "manual" | "last-updated"): readonly SessionRow[] {
+  if (orderBy !== "last-updated") return rows;
+  return [...rows].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+}
+
+/** One sidebar session row (usage pass U3 refactor of the former inline map — shared by the
+ *  workspace-tree grouping and the "In one list" grouping). */
+function SessionRowButton({
+  session,
+  active,
+  planPending,
+  onOpen,
+}: {
+  readonly session: SessionRow;
+  readonly active: boolean;
+  readonly planPending: boolean;
+  readonly onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="treeitem"
+      aria-selected={active}
+      className={active ? "session-row active" : "session-row"}
+      onClick={onOpen}
+      title={session.title}
+    >
+      <span className="session-row-title">
+        {planPending ? "Plan awaiting review " : session.lastStatus === "waiting" && !planPending ? "Waiting for approval " : ""}
+        {session.title || "New Session"}
+      </span>
+      {session.lastStatus === "waiting" && !planPending && (
+        <span className="approval-badge" title="Waiting for approval">
+          <span className="approval-badge-dot" aria-hidden="true" />
+          Approval
+        </span>
+      )}
+      <span className="session-row-time">{relativeTime(session.updatedAt)}</span>
+    </button>
+  );
+}
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Open-modal stack (usage pass U2): the Keyboard shortcuts dialog stacks over Settings, and the
+ *  Full-access confirmation stacks over the General pane — "Close menu or top dialog Esc" (listed
+ *  as a real binding in that dialog) must close only the TOP dialog, so each mounted modal
+ *  registers itself here and ignores Escape/Tab while something sits above it. */
+const OPEN_MODAL_STACK: HTMLElement[] = [];
 
 /** Shared modal contract (technical audit: only one of three modal surfaces had this before this
  *  redesign) — traps focus inside the dialog, returns focus to whatever opened it on unmount, and
  *  optionally calls `onEscape` when the dialog is open and Escape is pressed. Every modal in this
- *  app (Settings, both first-run dialogs) uses this instead of inventing its own subset. */
+ *  app (Settings, both first-run dialogs, Keyboard shortcuts, the Full-access confirmation) uses
+ *  this instead of inventing its own subset. */
 function useModalFocus(dialogRef: RefObject<HTMLElement | null>, onEscape?: () => void): void {
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
+    if (dialog) OPEN_MODAL_STACK.push(dialog);
     const focusables = dialog?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
     (focusables && focusables[0] ? focusables[0] : dialog)?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Only the top-most open modal reacts — a stacked dialog (shortcuts over Settings, the
+      // Full-access confirmation over General) absorbs Escape/Tab first.
+      if (dialog && OPEN_MODAL_STACK[OPEN_MODAL_STACK.length - 1] !== dialog) return;
       if (e.key === "Escape" && onEscape) {
         e.preventDefault();
         onEscape();
@@ -288,30 +412,12 @@ function useModalFocus(dialogRef: RefObject<HTMLElement | null>, onEscape?: () =
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      const index = dialog ? OPEN_MODAL_STACK.indexOf(dialog) : -1;
+      if (index >= 0) OPEN_MODAL_STACK.splice(index, 1);
       previouslyFocused?.focus();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-}
-
-function useTheme(): readonly [string, () => void] {
-  const [theme, setTheme] = useState<string>(() => {
-    try {
-      return localStorage.getItem("cognate.theme") ?? "light";
-    } catch {
-      return "light";
-    }
-  });
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    try {
-      localStorage.setItem("cognate.theme", theme);
-    } catch {
-      // best-effort only — a private/blocked storage context just loses the preference
-    }
-  }, [theme]);
-  const toggle = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
-  return [theme, toggle] as const;
 }
 
 /** First-run dialog #1 (critic round-1 P0-1): same structure/roles as the reference's "Internal
@@ -477,6 +583,700 @@ interface ModelRow {
   readonly displayName: string;
 }
 
+/** A shared dropdown-menu control (usage pass U2): a trigger button labelled with the current
+ *  value, a `role="menu"` popover of `menuitem` buttons, outside-click/Escape to close, and
+ *  ↑/↓ focus movement between items — the Work-details dropdown's behavior generalized so every
+ *  General-pane menu (Permission, Language, Performance & usage, Send behavior) and the composer's
+ *  access-mode menu share one implementation ("Move menu selection ↑ ↓" / "Select menu item Enter"
+ *  in the Keyboard shortcuts dialog are real because of this). */
+interface DropdownMenuItem {
+  readonly label: string;
+  readonly value: string;
+  readonly disabled?: boolean;
+  readonly title?: string;
+}
+
+function DropdownMenu({
+  label,
+  items,
+  onSelect,
+  triggerAriaLabel,
+  triggerClassName,
+  dropup = false,
+  disabled = false,
+}: {
+  readonly label: string;
+  readonly items: readonly DropdownMenuItem[];
+  readonly onSelect: (value: string) => void;
+  readonly triggerAriaLabel?: string;
+  readonly triggerClassName?: string;
+  readonly dropup?: boolean;
+  readonly disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  const menuButtons = (): HTMLButtonElement[] =>
+    Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])") ?? []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const buttons = menuButtons();
+    if (buttons.length === 0) return;
+    const index = buttons.findIndex((b) => b === document.activeElement);
+    if (index === -1) {
+      buttons[e.key === "ArrowDown" ? 0 : buttons.length - 1]!.focus();
+    } else {
+      const delta = e.key === "ArrowDown" ? 1 : -1;
+      buttons[(index + delta + buttons.length) % buttons.length]!.focus();
+    }
+  };
+
+  return (
+    <div className="work-details-dropdown" ref={rootRef} onKeyDown={handleKeyDown}>
+      <button
+        type="button"
+        className={triggerClassName}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={triggerAriaLabel}
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+      >
+        {label}
+        <svg className="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      {open && (
+        <div role="menu" className={dropup ? "work-details-menu dropup" : "work-details-menu"} ref={menuRef}>
+          {items.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              role="menuitem"
+              disabled={item.disabled}
+              title={item.title}
+              onClick={() => {
+                setOpen(false);
+                onSelect(item.value);
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The Full-access confirmation dialog (usage pass U2, checkpoint 22f): selecting "Full access"
+ *  from the Permission menu opens it — heading, a Close control, a risk paragraph, an
+ *  "I understand…" checkbox, and Cancel / "Enable Full access" with the confirm button disabled
+ *  until the checkbox is checked. Same structure as the reference's dialog; the paragraph's
+ *  wording is Cognate's own (the copy rule bars DeepSeek text verbatim). While it is open, the
+ *  Permission control renders disabled (same checkpoint). */
+function FullAccessConfirmDialog({
+  onConfirm,
+  onCancel,
+}: {
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
+}) {
+  const [ack, setAck] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, onCancel);
+  return (
+    <div className="modal-backdrop modal-backdrop-stacked">
+      <div
+        className="modal full-access-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="full-access-heading"
+        tabIndex={-1}
+        ref={dialogRef}
+      >
+        <div className="dialog-banner">
+          <h2 id="full-access-heading">Enable Full access?</h2>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={onCancel}>
+            ×
+          </button>
+        </div>
+        <p>
+          Full access lets new sessions act without the usual confirmation steps, including
+          sensitive operations, file changes, and external commands. Only turn it on for tasks
+          where you already trust what the agent will do.
+        </p>
+        <label className="full-access-ack">
+          <input type="checkbox" checked={ack} onChange={(e) => setAck(e.currentTarget.checked)} />
+          I understand the risks and want to continue
+        </label>
+        <div className="modal-actions">
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" disabled={!ack} onClick={onConfirm}>
+            Enable Full access
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** This app's REAL keyboard actions and fixed bindings (usage pass U2, checkpoint 22d) — the
+ *  Keyboard shortcuts dialog's data. Editable actions (the "Application" region) each render an
+ *  Edit button; editing itself is inert this pass (DEVIATIONS.md). Only actions that genuinely
+ *  exist here are listed — nothing is copied from the reference's longer action list. */
+const SHORTCUT_ACTIONS: readonly { readonly action: string; readonly binding: string | undefined }[] = [
+  { action: "Open keyboard shortcuts", binding: "Ctrl /" },
+  { action: "New Session", binding: undefined },
+  { action: "Toggle left sidebar", binding: undefined },
+  { action: "Open settings", binding: undefined },
+];
+
+const SHORTCUT_FIXED_REGIONS: readonly { readonly region: string; readonly rows: readonly { readonly label: string; readonly keys: string }[] }[] = [
+  {
+    region: "Message input",
+    rows: [
+      { label: "Send message", keys: "Enter" },
+      { label: "New line", keys: "Shift Enter" },
+    ],
+  },
+  {
+    region: "Menus and dialogs",
+    rows: [
+      { label: "Close menu or top dialog", keys: "Esc" },
+      { label: "Move menu selection", keys: "↑ ↓" },
+      { label: "Select menu item", keys: "Enter" },
+    ],
+  },
+  {
+    region: "Approval area",
+    rows: [
+      { label: "Allow once", keys: "Enter" },
+      { label: "Reject", keys: "Esc" },
+    ],
+  },
+];
+
+/** `dialog "Keyboard shortcuts"` (usage pass U2, checkpoint 22d): a searchable list of this app's
+ *  real actions/bindings, grouped "Application" (editable, per-action Edit buttons — inert this
+ *  pass) / "Message input" / "Menus and dialogs" / "Approval area", with a contentinfo
+ *  "Restore all defaults" (disabled — editing is inert, so there is nothing to restore). Opened
+ *  from Settings → General → Keyboard shortcuts → "Edit shortcuts", or Ctrl / anywhere. */
+function ShortcutsDialog({ onClose }: { readonly onClose: () => void }) {
+  const [query, setQuery] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, onClose);
+  const q = query.trim().toLowerCase();
+  const matches = (...texts: readonly string[]) => q.length === 0 || texts.some((t) => t.toLowerCase().includes(q));
+  const actions = SHORTCUT_ACTIONS.filter((a) => matches(a.action, a.binding ?? "No shortcut"));
+  const regions = SHORTCUT_FIXED_REGIONS.map((g) => ({
+    ...g,
+    rows: g.rows.filter((r) => matches(r.label, r.keys)),
+  })).filter((g) => g.rows.length > 0);
+  return (
+    <div className="modal-backdrop modal-backdrop-stacked">
+      <div
+        className="modal shortcuts-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-heading"
+        tabIndex={-1}
+        ref={dialogRef}
+      >
+        <div className="dialog-banner">
+          <h2 id="shortcuts-heading">Keyboard shortcuts</h2>
+          <button type="button" className="icon-btn" aria-label="Close keyboard shortcuts" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div role="search" aria-label="Search shortcuts" className="shortcuts-search">
+          <input type="search" aria-label="Search shortcuts" placeholder="Search shortcuts" value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
+        </div>
+        <div className="shortcuts-body">
+          {actions.length > 0 && (
+            <div role="region" aria-label="Application" className="shortcuts-region">
+              <ul>
+                {actions.map((a) => (
+                  <li key={a.action}>
+                    <button type="button" className="shortcuts-edit-btn" disabled title={NOT_IMPLEMENTED} aria-label={`Edit shortcut for ${a.action}`}>
+                      Edit
+                    </button>
+                    <span className="shortcuts-row-text">
+                      {a.action} {a.binding ?? "No shortcut"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {regions.map((g) => (
+            <div key={g.region} role="region" aria-label={g.region} className="shortcuts-region">
+              <h3>{g.region}</h3>
+              <ul>
+                {g.rows.map((r) => (
+                  <li key={r.label}>
+                    <span className="shortcuts-row-text">
+                      {r.label} {r.keys}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="shortcuts-footer" role="contentinfo">
+          <button type="button" disabled title={NOT_IMPLEMENTED}>
+            Restore all defaults
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** One menu-button control of the General pane (usage pass U2, §11): the button's label IS the
+ *  current value (reference convention — every General menu renders its selection as the label),
+ *  opening a small `role="menu"` list. Closes on outside click and Escape. */
+function SettingMenu<T extends string>({
+  value,
+  options,
+  onPick,
+  disabled,
+  ariaLabel,
+}: {
+  readonly value: T;
+  readonly options: readonly { readonly value: T; readonly label: string }[];
+  readonly onPick: (value: T) => void;
+  readonly disabled?: boolean;
+  readonly ariaLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const current = options.find((o) => o.value === value)?.label ?? value;
+  return (
+    <div className="work-details-dropdown" ref={ref}>
+      <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label={ariaLabel} disabled={disabled} onClick={() => setOpen(!open)}>
+        {current}
+        <svg className="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      {open && (
+        <div role="menu" className="work-details-menu">
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onPick(o.value);
+                setOpen(false);
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** This app's own version string, shown in the General pane footer (reference shows its own
+ *  "Current version" line). Kept in lockstep with package.json's version by hand. */
+const APP_VERSION = "0.2.0";
+
+/** Usage pass U4 (reference-behavior-matrix.md §14–15): this app's OWN plugin inventory — the
+ *  honest equivalent of the reference's "Built-in plugins" inspector. Session plugins are the
+ *  model-facing tools an agent preset composes (`agentCoding.ts`'s PRESET_TOOLS is the source of
+ *  truth); global plugins are the always-on capabilities every session shares. Nothing here is
+ *  copied from the reference's plugin list. */
+const SESSION_PLUGIN_CATALOG: readonly {
+  readonly id: string;
+  readonly tool: string;
+  readonly name: string;
+  readonly description: string;
+  readonly presets: readonly AgentPreset[];
+}[] = [
+  { id: "tool-read", tool: "read", name: "File read", description: "Reads a file's contents from the session workspace.", presets: ["standard", "ptc"] },
+  { id: "tool-edit", tool: "edit", name: "File edit", description: "Exact-string replacement with a read-before-edit guard.", presets: ["standard", "ptc"] },
+  { id: "tool-bash", tool: "bash", name: "Terminal", description: "Runs shell commands in the workspace as a subprocess.", presets: ["standard", "ptc", "minimal"] },
+  { id: "tool-todo", tool: "todo_write", name: "To-dos", description: "The to-do list behind the To-dos widget and plan mode.", presets: ["standard", "ptc"] },
+  { id: "tool-exit-plan", tool: "exit_plan_mode", name: "Plan review", description: "Presents a plan for approval and leaves plan mode on approval.", presets: ["standard", "ptc"] },
+  { id: "tool-subagent", tool: "subagent", name: "Subagents", description: "Fire-and-forget delegation to durable child agent runs.", presets: ["standard", "ptc"] },
+  { id: "tool-run-code", tool: "run_code", name: "Run code", description: "Privileged code execution; sandbox escalations gate on human approval.", presets: ["ptc"] },
+];
+
+const GLOBAL_PLUGIN_CATALOG: readonly { readonly id: string; readonly name: string; readonly description: string; readonly enabled: boolean }[] = [
+  { id: "model-provider", name: "Model provider", description: "OpenAI-compatible provider hot-swap backed by write-only secrets.", enabled: true },
+  { id: "session-history", name: "Session history", description: "Folds prior runs' durable events into the model context each turn.", enabled: true },
+  { id: "workspaces", name: "Workspaces", description: "Path-contained workspace scoping for every tool call.", enabled: true },
+  { id: "approvals", name: "Approvals", description: "Policy gate + durable continuations for privileged escalations.", enabled: true },
+  { id: "preferences", name: "Preferences", description: "Durable Settings → General state, folded from events.", enabled: true },
+  { id: "realitytrace", name: "RealityTrace observations", description: "Optional observation adapter delivering run events to an SXR evidence ledger.", enabled: false },
+];
+
+const PRESET_DETAILS: Readonly<Record<AgentPreset, string>> = {
+  standard: "The everyday catalog: file read and edit, the terminal, to-dos, plan review, and subagents. Privileged code execution (run_code) is not part of this preset, so a model call for it fails closed.",
+  ptc: "Everything in Standard mode plus privileged code execution (run_code) — suited to tasks that call tools in batches and then filter, organize, or summarize the results.",
+  minimal: "The agent works using only the terminal tool. Useful for testing and comparing its baseline behavior without the rest of the catalog.",
+};
+
+/** Settings → Built-in plugins (§14, checkpoints 25*): an inspect-only view of this deployment's
+ *  plugins — Session plugins composed per agent preset (with the preset-inspect dropdown), Global
+ *  plugins shared by everything. Search filters both. Read-only by design this pass (no
+ *  enable/disable toggles of real capabilities — DEVIATIONS.md). */
+function BuiltInPluginsPane({ settings }: { readonly settings: GeneralSettings }) {
+  const [inspect, setInspect] = useState<AgentPreset>(settings.preset);
+  const [sessionOpen, setSessionOpen] = useState(true);
+  const [globalOpen, setGlobalOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const matches = (...texts: readonly string[]) => q.length === 0 || texts.some((t) => t.toLowerCase().includes(q));
+  const sessionRows = SESSION_PLUGIN_CATALOG.filter((p) => matches(p.name, p.id, p.description));
+  const globalRows = GLOBAL_PLUGIN_CATALOG.filter((p) => matches(p.name, p.id, p.description));
+  return (
+    <>
+      <h3>Built-in plugins</h3>
+      <p className="settings-description">Inspect the plugins this deployment ships.</p>
+      <input
+        type="search"
+        aria-label="Search plugins"
+        placeholder="Search plugins"
+        value={query}
+        onChange={(e) => setQuery(e.currentTarget.value)}
+        className="plugins-search"
+      />
+      <button type="button" className="disclosure-btn" aria-expanded={sessionOpen} onClick={() => setSessionOpen((v) => !v)}>
+        Session plugins
+      </button>
+      {sessionOpen && (
+        <>
+          <SettingMenu
+            ariaLabel="Choose the agent preset to inspect"
+            value={inspect}
+            options={AGENT_PRESETS.map((p) => ({ value: p, label: AGENT_PRESET_LABELS[p] }))}
+            onPick={setInspect}
+          />
+          <p className="settings-description">
+            Composed per session by agent presets · {SESSION_PLUGIN_CATALOG.filter((p) => p.presets.includes(inspect)).length} plugins
+          </p>
+          <ul className="plugins-list" aria-label="Session plugins">
+            {sessionRows.map((p) => {
+              const enabled = p.presets.includes(inspect);
+              return (
+                <li key={p.id}>
+                  <div className="plugin-row">
+                    <div className="plugin-row-text">
+                      <strong>{p.name}</strong> <span className={enabled ? "plugin-state" : "plugin-state off"}>{enabled ? "Enabled" : "Disabled"}</span>
+                      <span className="plugin-description">{p.description}</span>
+                      <code>{p.id}</code>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+      <button type="button" className="disclosure-btn" aria-expanded={globalOpen} onClick={() => setGlobalOpen((v) => !v)}>
+        Global plugins
+      </button>
+      {globalOpen && (
+        <>
+          <p className="settings-description">Shared by the system and every session · {GLOBAL_PLUGIN_CATALOG.length} plugins</p>
+          <ul className="plugins-list" aria-label="Global plugins">
+            {globalRows.map((p) => (
+              <li key={p.id}>
+                <div className="plugin-row">
+                  <div className="plugin-row-text">
+                    <strong>{p.name}</strong> <span className={p.enabled ? "plugin-state" : "plugin-state off"}>{p.enabled ? "Enabled" : "Disabled"}</span>
+                    <span className="plugin-description">{p.description}</span>
+                    <code>{p.id}</code>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
+  );
+}
+
+/** Settings → Agent presets (§15, checkpoints 26*): preset cards for this app's three presets —
+ *  "Set as new task default" (durable via settings.changePreset), "Mode details" and "View
+ *  configuration" dialogs (this app's own copy/composition, not the reference's YAML). The
+ *  reference's Creator mode is out of scope (DEVIATIONS.md). */
+function AgentPresetsPane({ settings }: { readonly settings: GeneralSettings }) {
+  const client = useCognate();
+  const [detailsFor, setDetailsFor] = useState<AgentPreset | undefined>(undefined);
+  const [configFor, setConfigFor] = useState<AgentPreset | undefined>(undefined);
+  return (
+    <>
+      <h3>Agent presets</h3>
+      <p className="settings-description">Choose the agent's tools and how it works. Use Standard mode for everyday tasks.</p>
+      <ul className="plugins-list" aria-label="Agent presets">
+        {AGENT_PRESETS.map((preset) => {
+          const isDefault = settings.preset === preset;
+          return (
+            <li key={preset}>
+              <div className="plugin-row preset-card">
+                <div className="plugin-row-text">
+                  <strong>{AGENT_PRESET_LABELS[preset]}</strong>{" "}
+                  <span className="plugin-state">{isDefault ? "New task default" : "Built-in"}</span>
+                  <span className="plugin-description">{PRESET_DETAILS[preset]}</span>
+                  <code>{preset}</code>
+                </div>
+                <div className="plugin-row-actions">
+                  {isDefault ? (
+                    <button type="button" disabled>
+                      New task default
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Set as new task default: ${AGENT_PRESET_LABELS[preset]}`}
+                      onClick={() => void client.invoke("settings.changePreset", { preset } as never).catch((e) => console.error("settings.changePreset failed", e))}
+                    >
+                      Set as new task default
+                    </button>
+                  )}
+                  <button type="button" aria-label={`Mode details: ${AGENT_PRESET_LABELS[preset]}`} onClick={() => setDetailsFor(preset)}>
+                    Mode details
+                  </button>
+                  <button type="button" aria-label={`View configuration: ${AGENT_PRESET_LABELS[preset]}`} onClick={() => setConfigFor(preset)}>
+                    View configuration
+                  </button>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {detailsFor && (
+        <div className="modal-backdrop modal-backdrop-stacked">
+          <div className="modal workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="preset-details-heading" tabIndex={-1}>
+            <div className="dialog-banner">
+              <h2 id="preset-details-heading">{AGENT_PRESET_LABELS[detailsFor]}</h2>
+              <button type="button" className="icon-btn" aria-label="Close" onClick={() => setDetailsFor(undefined)}>
+                ×
+              </button>
+            </div>
+            <p>{PRESET_DETAILS[detailsFor]}</p>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setDetailsFor(undefined)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {configFor && (
+        <div className="modal-backdrop modal-backdrop-stacked">
+          <div className="modal workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="preset-config-heading" tabIndex={-1}>
+            <div className="dialog-banner">
+              <h2 id="preset-config-heading">View configuration · {AGENT_PRESET_LABELS[configFor]}</h2>
+              <button type="button" className="icon-btn" aria-label="Close" onClick={() => setConfigFor(undefined)}>
+                ×
+              </button>
+            </div>
+            <p className="settings-description">The tools this preset registers for the agent's model calls:</p>
+            <ul className="plugins-list">
+              {SESSION_PLUGIN_CATALOG.filter((p) => p.presets.includes(configFor)).map((p) => (
+                <li key={p.id}>
+                  <code>{p.tool}</code> — {p.name}: {p.description}
+                </li>
+              ))}
+            </ul>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setConfigFor(undefined)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** The Settings → General pane (usage pass U2, reference-behavior-matrix.md §11, checkpoints 22*):
+ *  the full inventory — Permission (with the Full-access confirmation dialog), Language,
+ *  Appearance (Light/Dark/System), Font size (1px stepper, floor 12), Work details, Performance &
+ *  usage, Coding Tools, Keyboard shortcuts, Send behavior while busy, and a current-version
+ *  footer. Every control writes through its own durable `settings.change*` capability; the
+ *  `settings` projection round trip re-renders the pane with the new value. */
+function GeneralPane({
+  settings,
+  onOpenShortcuts,
+  fullAccessConfirm,
+  setFullAccessConfirm,
+}: {
+  readonly settings: GeneralSettings;
+  readonly onOpenShortcuts: () => void;
+  readonly fullAccessConfirm: boolean;
+  readonly setFullAccessConfirm: (open: boolean) => void;
+}) {
+  const client = useCognate();
+  const change = useCallback(
+    async (capability: string, field: string, value: unknown) => {
+      try {
+        await client.invoke(capability, { [field]: value } as never);
+      } catch (error) {
+        console.error(`settings: ${capability} failed`, error);
+      }
+    },
+    [client],
+  );
+
+  return (
+    <>
+      <h3>General</h3>
+
+      <p className="settings-subtitle">Permission</p>
+      <p className="settings-description">Choose the default permission mode for new sessions</p>
+      <SettingMenu
+        ariaLabel="Permission mode for new sessions"
+        value={settings.permission}
+        disabled={fullAccessConfirm}
+        options={PERMISSION_MODES.map((m) => ({ value: m, label: PERMISSION_LABELS[m] }))}
+        onPick={(m) => {
+          // Checkpoint 22f: "Full access" never commits directly — it opens the confirmation
+          // dialog, whose checked-state "Enable Full access" button commits.
+          if (m === "full-access") setFullAccessConfirm(true);
+          else void change("settings.changePermission", "permission", m);
+        }}
+      />
+
+      <p className="settings-subtitle">Language</p>
+      <SettingMenu
+        ariaLabel="Language"
+        value={settings.language}
+        options={LANGUAGE_CODES.map((l) => ({ value: l, label: LANGUAGE_LABELS[l] }))}
+        onPick={(l) => void change("settings.changeLanguage", "language", l)}
+      />
+
+      <p className="settings-subtitle">Appearance</p>
+      <div role="group" aria-label="Appearance" className="appearance-group">
+        {APPEARANCE_MODES.map((mode) => (
+          <button key={mode} type="button" aria-pressed={settings.appearance === mode} onClick={() => void change("settings.changeAppearance", "appearance", mode)}>
+            {mode === "light" ? "Light" : mode === "dark" ? "Dark" : "System"}
+          </button>
+        ))}
+      </div>
+
+      <p className="settings-subtitle">Font size</p>
+      <p className="settings-description">Only affects conversation content</p>
+      <div className="font-size-stepper" role="group" aria-label="Font size">
+        <span className="font-size-value">{settings.fontSize}</span>
+        <button
+          type="button"
+          aria-label="Increase font size"
+          disabled={settings.fontSize >= MAX_FONT_SIZE_PX}
+          onClick={() => void change("settings.changeFontSize", "fontSize", settings.fontSize + 1)}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          aria-label="Decrease font size"
+          disabled={settings.fontSize <= MIN_FONT_SIZE_PX}
+          onClick={() => void change("settings.changeFontSize", "fontSize", settings.fontSize - 1)}
+        >
+          −
+        </button>
+        <span className="font-size-unit">px</span>
+      </div>
+
+      <p className="settings-subtitle">Work details</p>
+      <p className="settings-description">Choose how much detail to show for tool calls</p>
+      <SettingMenu
+        ariaLabel="Work details"
+        value={settings.workDetails}
+        options={WORK_DETAILS_MODES.map((m) => ({ value: m, label: WORK_DETAILS_LABELS[m] }))}
+        onPick={(m) => void change("settings.changeWorkDetails", "workDetails", m)}
+      />
+
+      <p className="settings-subtitle">Performance &amp; usage</p>
+      <p className="settings-description">Choose how much performance and usage information to show</p>
+      <SettingMenu
+        ariaLabel="Performance and usage detail"
+        value={settings.performanceDetail}
+        options={(["compact", "detailed"] as const).map((m) => ({ value: m, label: PERFORMANCE_DETAIL_LABELS[m] }))}
+        onPick={(m) => void change("settings.changePerformanceDetail", "performanceDetail", m)}
+      />
+
+      <p className="settings-subtitle">Coding Tools</p>
+      <p className="settings-description">Shows trajectory, code diffs, and Agent preset switching in new chats</p>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={settings.codingTools}
+        aria-label="Coding Tools"
+        className="settings-switch"
+        onClick={() => void change("settings.changeCodingTools", "codingTools", !settings.codingTools)}
+      />
+
+      <p className="settings-subtitle">Keyboard shortcuts</p>
+      <p className="settings-description">View and edit available shortcuts and input actions</p>
+      <button type="button" onClick={onOpenShortcuts}>
+        Edit shortcuts
+      </button>
+
+      <p className="settings-subtitle">Send behavior while busy</p>
+      <p className="settings-description">
+        What Enter and the Send button do while the agent is running; Cmd/Ctrl+Enter uses the other behavior
+      </p>
+      <SettingMenu
+        ariaLabel="Send behavior while busy"
+        value={settings.sendBehavior}
+        options={SEND_BEHAVIORS.map((b) => ({ value: b, label: SEND_BEHAVIOR_LABELS[b] }))}
+        onPick={(b) => void change("settings.changeSendBehavior", "sendBehavior", b)}
+      />
+
+      <p className="settings-version">Current version: {APP_VERSION}</p>
+    </>
+  );
+}
+
 /** Settings → Models: a provider list (row + Cancel/Apply for the configured provider's API key,
  *  Edit/Delete) plus a two-tab "Add model provider" wizard (Third-party combobox / Custom model API
  *  form with a Models sub-list and Cancel/Create provider) — critic round-1 P0-4/P1-4. This tranche's
@@ -487,29 +1287,26 @@ interface ModelRow {
  *  used throughout this app (see the Settings nav's inert items below). */
 function SettingsModels({
   onClose,
-  theme,
-  onToggleTheme,
-  workDetails,
+  settings,
+  onOpenShortcuts,
 }: {
   readonly onClose: () => void;
-  /** Appearance section (critic round-2 batch A cross-cutting P2 — reference switches theme via
-   *  Settings -> General -> Appearance, not a persistent sidebar control; see
-   *  tests/capture/reference.capture.ts's 20-theme-variant step). */
-  readonly theme: string;
-  readonly onToggleTheme: () => void;
-  /** Work details section (reference-behavior-matrix.md §10a — "Choose how much detail to show for
-   *  tool calls", default "Standard"), folded from durable `settings.changed` events. */
-  readonly workDetails: WorkDetailsMode;
+  /** Every General setting, resolved with defaults from the durable `settings` row (usage pass
+   *  U2, reference-behavior-matrix.md §11) — the General pane is the full inventory: Permission,
+   *  Language, Appearance, Font size, Work details, Performance & usage, Coding Tools, Keyboard
+   *  shortcuts, Send behavior while busy. Each control writes through its own
+   *  `settings.change*` capability; the projection round trip re-renders this pane. */
+  readonly settings: GeneralSettings;
+  /** Opens the Keyboard shortcuts dialog (stacked above this modal). */
+  readonly onOpenShortcuts: () => void;
 }) {
   const client = useCognate();
   const config = useModelConfig();
-  const setWorkDetails = useCallback(
-    (mode: WorkDetailsMode) => {
-      if (mode !== workDetails) void client.invoke("settings.changeWorkDetails", { workDetails: mode });
-    },
-    [client, workDetails],
-  );
-  const [section, setSection] = useState<"general" | "models">("models");
+  const [section, setSection] = useState<"general" | "models" | "plugins" | "presets">("models");
+  // Full-access confirmation (checkpoint 22f): opened by selecting "Full access" in the Permission
+  // menu; the Permission control stays disabled while it is open, and only the checked-state
+  // "Enable Full access" button commits the durable change.
+  const [fullAccessConfirm, setFullAccessConfirm] = useState(false);
   const [view, setView] = useState<"list" | "wizard">("list");
   const [addTab, setAddTab] = useState<"third-party" | "custom">("custom");
   const [thirdParty, setThirdParty] = useState("");
@@ -521,37 +1318,12 @@ function SettingsModels({
   const [models, setModels] = useState<readonly ModelRow[]>([]);
   const [modelError, setModelError] = useState<string | undefined>(undefined);
   const [customizedOpen, setCustomizedOpen] = useState(false);
-  const [workDetailsMenuOpen, setWorkDetailsMenuOpen] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   // Quick "Apply" from the list-view row: just the API key, reusing the already-configured
   // provider/base URL/model.
   const [rowApiKey, setRowApiKey] = useState("");
-  const workDetailsMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!workDetailsMenuOpen) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (workDetailsMenuRef.current && !workDetailsMenuRef.current.contains(e.target as Node)) {
-        setWorkDetailsMenuOpen(false);
-      }
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setWorkDetailsMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [workDetailsMenuOpen]);
 
   const resetWizard = useCallback((prefillFromConfig: boolean) => {
     setAddTab("custom");
@@ -695,59 +1467,30 @@ function SettingsModels({
             >
               Models
             </button>
-            <button type="button" className="settings-nav-item" disabled title={NOT_IMPLEMENTED}>
+            <button
+              type="button"
+              className={section === "plugins" ? "settings-nav-item active" : "settings-nav-item"}
+              aria-current={section === "plugins" ? "page" : undefined}
+              onClick={() => setSection("plugins")}
+            >
               Built-in plugins
             </button>
-            <button type="button" className="settings-nav-item" disabled title={NOT_IMPLEMENTED}>
+            <button
+              type="button"
+              className={section === "presets" ? "settings-nav-item active" : "settings-nav-item"}
+              aria-current={section === "presets" ? "page" : undefined}
+              onClick={() => setSection("presets")}
+            >
               Agent presets
             </button>
           </nav>
           <div className="settings-content">
             {section === "general" ? (
-              <>
-                <h3>General</h3>
-                <p className="settings-subtitle">Appearance</p>
-                <div role="group" aria-label="Appearance" className="appearance-group">
-                  <button type="button" aria-pressed={theme === "light"} onClick={() => theme !== "light" && onToggleTheme()}>
-                    Light
-                  </button>
-                  <button type="button" aria-pressed={theme === "dark"} onClick={() => theme !== "dark" && onToggleTheme()}>
-                    Dark
-                  </button>
-                </div>
-                <p className="settings-subtitle">Work details</p>
-                <p className="settings-description">Choose how much detail to show for tool calls</p>
-                <div className="work-details-dropdown" ref={workDetailsMenuRef}>
-                  <button
-                    type="button"
-                    aria-haspopup="menu"
-                    aria-expanded={workDetailsMenuOpen}
-                    onClick={() => setWorkDetailsMenuOpen(!workDetailsMenuOpen)}
-                  >
-                    {WORK_DETAILS_LABELS[workDetails]}
-                    <svg className="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </button>
-                  {workDetailsMenuOpen && (
-                    <div role="menu" className="work-details-menu">
-                      {WORK_DETAILS_MODES.map((mode) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setWorkDetails(mode);
-                            setWorkDetailsMenuOpen(false);
-                          }}
-                        >
-                          {WORK_DETAILS_LABELS[mode]}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
+              <GeneralPane settings={settings} onOpenShortcuts={onOpenShortcuts} fullAccessConfirm={fullAccessConfirm} setFullAccessConfirm={setFullAccessConfirm} />
+            ) : section === "plugins" ? (
+              <BuiltInPluginsPane settings={settings} />
+            ) : section === "presets" ? (
+              <AgentPresetsPane settings={settings} />
             ) : view === "list" ? (
               <>
                 <h3>Models</h3>
@@ -941,6 +1684,15 @@ function SettingsModels({
               Create provider
             </button>
           </div>
+        )}
+        {fullAccessConfirm && (
+          <FullAccessConfirmDialog
+            onCancel={() => setFullAccessConfirm(false)}
+            onConfirm={() => {
+              setFullAccessConfirm(false);
+              void client.invoke("settings.changePermission", { permission: "full-access" } as never).catch((e) => console.error("settings: full access failed", e));
+            }}
+          />
         )}
       </div>
     </div>
@@ -1633,6 +2385,12 @@ function Composer({
   onTogglePlanMode,
   turns = 0,
   steps = 0,
+  accessMode,
+  onAccessModeChange,
+  sendBehavior,
+  onBusySubmit,
+  queued,
+  onCancelQueued,
 }: {
   readonly disabled: boolean;
   readonly sending: boolean;
@@ -1648,6 +2406,19 @@ function Composer({
    *  the transcript's own `stepCount`s, not a stub 0. */
   readonly turns?: number;
   readonly steps?: number;
+  /** Usage pass U2 (§11): the session's access mode — a functional per-session dropdown now, whose
+   *  value `send()` passes to `agent.coding` as `AgentCodingInput.mode` for `approvalGate`. */
+  readonly accessMode: PermissionMode;
+  readonly onAccessModeChange: (mode: PermissionMode) => void;
+  /** Usage pass U2 (§11): "What Enter and the Send button do while the agent is running;
+   *  Cmd/Ctrl+Enter uses the other behavior." While a run streams, the composer stays typeable and
+   *  Enter performs this behavior (Queue: park the message; Steer: cancel + send). */
+  readonly sendBehavior: SendBehavior;
+  readonly onBusySubmit: (message: string, behavior: SendBehavior) => void;
+  /** A message parked by the Queue behavior, waiting for the active run to settle. Absent on
+   *  surfaces that never queue (the hero composer). */
+  readonly queued?: string;
+  readonly onCancelQueued?: () => void;
 }) {
   const [message, setMessage] = useState("");
   const submit = useCallback(() => {
@@ -1656,6 +2427,15 @@ function Composer({
     onSend(trimmed);
     setMessage("");
   }, [message, onSend]);
+  const busySubmit = useCallback(
+    (behavior: SendBehavior) => {
+      const trimmed = message.trim();
+      if (!trimmed) return;
+      onBusySubmit(trimmed, behavior);
+      setMessage("");
+    },
+    [message, onBusySubmit],
+  );
   return (
     <div className="composer-card">
       <textarea
@@ -1673,14 +2453,33 @@ function Composer({
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            submit();
+            if (sending) {
+              // Cmd/Ctrl+Enter uses the other behavior (§11's description, verbatim semantics).
+              busySubmit(e.ctrlKey || e.metaKey ? (sendBehavior === "queue" ? "steer" : "queue") : sendBehavior);
+            } else {
+              submit();
+            }
           }
         }}
       />
+      {queued !== undefined && (
+        <div className="composer-queued" role="status">
+          <span className="composer-queued-text" title={queued}>
+            Queued — sends when the current run finishes: {queued}
+          </span>
+          <button type="button" className="icon-btn" aria-label="Cancel queued message" onClick={onCancelQueued}>
+            ×
+          </button>
+        </div>
+      )}
       <div className="composer-toolbar">
-        <span className="composer-info-label" title="Sandbox access mode for this session">
-          Workspace Write
-        </span>
+        <SettingMenu
+          ariaLabel={`Access mode, current: ${PERMISSION_LABELS[accessMode]}`}
+          value={accessMode}
+          disabled={disabled}
+          options={PERMISSION_MODES.map((m) => ({ value: m, label: PERMISSION_LABELS[m] }))}
+          onPick={onAccessModeChange}
+        />
         {planMode && (
           <button type="button" className="plan-mode-toggle" aria-label="Plan mode on, press to turn off" onClick={onTogglePlanMode}>
             Plan
@@ -1838,6 +2637,532 @@ function MessageBubble({
   );
 }
 
+/** Usage pass U3 (§12): the "Add workspace" dialog — the same path-input + `workspace.select`
+ *  flow the no-workspace chooser uses, opened from the sidebar header's "Add workspace" button or
+ *  the hero menu's "Add workspace…". (The reference's full directory-browser dialog is out of scope
+ *  this pass — DEVIATIONS.md.) */
+function AddWorkspaceDialog({ onClose }: { readonly onClose: () => void }) {
+  const client = useCognate();
+  const [path, setPath] = useState("");
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, onClose);
+  const submit = useCallback(async () => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      await client.invoke("workspace.select", { path });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setBusy(false);
+    }
+  }, [client, path, onClose]);
+  return (
+    <div className="modal-backdrop modal-backdrop-stacked">
+      <div className="modal workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="add-workspace-heading" tabIndex={-1} ref={dialogRef}>
+        <div className="dialog-banner">
+          <h2 id="add-workspace-heading">Add workspace</h2>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <p className="settings-description">Choose a folder for the agent to read and edit files in.</p>
+        <input
+          aria-label="Workspace directory path"
+          placeholder="/path/to/project"
+          value={path}
+          onChange={(e) => setPath(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && path.trim() && !busy) void submit();
+          }}
+          autoFocus
+        />
+        {error && (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        )}
+        <div className="modal-actions">
+          <button type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" disabled={busy || path.trim().length === 0} onClick={() => void submit()}>
+            Open
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Usage pass U3 (§12): the per-workspace "Rename" dialog — writes the durable `workspace.rename`
+ *  capability; the `workspaces` projection round trip updates the sidebar row. */
+function RenameWorkspaceDialog({
+  workspace,
+  onClose,
+}: {
+  readonly workspace: { readonly id: string; readonly title: string };
+  readonly onClose: () => void;
+}) {
+  const client = useCognate();
+  const [title, setTitle] = useState(workspace.title);
+  const [error, setError] = useState<string | undefined>(undefined);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, onClose);
+  const submit = useCallback(async () => {
+    try {
+      await client.invoke("workspace.rename", { workspaceId: workspace.id, title } as never);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [client, workspace.id, title, onClose]);
+  return (
+    <div className="modal-backdrop modal-backdrop-stacked">
+      <div className="modal workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="rename-workspace-heading" tabIndex={-1} ref={dialogRef}>
+        <div className="dialog-banner">
+          <h2 id="rename-workspace-heading">Rename workspace</h2>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <input aria-label="Workspace name" value={title} onChange={(e) => setTitle(e.currentTarget.value)} onKeyDown={(e) => {
+          if (e.key === "Enter" && title.trim()) void submit();
+        }} autoFocus />
+        {error && (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        )}
+        <div className="modal-actions">
+          <button type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" disabled={!title.trim()} onClick={() => void submit()}>
+            Rename
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The session header's agent-preset selector (usage pass U4, §15): the mode badge is a menu button
+ *  labelled with the session's current preset ("Standard mode" / "PTC mode" / "Minimal mode"); a
+ *  pick applies to the session's NEXT turn (the composer sends `AgentCodingInput.preset`). The
+ *  current value comes from the `sessions` projection's folded `mode` field (last run's preset,
+ *  or the approval-derived sticky "ptc" fallback for direct-API sessions); `fallback` is the
+ *  settings default for sessions that have not run a turn yet. */
+function PresetMenu({
+  current,
+  fallback,
+  onPick,
+}: {
+  readonly current: AgentPreset | undefined;
+  readonly fallback: AgentPreset;
+  readonly onPick: (preset: AgentPreset) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const value = current ?? fallback;
+  return (
+    <div className="preset-menu-wrap" ref={ref}>
+      <button type="button" className="mode-badge mode-badge-btn" aria-label={`Agent preset, current: ${AGENT_PRESET_LABELS[value]}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        {AGENT_PRESET_LABELS[value]}
+      </button>
+      {open && (
+        <div role="menu" className="workspace-actions-menu preset-menu">
+          {AGENT_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              role="menuitem"
+              aria-checked={preset === value}
+              title={PRESET_DETAILS[preset]}
+              onClick={() => {
+                onPick(preset);
+                setOpen(false);
+              }}
+            >
+              {AGENT_PRESET_LABELS[preset]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The sidebar "Plugins" global panel (usage pass U4, §14, checkpoint 25b): heading, description,
+ *  Refresh + "Add plugin" (both inert this pass — no plugin install backend), and the "Official"
+ *  list of this deployment's plugin-like features with per-entry View buttons and Enable switches
+ *  (inert — nothing here is genuinely toggleable yet; DEVIATIONS.md). Rendered in place of the
+ *  session surface; the sidebar's Plugins button toggles it. */
+function PluginsPanel({ onClose }: { readonly onClose: () => void }) {
+  return (
+    <div className="plugins-panel" role="region" aria-label="Plugins">
+      <div className="plugins-panel-header">
+        <div>
+          <h1>Plugins</h1>
+          <p className="settings-description">Add and manage plugins</p>
+        </div>
+        <div className="plugins-panel-actions">
+          <button type="button" className="icon-btn" aria-label="Refresh" disabled title={NOT_IMPLEMENTED}>
+            ⟳
+          </button>
+          <button type="button" className="btn-primary" disabled title={NOT_IMPLEMENTED}>
+            <PlusIcon /> Add plugin
+          </button>
+          <button type="button" className="icon-btn" aria-label="Close plugins panel" onClick={onClose}>
+            ×
+          </button>
+        </div>
+      </div>
+      <h3>Official</h3>
+      <ul className="plugins-list" aria-label="Official plugins">
+        {[...SESSION_PLUGIN_CATALOG.map((p) => ({ id: p.id, name: p.name, description: p.description, enabled: true })), ...GLOBAL_PLUGIN_CATALOG].map((p) => (
+          <li key={p.id}>
+            <div className="plugin-row">
+              <div className="plugin-row-text">
+                <strong>{p.name}</strong>
+                <span className="plugin-description">{p.description}</span>
+              </div>
+              <div className="plugin-row-actions">
+                <button type="button" aria-label={`View ${p.name}`} disabled title={NOT_IMPLEMENTED}>
+                  View
+                </button>
+                <button type="button" role="switch" aria-checked={p.enabled} aria-label={`Enable ${p.name}`} disabled={!p.enabled} title={p.enabled ? NOT_IMPLEMENTED : "Not configured this build"} className="settings-switch" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Usage pass U5 (reference-behavior-matrix.md SS13): the session's trace row from the public
+ *  `session-trace` projection — live during a run, durable after a reload (the projection re-folds
+ *  from SQLite events). */
+function useSessionTrace(sessionId: string | undefined): TraceRow | undefined {
+  const rows = useProjection("session-trace");
+  return useMemo(() => {
+    if (!sessionId) return undefined;
+    const found = rows?.find((r) => r.key === `trace/${sessionId}`);
+    return found ? (found.value as unknown as TraceRow) : undefined;
+  }, [rows, sessionId]);
+}
+
+function toolDurationMs(tool: TraceTool): number | undefined {
+  if (!tool.completedAt) return undefined;
+  return Math.max(0, Date.parse(tool.completedAt) - Date.parse(tool.startedAt));
+}
+
+function requestDurationMs(request: TraceRequest, turn: TraceTurn): number | undefined {
+  // Approximate: the request ends when the next trace event after it was recorded (the turn's
+  // last event is the cheapest deterministic bound). Tool rows carry exact durations instead.
+  const after = [...turn.tools.map((t) => t.startedAt), ...turn.tools.map((t) => t.completedAt ?? "")].filter((t) => t.length > 0).map((t) => Date.parse(t)).sort((a, b) => a - b);
+  const start = Date.parse(request.startedAt);
+  const end = after.find((t) => t > start);
+  return end === undefined ? undefined : end - start;
+}
+
+const TRACE_ROLE_LABELS: Readonly<Record<string, string>> = {
+  system: "SYSTEM",
+  user: "USER",
+  assistant: "ASSISTANT",
+  tool: "TOOL",
+};
+
+/** The Trajectory tab (SS13, checkpoints 24*): toolbar (Collapse turns / Search trajectory), a
+ *  role-badged trace table (USER rows, ASSISTANT "Request #N" rows, TOOL `tool{args} -> result`
+ *  rows), and the right-hand "Event details" panel (TOOL: Summary/Payload/Result/Schema/Timing;
+ *  Request: Summary/Options/Timing). Structurally per the pinned reference; the timeline strip and
+ *  the Calls toggle are approximated (DEVIATIONS.md). The SYSTEM row kind exists in the data model
+ *  but this app sends no system prompt, so no SYSTEM rows appear — honest, not invented. */
+function TrajectoryView({
+  trace,
+  onSelect,
+}: {
+  readonly trace: TraceRow | undefined;
+  readonly onSelect: (detail: { readonly kind: "request" | "tool"; readonly turnIndex: number; readonly requestNumber?: number; readonly toolCallId?: string }) => void;
+}) {
+  const [collapseTurns, setCollapseTurns] = useState(false);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const turnMatches = (turn: TraceTurn) =>
+    q.length === 0 ||
+    turn.userText.toLowerCase().includes(q) ||
+    turn.requests.some((r) => (r.responseText ?? "").toLowerCase().includes(q) || (r.failure ?? "").toLowerCase().includes(q)) ||
+    turn.tools.some((t) => t.tool.toLowerCase().includes(q) || t.args.toLowerCase().includes(q) || (t.result ?? "").toLowerCase().includes(q) || (t.error ?? "").toLowerCase().includes(q));
+  return (
+    <div className="trajectory-view">
+      <div className="trajectory-toolbar" role="toolbar" aria-label="Trajectory toolbar">
+        <button type="button" aria-pressed={collapseTurns} onClick={() => setCollapseTurns((v) => !v)}>
+          {collapseTurns ? "Expand turns" : "Collapse turns"}
+        </button>
+        <input type="search" aria-label="Search trajectory" placeholder="Search trajectory" value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
+      </div>
+      <div className="trajectory-table" role="table" aria-label="Execution trace">
+        {!trace || trace.turns.length === 0 ? (
+          <p className="empty-state small">No trace yet for this session.</p>
+        ) : (
+          trace.turns.filter(turnMatches).map((turn) =>
+            collapseTurns ? (
+              <div key={turn.index} role="row" className="trace-row trace-collapsed">
+                <span className="trace-role-badge">Turn {turn.index}</span>
+                <span className="trace-cell">
+                  Collapsed turn summary, {turn.requests.length + turn.tools.length} steps · {turn.tools.length} tool call{turn.tools.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            ) : (
+              <div key={turn.index} role="rowgroup" className="trace-turn">
+                <div role="row" className="trace-row">
+                  <span className="trace-role-badge role-user">USER</span>
+                  <span className="trace-cell">{turn.userText}</span>
+                </div>
+                {turn.requests.map((request) => (
+                  <div key={`req-${request.requestNumber}`} role="row" className="trace-row">
+                    <span className="trace-role-badge">
+                      <button type="button" className="trace-request-btn" onClick={() => onSelect({ kind: "request", turnIndex: turn.index, requestNumber: request.requestNumber })}>
+                        Request #{request.requestNumber}
+                      </button>
+                      ASSISTANT
+                    </span>
+                    <span className="trace-cell">{request.responseText ? request.responseText : request.failure ? request.failure : "(tool call only)"}</span>
+                  </div>
+                ))}
+                {turn.tools.map((tool) => (
+                  <div key={tool.toolCallId} role="row" className="trace-row">
+                    <span className="trace-role-badge role-tool">TOOL</span>
+                    <button type="button" className="trace-cell trace-tool-btn" onClick={() => onSelect({ kind: "tool", turnIndex: turn.index, toolCallId: tool.toolCallId })}>
+                      <code>
+                        {tool.tool}
+                        {tool.args}
+                      </code>
+                      <span className="trace-tool-result">→ {tool.status === "failed" ? tool.error : tool.status === "running" ? "(running…)" : (tool.result ?? "(no output)")}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ),
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The "Event details" panel for a selected trace row (SS13): TOOL rows get
+ *  Summary/Payload/Result/Schema/Timing; ASSISTANT requests get Summary/Options/Timing. Payload and
+ *  Schema render this app's own recorded data / TOOL_DEFS — nothing is copied from the reference. */
+function TraceDetailsPanel({
+  trace,
+  detail,
+  onClose,
+}: {
+  readonly trace: TraceRow | undefined;
+  readonly detail: { readonly kind: "request" | "tool"; readonly turnIndex: number; readonly requestNumber?: number; readonly toolCallId?: string };
+  readonly onClose: () => void;
+}) {
+  const turn = trace?.turns.find((t) => t.index === detail.turnIndex);
+  const request = detail.requestNumber !== undefined ? turn?.requests.find((r) => r.requestNumber === detail.requestNumber) : undefined;
+  const tool = detail.toolCallId !== undefined ? turn?.tools.find((t) => t.toolCallId === detail.toolCallId) : undefined;
+  const client = useCognate();
+  const [tab, setTab] = useState<"summary" | "payload" | "result" | "schema" | "options" | "timing" | "ledger">(request ? "summary" : "summary");
+  // Usage pass U6 (RealityTrace, Option A): the receipt layer for this row's events — queried on
+  // mount via `observation.status`; the drill-down reads the SXR record's correlation payload.
+  const [ledger, setLedger] = useState<readonly { readonly eventId: string; readonly state?: string; readonly observationId?: string; readonly targetRef?: string | null; readonly attempts?: number }[] | undefined>(undefined);
+  const [sxrRecord, setSxrRecord] = useState<string | undefined>(undefined);
+  const eventIds = useMemo(() => [request?.eventId, tool?.eventId].filter((id): id is string => Boolean(id)), [request?.eventId, tool?.eventId]);
+  useEffect(() => {
+    setLedger(undefined);
+    setSxrRecord(undefined);
+    if (eventIds.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = (await client.invoke("observation.status", { eventIds } as never)) as unknown as {
+          readonly statuses: readonly { readonly eventId: string; readonly state?: string; readonly observationId?: string; readonly targetRef?: string | null; readonly attempts?: number }[];
+        };
+        if (!cancelled) setLedger(res.statuses);
+      } catch {
+        if (!cancelled) setLedger([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [client, eventIds]);
+  const heading = request ? `Request #${request.requestNumber} Turn ${turn?.index}` : tool ? `TOOL Turn ${turn?.index}` : "";
+  const tabs = request
+    ? (["summary", "options", "timing", "ledger"] as const)
+    : (["summary", "payload", "result", "schema", "timing", "ledger"] as const);
+  return (
+    <aside className="right-panel trace-details" role="complementary" aria-label="Event details">
+      <div className="right-panel-tabs" role="tablist">
+        <span className="trace-details-heading">{heading}</span>
+        <div className="trace-details-tabs">
+          {tabs.map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
+              {t === "summary" ? "Summary" : t === "payload" ? "Payload" : t === "result" ? "Result" : t === "schema" ? "Schema" : t === "options" ? "Options" : t === "timing" ? "Timing" : "RealityTrace"}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="icon-btn" aria-label="Close details" onClick={onClose}>
+          ×
+        </button>
+      </div>
+      <div className="right-panel-body">
+        {request && tab === "summary" && (
+          <dl className="trace-kv">
+            <dt>Status</dt>
+            <dd>{request.status === "completed" ? "Completed" : "Failed"}</dd>
+            <dt>Tool calls</dt>
+            <dd>{String(request.responseToolCalls?.length ?? 0)}</dd>
+            {request.responseText !== undefined && (
+              <>
+                <dt>Result</dt>
+                <dd>{request.responseText}</dd>
+              </>
+            )}
+            {request.failure !== undefined && (
+              <>
+                <dt>Failure</dt>
+                <dd>{request.failure}</dd>
+              </>
+            )}
+          </dl>
+        )}
+        {request && tab === "options" && (
+          <dl className="trace-kv">
+            <dt>Tools offered</dt>
+            <dd>{request.toolNames.join(", ") || "(none)"}</dd>
+            <dt>Messages</dt>
+            <dd>{request.messages.length}</dd>
+          </dl>
+        )}
+        {tool && tab === "summary" && (
+          <dl className="trace-kv">
+            <dt>Hierarchy</dt>
+            <dd>
+              <button type="button" onClick={() => undefined}>
+                Assistant Message
+              </button>
+            </dd>
+            <dt>Status</dt>
+            <dd>{tool.status === "success" ? "Completed" : tool.status === "failed" ? "Failed" : "Running"}</dd>
+          </dl>
+        )}
+        {tool && tab === "payload" && <pre className="trace-json">{tool.args}</pre>}
+        {tool && tab === "result" && <pre className="trace-json">{tool.status === "failed" ? (tool.error ?? "") : (tool.result ?? "(no output)")}</pre>}
+        {tool && tab === "schema" && (
+          <>
+            <h4>{tool.tool}</h4>
+            <p className="settings-description">{TOOL_DEFS.find((t) => t.name === tool.tool)?.description ?? "No schema recorded for this tool."}</p>
+            <pre className="trace-json">{JSON.stringify(TOOL_DEFS.find((t) => t.name === tool.tool)?.inputSchema ?? {}, null, 2)}</pre>
+          </>
+        )}
+        {tab === "timing" && (
+          <dl className="trace-kv">
+            <dt>Started</dt>
+            <dd>{(request ?? tool)?.startedAt}</dd>
+            <dt>Duration</dt>
+            <dd>
+              {tool
+                ? toolDurationMs(tool) !== undefined
+                  ? `${toolDurationMs(tool)} ms`
+                  : "(running)"
+                : request
+                  ? turn && requestDurationMs(request, turn) !== undefined
+                    ? `${requestDurationMs(request, turn)} ms`
+                    : "(n/a)"
+                  : ""}
+            </dd>
+          </dl>
+        )}
+        {tab === "ledger" && (
+          <div className="trace-ledger">
+            <p className="settings-description">
+              RealityTrace receipts for this row's events — the trace itself stays event-sourced; this is the evidence layer.
+            </p>
+            {ledger === undefined ? (
+              <p className="settings-description">Checking receipts…</p>
+            ) : ledger.length === 0 ? (
+              <p className="settings-description">No observation receipts recorded for this row's events.</p>
+            ) : (
+              ledger.map((entry) => (
+                <dl key={entry.eventId} className="trace-kv">
+                  <dt>Event</dt>
+                  <dd>
+                    <code>{entry.eventId}</code>
+                  </dd>
+                  <dt>Status</dt>
+                  <dd>{entry.state ?? "queued"}</dd>
+                  {entry.observationId !== undefined && (
+                    <>
+                      <dt>Observation</dt>
+                      <dd>
+                        <code>{entry.observationId}</code>
+                      </dd>
+                    </>
+                  )}
+                  {entry.targetRef ? (
+                    <>
+                      <dt>Ledger position</dt>
+                      <dd>
+                        <code>{entry.targetRef}</code>{" "}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void client
+                              .invoke("observation.record", { targetRef: entry.targetRef } as never)
+                              .then((res: unknown) => {
+                                const correlation = (res as { readonly correlation?: unknown }).correlation;
+                                setSxrRecord(correlation === null || correlation === undefined ? "no record at this position" : JSON.stringify(correlation, null, 2));
+                              })
+                              .catch((e) => setSxrRecord(`read failed: ${e instanceof Error ? e.message : String(e)}`))
+                          }
+                        >
+                          View SXR record
+                        </button>
+                      </dd>
+                    </>
+                  ) : null}
+                  {entry.attempts !== undefined && (
+                    <>
+                      <dt>Attempts</dt>
+                      <dd>{entry.attempts}</dd>
+                    </>
+                  )}
+                </dl>
+              ))
+            )}
+            {sxrRecord !== undefined && <pre className="trace-json">{sxrRecord}</pre>}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
 /** "Into the Unknown" hero landing (critic round-2 batch A P0, checkpoints 04/05): a workspace is
  *  selected but the active session has no messages yet — reference/observations/aria/
  *  04-workspace-selected.desktop.txt and 05-empty-session.desktop.txt are byte-identical, both
@@ -1850,13 +3175,46 @@ function HeroLanding({
   composerDisabled,
   modelLabel,
   onSend,
+  accessMode,
+  onAccessModeChange,
+  sendBehavior,
+  workspaces,
+  onSwitchWorkspace,
+  onAddWorkspace,
 }: {
   readonly workspaceLabel: string;
   readonly modeLabel: string;
   readonly composerDisabled: boolean;
   readonly modelLabel: string | undefined;
   readonly onSend: (message: string) => void;
+  /** Usage pass U2: the hero composer's access-mode dropdown edits the pending choice the
+   *  session-creating send() consumes (no session id exists yet to key an override onto). */
+  readonly accessMode: PermissionMode;
+  readonly onAccessModeChange: (mode: PermissionMode) => void;
+  readonly sendBehavior: SendBehavior;
+  /** Usage pass U3 (§12): the composer-area "Choose workspace" control — a dropdown of added
+   *  workspaces + "Add workspace…" once at least one exists. */
+  readonly workspaces: readonly WorkspaceRow[];
+  readonly onSwitchWorkspace: (ws: WorkspaceRow) => void;
+  readonly onAddWorkspace: () => void;
 }) {
+  const [chooseOpen, setChooseOpen] = useState(false);
+  const chooseRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!chooseOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (chooseRef.current && !chooseRef.current.contains(e.target as Node)) setChooseOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setChooseOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [chooseOpen]);
   return (
     <>
       <div className="hero-landing">
@@ -1866,10 +3224,47 @@ function HeroLanding({
           <span className="hero-preview-badge">Preview</span>
         </div>
         <div className="hero-pills">
-          <span className="hero-pill" title={workspaceLabel}>
-            <FolderIcon aria-hidden="true" />
-            {workspaceLabel}
-          </span>
+          <div className="hero-pill hero-pill-choice" ref={chooseRef}>
+            <button
+              type="button"
+              aria-label="Choose workspace"
+              aria-haspopup="menu"
+              aria-expanded={chooseOpen}
+              title={workspaceLabel}
+              onClick={() => setChooseOpen((v) => !v)}
+            >
+              <FolderIcon aria-hidden="true" />
+              {workspaceLabel}
+              <ChevronDownIcon aria-hidden="true" />
+            </button>
+            {chooseOpen && (
+              <div role="menu" className="workspace-actions-menu hero-choose-menu">
+                {workspaces.map((ws) => (
+                  <button
+                    key={ws.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setChooseOpen(false);
+                      onSwitchWorkspace(ws);
+                    }}
+                  >
+                    {ws.title || ws.id}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setChooseOpen(false);
+                    onAddWorkspace();
+                  }}
+                >
+                  Add workspace…
+                </button>
+              </div>
+            )}
+          </div>
           <span className="mode-badge">{modeLabel}</span>
         </div>
         <div className="hero-composer">
@@ -1881,6 +3276,10 @@ function HeroLanding({
             onSend={onSend}
             onStop={() => undefined}
             onTogglePlanMode={() => undefined}
+            accessMode={accessMode}
+            onAccessModeChange={onAccessModeChange}
+            sendBehavior={sendBehavior}
+            onBusySubmit={() => undefined}
           />
         </div>
       </div>
@@ -1894,11 +3293,69 @@ export function App() {
   const sessions = useSessions();
   const modelConfig = useModelConfig();
   const currentWorkspaceId = useCurrentWorkspaceId();
-  const [theme, toggleTheme] = useTheme();
-  const workDetails = useWorkDetails();
+  // Usage pass U2: every General setting resolves from the durable `settings` row (one merged
+  // "current" row folded from `settings.changed` events); the concrete theme follows the
+  // `appearance` setting (light/dark/system — system tracks the OS scheme live).
+  const settings = useGeneralSettings();
+  const theme = useTheme(settings.appearance);
+  const workDetails = settings.workDetails;
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // "Open keyboard shortcuts Ctrl /" (ShortcutsDialog's one real binding) — a global listener, so
+  // the dialog opens from anywhere. Ignored while typing in a textarea/input (the reference's
+  // binding list is application-level, not composer-level).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && (e.ctrlKey || e.metaKey)) {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT")) return;
+        e.preventDefault();
+        setShortcutsOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const [collapsed, setCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  // Usage pass U2: per-session access mode (the composer dropdown) — an override map keyed by
+  // session id, seeded from the settings default for new sessions (`pendingAccessMode` carries a
+  // hero-composer choice into the session send() creates). The `sessions` projection folds each
+  // run's mode back from durable events, so a reload restores the last-used value.
+  const [accessModeOverrides, setAccessModeOverrides] = useState<Record<string, PermissionMode>>({});
+  const [pendingAccessMode, setPendingAccessMode] = useState<PermissionMode | undefined>(undefined);
+  // Send behavior while busy (§11): a Queue-parked message waits (ref-mirrored so the settle
+  // effect reads it without a dependency loop); Steer cancels + sends immediately.
+  const [queuedMessage, setQueuedMessage] = useState<string | undefined>(undefined);
+  const queuedRef = useRef<string | undefined>(undefined);
+  // Usage pass U3 (reference-behavior-matrix.md §12): the sidebar's Workspaces header controls and
+  // multi-workspace tree — search, view options (grouping/ordering), per-workspace collapse state,
+  // the per-workspace actions menu, and the Add-workspace / Rename dialogs.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [sessionSearch, setSessionSearch] = useState("");
+  const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
+  const viewOptionsRef = useRef<HTMLDivElement>(null);
+  const [groupBy, setGroupBy] = useState<"workspace-tree" | "in-one-list">("workspace-tree");
+  const [orderBy, setOrderBy] = useState<"manual" | "last-updated">("manual");
+  const [collapsedWorkspaces, setCollapsedWorkspaces] = useState<ReadonlySet<string>>(new Set());
+  const [wsMenuFor, setWsMenuFor] = useState<string | undefined>(undefined);
+  const [addWorkspaceOpen, setAddWorkspaceOpen] = useState(false);
+  const [renameFor, setRenameFor] = useState<{ readonly id: string; readonly title: string } | undefined>(undefined);
+  const [chooseWsOpen, setChooseWsOpen] = useState(false);
+  const chooseWsRef = useRef<HTMLDivElement>(null);
+  // Usage pass U4 (§14): the sidebar "Plugins" global panel — a toggle that swaps the center
+  // column for the plugin manager (the reference's panel replaces the session surface, per the
+  // 25b checkpoint's aria tree).
+  const [pluginsPanelOpen, setPluginsPanelOpen] = useState(false);
+  // Usage pass U4 (§15): per-session agent preset (the header selector) — the value the composer
+  // sends as `AgentCodingInput.preset` on this session's NEXT turn; the `sessions` projection folds
+  // the last run's preset back into the row's `mode` badge field.
+  const [presetOverrides, setPresetOverrides] = useState<Record<string, AgentPreset>>({});
+  // Usage pass U5 (§13): the session header's Chat/Trajectory tab strip (gated on the Coding Tools
+  // setting) and the Event-details panel's selected row.
+  const [sessionTab, setSessionTab] = useState<"chat" | "trajectory">("chat");
+  const [traceDetail, setTraceDetail] = useState<{ readonly kind: "request" | "tool"; readonly turnIndex: number; readonly requestNumber?: number; readonly toolCallId?: string } | undefined>(undefined);
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>(undefined);
   const [transcript, setTranscript] = useState<readonly ChatMessage[]>([]);
   const [activeRunId, setActiveRunId] = useState<string | undefined>(undefined);
@@ -1926,6 +3383,8 @@ export function App() {
   // ever open at a time.
   const planState = usePlanState(activeSessionId);
   const planReviewPendingSessions = usePlanReviewPendingSessions();
+  // Usage pass U5 (§13): the active session's execution trace + the Coding Tools gate.
+  const trace = useSessionTrace(activeSessionId);
 
   // J-F-delegation: subagent rows for the active session, plus a local toggle for the banner's "N
   // subagent(s)" disclosure (reference-behavior-matrix.md §6.4).
@@ -1965,6 +3424,20 @@ export function App() {
   const composerDisabled = !currentWorkspaceId || !modelConfig;
   const currentSession = sessions.find((s) => s.id === activeSessionId);
   const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId);
+  // Usage pass U2: the composer dropdown's effective value — the per-session override, else the
+  // `sessions` projection's folded access mode (last run's `mode`), else the settings default
+  // (hero composer: a pending choice made before the session exists, else the settings default).
+  const effectiveAccessMode: PermissionMode =
+    (activeSessionId ? accessModeOverrides[activeSessionId] : undefined) ??
+    (currentSession && isPermissionMode(currentSession.accessMode) ? currentSession.accessMode : undefined) ??
+    (activeSessionId ? settings.permission : (pendingAccessMode ?? settings.permission));
+  const changeAccessMode = useCallback(
+    (mode: PermissionMode) => {
+      if (activeSessionId) setAccessModeOverrides((prev) => ({ ...prev, [activeSessionId]: mode }));
+      else setPendingAccessMode(mode);
+    },
+    [activeSessionId],
+  );
 
   // Remembers the last-open session per workspace (`localStorage`, per-browser only — see Artifact
   // tool's browser-storage guidance; this is a UI convenience, not durable state) so a reload lands
@@ -1983,6 +3456,8 @@ export function App() {
     async (sessionId: string) => {
       setActiveSessionId(sessionId);
       setOpenReview(undefined);
+      setTraceDetail(undefined);
+      setSessionTab("chat");
       // Reattach to a still-in-flight run (running, or waiting on an approval continuation) so its
       // live tool/approval state survives a reload (`11b-approval-pending-after-reload`) — the
       // `sessions` projection's `runId`/`lastStatus` are durable, so this works after a full
@@ -2036,7 +3511,49 @@ export function App() {
     setActiveRunId(undefined);
     setTranscript([]);
     setOpenReview(undefined);
+    setTraceDetail(undefined);
+    setSessionTab("chat");
   }, []);
+
+  // Usage pass U3 (§12): "New session in <name>" — a workspace row's hover action. Selecting the
+  // workspace (an idempotent re-select for a known path) switches the current pointer, then a
+  // fresh session opens in it.
+  const newSessionIn = useCallback(
+    async (ws: WorkspaceRow) => {
+      try {
+        await client.invoke("workspace.select", { path: ws.path } as never);
+      } catch (error) {
+        console.error("workspace.select (new session in) failed", error);
+        return;
+      }
+      newSession();
+    },
+    [client, newSession],
+  );
+
+  // Close the sidebar's floating menus on outside click / Escape (same pattern as SettingMenu).
+  useEffect(() => {
+    if (!viewOptionsOpen && !chooseWsOpen && wsMenuFor === undefined) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (viewOptionsOpen && viewOptionsRef.current && !viewOptionsRef.current.contains(target)) setViewOptionsOpen(false);
+      if (chooseWsOpen && chooseWsRef.current && !chooseWsRef.current.contains(target)) setChooseWsOpen(false);
+      if (wsMenuFor !== undefined && !(target instanceof Element && target.closest(".workspace-actions-menu, .workspace-actions-btn"))) setWsMenuFor(undefined);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setViewOptionsOpen(false);
+        setChooseWsOpen(false);
+        setWsMenuFor(undefined);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [viewOptionsOpen, chooseWsOpen, wsMenuFor]);
 
   const send = useCallback(
     async (message: string) => {
@@ -2044,6 +3561,17 @@ export function App() {
       const sessionId = activeSessionId ?? crypto.randomUUID();
       if (!activeSessionId) setActiveSessionId(sessionId);
       rememberSession(currentWorkspaceId, sessionId);
+      // Usage pass U2: the access mode this run runs under — the per-session override, else the
+      // pending hero-composer choice (consumed by the session-creating send), else the settings
+      // default. `agent.coding` feeds it to `approvalGate`; the `sessions` projection folds it.
+      const mode = accessModeOverrides[sessionId] ?? (activeSessionId ? undefined : pendingAccessMode) ?? settings.permission;
+      const preset = activeSessionId ? (presetOverrides[sessionId] ?? settings.preset) : settings.preset;
+      if (!activeSessionId) {
+        if (pendingAccessMode !== undefined) {
+          setAccessModeOverrides((prev) => ({ ...prev, [sessionId]: pendingAccessMode }));
+          setPendingAccessMode(undefined);
+        }
+      }
       const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       // J-E-plan: a leading "/plan " prefix (composer literal-insertion, reference-behavior-
       // matrix.md §6.3) enters plan mode server-side (`agent.coding`'s `plan.mode.changed` event) —
@@ -2058,12 +3586,12 @@ export function App() {
       runStartedAtRef.current = Date.now();
       const view = await client.startRun(
         "agent.coding",
-        { sessionId, workspaceId: currentWorkspaceId, message } as unknown as Json,
+        { sessionId, workspaceId: currentWorkspaceId, message, mode, preset } as unknown as Json,
         { idempotencyKey: crypto.randomUUID(), correlationId: `session:${sessionId}` },
       );
       setActiveRunId(view.runId);
     },
-    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on],
+    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on, accessModeOverrides, pendingAccessMode, settings.permission, presetOverrides, settings.preset],
   );
 
   const stop = useCallback(async () => {
@@ -2076,6 +3604,37 @@ export function App() {
   const togglePlanMode = useCallback(() => {
     void send("/plan off");
   }, [send]);
+
+  // Send behavior while busy (usage pass U2, §11): Queue parks the message until the active run
+  // settles; Steer cancels the run and sends immediately (the interrupted turn renders as the
+  // usual "Stopped" partial).
+  const busySubmit = useCallback(
+    (message: string, behavior: SendBehavior) => {
+      if (behavior === "steer") {
+        if (activeRunId) void client.cancelRun(activeRunId, "user-cancelled").then(() => send(message));
+        else void send(message);
+      } else {
+        queuedRef.current = message;
+        setQueuedMessage(message);
+      }
+    },
+    [activeRunId, client, send],
+  );
+  const cancelQueued = useCallback(() => {
+    queuedRef.current = undefined;
+    setQueuedMessage(undefined);
+  }, []);
+
+  // Dispatch a Queue-parked message once the run settles (status returns to idle after the settle
+  // effect above has appended the finished turn and cleared activeRunId).
+  useEffect(() => {
+    if (streaming.status !== "idle") return;
+    const queued = queuedRef.current;
+    if (queued === undefined) return;
+    queuedRef.current = undefined;
+    setQueuedMessage(undefined);
+    void send(queued);
+  }, [streaming.status, send]);
 
   useEffect(() => {
     if (streaming.status === "completed" && streaming.text) {
@@ -2149,51 +3708,221 @@ export function App() {
         </button>
 
         {!collapsed && (
+          <nav className="global-panels" aria-label="Global panels">
+            <button
+              type="button"
+              className={pluginsPanelOpen ? "global-panel-btn active" : "global-panel-btn"}
+              aria-label="Plugins"
+              aria-pressed={pluginsPanelOpen}
+              onClick={() => setPluginsPanelOpen((v) => !v)}
+            >
+              <PluginIcon />
+              Plugins
+            </button>
+          </nav>
+        )}
+
+        {!collapsed && (
           <div className="workspaces-section">
             <div className="workspaces-header">
               <span>Workspaces</span>
-            </div>
-            <div role="tree" aria-label="Sessions" className="session-tree">
-              {currentWorkspace ? (
-                <div role="treeitem" aria-expanded="true" className="workspace-row">
-                  <span className="workspace-row-label" title={currentWorkspace.path}>
-                    <FolderIcon aria-hidden="true" />
-                    {currentWorkspace.title || currentWorkspace.id}
-                  </span>
-                  <div className="session-rows">
-                    {sessions
-                      .filter((s) => s.workspaceId === currentWorkspaceId)
-                      .map((session) => (
-                        <button
-                          key={session.id}
-                          type="button"
-                          role="treeitem"
-                          aria-selected={session.id === activeSessionId}
-                          className={session.id === activeSessionId ? "session-row active" : "session-row"}
-                          onClick={() => openSession(session.id)}
-                          title={session.title}
-                        >
-                          <span className="session-row-title">
-                            {planReviewPendingSessions.has(session.id)
-                              ? "Plan awaiting review "
-                              : session.lastStatus === "waiting" && !planReviewPendingSessions.has(session.id)
-                                ? "Waiting for approval "
-                                : ""}
-                            {session.title || "New Session"}
-                          </span>
-                          {session.lastStatus === "waiting" && !planReviewPendingSessions.has(session.id) && (
-                            <span className="approval-badge" title="Waiting for approval">
-                              <span className="approval-badge-dot" aria-hidden="true" />
-                              Approval
-                            </span>
-                          )}
-                          <span className="session-row-time">{relativeTime(session.updatedAt)}</span>
-                        </button>
-                      ))}
+              <div className="workspaces-header-actions">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label="Search sessions"
+                  aria-expanded={searchOpen}
+                  title="Search sessions"
+                  onClick={() => {
+                    setSearchOpen((v) => !v);
+                    if (searchOpen) setSessionSearch("");
+                  }}
+                >
+                  <SearchIcon />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label="View options"
+                  aria-haspopup="menu"
+                  aria-expanded={viewOptionsOpen}
+                  title="View options"
+                  onClick={() => setViewOptionsOpen((v) => !v)}
+                >
+                  <SlidersIcon />
+                </button>
+                {viewOptionsOpen && (
+                  <div role="menu" className="workspaces-view-options" ref={viewOptionsRef}>
+                    <span className="view-options-group-label">Group by</span>
+                    <button type="button" role="menuitem" disabled title={NOT_IMPLEMENTED}>
+                      WorkSpace
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      aria-checked={groupBy === "workspace-tree"}
+                      onClick={() => {
+                        setGroupBy("workspace-tree");
+                        setViewOptionsOpen(false);
+                      }}
+                    >
+                      Workspace Tree
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      aria-checked={groupBy === "in-one-list"}
+                      onClick={() => {
+                        setGroupBy("in-one-list");
+                        setViewOptionsOpen(false);
+                      }}
+                    >
+                      In one list
+                    </button>
+                    <span className="view-options-group-label">Order by</span>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      aria-checked={orderBy === "manual"}
+                      onClick={() => {
+                        setOrderBy("manual");
+                        setViewOptionsOpen(false);
+                      }}
+                    >
+                      Manual
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      aria-checked={orderBy === "last-updated"}
+                      onClick={() => {
+                        setOrderBy("last-updated");
+                        setViewOptionsOpen(false);
+                      }}
+                    >
+                      Last updated
+                    </button>
+                    <span className="view-options-group-label">Filter sessions</span>
+                    <button type="button" role="menuitem" disabled title={NOT_IMPLEMENTED}>
+                      Hide archived
+                    </button>
+                    <button type="button" role="menuitem" disabled title={NOT_IMPLEMENTED}>
+                      All conversations (show archived)
+                    </button>
                   </div>
-                </div>
-              ) : (
+                )}
+                <button type="button" className="icon-btn" aria-label="Add workspace" title="Add workspace" onClick={() => setAddWorkspaceOpen(true)}>
+                  <PlusIcon />
+                </button>
+              </div>
+            </div>
+            {searchOpen && (
+              <div className="workspaces-search-row" role="search" aria-label="Search sessions">
+                <input
+                  aria-label="Search session names"
+                  placeholder="Search session names"
+                  value={sessionSearch}
+                  onChange={(e) => setSessionSearch(e.currentTarget.value)}
+                  autoFocus
+                />
+                <button type="button" className="icon-btn" aria-label="Clear search" onClick={() => setSessionSearch("")}>
+                  ×
+                </button>
+              </div>
+            )}
+            <div role="tree" aria-label="Sessions" className="session-tree">
+              {workspaces.length === 0 ? (
                 <p className="empty-state small">No workspace selected</p>
+              ) : groupBy === "in-one-list" ? (
+                orderSessions(
+                  sessions.filter((s) => sessionMatchesSearch(s, sessionSearch)),
+                  orderBy,
+                ).map((session) => (
+                  <SessionRowButton
+                    key={session.id}
+                    session={session}
+                    active={session.id === activeSessionId}
+                    planPending={planReviewPendingSessions.has(session.id)}
+                    onOpen={() => openSession(session.id)}
+                  />
+                ))
+              ) : (
+                workspaces.map((ws) => {
+                  const wsSessions = orderSessions(
+                    sessions.filter((s) => s.workspaceId === ws.id && sessionMatchesSearch(s, sessionSearch)),
+                    orderBy,
+                  );
+                  const collapsedWs = collapsedWorkspaces.has(ws.id);
+                  return (
+                    <div key={ws.id} role="treeitem" aria-expanded={!collapsedWs} className="workspace-row">
+                      <span className="workspace-row-label" title={ws.path}>
+                        <FolderIcon aria-hidden="true" />
+                        {ws.title || ws.id}
+                        <button
+                          type="button"
+                          className="icon-btn workspace-new-session-btn"
+                          aria-label={`New session in ${ws.title || ws.id}`}
+                          title={`New session in ${ws.title || ws.id}`}
+                          onClick={() => void newSessionIn(ws)}
+                        >
+                          <PlusIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-btn workspace-actions-btn"
+                          aria-label={`Workspace actions for ${ws.title || ws.id}`}
+                          aria-haspopup="menu"
+                          aria-expanded={wsMenuFor === ws.id}
+                          title={`Workspace actions for ${ws.title || ws.id}`}
+                          onClick={() => setWsMenuFor(wsMenuFor === ws.id ? undefined : ws.id)}
+                        >
+                          <MoreIcon />
+                        </button>
+                        {wsMenuFor === ws.id && (
+                          <div role="menu" className="workspace-actions-menu">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setWsMenuFor(undefined);
+                                setRenameFor({ id: ws.id, title: ws.title || ws.id });
+                              }}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setWsMenuFor(undefined);
+                                void client.invoke("workspace.delete", { workspaceId: ws.id } as never).catch((e) => console.error("workspace.delete failed", e));
+                              }}
+                            >
+                              Delete workspace
+                            </button>
+                          </div>
+                        )}
+                      </span>
+                      {!collapsedWs && (
+                        <div className="session-rows">
+                          {wsSessions.length === 0 ? (
+                            <p className="empty-state small">No sessions yet</p>
+                          ) : (
+                            wsSessions.map((session) => (
+                              <SessionRowButton
+                                key={session.id}
+                                session={session}
+                                active={session.id === activeSessionId}
+                                planPending={planReviewPendingSessions.has(session.id)}
+                                onOpen={() => openSession(session.id)}
+                              />
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -2208,15 +3937,23 @@ export function App() {
       </aside>
 
       <main className="center-column">
-        {!currentWorkspaceId ? (
+        {pluginsPanelOpen ? (
+          <PluginsPanel onClose={() => setPluginsPanelOpen(false)} />
+        ) : !currentWorkspaceId ? (
           <WorkspaceChooser />
         ) : showHero ? (
           <HeroLanding
             workspaceLabel={currentWorkspace?.title || currentWorkspace?.id || ""}
-            modeLabel={currentSession?.mode === "ptc" ? "PTC mode" : "Standard mode"}
+            modeLabel={AGENT_PRESET_LABELS[settings.preset]}
             composerDisabled={composerDisabled}
             modelLabel={modelLabel}
             onSend={send}
+            accessMode={effectiveAccessMode}
+            onAccessModeChange={changeAccessMode}
+            sendBehavior={settings.sendBehavior}
+            workspaces={workspaces}
+            onSwitchWorkspace={(ws) => void newSessionIn(ws)}
+            onAddWorkspace={() => setAddWorkspaceOpen(true)}
           />
         ) : (
           <>
@@ -2248,9 +3985,42 @@ export function App() {
                   )}
                 </div>
               )}
-              <span className="mode-badge">{currentSession?.mode === "ptc" ? "PTC mode" : "Standard mode"}</span>
+              {settings.codingTools && (
+                <div role="tablist" aria-label="Session views" className="session-tabs">
+                  <button type="button" role="tab" aria-selected={sessionTab === "chat"} onClick={() => setSessionTab("chat")}>
+                    Chat
+                  </button>
+                  <button type="button" role="tab" aria-selected={sessionTab === "trajectory"} onClick={() => setSessionTab("trajectory")}>
+                    Trajectory
+                  </button>
+                </div>
+              )}
+              <PresetMenu
+                current={
+                  currentSession?.mode === "ptc"
+                    ? "ptc"
+                    : currentSession?.mode === "minimal"
+                      ? "minimal"
+                      : currentSession?.mode === "standard"
+                        ? "standard"
+                        : undefined
+                }
+                fallback={settings.preset}
+                onPick={(preset) => {
+                  if (activeSessionId) setPresetOverrides((prev) => ({ ...prev, [activeSessionId]: preset }));
+                }}
+              />
             </header>
-            <div className="messages" aria-live="polite" aria-atomic="false" aria-relevant="additions text">
+            {sessionTab === "trajectory" ? (
+              <TrajectoryView trace={trace} onSelect={setTraceDetail} />
+            ) : (
+            <div
+              className="messages"
+              aria-live="polite"
+              aria-atomic="false"
+              aria-relevant="additions text"
+              style={{ "--cg-content-font-size": `${settings.fontSize}px` } as React.CSSProperties}
+            >
               {transcript.length === 0 && streaming.status === "idle" && <p className="empty-state">Start the conversation below.</p>}
               {transcript.map((message, index) => (
                 <MessageBubble key={index} message={message} turnNumber={index + 1} onOpenReview={openReviewPanel} workDetails={workDetails} />
@@ -2263,6 +4033,7 @@ export function App() {
                 </>
               )}
             </div>
+            )}
             {planState && planState.todos.length > 0 && <TodoWidget todos={planState.todos} />}
             {pendingApproval ? (
               <ApprovalBar entry={pendingApproval} onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)} />
@@ -2283,6 +4054,12 @@ export function App() {
                 onTogglePlanMode={togglePlanMode}
                 turns={sessionTurns}
                 steps={sessionSteps}
+                accessMode={effectiveAccessMode}
+                onAccessModeChange={changeAccessMode}
+                sendBehavior={settings.sendBehavior}
+                onBusySubmit={busySubmit}
+                queued={queuedMessage}
+                onCancelQueued={cancelQueued}
               />
             )}
           </>
@@ -2290,10 +4067,15 @@ export function App() {
       </main>
       {openReview ? (
         <ReviewPanel summary={openReview.summary} turnNumber={openReview.turnNumber} onClose={() => setOpenReview(undefined)} />
+      ) : traceDetail ? (
+        <TraceDetailsPanel trace={trace} detail={traceDetail} onClose={() => setTraceDetail(undefined)} />
       ) : (
         openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />
       )}
-      {showSettings && <SettingsModels onClose={() => setShowSettings(false)} theme={theme} onToggleTheme={toggleTheme} workDetails={workDetails} />}
+      {showSettings && <SettingsModels onClose={() => setShowSettings(false)} settings={settings} onOpenShortcuts={() => setShortcutsOpen(true)} />}
+      {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
+      {addWorkspaceOpen && <AddWorkspaceDialog onClose={() => setAddWorkspaceOpen(false)} />}
+      {renameFor && <RenameWorkspaceDialog workspace={renameFor} onClose={() => setRenameFor(undefined)} />}
       <FirstRunDialogs />
     </div>
   );

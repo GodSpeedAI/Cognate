@@ -36,13 +36,23 @@ export const sessionsProjection: Projection = {
     // tracked instead by the `subagents` projection — see `src/projections/subagents.ts`).
     if (!event.correlationId.startsWith("session:")) return [];
     if (event.eventType === "session.turn.started") {
-      const payload = event.payload as { readonly sessionId: string; readonly workspaceId: string; readonly message: string };
+      const payload = event.payload as { readonly sessionId: string; readonly workspaceId: string; readonly message: string; readonly mode?: string; readonly preset?: string };
       const key = `${event.tenant}/${payload.sessionId}`;
       const existing = state.get(key) as Record<string, Json> | undefined;
       // Title from the literal first human message, set immediately (reference-behavior-matrix.md
       // §4) — only the *first* turn's message sets it; a later turn in the same session must not
       // overwrite an already-titled session.
       const title = existing?.title && existing.title !== "New Session" ? existing.title : titleFrom(payload.message);
+      // Usage pass U2: fold the session's CURRENT access mode from the run input the turn started
+      // with (the composer's per-session dropdown passes `AgentCodingInput.mode` through here; a
+      // direct API run without a mode leaves whatever was already folded). This is distinct from
+      // the sticky `mode: "ptc"` badge field below.
+      const accessMode = typeof payload.mode === "string" ? payload.mode : existing?.accessMode;
+      // Usage pass U4 (reference-behavior-matrix.md SS15): the header's mode badge reflects the
+      // session's agent preset once a turn carries one (the composer always sends it); the
+      // approval-derived sticky "ptc" below stays as the fallback for direct-API runs that never
+      // name a preset. The badge vocabulary is the presets' own labels ("Standard mode" etc.).
+      const preset = typeof payload.preset === "string" ? payload.preset : existing?.mode;
       return [
         {
           key,
@@ -53,6 +63,8 @@ export const sessionsProjection: Projection = {
             lastStatus: "running",
             runId: event.runId,
             updatedAt: event.recordedAt,
+            ...(accessMode !== undefined ? { accessMode } : {}),
+            ...(preset !== undefined ? { mode: preset } : {}),
           },
         },
       ];
@@ -63,7 +75,8 @@ export const sessionsProjection: Projection = {
       const existing = state.get(key) as Record<string, Json> | undefined;
       // Title was already set from the literal first message at `session.turn.started` time; keep
       // it (falling back to the answer text only in the defensive case a `session.turn.started`
-      // event was somehow never seen for this session).
+      // event was somehow never seen for this session). The folded `accessMode` (usage pass U2)
+      // persists across the turn's completion the same way.
       return [
         {
           key,
@@ -74,6 +87,10 @@ export const sessionsProjection: Projection = {
             lastStatus: "completed",
             runId: event.runId,
             updatedAt: event.recordedAt,
+            ...(existing?.accessMode !== undefined ? { accessMode: existing.accessMode } : {}),
+            // Usage pass U4: the folded preset (the row's `mode` badge field) persists across the
+            // turn's completion the same way `accessMode` does.
+            ...(existing?.mode !== undefined ? { mode: existing.mode } : {}),
           },
         },
       ];

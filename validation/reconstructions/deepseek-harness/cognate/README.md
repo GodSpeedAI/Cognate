@@ -203,21 +203,58 @@ workspace), J-B-basic-session (one streamed turn, history into the next), J-C-to
 
 ## Known gaps vs. the reference product
 
-- No plan mode, no subagents, no cancel/retry (beyond the T5b UI-level Stop button) — later
-  tranches (T9–T11) per `.agents/plans/deepseek-harness-reconstruction.md`.
+(resolved progressively: plan mode/subagents T9–T10, cancel/retry T11 — see the tranches below
+and DEVIATIONS.md for what remains intentionally different)
 - The UI does not reproduce the reference's exact Astryx shell geometry (sidebar drag-resize, right
   sidebar) — it is a minimal shell using `@cognate/react` hooks with the Astryx CSS loaded but not
   its component primitives, styled to the same rough proportions (`src/ui/app.css`); the sidebar's
   1024px auto-collapse breakpoint itself matches the reference (critic round-1 P0-2 — see
   `DEVIATIONS.md`). A full Astryx-shell rebuild is a larger UI-only follow-up.
 - `renderMarkdown` (`src/ui/markdown.ts`) is a small hand-rolled subset (headings, lists, inline
-  code/bold/links, fenced code blocks) — enough for the mock model's `plain` scenario, not the
+  code/bold/links, fenced code blocks) — enough for the scenario fixtures' plain replies, not the
   reference's full CJK/table/math/gallery markdown feature set (product-characterization.md §6).
 - Session title is the literal first human message text, truncated, set immediately at turn start
   (matches the reference — see `src/projections/sessions.ts` and `DEVIATIONS.md`, critic round-1
   P0-3); the reference's separate `all-prompts` LLM re-titling cadence is not implemented.
 - Composer stats ("`N turns N steps · N tok/s`", "`N% of context used`") are present but static
   (`0`) — no turn/step/token/context accounting is computed yet. See `DEVIATIONS.md`.
+
+## Usage-harness features (usage plan U0–U6, 2026-09-30)
+
+`.agents/plans/deepseek-harness-usage-features.md` — the operator-commissioned pass that turns the
+settled parity reconstruction into a usable harness. Journeys: `J-SET-settings`,
+`J-WS2-multi-workspace`, `J-PLG-panels`, `J-T-trajectory`, `J-RT-realitytrace`, `J-AIM-aimock`
+(`test/`). Characterization: `reference-behavior-matrix.md` §11–15 (pinned reference, checkpoints
+22*–26*); deviations per surface: `DEVIATIONS.md`. Highlights:
+
+- **Model endpoint: `@copilotkit/aimock` (`llmock`)** — the simulated OpenAI endpoint for every
+  test, capture, and `just harness-up` (`fixtures/aimock/fixtures.json`; the hand-written mock
+  server is retired). J-AIM proves fixture matches, tool round-trips, and that unmatched messages
+  surface as failed runs.
+- **Settings → General, full inventory** (`settings.ts`): Permission (with the Full-access
+  confirm dialog; the composer's per-session access-mode dropdown feeds `approvalGate` via
+  `AgentCodingInput.mode`), Language, Appearance (Light/Dark/System), Font size (floor 12), Work
+  details, Performance & usage, Coding Tools, Keyboard shortcuts (Ctrl / opens the dialog), Send
+  behavior while busy (Queue parks; Steer cancels+sends; Cmd/Ctrl+Enter uses the other behavior).
+- **Sidebar Workspaces section**: every workspace is a treeitem with its own sessions; header
+  search + view options (grouping/ordering) + Add workspace; composer-area "Choose workspace"
+  dropdown; per-workspace hover actions — New session in <name>, Rename, Delete workspace
+  (`workspace.rename`/`workspace.delete` → `agent.config` events → the `workspaces` projection).
+- **Built-in plugins + Agent presets**: an honest inspect-only inventory of this app's own
+  capabilities, and three behavioral presets (Standard/PTC/Minimal — `PRESET_TOOLS` scopes each
+  turn's tool catalog; `settings.changePreset` is the durable new-task default; the session
+  header's mode badge is the per-session selector; out-of-catalog tool calls fail closed with the
+  reference's `Error: unknown tool` wording).
+- **Developer tools**: the Chat/Trajectory tab strip (gated on Coding Tools) over the public
+  `session-trace` projection — USER rows, ASSISTANT `Request #N` rows (one per recorded
+  `model.generate` invocation), TOOL rows with args/results/durations; Event details panel with
+  Summary/Payload/Result/Schema/Timing (requests: Summary/Options/Timing); collapse-turns +
+  live search. Durable: re-folds from the same SQLite store after a full restart (J-T).
+- **RealityTrace enrichment (Option A)**: trace-worthy events get observation intents committed
+  atomically (`outboxFor`), delivered at-least-once by `ObservationDelivery` to the pinned SXR
+  CLI v0.3.0; the Event details panel's RealityTrace tab shows receipts (state, observation id,
+  ledger position) and the SXR record drill-down (CEP `extensions.cognate`). Without the binary
+  the harness runs unchanged — observations stay queued, traces stay event-sourced (J-RT).
 
 ## UI fidelity pass (T5b)
 
@@ -241,7 +278,8 @@ diff) plus `../diffs/summary.md`. Run:
 
 ```bash
 # from validation/reconstructions/deepseek-harness/tests, with the mock model already running
-# on 127.0.0.1:4010 (fixtures/mock-model/server.ts):
+# on 127.0.0.1:4010 (aimock/llmock serving fixtures/aimock/fixtures.json — `just harness-up`
+# from the repo root boots exactly that):
 bun run capture/cognate.capture.ts desktop 1440 900 /tmp/cg-home-desktop 3182 /tmp/cg-ws-desktop
 bun run capture/cognate.capture.ts laptop 1024 768 /tmp/cg-home-laptop 3183 /tmp/cg-ws-laptop
 bun run visual/compare.ts

@@ -9,19 +9,19 @@
   "agent": {
    "up": true,
    "status": 200,
-   "tries": 2
+   "tries": 3
   },
   "uiAttempt": {
    "attempt": 1,
    "up": true,
    "status": 200,
-   "tries": 6,
+   "tries": 9,
    "cssBroken": false
   },
   "ui": {
    "up": true,
    "status": 200,
-   "tries": 6,
+   "tries": 9,
    "cssBroken": false,
    "attempts": 1
   }
@@ -47,7 +47,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 134811,
+     "pid": 769313,
      "cwd": ".tmp/ref/copilotkit/examples/integrations/langgraph-js",
      "origin": "reference"
     }
@@ -60,7 +60,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 134658,
+     "pid": 768840,
      "cwd": ".tmp/ref/copilotkit/examples/integrations/langgraph-js/agent",
      "origin": "reference"
     }
@@ -73,7 +73,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 134373,
+     "pid": 768012,
      "cwd": ".tmp/ref/copilotkit",
      "origin": "reference"
     }
@@ -86,7 +86,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 134411,
+     "pid": 768045,
      "cwd": "validation/reconstructions/copilot/reference",
      "origin": "harness-sidecar"
     }

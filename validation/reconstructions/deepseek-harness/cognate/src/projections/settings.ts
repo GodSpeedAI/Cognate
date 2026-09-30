@@ -1,18 +1,26 @@
 // Public projection `settings`: folds `settings.changed` events into a single "current" row, the
-// same one-row-per-tenant convention `model-config` uses. Absence of a row is what makes the UI
-// fall back to the default work-details mode ("standard") on a fresh COGNATE_HARNESS_HOME.
+// same one-row-per-tenant convention `model-config` uses. Events carry partial patches (usage pass
+// U2: each `settings.change*` capability writes only its own field — `workDetails`, `permission`,
+// `language`, `appearance`, `fontSize`, `performanceDetail`, `codingTools`, `sendBehavior`), so the
+// fold MERGES into the previous row instead of replacing it: a field, once set, keeps its value
+// until a later event changes it, and fields an event does not mention are untouched. Absence of
+// the row (or of a field) is what makes the UI fall back to the documented defaults on a fresh
+// COGNATE_HARNESS_HOME (`src/settings.ts`'s `resolveGeneralSettings`).
+import type { Json } from "@cognate/events";
 import type { Projection } from "@cognate/projections";
 
 export const settingsProjection: Projection = {
   name: "settings",
-  version: "1.0.0",
-  apply(event) {
+  version: "1.1.0",
+  apply(event, state) {
     if (event.eventType !== "settings.changed") return [];
-    const payload = event.payload as { readonly workDetails: string };
+    const payload = event.payload as Record<string, Json>;
+    const key = `${event.tenant}/current`;
+    const existing = state.get(key) as Record<string, Json> | undefined;
     return [
       {
-        key: `${event.tenant}/current`,
-        value: { workDetails: payload.workDetails, updatedAt: event.recordedAt },
+        key,
+        value: { ...(existing ?? {}), ...payload, updatedAt: event.recordedAt },
       },
     ];
   },

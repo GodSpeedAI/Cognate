@@ -23,12 +23,32 @@ objects, digest logged at startup).
 | 10 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.path` v1.0.0 | `workspacePathComponent` (`src/capabilities/workspacePath.ts`) | Resolves a `workspaceId` to its canonical path for the tool loop (`agent.coding`'s `ctx.invoke("workspace.path", ...)`). |
 | 11 | `deepseek-harness.interaction::PlanMode` | `plan.state` v1.0.0 | `planStateComponent` (`src/capabilities/planState.ts`) | Resolves a `sessionId` to its current plan-mode/todos/review state (the `plans` projection) — `agent.coding`'s per-turn read of whether the session is genuinely in plan mode. |
 | 12 | `deepseek-harness.interaction::Subagent` | `subagent.start` v1.0.0 | `subagentStartComponent` (`src/capabilities/subagentStart.ts`) | Starts a child `agent.coding` run correlated `subagent:<parentRunId>:<id>`, invoked directly and fire-and-forget by the `subagent` tool (`agentCoding.ts`) — not `@cognate/profile-harness`'s packaged `subagent.start` (see the file's own comment for why). |
+| 13 | `deepseek-harness.interaction::UserPreferences` | `settings.changeWorkDetails` v1.0.0 | `settingsChangeComponent` (`src/capabilities/settingsChange.ts`) | Usage pass U2: writes the Work-details field of the durable General-settings row (pre-U2 capability, retroactively anchored on the new entity). |
+| 14 | `deepseek-harness.interaction::UserPreferences` | `settings.changePermission` v1.0.0 | `settingsChangeComponent` | Usage pass U2: the default access mode for NEW sessions (consumed by the composer's per-session dropdown → `AgentCodingInput.mode` → `approvalGate`); "Full access" commits only through the confirmation dialog. |
+| 15 | `deepseek-harness.interaction::UserPreferences` | `settings.changeLanguage` v1.0.0 | `settingsChangeComponent` | Usage pass U2: Language (display-only persistence — no i18n strings, see DEVIATIONS.md). |
+| 16 | `deepseek-harness.interaction::UserPreferences` | `settings.changeAppearance` v1.0.0 | `settingsChangeComponent` | Usage pass U2: Light/Dark/System; System follows `prefers-color-scheme` live. |
+| 17 | `deepseek-harness.interaction::UserPreferences` | `settings.changeFontSize` v1.0.0 | `settingsChangeComponent` | Usage pass U2: conversation-content font size (1px stepper, floor 12, ceiling 32). |
+| 18 | `deepseek-harness.interaction::UserPreferences` | `settings.changePerformanceDetail` v1.0.0 | `settingsChangeComponent` | Usage pass U2: Performance & usage detail level (Compact/Detailed). |
+| 19 | `deepseek-harness.interaction::UserPreferences` | `settings.changeCodingTools` v1.0.0 | `settingsChangeComponent` | Usage pass U2: the Coding Tools switch (gates the Trajectory surface from the developer-tools tranche onward). |
+| 20 | `deepseek-harness.interaction::UserPreferences` | `settings.changeSendBehavior` v1.0.0 | `settingsChangeComponent` | Usage pass U2: what Enter does while a run streams (Queue/Steer — see DEVIATIONS.md for Steer's semantics). |
+| 21 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.rename` v1.0.0 | `workspaceManageComponent` (`src/capabilities/workspaceManage.ts`) | Usage pass U3: the sidebar's per-workspace Rename action (§12) — validates against the live projection, starts the durable `agent.config` run, and the projection rewrites the record's title. |
+| 22 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.delete` v1.0.0 | `workspaceManageComponent` | Usage pass U3: the sidebar's Delete workspace action — removes the record (and a current pointer to it); sessions' events stay in history. |
+| 23 | `deepseek-harness.interaction::UserPreferences` | `settings.changePreset` v1.0.0 | `settingsChangeComponent` | Usage pass U4: the default agent preset for NEW sessions (Standard/PTC/Minimal) — the composer sends it as `AgentCodingInput.preset`, scoping the turn's tool catalog (`agentCoding.ts`'s PRESET_TOOLS); the sessions projection folds it into the row's mode badge. |
 
 `tranche7Bindings`/`bindTranche7` (`domain/index.ts`) bind #6-10, alongside `tranche5Bindings` above.
 `tranche9Bindings`/`bindTranche9` (`domain/index.ts`) bind #11.
 `tranche10Bindings`/`bindTranche10` (`domain/index.ts`) bind #12.
 
 ## Not bound (deliberately)
+
+- `observation.status` / `observation.record` (usage pass U6) — a diagnostic read over the
+  RealityTrace adapter's receipt store (DurableStore `observations` collection, not the event
+  log), same precedent as `onboarding.dismiss`: no domain entity describes an evidence-ledger
+  receipt, and inventing one for a read-side diagnostic would misstate the domain. See
+  `src/observations.ts`.
+- `settings.changeWorkDetails` was unbound until usage pass U2 created `UserPreferences`;
+  `onboarding.dismiss` remains unbound (a durable UI-flow dismissal, not a domain capability).
+
 
 - `agent.config` and `agent.coding` are `AgentDefinition`s, not capabilities — an agent id is not a
   `CapabilityContract`, so `bindCapabilities` does not apply to them. Their runs still carry

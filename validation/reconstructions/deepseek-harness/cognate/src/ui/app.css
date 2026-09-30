@@ -298,6 +298,7 @@ input:focus-visible {
 }
 
 .workspaces-header {
+  position: relative; /* anchors .workspaces-view-options (usage pass U3) */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -321,6 +322,7 @@ input:focus-visible {
 }
 
 .workspace-row-label {
+  position: relative; /* anchors the per-workspace actions menu (usage pass U3) */
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -328,7 +330,7 @@ input:focus-visible {
   font-weight: 600;
   color: var(--cg-text-muted);
   padding: 4px 6px;
-  overflow: hidden;
+  overflow: visible; /* U3: the hover-revealed action buttons + menu live inside this row */
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -727,6 +729,219 @@ input:focus-visible {
   width: 100%;
   max-width: var(--cg-chat-column-max-width, 790px);
   margin-inline: auto;
+  /* Settings → General → Font size (usage pass U2): conversation content only — message bodies
+   * inherit this; chrome (meta lines, tool labels, composer) keeps its own fixed sizes. */
+  font-size: var(--cg-content-font-size, 14px);
+}
+
+/* Usage pass U2 General-pane additions. */
+.settings-switch {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+  cursor: pointer;
+  padding: 0;
+}
+.settings-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cg-surface, #fff);
+  border: 1px solid var(--cg-border, #d7dbe0);
+  transition: transform 0.15s ease;
+}
+.settings-switch[aria-checked="true"] {
+  background: var(--cg-accent-interactive, #4176e6);
+  border-color: var(--cg-accent-interactive, #4176e6);
+}
+.settings-switch[aria-checked="true"]::after {
+  transform: translateX(16px);
+}
+.font-size-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.font-size-value {
+  min-width: 2ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.font-size-unit {
+  color: var(--cg-fg-muted, #6b7280);
+}
+.composer-queued {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 12px 0;
+  padding: 6px 10px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  background: var(--cg-paper-2, #f4f6f8);
+}
+.composer-queued-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--cg-fg-muted, #6b7280);
+}
+.settings-version {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--cg-fg-muted, #6b7280);
+}
+
+/* Usage pass U3: Workspaces header controls, search row, per-workspace hover actions, and the
+ * floating menus (reference-behavior-matrix.md §12). Positioning anchors live on the original
+ * .workspaces-header / .workspace-row-label rules above. */
+.workspaces-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.workspaces-search-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 8px;
+}
+.workspaces-search-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 6px;
+  background: var(--cg-surface, #fff);
+  color: inherit;
+}
+.workspace-new-session-btn,
+.workspace-actions-btn {
+  display: none;
+  margin-left: auto;
+}
+.workspace-row:hover .workspace-new-session-btn,
+.workspace-row:hover .workspace-actions-btn,
+.workspace-row:focus-within .workspace-new-session-btn,
+.workspace-row:focus-within .workspace-actions-btn {
+  display: inline-flex;
+}
+.workspace-actions-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 30;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--cg-surface, #fff);
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.workspace-actions-menu button {
+  text-align: left;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  color: inherit;
+  cursor: pointer;
+}
+.workspace-actions-menu button:hover:not([disabled]) {
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+}
+.workspaces-view-options {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 30;
+  min-width: 220px;
+  padding: 6px;
+  background: var(--cg-surface, #fff);
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.view-options-group-label {
+  font-size: 11px;
+  color: var(--cg-fg-muted, #6b7280);
+  padding: 6px 10px 2px;
+}
+.workspaces-view-options button {
+  text-align: left;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  color: inherit;
+  cursor: pointer;
+}
+.workspaces-view-options button:hover:not([disabled]) {
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+}
+.workspaces-view-options button[aria-checked="true"] {
+  font-weight: 600;
+}
+.hero-pill-choice {
+  position: relative;
+  display: inline-flex;
+}
+.hero-pill-choice > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.hero-pill-choice > button:hover {
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+}
+.hero-choose-menu {
+  left: 0;
+  right: auto;
+}
+.workspace-dialog input {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  background: var(--cg-surface, #fff);
+  color: inherit;
+}
+.workspace-dialog .btn-primary {
+  background: var(--cg-accent, #1b1d22);
+  color: var(--cg-surface, #fff);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.workspace-dialog .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .message {
@@ -2127,4 +2342,329 @@ input:focus-visible {
     width: 100%;
     z-index: 30;
   }
+}
+
+/* Usage pass U4: Built-in plugins / Agent presets panes, the sidebar Plugins panel, and the
+ * header preset selector (reference-behavior-matrix.md §14–15). */
+.plugins-search {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  background: var(--cg-surface, #fff);
+  color: inherit;
+  margin-bottom: 12px;
+}
+.plugins-list {
+  list-style: none;
+  margin: 8px 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plugin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 10px;
+}
+.plugin-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.plugin-row-text strong {
+  font-size: 13px;
+}
+.plugin-state {
+  font-size: 11px;
+  color: var(--cg-success, #1a7f37);
+}
+.plugin-state.off {
+  color: var(--cg-fg-muted, #6b7280);
+}
+.plugin-description {
+  font-size: 12px;
+  color: var(--cg-fg-muted, #6b7280);
+}
+.plugin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.preset-card {
+  flex-direction: column;
+  align-items: stretch;
+}
+.global-panels {
+  margin: 8px 0;
+}
+.global-panel-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.global-panel-btn:hover {
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+}
+.global-panel-btn.active {
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+  font-weight: 600;
+}
+.plugins-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 36px;
+  max-width: 860px;
+  margin-inline: auto;
+  width: 100%;
+}
+.plugins-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.plugins-panel-header h1 {
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+.plugins-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plugins-panel .btn-primary {
+  background: var(--cg-accent, #1b1d22);
+  color: var(--cg-surface, #fff);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.plugins-panel .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.mode-badge-btn {
+  cursor: pointer;
+  border: 0;
+  background: none;
+  font: inherit;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+.mode-badge-btn:hover {
+  background: var(--cg-active, rgba(27, 29, 34, 0.08));
+}
+.preset-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.preset-menu {
+  top: 100%;
+  right: 0;
+}
+
+/* Usage pass U5: session Chat/Trajectory tab strip, the trajectory table, and the Event details
+ * panel (reference-behavior-matrix.md §13). Cobalt voice: hairline rows, mono for tool data. */
+.session-tabs {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 12px;
+}
+.session-tabs button {
+  border: 0;
+  background: none;
+  color: var(--cg-text-muted, #6b7280);
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.session-tabs button[aria-selected="true"] {
+  color: var(--cg-accent-interactive, #4176e6);
+  font-weight: 600;
+}
+.trajectory-view {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: var(--cg-chat-column-max-width, 790px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 24px;
+}
+.trajectory-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trajectory-toolbar button {
+  border: 1px solid var(--cg-border, #d7dbe0);
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.trajectory-toolbar input {
+  flex: 1;
+  font-size: 12px;
+  padding: 5px 10px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 6px;
+  background: var(--cg-surface, #fff);
+  color: inherit;
+}
+.trajectory-table {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--cg-border, #d7dbe0);
+}
+.trace-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--cg-border, #d7dbe0);
+}
+.trace-role-badge {
+  flex-shrink: 0;
+  min-width: 84px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cg-fg-muted, #6b7280);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.trace-role-badge.role-user {
+  color: var(--cg-accent-interactive, #4176e6);
+}
+.trace-role-badge.role-tool {
+  color: #b07b10;
+}
+.trace-cell {
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.trace-cell code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--cg-accent, #1b1d22);
+}
+.trace-request-btn {
+  border: 1px solid var(--cg-border, #d7dbe0);
+  background: none;
+  border-radius: 5px;
+  font-size: 10px;
+  padding: 1px 6px;
+  cursor: pointer;
+  color: inherit;
+}
+.trace-tool-btn {
+  flex: 1;
+  display: inline-flex;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+}
+.trace-tool-btn:hover .trace-tool-result {
+  text-decoration: underline;
+}
+.trace-tool-result {
+  color: var(--cg-fg-muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trace-collapsed .trace-cell {
+  font-style: italic;
+}
+.trace-details {
+  width: min(420px, 40vw);
+}
+.trace-details-heading {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.trace-details-tabs {
+  display: inline-flex;
+  gap: 2px;
+  flex: 1;
+}
+.trace-details-tabs button {
+  border: 0;
+  background: none;
+  color: var(--cg-text-muted, #6b7280);
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.trace-details-tabs button[aria-selected="true"] {
+  color: var(--cg-accent-interactive, #4176e6);
+  font-weight: 600;
+}
+.trace-details .right-panel-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.trace-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+.trace-kv dt {
+  color: var(--cg-fg-muted, #6b7280);
+}
+.trace-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.trace-json {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  background: var(--cg-paper-2, #f4f6f8);
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

@@ -1,0 +1,47 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "u0-ws-a" [expanded]
+  - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export functi now" [selected]'
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "# Summary Here is what I found: - first point - second point ```ts export functi"
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+- text: "[[scenario:plain]] coding tools off probe 01:58"
+- button "Copy"
+- status: Worked
+- button "Took 3s" [disabled]
+- heading "Summary" [level=1]
+- paragraph: "Here is what I found:"
+- list:
+  - listitem: first point
+  - listitem: second point
+- text: ts
+- button "Wrap lines" [pressed]
+- button "Copy"
+- code: "export function greet(name: string): string { return `Hello, ${name}!`; }"
+- button "Copy"
+- button "Good response"
+- button "Bad response"
+- button "Branch into a new conversation"
+- button "Usage 0 tok"
+- text: 01:58
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 1 steps · 0 tok/s": 1 turns 1 steps0 tok/s
+- button "0% of context used": 0%

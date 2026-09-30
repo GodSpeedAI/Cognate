@@ -1,7 +1,7 @@
 import { useCognate, useThreadSharedState } from "@cognate/react";
 import { CognateShell } from "@cognate/ui-astryx";
 import { useState } from "react";
-import { JOURNEY_C_AGENT } from "./shared-state.ts";
+import { JOURNEY_C_AGENT } from "./constants.ts";
 
 type Todo = { readonly id: string; readonly text: string };
 const THREAD_ID = "thread:j-c";

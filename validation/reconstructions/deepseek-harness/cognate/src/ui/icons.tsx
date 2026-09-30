@@ -238,3 +238,14 @@ export const FullscreenIcon = (props: IconProps) =>
     </>,
     props,
   );
+
+/** Usage pass U3: the per-workspace "Workspace actions" disclosure (three-dot). */
+export const MoreIcon = (props: IconProps) =>
+  base(
+    <>
+      <circle cx="3.2" cy="8" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="12.8" cy="8" r="0.9" fill="currentColor" stroke="none" />
+    </>,
+    props,
+  );

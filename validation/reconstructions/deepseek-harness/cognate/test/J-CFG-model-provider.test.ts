@@ -3,19 +3,19 @@
 import { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 describe("J-CFG-model-provider", () => {
   test("save config -> provider mounted -> hot-swap -> secret never recorded", async () => {
     await withTempHome(async (home) => {
-      const mockA = await bootMockModel();
-      const mockB = await bootMockModel();
+      const aimockA = await bootAimock();
+      const aimockB = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         const secretValue = "sk-super-secret-value-should-never-be-recorded";
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mockA.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimockA.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: secretValue,
@@ -29,7 +29,7 @@ describe("J-CFG-model-provider", () => {
         // Hot-swap: new base URL, no restart.
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mockB.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimockB.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: secretValue,
@@ -43,7 +43,7 @@ describe("J-CFG-model-provider", () => {
 
         const configRows = await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "model-config" });
         const current = configRows.find((r) => r.key === "current")?.value as { readonly baseURL?: string } | undefined;
-        expect(current?.baseURL).toBe(`http://127.0.0.1:${mockB.port}/v1`);
+        expect(current?.baseURL).toBe(`http://127.0.0.1:${aimockB.port}/v1`);
 
         // Scan the durable SQLite store for the secret. It must not appear anywhere.
         const db = new Database(join(home, "app.sqlite"), { readonly: true });
@@ -60,8 +60,8 @@ describe("J-CFG-model-provider", () => {
         }
       } finally {
         await app.stop();
-        await mockA.stop();
-        await mockB.stop();
+        await aimockA.stop();
+        await aimockB.stop();
       }
     });
   });

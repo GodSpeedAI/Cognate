@@ -10,10 +10,11 @@
  * Usage:
  *   bun run tests/capture/reference.capture.ts <viewport-name> <width> <height> <home-dir> <port> <ws-dir>
  *
- * Requires: mock-model server already running at http://127.0.0.1:4010
- * (started separately with a larger MOCK_CHUNK_DELAY_MS for this capture
- * pass, so the plain-scenario stream is slow enough to catch mid-stream and
- * to cancel — see reference-behavior-matrix.md).
+ * Requires: the mock model (aimock/llmock serving fixtures/aimock/fixtures.json) already
+ * running at http://127.0.0.1:4010 — `just harness-up` boots exactly that.
+ * (historical note: the pre-U1 mock server needed a larger MOCK_CHUNK_DELAY_MS for this
+ * capture pass; aimock's fixtures carry their own per-fixture latency — see
+ * fixtures/aimock/fixtures.json).
  */
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
@@ -122,8 +123,8 @@ try {
   await page.waitForTimeout(150);
   await checkpoint(page, "06-user-message");
 
-  // 07 - streaming: with MOCK_CHUNK_DELAY_MS=250 on the mock server, the
-  // ~35-word plain reply streams over several seconds - capture mid-stream.
+  // 07 - streaming: (pre-U1 this capture used MOCK_CHUNK_DELAY_MS=250 on the old mock server;
+  // aimock's fixture carries its own latency — see fixtures/aimock/fixtures.json.)
   await page.waitForTimeout(1500);
   await checkpoint(page, "07-streaming");
 

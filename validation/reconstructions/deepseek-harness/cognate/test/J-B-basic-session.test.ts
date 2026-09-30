@@ -8,17 +8,17 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import type { StoredEvent } from "@cognate/events";
 import { LOCAL_OPERATOR, type AppServer } from "../src/server.ts";
-import { bootApp, bootMockModel, withTempHome } from "./helpers.ts";
+import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 describe("J-B-basic-session", () => {
   test("one turn streams, completes, and appears in the sessions projection", async () => {
     await withTempHome(async (home) => {
-      const mock = await bootMockModel();
+      const aimock = await bootAimock();
       const { app, client } = await bootApp(home);
       try {
         await client.invoke("model.configure", {
           providerId: "mock",
-          baseURL: `http://127.0.0.1:${mock.port}/v1`,
+          baseURL: `http://127.0.0.1:${aimock.port}/v1`,
           protocol: "openai-compatible",
           model: "mock-model-1",
           apiKey: "",
@@ -73,7 +73,7 @@ describe("J-B-basic-session", () => {
         unsubscribe();
       } finally {
         await app.stop();
-        await mock.stop();
+        await aimock.stop();
       }
     });
   });

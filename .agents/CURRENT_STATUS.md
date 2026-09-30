@@ -1,45 +1,39 @@
 # Current status
 
-**Status revision:** 19
+**Status revision:** 20
 
-**Stage:** CopilotKit reconstruction: BLACK_BOX reference execution established; J-A and J-C green
+**Stage:** DeepSeek reconstruction: usage-harness feature pass U0-U6 complete (developer tools + RealityTrace, workspaces, settings, plugins/presets, aimock endpoint)
 
-**Summary:** The pinned reference application now executes end to end against the pinned @copilotkit/aimock fixtures with no paid endpoint, and two journeys finished green with BLACK_BOX_REFERENCE captures. The chain that had blocked every earlier attempt was root-caused: the pristine example always enables the A2UI catalog, so the sdk-js LangGraph middleware appends an 'App Context' developer message last on every model request, while llmock's toolCallId rule requires the final message to be role:tool - so every tool-result leg of the recorded d4 todo chain 404'd. The fix serves fixtures through the pinned library's own programmatic LLMock API with its requestTransform hook (matching only; the reference app is byte-identical to the pin), proven leg-by-leg against archived request bodies and then in-app: J-C ran green with every leg hit, agent-to-canvas and canvas-to-agent both proven, and J-A ran green with the fixture-declared prompt. The manifest and behavior matrix now record R-A01 and R-A02 as BLACK_BOX_REFERENCE. Seven harness defects were fixed along the way, the status stream corruption from revision 18 was repaired with the scripted method, and the stack was downed clean.
+**Summary:** The operator-commissioned usage pass (.agents/plans/deepseek-harness-usage-features.md) turned the settled parity reconstruction into a working harness. The pinned reference was re-cloned to its exact SHA and the five never-characterized surfaces were observed live (matrix sections 11-15, checkpoints 22*-26*: Settings->General full inventory incl. the Full-access confirmation dialog and the 12px font floor, multi-workspace sidebar incl. the Choose-workspace dropdown resolution and per-workspace Rename/Delete actions, the Trajectory tab's full structure - role-badged trace table, Request #N event-details panel with the marketing page's Summary/Payload/Result/Schema/Timing tabs, Built-in plugins inspector, Agent presets panel). @copilotkit/aimock (llmock) fully replaced the repository's own mock-model server as the simulated OpenAI endpoint, with the scenario markers kept as fixture match keys, toolCallId-anchored multi-round loops, branch gating on toolResultContains, and honest 404 no-match behavior proven surfaced (J-AIM). Implemented in the app: the full Settings->General inventory with Permission wired end-to-end (per-session access-mode dropdown feeds approvalGate; sessions row folds the mode), the multi-workspace sidebar (search, view options, add/switch/rename/delete all durable), Built-in plugins + Agent presets as real behavior (three presets scope each turn's tool catalog via PRESET_TOOLS with fail-closed unknown-tool wording; settings default + per-session header selector), the Trajectory tab over a new public session-trace projection (user/request/tool rows with event-derived durations; Event details panel; durable across restart, J-T), and RealityTrace enrichment per Option A (outboxFor commits observation intents atomically; ObservationDelivery drains to the pinned SXR CLI v0.3.0; the Event details RealityTrace tab shows receipts, ledger positions, and the CEP correlation drill-down; without the binary the harness runs unchanged - J-RT proves both paths against the real binary). App journey suite: 37/37 across 17 files; just verify 78/78.
 
-**Verified:** **J-C (jc9) ok:true** — five shots, both turns cleared on attempt 1 and rendered
-the fixture reply, every model call hit with zero misses; agent→canvas proven by all three
-streamed titles rendering, canvas→agent proven on the wire by the archived turn-2 run request
-(`logs/runs/run-req-J-C-*.json`) containing the canvas-written `New Todo`; mobile recorded
-honestly as `defaultPane:"app"` with the Chat tab revealing the reply. **J-A (ja3) ok:true** —
-fixture-declared prompt `good name for a goldfish` rendered `How about Bubbles?` at both
-viewports, 2 hits / 0 misses scoped to the run (the earlier invented prompt was a MISS and is
-excluded). Seven harness defects fixed, each observed failing first: missing `process.exit` in
-the boot dispatch (chained `boot && run` never reached `run`), missing run preflight (jc5
-captured a dead stack), the 4010 port collision with `scripts/harness.ts` (moved to 4012), the
-hydration gate plus 5 send attempts (90s first compile), sidecar reads scoped by `startSeq`
-(stale misses failing later runs), tab-aware mobile assertion, and a page-level probe that
-cold-restarts the UI — the Turbopack CSS defect struck a 4th and 5th time, including
-mid-session, and healed both times. The status stream corruption from revision 18 was repaired
-with the scripted parser (revisions 1–19 validated). Stack downed clean; all four ports free.
+**Verified:** - U0 characterization: matrix sections 11-15 written from live observation of the pinned build (rebuilt at 477b4f42 after repairing the tarball extraction's missing git HEAD); 22 new checkpoints + aria dumps committed under reference/screenshots/desktop and reference/observations/aria; reference.capture-usage.ts stages the whole pass
+- U1 aimock: fixtures/aimock/fixtures.json reproduces every scenario byte-identically where tests assert; test/helpers.ts boots llmock out-of-process (-p 0, port parsed from stdout, --validate-on-load); scripts/harness.ts + just harness-up verified end-to-end (health OK, fixture completion served); 24/24 tests green at the swap point; app source needed zero changes for the swap
+- U2 settings: 8 settings.change* capabilities (plus U4's changePreset = 9) all durable across a full restart (J-SET 3/3); Full-access dialog flow verified in-browser (disabled Enable until checkbox; commit reached the composer dropdown as 'current: Full access'); Send-while-busy Queue/Steer implemented with Cmd/Ctrl+Enter using the other behavior; Coding Tools gates the Trajectory tab; font size applied to conversation content via --cg-content-font-size
+- U3 workspaces: workspace.rename/workspace.delete capabilities (bindUsage3, WorkspaceRecord anchor); projection v1.1.0 folds rename in place and delete-with-current-pointer-clear; J-WS2 3/3 incl. restart durability and delete-active-falls-back
+- U4 presets: agent.coding input.preset scopes TOOL_DEFS per PRESET_TOOLS; out-of-catalog tool calls fail closed with the reference's exact 'Error: unknown tool' wording (J-PLG asserts the recorded invocation's tool list and the fail-closed path); sessions projection folds the preset into the mode badge; presets/plugins panels render this app's own honest inventory
+- U5 trajectory: public session-trace projection folds turn/request/tool rows with eventIds; TrajectoryView + TraceDetailsPanel (Summary/Payload/Result/Schema/Timing + Requests' Summary/Options/Timing) verified in-browser screenshots; J-T 2/2 incl. restart re-fold
+- U6 realitytrace: outboxFor -> ObservationDelivery -> pinned sxr binary wired at boot (SXR prerequisite workflow runs, repo/data dirs created per-home); observation.status/observation.record read-side capabilities mounted unconditionally (honest queued states without SXR); J-RT 2/2 against the real binary: accepted receipts with ledger positions, drill-down returns the correlation eventId/runId; no-SXR boot proves traces stay event-sourced
+- App suite 37/37 (17 files), app typecheck clean; repo just verify 78/78; the retired fixtures/mock-model removed with all functional references updated (capture headers, fixtures README); one transient J-B flake observed once mid-pass and not reproduced in 8 subsequent full-suite runs (noted, unassigned)
+- Subagent usage: account 5-hour usage limits blocked all Agent dispatches this session (three attempts errored), so U0/U1 were partially executed by an earlier dispatch before the cutoff and everything else was executed directly by the orchestrator per the operator's continue instruction; briefs for all tranches remain in the plan for future delegation
 
-**Limits:** Only **2 of 10** canonical journeys have BLACK_BOX captures; J-D through J-K remain
-unbuilt and uncaptured, about 22 of 32 settlement gates stay open, and `diffs/`,
-`parity-report.md`, `parity-report.json` and `primitive-provenance.md` are still absent. Only
-matrix rows R-A01/R-A02 were upgraded; every other row keeps its prior class. The transform
-flips llmock into **exact** `userMessage` matching, so future journey prompts must equal the
-fixture's `match.userMessage` byte-for-byte or they MISS by design. The App Context strip
-applies to matching only; a critic may still treat harness-side normalization as an
-evidence-scope caveat. A concurrent operator session modified `deepseek-harness` files plus
-`scripts/harness.ts`/`justfile` — excluded from this revision's commit; port 4010 belongs to
-that tooling. One mobile screenshot was verified by direct image read, but systematic visual
-parity diffing still owes the independent critic pass. Carried forward: DEBT-021 (separate
-framework change), DEBT-004/011/014–017/020, unfrozen ledger, `.jolli/jollimemory/debug.log`
-left uncommitted.
+**Limits:** - U7 residuals intentionally left: parity/critic loop not re-run (operator accepted a leaner pass); cognate/screenshots not re-captured against the new surfaces (capture scripts updated for aimock but a fresh capture+diff round is a separate pass); no commits made (per AGENTS.md change policy, all work sits in the working tree on cognate/harness)
+- Documented deviations are extensive by design (DEVIATIONS.md sections: Settings General, Workspaces, Plugins/Presets, Trajectory, RealityTrace) - notably: Language is display-only (no i18n), Add-workspace is a path input not the reference's directory browser, plugins are inspect-only (no toggles of real capabilities), no SYSTEM/CONTEXT trace rows (this app sends no system prompt), trajectory timeline strip approximated, Steer = cancel+send, keyboard-shortcut editing inert
+- The mock-model references remaining in test files and older docs are historical prose comments; the capture scripts' reference-side checkpoints for 22*-26* exist on the reference side only (no cognate-side capture round yet)
+- J-B-basic-session flaked once (progress-event count race under load); 8 subsequent full runs green - if it recurs it needs a deterministic progress-event seed, not a sleep
+- Carried forward: DEBT-021, DEBT-004, DEBT-011, DEBT-014 through DEBT-017, DEBT-020; .jolli/jollimemory/debug.log left modified and uncommitted; concurrent copilot session's work remains uncommitted alongside this pass's work
 
-**Next:** Build the remaining journeys in dependency order (J-D agent context, J-E controlled
-rendering, J-F tool HITL, J-G interrupt, J-H declarative UI, J-J rich thread, J-K live
-recovery), extending the harness JOURNEYS table with fixture-declared prompts under the
-exact-match rule and capturing both reference and Cognate sides. Then produce `diffs/`,
-`primitive-provenance.md` and `parity-report.md/json`, and re-audit the 32 settlement gates.
-Run `just verify` before each commit; commit only copilot-reconstruction files while the
-deepseek session's work stays uncommitted.
+**Next:** Optional follow-ups in dependency order: a fresh cognate-side capture + visual diff round for the new surfaces (22*-26* checkpoints exist on the reference side); the critic/evidence re-audit if the operator wants this pass settled to the reconstruction spec's full bar; delegating future tranches to subagents once the usage limit resets (briefs are dispatch-ready in .agents/plans/deepseek-harness-usage-features.md). Commits await operator intent.
+
+**Evidence:** - validation/reconstructions/deepseek-harness/reference-behavior-matrix.md (sections 11-15, updated unresolved list)
+- validation/reconstructions/deepseek-harness/reference/screenshots/desktop/22*..26* and reference/observations/aria/22*..26*
+- validation/reconstructions/deepseek-harness/fixtures/aimock/fixtures.json; cognate/test/J-AIM-aimock.test.ts, J-SET-settings.test.ts, J-WS2-multi-workspace.test.ts, J-PLG-panels.test.ts, J-T-trajectory.test.ts, J-RT-realitytrace.test.ts
+- validation/reconstructions/deepseek-harness/cognate/src/{settings.ts,observations.ts,projections/sessionTrace.ts,projections/workspaces.ts,capabilities/workspaceManage.ts,capabilities/settingsChange.ts,agents/agentCoding.ts} and cognate/DEVIATIONS.md, BINDINGS.md, README.md
+- .agents/plans/deepseek-harness-usage-features.md (operator decisions, tranches, builder briefs)
+
+**Spec:** .agents/specs/software-design-spec-cognate.-frameworkmd
+
+**Ledger:** requirements/ledger.yaml
+
+*This file is the human view of the latest snapshot only; the authoritative stream is
+[.agents/CURRENT_STATUS.yaml](CURRENT_STATUS.yaml) (revision 20 is its last
+line). Material uncertainty lives in [.agents/OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).*
