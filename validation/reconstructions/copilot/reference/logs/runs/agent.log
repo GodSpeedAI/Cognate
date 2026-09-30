@@ -1,0 +1,386 @@
+
+          Welcome to
+
+╦  ┌─┐┌┐┌┌─┐╔═╗┬─┐┌─┐┌─┐┬ ┬
+║  ├─┤││││ ┬║ ╦├┬┘├─┤├─┘├─┤
+╩═╝┴ ┴┘└┘└─┘╚═╝┴└─┴ ┴┴  ┴ ┴.js
+
+- 🚀 API: [36mhttp://localhost:8123[0m
+- 🎨 Studio UI: [36mhttps://smith.langchain.com/studio?baseUrl=http://localhost:8123[0m
+
+This in-memory server is designed for development and testing.
+For production use, please use LangSmith Deployment.
+
+
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32mStarting server...[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32mInitializing storage...[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32mRegistering graphs from /home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mRegistering graph with id 'sample_agent'[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { graph_id: [32m'sample_agent'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32mStarting 10 workers[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32mServer running at 127.0.0.1:8123[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /ok[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /ok [32m200[0m 2ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET / [33m404[0m 49ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 353ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550 [33m404[0m 94ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads [32m200[0m 87ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 70ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 321ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 484ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f00d-2237-713a-97c3-14b4819d9e0d'[39m, thread_id: [32m'84f4543d-2d04-4850-9b55-234f6fc0f550'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/runs/stream [32m200[0m 1s[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f00d-2237-713a-97c3-14b4819d9e0d'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:03:08.135Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:03:08.518Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m383[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+New LangChain packages are available that more efficiently handle tool calling.
+
+Please upgrade your packages to versions that set message tool calls. e.g., `pnpm install @langchain/anthropic`, pnpm install @langchain/openai`, etc.
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f00d-2237-713a-97c3-14b4819d9e0d'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:03:08.135Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:03:08.518Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:03:13.629Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m5111[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 1s[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 16ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 24ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550 [32m200[0m 1ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 33ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 1ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 1ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f00d-5a9e-7510-9cd4-d9276e540871'[39m, thread_id: [32m'84f4543d-2d04-4850-9b55-234f6fc0f550'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/runs/stream [32m200[0m 34ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f00d-5a9e-7510-9cd4-d9276e540871'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:03:22.152Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:03:22.195Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m43[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f00d-5a9e-7510-9cd4-d9276e540871'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:03:22.152Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:03:22.195Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:03:24.030Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m1835[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 69ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 40ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 81ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550 [32m200[0m 25ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 98ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 19ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 14ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f00d-953e-7777-af77-cd3bd4c53be1'[39m, thread_id: [32m'84f4543d-2d04-4850-9b55-234f6fc0f550'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/runs/stream [32m200[0m 121ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f00d-953e-7777-af77-cd3bd4c53be1'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:03:37.165Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:03:37.253Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m88[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+New LangChain packages are available that more efficiently handle tool calling.
+
+Please upgrade your packages to versions that set message tool calls. e.g., `pnpm install @langchain/anthropic`, pnpm install @langchain/openai`, etc.
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f00d-953e-7777-af77-cd3bd4c53be1'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:03:37.165Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:03:37.253Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:03:39.267Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m2014[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 207ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/84f4543d-2d04-4850-9b55-234f6fc0f550/state [32m200[0m 204ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET / [33m404[0m 37ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET / [33m404[0m 12ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 176ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409 [33m404[0m 27ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads [32m200[0m 29ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 8ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 50ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 75ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/ef313583-804c-40e5-9a95-15f250b62409/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f01e-1a57-717e-bfcb-e8fbd6e1eaa2'[39m, thread_id: [32m'ef313583-804c-40e5-9a95-15f250b62409'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/ef313583-804c-40e5-9a95-15f250b62409/runs/stream [32m200[0m 115ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f01e-1a57-717e-bfcb-e8fbd6e1eaa2'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:21:39.828Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:21:39.891Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m63[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+New LangChain packages are available that more efficiently handle tool calling.
+
+Please upgrade your packages to versions that set message tool calls. e.g., `pnpm install @langchain/anthropic`, pnpm install @langchain/openai`, etc.
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f01e-1a57-717e-bfcb-e8fbd6e1eaa2'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:21:39.828Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:21:39.891Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:21:43.137Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m3246[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 332ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 341ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 1ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409 [32m200[0m 2ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 4ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 0ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 3ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/ef313583-804c-40e5-9a95-15f250b62409/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f01e-3412-7501-957b-0d84c633193b'[39m, thread_id: [32m'ef313583-804c-40e5-9a95-15f250b62409'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/ef313583-804c-40e5-9a95-15f250b62409/runs/stream [32m200[0m 15ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f01e-3412-7501-957b-0d84c633193b'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:21:46.386Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:21:46.817Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m431[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f01e-3412-7501-957b-0d84c633193b'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:21:46.386Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:21:46.817Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:21:47.711Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m894[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 14ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 7ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 18ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409 [32m200[0m 149ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 11ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 1ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 0ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/ef313583-804c-40e5-9a95-15f250b62409/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f01e-5409-751c-966e-bc2b1d343c9d'[39m, thread_id: [32m'ef313583-804c-40e5-9a95-15f250b62409'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/ef313583-804c-40e5-9a95-15f250b62409/runs/stream [32m200[0m 16ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f01e-5409-751c-966e-bc2b1d343c9d'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:21:54.575Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:21:54.580Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m5[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+New LangChain packages are available that more efficiently handle tool calling.
+
+Please upgrade your packages to versions that set message tool calls. e.g., `pnpm install @langchain/anthropic`, pnpm install @langchain/openai`, etc.
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f01e-5409-751c-966e-bc2b1d343c9d'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:21:54.575Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:21:54.580Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:21:56.279Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m1699[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 11ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/ef313583-804c-40e5-9a95-15f250b62409/state [32m200[0m 21ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET / [33m404[0m 0ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 146ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0 [33m404[0m 20ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads [32m200[0m 13ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/state [32m200[0m 8ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 28ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 59ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f022-7162-76cc-a850-dee56e90eefa'[39m, thread_id: [32m'f4851004-2931-4d93-b14b-17312e4f9ad0'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/runs/stream [32m200[0m 126ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f022-7162-76cc-a850-dee56e90eefa'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:26:24.250Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:26:24.326Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m76[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+[31merror[39m:   [31m[2m┏[22m[0m [0m[31mBackground run failed:[39m
+[31mError: 404 No fixture matched[39m
+
+[31mTroubleshooting URL: https://docs.langchain.com/oss/javascript/langchain/errors/MODEL_NOT_FOUND/[39m
+
+[31m    at Function.wrap (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/langchain/src/agents/errors.ts:127:12)[39m
+[31m    at wrappedHandler (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/langchain/src/agents/nodes/AgentNode.ts:701:35)[39m
+[31m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+[31m    at async AgentNode.#invokeModel (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/langchain/src/agents/nodes/AgentNode.ts:735:14)[39m
+[31m    at async AgentNode.#run (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/langchain/src/agents/nodes/AgentNode.ts:258:7)[39m
+[31m    at async AgentNode.invoke (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/langchain/src/agents/RunnableCallable.ts:71:25)[39m
+[31m    at async RunnableSequence.invoke (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/@langchain/core/src/runnables/base.ts:1988:25)[39m
+[31m    at async _runWithRetry (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/@langchain/langgraph/src/pregel/retry.ts:123:18)[39m
+[31m    at async PregelRunner._executeTasksWithRetry (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/@langchain/langgraph/src/pregel/runner.ts:354:27)[39m
+[31m    at async PregelRunner.tick (/home/sprime01/projects/cognate/.tmp/ref/copilotkit/examples/integrations/langgraph-js/agent/node_modules/@langchain/langgraph/src/pregel/runner.ts:150:37)[39m
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f022-7162-76cc-a850-dee56e90eefa'[39m,
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:26:24.250Z[39m,
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:26:24.326Z[39m,
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:26:27.318Z[39m,
+[2m[31merror[39m[22m:   [31m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m2992[39m
+[2m[31merror[39m[22m:   [31m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/state [32m200[0m 15ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/f4851004-2931-4d93-b14b-17312e4f9ad0/state [32m200[0m 99ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET / [33m404[0m 34ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 108ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d [33m404[0m 28ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads [32m200[0m 12ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d/state [32m200[0m 6ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 29ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 48ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/4b7b6470-f231-44c7-908a-fe517f44684d/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f029-da3b-70a0-8168-956bb684fcc2'[39m, thread_id: [32m'4b7b6470-f231-44c7-908a-fe517f44684d'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/4b7b6470-f231-44c7-908a-fe517f44684d/runs/stream [32m200[0m 109ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f029-da3b-70a0-8168-956bb684fcc2'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:34:29.834Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:34:29.895Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m61[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f029-da3b-70a0-8168-956bb684fcc2'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:34:29.834Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:34:29.895Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:34:33.218Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m3323[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d/state [32m200[0m 99ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/4b7b6470-f231-44c7-908a-fe517f44684d/state [32m200[0m 10ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET / [33m404[0m 26ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /assistants/search[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /assistants/search [32m200[0m 201ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a [33m404[0m 46ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads [32m200[0m 44ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/state [32m200[0m 12ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/schemas [32m200[0m 86ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /assistants/fe68dfa1-88d3-57dc-afdf-6ac84f8fe8ea/graph [32m200[0m 155ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- POST /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/runs/stream[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mCreated run[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[1][22m { run_id: [32m'01a0f02f-2bc4-7239-9c0b-e5a7c2e1494d'[39m, thread_id: [32m'80c0725a-afc7-4b1f-ae99-19d7cb98ca1a'[39m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> POST /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/runs/stream [32m200[0m 173ms[39m
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mStarting background run[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f02f-2bc4-7239-9c0b-e5a7c2e1494d'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:40:18.407Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:40:18.518Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_queue_ms: [33m111[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[7][22m }
+[32minfo[39m:    [32m[2m┏[22m[0m [0m[32mBackground run succeeded[39m
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[1][22m {
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[2][22m   run_id: [32m'01a0f02f-2bc4-7239-9c0b-e5a7c2e1494d'[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[3][22m   run_attempt: [33m1[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[4][22m   run_created_at: [35m2026-09-30T02:40:18.407Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[5][22m   run_started_at: [35m2026-09-30T02:40:18.518Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[6][22m   run_ended_at: [35m2026-09-30T02:40:22.434Z[39m,
+[2m[32minfo[39m[22m:    [32m[2m┃[22m[0m [0m[2m[7][22m   run_exec_ms: [33m3916[39m
+[2m[32minfo[39m[22m:    [32m[2m┗[22m[0m [0m[2m[8][22m }
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/state [32m200[0m 76ms[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m<-- GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/state[39m
+[32minfo[39m:    [32m[2m▪[22m[0m [0m[32m--> GET /threads/80c0725a-afc7-4b1f-ae99-19d7cb98ca1a/state [32m200[0m 4ms[39m

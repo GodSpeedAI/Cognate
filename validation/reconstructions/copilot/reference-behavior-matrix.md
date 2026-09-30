@@ -1,6 +1,19 @@
 # CopilotKit reference behavior matrix
 
 Pinned reference: `CopilotKit/CopilotKit@6e452e5342db53e9ab23d8b3c0a4592ec25ff554`.
+
+**BLACK_BOX_REFERENCE evidence exists as of 2026-09-29 (local 22:21-22:40).** The
+canonical starter was executed headlessly under Playwright against the pinned
+`@copilotkit/aimock` fixtures (served by `reference/aimock-server.mjs`, the pinned
+LLMock class with a `requestTransform` that strips trailing `App Context:` messages
+for matching only - the reference app itself is byte-identical to the pin; see
+`reference-manifest.json.mockLlm.programmaticServing`). Two journeys finished green:
+J-A (`logs/runs/J-A.json`, `ok:true`, 2 hits 0 misses, shots `J-A-00..02`) and J-C
+(`logs/runs/J-C.json`, `ok:true`, every fixture leg hit, shots `J-C-00..05`,
+canvas-to-agent proven on the wire by `logs/runs/run-req-J-C-*.json` containing the
+canvas-written `New Todo`). R-A01 and R-A02 rows below now carry that evidence; the
+remaining rows keep their prior classes.
+
 Rows R-A04, R-A06, and R-A07 now have **OFFICIAL_FIXTURE_REFERENCE** evidence:
 the pinned React-core frontend-tool and agent-context timing suites passed
 21/21 tests on 2026-09-28. R-A02 has partial **OFFICIAL_FIXTURE_REFERENCE**
@@ -20,8 +33,8 @@ runner was used. The additional `use-agent.e2e.test.tsx` file passed 2/2 tests.
 
 | ID | Priority | Surface | User/action and required visible behavior | State, persistence, protocol behavior | Exact pinned evidence |
 | --- | --- | --- | --- | --- | --- |
-| R-A01 | P0 | LangGraph JS starter | Open the starter; use the Chat/App toggle or ask the agent to invoke `enableAppMode` / `enableChatMode`. The selected mode exposes chat, canvas, or split view according to responsive layout. | Browser tool changes local presentation state. | `examples/integrations/langgraph-js/src/components/example-layout/index.tsx:13-82` |
-| R-A02 | P0 | LangGraph JS starter | Ask the agent to change todos, then edit a todo in the canvas. The canvas reflects agent writes and the next agent turn sees the user write. | `useAgent` reads `state`; `setState` writes shared agent/application state; `isRunning` controls canvas affordance. | `src/components/example-canvas/index.tsx:6-19`; `showcase/shell-docs/src/content/reference/hooks/useAgent.mdx:136-206` |
+| R-A01 | P0 | LangGraph JS starter | Open the starter; use the Chat/App toggle or ask the agent to invoke `enableAppMode` / `enableChatMode`. The selected mode exposes chat, canvas, or split view according to responsive layout. | Browser tool changes local presentation state. | `examples/integrations/langgraph-js/src/components/example-layout/index.tsx:13-82`; **BLACK_BOX_REFERENCE** jc9: agent invoked `enableAppMode` from the fixture chain and the App pane exposed the todo canvas; mobile capture shows `defaultPane:"app"` after the canvas write with Chat reachable via the tab (`reference/screenshots/J-C-0*.png`, `logs/runs/J-C.json`) |
+| R-A02 | P0 | LangGraph JS starter | Ask the agent to change todos, then edit a todo in the canvas. The canvas reflects agent writes and the next agent turn sees the user write. | `useAgent` reads `state`; `setState` writes shared agent/application state; `isRunning` controls canvas affordance. | `src/components/example-canvas/index.tsx:6-19`; `showcase/shell-docs/src/content/reference/hooks/useAgent.mdx:136-206`; **BLACK_BOX_REFERENCE** jc9: streamed `manage_todos` reached `state.todos` and rendered all three titles (`agentWriteVisible`/`allTitlesVisible` true), the canvas add control produced `New Todo` (`canvasWriteVisible` true), and the turn-2 run request archived at `logs/runs/run-req-J-C-*.json` contains that `New Todo` - the user write seen by the next agent turn, on the wire |
 | R-A03 | P0 | Current v2 chat | Send a message and observe text appear before run completion; stop leaves no fictitious completed response. | `RUN_STARTED`, text chunks, tool chunks, state events, and `RUN_FINISHED` are meaningful ordered intermediate events. A buffering adapter cannot meet this checkpoint. | Official fixture machinery in `packages/react-core/src/v2/__tests__/utils/test-helpers.tsx`; partial-tool assertion in `hooks/__tests__/use-frontend-tool.e2e.test.tsx:200-276` |
 | R-A04 | P0 | Current v2 frontend tool | Mount a component defining a frontend tool, request it, and observe browser handler execution plus chat rendering. Change dependencies and request it again. Unmount then request it: the handler is unavailable. | The tool is added in layout effect; dependencies/availability cause re-registration. The handler is removed on cleanup. | `packages/react-core/src/v2/hooks/use-frontend-tool.tsx:13-53`; `hooks/__tests__/use-frontend-tool.e2e.test.tsx:1-197` |
 | R-A05 | P0 | Current v2 frontend tool / rich history | After a frontend-tool component unmounts, inspect an already recorded tool call. Its renderer remains available for historical display, even though its handler was removed. | Capability discovery lifecycle and projection-renderer lifetime are different. Restore/replay must preserve a renderable artifact without re-enabling the client capability. | `packages/react-core/src/v2/hooks/use-frontend-tool.tsx:38-41` |
