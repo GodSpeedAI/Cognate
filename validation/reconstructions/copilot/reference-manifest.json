@@ -26,6 +26,63 @@
     "generativeUiPlayground": "examples/showcases/generative-ui",
     "uiComponentReference": "packages/react-core/src/v2 and showcase/shell-docs current v2 reference"
   },
+  "mockLlm": {
+    "purpose": "Reference execution must not depend on a paid model endpoint (Phase 1B). The mock is CopilotKit's own, so fixture-backed reference behavior stays reference-attributable rather than introducing a foreign test double.",
+    "package": "@copilotkit/aimock",
+    "version": "1.37.4",
+    "installedAt": "showcase/scripts/node_modules (root script \"aimock\": \"showcase/scripts/node_modules/.bin/llmock\")",
+    "binaries": {
+      "llmock": "fixture-driven server; accepts -f/--fixtures, --validate-on-load, --record, --watch",
+      "aimock": "requires -c/--config; does NOT accept --fixtures"
+    },
+    "warning": "Never use npx for these names: aimock@0.2.9 and llmock@3.3.6 are unrelated packages on npm.",
+    "fixtureRoot": "showcase/aimock",
+    "fixtureColumns": 873,
+    "baseUrlOverride": "OPENAI_BASE_URL=http://127.0.0.1:13361/v1 -> context injector -> mock on 127.0.0.1:4012 with x-aimock-context: langgraph-typescript",
+    "programmaticServing": {
+      "why": "The recorded d4 chain's tool-result legs are unreachable through the flag-driven llmock bin: the pristine example sets a2ui={{ catalog }} unconditionally (layout.tsx:48), so the sdk-js LangGraph middleware appends an 'App Context:' developer message to every model request (observed LAST on the wire, twice in multi-tool turns), while llmock's toolCallId rule requires the final message to be role:'tool' (dist/router.js:243-244). No showcase test covers this chain, which is why the incompatibility shipped.",
+      "mechanism": "reference/aimock-server.mjs runs the pinned library's own LLMock class programmatically with the requestTransform server option (server.js:384 feeds it into matchFixtureDiagnostic) that drops 'App Context:' developer/system messages for MATCHING only; the reference app stays byte-identical to the pin and the injector archives every request unaltered under logs/raw/.",
+      "sideEffects": "Supplying requestTransform flips llmock to useExactMatch (router.js:193), so journey prompts must equal fixture match.userMessage byte-for-byte. chunkSize 9999 is set programmatically (fixture streams emoji; UTF-16 default 20 splits surrogate pairs).",
+      "proven": [
+        "Leg-by-leg replay of the archived jc6 bodies against the transformed server: entry 200, enable_app_mode tool-result -> manage_todos 200, manage_todos tool-result -> 'Done - added three todos' 200, all with the trailing App Context message present",
+        "Full in-app chain under Playwright: 16 hits / 0 misses across the J-C session (jc9), each leg streaming through the reference agent"
+      ]
+    },
+    "proven": [
+      "GET /v1/models -> 200",
+      "non-streaming chat completion returns the fixture completion",
+      "stream:true emits well-formed SSE deltas followed by [DONE]",
+      "all of the above with OPENAI_API_KEY unset",
+      "the canonical starter's own model traffic matched fixtures: injector tally moved hit=3 -> hit=4 during a scripted UI turn, with 'HIT POST /v1/chat/completions -> 200' and miss=0",
+      "fixture selection is substring-matching on match.userMessage plus match.context, and tool-result follow-ups match on match.toolCallId; a prompt that matches no fixture is the failure mode of an unattributable capture"
+    ],
+    "provenScope": "canonical starter examples/integrations/langgraph-js driven headlessly against the mock through the context injector; no paid endpoint contacted",
+    "fixtureColumnsLoaded": "430 fixtures from d6/langgraph-typescript + d4/langgraph-typescript + shared; the d4 column is required because the canvas todo chain (enableAppMode -> manage_todos) exists only there",
+    "contextInjector": "reference/mock-context-injector.mjs, OPENAI_BASE_URL=http://127.0.0.1:13361/v1 -> llmock :13360 with x-aimock-context: langgraph-typescript; needed because the reference app does not know about aimock and editing it would change the thing under observation",
+    "bootScript": "reference/harness.mjs (commands: boot, run <J-A|J-C>, status, shots, down)",
+    "bootScriptStatus": "VALIDATED - boot, down and run have executed end to end under the chained boot && run path (CHAIN_EXIT=0); the older run-reference-mock.sh is superseded and retained only as a record of the earlier approach"
+  },
+  "fixtureCoverageFindings": {
+    "columns": "showcase/aimock holds 873 fixture files across 21 agent columns; d6/langgraph-typescript alone carries 43 shared-state, chat, GenUI, HITL, interrupt, A2UI, MCP and thread fixtures",
+    "matchingModel": "aimock selects on match.userMessage (substring) plus match.context; tool-result follow-ups select on match.toolCallId; turnIndex and hasToolResult further gate some fixtures",
+    "sharedStateFixturesTargetAnotherSurface": "shared-state-read-write declares a set_notes tool call whose notes render into the showcase app's Preferences/Agent Scratch Pad panels. The canonical starter's canvas is a todo column bound to agent.state.todos, and no fixture anywhere in the tree emits a write_todos/manage_todos call. The agent-to-canvas state write therefore cannot be mock-driven on the canonical starter; it needs the showcase app or a recorded fixture",
+    "recallFixturesAreScripted": "The recall fixtures (for example favorite color -> 'Your favorite color is blue - I noted it earlier.') match on the user message alone, so a rendered recall reply proves the mock served a fixture, not that the agent read shared state. The claim-bearing observable is the outbound model request, which the context injector now logs to a sidecar with the last user message, a state-field indicator and requested markers",
+    "uncovered": "one MISS was logged for a prompt authored by the capture rather than taken from a fixture; after captures switched to fixture-declared prompts the miss count stayed 0"
+  },
+  "blackBoxCaptures": {
+    "viewports": ["desktop 1440x900 @2x", "mobile 390x844"],
+    "location": "reference/screenshots",
+    "proven": [
+      "J-C (jc9, 22:21 local): all five shots, run ok:true with every fixture leg HIT and zero MISSes. agent -> canvas: the streamed manage_todos argument reached state.todos and rendered all three titles (agentWriteVisible/allTitlesVisible true). canvas -> agent: the turn-2 run request archived at logs/runs/run-req-J-C-*.json contains the canvas-written 'New Todo' (76270 bytes, hasState true), i.e. agent.setState reached a subsequent run ON THE WIRE. Both turns cleared the composer on attempt 1 and rendered the fixture reply.",
+      "J-C mobile: defaultPane 'app' - after the canvas write the reference stays on the App pane (todos visible at 390x844); selecting the Chat tab reveals the reply (rendersLastReply true after tab switch). Recorded as reference behavior, not a harness artifact.",
+      "J-A (ja3+): chat turn at both viewports with fixture-declared prompt 'good name for a goldfish' -> 'How about Bubbles?' (d6/langgraph-typescript/agentic-chat.json[0]); earlier captures with the invented prompt 'What is a good name for a goldfish?' were MISSes under exact matching and are not evidence"
+    ],
+    "retiredNotProven": [
+      "SUPERSEDED: 'J-C canvas screenshots are not evidence (RUN_ERROR)' - replaced by the jc9 green capture above",
+      "SUPERSEDED: 'shared-state write direction not captured' - replaced by the archived turn-2 run request containing 'New Todo'"
+    ],
+    "imageReadingLimitation": "CORRECTED at revision 19: the analysis model CAN read PNGs with its image-capable file tool - the J-C-05 mobile screenshot was inspected directly during the jc9 analysis and drove the tab-aware mobile assertion. DOM text assertions remain the primary evidence in run reports; a systematic visual parity pass across all shots is still pending and remains the independent critic's job. A PNG on disk is not by itself parity evidence"
+  },
   "commands": {
     "pin": "gh api repos/CopilotKit/CopilotKit/commits/main --jq '{sha,...}'",
     "clone": "gh api repos/CopilotKit/CopilotKit/tarball/6e452e5342db53e9ab23d8b3c0a4592ec25ff554 (extract into .tmp/ref/copilotkit)",
@@ -34,8 +91,10 @@
     "componentFixtures": "cd packages/react-core && pnpm exec vitest run src/v2/hooks/__tests__/use-frontend-tool.e2e.test.tsx src/v2/hooks/__tests__/use-agent-context-timing.e2e.test.tsx; pnpm exec vitest run src/v2/hooks/__tests__/use-agent.e2e.test.tsx"
   },
   "executionStatus": {
-    "referenceApplication": "NOT_YET_EXECUTED",
+    "referenceApplication": "EXECUTED_VIA_MOCK_LLM",
+    "greenJourneys": ["J-A", "J-C"],
     "officialFixtures": "PASSED_23_OF_23",
-    "note": "Three pinned React-core official Vitest fixture files passed (21 frontend-tool/context timing tests and 2 useAgent tests). The Nx wrapper encountered local plugin-worker startup failure; the direct official Vitest runner completed. The canonical starter application remains unexecuted."
+    "note": "The canonical starter executes headlessly against the pinned mock with no paid endpoint. GREEN: J-C (jc9) ok:true - full fixture chain (enableAppMode -> manage_todos -> final text) streamed through the reference agent with every leg HIT, agent-to-canvas proven by all three titles rendering, canvas-to-agent proven by the archived turn-2 run request containing 'New Todo', both viewports captured (mobile defaultPane 'app'). GREEN: J-A (ja3) ok:true - fixture prompt 'good name for a goldfish' rendered the 'How about Bubbles?' reply at both viewports. Earlier J-A attempts with an invented prompt were MISSes and are excluded as evidence. Prior Vitest results stand: 23/23 official React-core fixture tests.",
+    "pendingBlocker": "No blocker for J-A/J-C capture. The reference dev server's Turbopack/Tailwind defect (invalid CSS escape at globals.css:2041) was observed a fourth and fifth time, including MID-session right after filesystem-cache compaction; harness.mjs run now probes the live page before launching the browser and cold-restarts the UI automatically (~60-90s), so captures self-heal instead of failing. Remaining program work is the unbuilt journeys (J-D onward) and the parity artifacts (diffs/, parity-report, primitive-provenance), not reference execution."
   }
 }

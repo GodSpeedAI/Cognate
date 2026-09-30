@@ -1,0 +1,51 @@
+{
+ "journey": "J-A",
+ "steps": [
+  {
+   "turn": 1,
+   "prompt": "good name for a goldfish",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  }
+ ],
+ "requests": [
+  {
+   "user": "good name for a goldfish",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32455
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  }
+ ],
+ "ok": true,
+ "bodyAfterLastTurn": "Chat App CopilotKit good name for a goldfish How about Bubbles? It is friendly, classic, and easy to call out at the tank. If you want alternatives: Goldie, Finley, or Mango. ✏️ No todos yet Create your first task to get started Add a task",
+ "mobile": {
+  "rendersLastReply": true,
+  "defaultPane": "chat"
+ },
+ "runtimeRequests": [
+  {
+   "i": 0,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 24675,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  }
+ ],
+ "hits": 2,
+ "misses": 0,
+ "stateFieldOnAnyRequest": false
+}
