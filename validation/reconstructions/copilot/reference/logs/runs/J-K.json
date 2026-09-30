@@ -1,0 +1,16 @@
+{
+ "journey": "J-K",
+ "outcome": "UNCOVERED",
+ "ok": false,
+ "uncovered": {
+  "scenario": "Committed progress is delivered before terminalization; a resume from a cursor loses and duplicates nothing.",
+  "reason": "The canonical starter exposes no re-run/reconnect control on its chat surface, and the fixture columns named for recovery (headless-simple, headless-complete) target the headless client rather than this UI. Mid-stream socket loss was therefore not observable through the page.",
+  "fixture": "showcase/aimock/d6/langgraph-typescript/{headless-simple,headless-complete}.json",
+  "fixtureReachable": "headless fixtures match, but they drive a headless client, not the starter's chat surface",
+  "evidenceClass": "DOCUMENTED_REFERENCE",
+  "evidence": [
+   "reference-behavior-matrix.md R-A03"
+  ]
+ },
+ "recorded_at": "2026-09-30T18:39:47.758Z"
+}

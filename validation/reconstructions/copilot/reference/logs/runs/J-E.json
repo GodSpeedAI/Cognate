@@ -1,0 +1,123 @@
+{
+ "journey": "J-E",
+ "steps": [
+  {
+   "turn": 1,
+   "prompt": "revenue distribution by category",
+   "cleared": true,
+   "attempt": 1,
+   "midRendered": true,
+   "replyRendered": true
+  },
+  {
+   "turn": 2,
+   "prompt": "flights from SFO to JFK for next Tuesday",
+   "cleared": true,
+   "attempt": 1,
+   "midRendered": true,
+   "replyRendered": true
+  }
+ ],
+ "requests": [
+  {
+   "user": "revenue distribution by category",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32463
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "revenue distribution by category",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 57698
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "flights from SFO to JFK for next Tuesday",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 82652
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "flights from SFO to JFK for next Tuesday",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 86503
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  }
+ ],
+ "ok": true,
+ "bodyAfterLastTurn": "Chat App CopilotKit revenue distribution by category Revenue by Category Breakdown of revenue across product categories Electronics 42,000 42% Clothing 28,000 28% Food 18,000 18% Books 12,000 12% Pie chart rendered above — Electronics is the largest slice, followed by Clothing, Food, and Books. flights from SFO to JFK for next Tuesday search_flights Two flights shown above — United at $349 (08:00) and Delta at $289 (10:15), both on time. Pie Chart (Controlled Generative UI) Bar Chart (Controlled Generative UI) Schedule Meeting (Human In The Loop) Search Flights (A2UI Fixed Schema) Sales Dashboard (A2UI Dynamic) Excalidraw Diagram (MCP App) Calculator App (Open Generative UI) Toggle Theme (Frontend Tools) Task Manager (Shared State) ✏️ No todos yet Create your first task to get started Add a task",
+ "mobile": {
+  "rendersLastReply": true,
+  "defaultPane": "chat"
+ },
+ "runtimeRequests": [
+  {
+   "i": 0,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 24683,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 1,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 101431,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 2,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 151926,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  }
+ ],
+ "hits": 8,
+ "misses": 0,
+ "stateFieldOnAnyRequest": false,
+ "outcome": "GREEN"
+}

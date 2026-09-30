@@ -70,12 +70,20 @@
     "uncovered": "one MISS was logged for a prompt authored by the capture rather than taken from a fixture; after captures switched to fixture-declared prompts the miss count stayed 0"
   },
   "blackBoxCaptures": {
-    "viewports": ["desktop 1440x900 @2x", "mobile 390x844"],
+    "viewports": [
+      "desktop 1440x900 @2x",
+      "mobile 390x844"
+    ],
     "location": "reference/screenshots",
     "proven": [
       "J-C (jc9, 22:21 local): all five shots, run ok:true with every fixture leg HIT and zero MISSes. agent -> canvas: the streamed manage_todos argument reached state.todos and rendered all three titles (agentWriteVisible/allTitlesVisible true). canvas -> agent: the turn-2 run request archived at logs/runs/run-req-J-C-*.json contains the canvas-written 'New Todo' (76270 bytes, hasState true), i.e. agent.setState reached a subsequent run ON THE WIRE. Both turns cleared the composer on attempt 1 and rendered the fixture reply.",
       "J-C mobile: defaultPane 'app' - after the canvas write the reference stays on the App pane (todos visible at 390x844); selecting the Chat tab reveals the reply (rendersLastReply true after tab switch). Recorded as reference behavior, not a harness artifact.",
-      "J-A (ja3+): chat turn at both viewports with fixture-declared prompt 'good name for a goldfish' -> 'How about Bubbles?' (d6/langgraph-typescript/agentic-chat.json[0]); earlier captures with the invented prompt 'What is a good name for a goldfish?' were MISSes under exact matching and are not evidence"
+      "J-A (ja3+): chat turn at both viewports with fixture-declared prompt 'good name for a goldfish' -> 'How about Bubbles?' (d6/langgraph-typescript/agentic-chat.json[0]); earlier captures with the invented prompt 'What is a good name for a goldfish?' were MISSes under exact matching and are not evidence",
+      "J-E (2026-09-30): ok:true, 8 HIT / 0 MISS across two turns. Controlled generative UI renders on the tool call (mid wait \"Revenue by Category\") and completes with the fixture marker; the backend search_flights card follows the same pending -> terminal path. Shots J-E-00..J-E-05 at both viewports. Run report reference/logs/runs/J-E.json.",
+      "J-F (2026-09-30): ok:true, 4 HIT / 0 MISS. scheduleTime blocks, MeetingTimePicker renders inline (\"Pick a time that works for you\"), the slot click carries the tool result and the fixture marker resolves (\"Meeting scheduled - calendar invite is on its way.\"). Shots J-F-00..J-F-04. Run report reference/logs/runs/J-F.json.",
+      "J-H (2026-09-30): ok:true, 6 HIT / 0 MISS. generate_a2ui is a backend tool on the pinned agent and CopilotKit is mounted with a2ui={{ catalog }}, so the declarative sales-dashboard surface resolves on the client; markers \"QUARTERLY REVENUE\" and \"Here's your Q2 sales dashboard.\" both rendered. Shots J-H-00..J-H-02. Run report reference/logs/runs/J-H.json.",
+      "J-J (2026-09-30): ok:true, 12 HIT / 0 MISS across three turns - text, controlled generative UI and shared state all in ONE thread (rich-thread half of the journey). Shots J-J-00..J-J-04. Run report reference/logs/runs/J-J.json. The thread-LIFECYCLE half is recorded as postOutcome OBSERVED_ABSENT, not as a green claim - see journeyCoverage.journeys[].postObservation.",
+      "J-J post flow OBSERVED_ABSENT (2026-09-30): the capture ran and recorded what the reference does instead. After reload the page renders the welcome screen with no prior messages; the drawer stays on \"Loading threads…\" with zero rows for the full 40s capture window; postMetrics.threadListRequests is 0, i.e. the agent was never asked for the thread list (while POST /threads create succeeds elsewhere in the same session). Inferred from source and labelled as such in the run report: CopilotThreadsDrawer.tsx gates useThreads({enabled: licensed}) on a runtime license status that stays null here (licensePending pins the loading state instead of the locked view), and react-core v2 uses no storage, so the uncontrolled active thread is in-memory and does not survive a reload. Screenshots J-J-05 and J-J-06."
     ],
     "retiredNotProven": [
       "SUPERSEDED: 'J-C canvas screenshots are not evidence (RUN_ERROR)' - replaced by the jc9 green capture above",
@@ -92,9 +100,331 @@
   },
   "executionStatus": {
     "referenceApplication": "EXECUTED_VIA_MOCK_LLM",
-    "greenJourneys": ["J-A", "J-C"],
+    "greenJourneys": [
+      "J-A",
+      "J-C",
+      "J-E",
+      "J-F",
+      "J-H",
+      "J-J"
+    ],
     "officialFixtures": "PASSED_23_OF_23",
-    "note": "The canonical starter executes headlessly against the pinned mock with no paid endpoint. GREEN: J-C (jc9) ok:true - full fixture chain (enableAppMode -> manage_todos -> final text) streamed through the reference agent with every leg HIT, agent-to-canvas proven by all three titles rendering, canvas-to-agent proven by the archived turn-2 run request containing 'New Todo', both viewports captured (mobile defaultPane 'app'). GREEN: J-A (ja3) ok:true - fixture prompt 'good name for a goldfish' rendered the 'How about Bubbles?' reply at both viewports. Earlier J-A attempts with an invented prompt were MISSes and are excluded as evidence. Prior Vitest results stand: 23/23 official React-core fixture tests.",
-    "pendingBlocker": "No blocker for J-A/J-C capture. The reference dev server's Turbopack/Tailwind defect (invalid CSS escape at globals.css:2041) was observed a fourth and fifth time, including MID-session right after filesystem-cache compaction; harness.mjs run now probes the live page before launching the browser and cold-restarts the UI automatically (~60-90s), so captures self-heal instead of failing. Remaining program work is the unbuilt journeys (J-D onward) and the parity artifacts (diffs/, parity-report, primitive-provenance), not reference execution."
+    "note": "The canonical starter executes headlessly against the pinned mock with no paid endpoint. GREEN (J-A, J-C, J-E, J-F, J-H, J-J) with zero run-scoped misses on every run report. UNCOVERED (J-D, J-G, J-K): each has a run report carrying outcome UNCOVERED with the scenario, the reason, the fixture that exists, why it is not reachable on this surface, and its evidence class - recorded rather than synthesized. J-J's post flow is OBSERVED_ABSENT: the capture ran and the observed absence, with its wire metric, is the evidence. Prior Vitest results stand: 23/23 official React-core fixture tests.",
+    "pendingBlocker": "No blocker for reference capture: every canonical journey now has a run report with an explicit outcome. The pinned Turbopack/CSS defect fires on boot, mid-session and on mid-run reload; harness.mjs heal cold-restarts the UI and requires status<500, and `heal` recovers without disturbing the mock/agent. Remaining work is the unbuilt Cognate journeys (R2) and the parity artifacts (diffs/, parity-report, primitive-provenance), not reference execution.",
+    "uncoveredJourneys": [
+      "J-D",
+      "J-G",
+      "J-K"
+    ],
+    "observedAbsentJourneys": [
+      "J-J post-flow"
+    ]
+  },
+  "journeyCoverage": {
+    "recordedAt": "2026-09-30T21:13:25.052Z",
+    "harness": "reference/harness.mjs — boot | heal | run <journey> | status | shots | down",
+    "outcomes": {
+      "GREEN": [
+        "J-A",
+        "J-C",
+        "J-E",
+        "J-F",
+        "J-H",
+        "J-J"
+      ],
+      "UNCOVERED": [
+        "J-D",
+        "J-G",
+        "J-K"
+      ],
+      "OBSERVED_ABSENT_POST_FLOW": [
+        "J-J"
+      ],
+      "FAILED": []
+    },
+    "exitSemantics": "run exits 0 for GREEN and for a RECORDED UNCOVERED gap (the record is the evidence), 1 only for FAILED. Read `outcome`, never the code alone, to separate proven from declared-missing.",
+    "journeys": [
+      {
+        "journey": "J-A",
+        "scenario": "Plain chat turn on the canonical starter, fixture-backed.",
+        "outcome": "GREEN",
+        "ok": true,
+        "fixture": "d6/langgraph-typescript/agentic-chat.json[0]",
+        "runReport": "reference/logs/runs/J-A.json",
+        "shots": [
+          "reference/screenshots/J-A-00-initial-desktop-1440x900.png",
+          "reference/screenshots/J-A-01-after-first-turn-desktop-1440x900.png",
+          "reference/screenshots/J-A-02-after-first-turn-mobile-390x844.png"
+        ],
+        "prompts": [
+          "good name for a goldfish"
+        ],
+        "turns": 1,
+        "hits": 2,
+        "misses": 0,
+        "mobile": {
+          "rendersLastReply": true,
+          "defaultPane": "chat"
+        }
+      },
+      {
+        "journey": "J-C",
+        "scenario": "Shared state: agent -> canvas -> agent, proven on the wire.",
+        "outcome": "GREEN",
+        "ok": true,
+        "fixture": "d6/langgraph-typescript/shared-state.json[44],[45]",
+        "runReport": "reference/logs/runs/J-C.json",
+        "shots": [
+          "reference/screenshots/J-C-00-initial-desktop-1440x900.png",
+          "reference/screenshots/J-C-01-after-todo-turn-desktop-1440x900.png",
+          "reference/screenshots/J-C-03-canvas-after-agent-write-desktop-1440x900.png",
+          "reference/screenshots/J-C-04-after-canvas-write-turn-desktop-1440x900.png",
+          "reference/screenshots/J-C-05-after-canvas-write-turn-mobile-390x844.png"
+        ],
+        "prompts": [
+          "three todos about learning CopilotKit",
+          "three todos about learning CopilotKit"
+        ],
+        "turns": 2,
+        "hits": 16,
+        "misses": 0,
+        "mobile": {
+          "rendersLastReply": true,
+          "defaultPane": "app"
+        }
+      },
+      {
+        "journey": "J-D",
+        "scenario": "Mounted UI supplies current context to the next run; unmount removes it.",
+        "outcome": "UNCOVERED",
+        "ok": false,
+        "fixture": "d6/langgraph-typescript/agent-config.json",
+        "runReport": "reference/logs/runs/J-D.json",
+        "shots": [],
+        "uncovered": {
+          "scenario": "Mounted UI supplies current context to the next run; unmount removes it.",
+          "reason": "The pinned canonical starter mounts no useAgentContext anywhere in examples/integrations/langgraph-js/src, so no component can add or remove an entry of the AG-UI `context` array. The only context element observed on the wire is CopilotKit's always-on A2UI catalog entry.",
+          "fixture": "showcase/aimock/d6/langgraph-typescript/agent-config.json",
+          "fixtureReachable": "the column matches (context: langgraph-typescript) but its replies are content, not context propagation",
+          "evidenceClass": "OFFICIAL_FIXTURE_REFERENCE",
+          "evidence": [
+            "packages/react-core/src/v2/hooks/__tests__/use-agent-context-timing.test.tsx (21/21, 2026-09-28)",
+            "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json -> context[] holds only the A2UI catalog element"
+          ]
+        }
+      },
+      {
+        "journey": "J-E",
+        "scenario": "Controlled generative UI: renderer shows pending and terminal state without a browser handler doing the work; same for a backend tool's card.",
+        "outcome": "GREEN",
+        "ok": true,
+        "fixture": "d4/langgraph-typescript/chat.json[27]->[13] (pieChart); [41]->[21] (search_flights)",
+        "runReport": "reference/logs/runs/J-E.json",
+        "shots": [
+          "reference/screenshots/J-E-00-initial-desktop-1440x900.png",
+          "reference/screenshots/J-E-01-controlled-genui-pending-desktop-1440x900.png",
+          "reference/screenshots/J-E-02-controlled-genui-complete-desktop-1440x900.png",
+          "reference/screenshots/J-E-03-backend-tool-pending-desktop-1440x900.png",
+          "reference/screenshots/J-E-04-backend-tool-complete-desktop-1440x900.png",
+          "reference/screenshots/J-E-05-after-backend-tool-mobile-mobile-390x844.png"
+        ],
+        "prompts": [
+          "revenue distribution by category",
+          "flights from SFO to JFK for next Tuesday"
+        ],
+        "turns": 2,
+        "hits": 8,
+        "misses": 0,
+        "mobile": {
+          "rendersLastReply": true,
+          "defaultPane": "chat"
+        }
+      },
+      {
+        "journey": "J-F",
+        "scenario": "Tool-based human decision: the action blocks, the human answers inline, the tool result completes the run.",
+        "outcome": "GREEN",
+        "ok": true,
+        "fixture": "d4/langgraph-typescript/chat.json[40]->[20] (scheduleTime / MeetingTimePicker)",
+        "runReport": "reference/logs/runs/J-F.json",
+        "shots": [
+          "reference/screenshots/J-F-00-initial-desktop-1440x900.png",
+          "reference/screenshots/J-F-01-hitl-pending-desktop-1440x900.png",
+          "reference/screenshots/J-F-02-hitl-slot-selected-desktop-1440x900.png",
+          "reference/screenshots/J-F-03-hitl-resolved-desktop-1440x900.png",
+          "reference/screenshots/J-F-04-after-hitl-mobile-mobile-390x844.png"
+        ],
+        "prompts": [
+          "30-minute meeting to learn about CopilotKit"
+        ],
+        "turns": 1,
+        "hits": 4,
+        "misses": 0,
+        "mobile": {
+          "rendersLastReply": true,
+          "defaultPane": "chat"
+        }
+      },
+      {
+        "journey": "J-G",
+        "scenario": "Runtime reaches a mandatory checkpoint, pauses, exposes an interrupt, resumes or ends.",
+        "outcome": "UNCOVERED",
+        "ok": false,
+        "fixture": "d6/langgraph-typescript/{interrupt-headless,gen-ui-interrupt}.json",
+        "runReport": "reference/logs/runs/J-G.json",
+        "shots": [],
+        "uncovered": {
+          "scenario": "Runtime reaches a mandatory checkpoint, pauses, exposes an interrupt, resumes or ends.",
+          "reason": "The pinned agent graph registers only query_data, manage_todos, get_todos, generate_a2ui and search_flights (examples/integrations/langgraph-js/agent/src/agent.ts) with no interrupt() node, and the starter mounts no interrupt UI. The interrupt fixtures drive a schedule_meeting action registered by a different showcase app, so on this surface the tool call has no executor.",
+          "fixture": "showcase/aimock/d6/langgraph-typescript/{interrupt-headless,gen-ui-interrupt}.json",
+          "fixtureReachable": "prompts match the column; the schedule_meeting tool they return is unregistered on this surface",
+          "evidenceClass": "DOCUMENTED_REFERENCE",
+          "evidence": [
+            "reference-behavior-matrix.md R-A10"
+          ]
+        }
+      },
+      {
+        "journey": "J-H",
+        "scenario": "Declarative UI surface resolved from the a2ui catalog on the client.",
+        "outcome": "GREEN",
+        "ok": true,
+        "fixture": "d6/langgraph-typescript/gen-ui-declarative.json[2]->[0]->[1] (generate_a2ui)",
+        "runReport": "reference/logs/runs/J-H.json",
+        "shots": [
+          "reference/screenshots/J-H-00-initial-desktop-1440x900.png",
+          "reference/screenshots/J-H-01-declarative-surface-desktop-1440x900.png",
+          "reference/screenshots/J-H-02-after-declarative-mobile-mobile-390x844.png"
+        ],
+        "prompts": [
+          "Show me my sales dashboard for this quarter."
+        ],
+        "turns": 1,
+        "hits": 6,
+        "misses": 0,
+        "mobile": {
+          "rendersLastReply": true,
+          "defaultPane": "chat"
+        }
+      },
+      {
+        "journey": "J-J",
+        "scenario": "One thread carrying text + generative UI + shared state, then reload, new thread, switch back.",
+        "outcome": "GREEN",
+        "ok": true,
+        "fixture": "d6/langgraph-typescript/agentic-chat.json[0]; d4/chat.json[27]; d6/shared-state.json[44]",
+        "runReport": "reference/logs/runs/J-J.json",
+        "shots": [
+          "reference/screenshots/J-J-00-initial-desktop-1440x900.png",
+          "reference/screenshots/J-J-01-after-text-turn-desktop-1440x900.png",
+          "reference/screenshots/J-J-02-after-genui-turn-desktop-1440x900.png",
+          "reference/screenshots/J-J-03-after-shared-state-turn-desktop-1440x900.png",
+          "reference/screenshots/J-J-04-mobile-after-mixed-turn-mobile-390x844.png",
+          "reference/screenshots/J-J-05-restored-after-reload-desktop-1440x900.png",
+          "reference/screenshots/J-J-06-drawer-thread-list-desktop-1440x900.png",
+          "reference/screenshots/J-J-07-new-thread-desktop-1440x900.png",
+          "reference/screenshots/J-J-08-switched-back-desktop-1440x900.png"
+        ],
+        "prompts": [
+          "good name for a goldfish",
+          "revenue distribution by category",
+          "three todos about learning CopilotKit"
+        ],
+        "turns": 3,
+        "hits": 12,
+        "misses": 0,
+        "mobile": {
+          "rendersLastReply": true,
+          "defaultPane": "app"
+        },
+        "postOutcome": "OBSERVED_ABSENT",
+        "postMetrics": {
+          "threadListRequests": 0,
+          "threadCreates": 0,
+          "note": "list = GET /threads with no id; creates = POST /threads with no id"
+        },
+        "postObservation": {
+          "scenario": "Reload restores the thread; the drawer creates a thread and switches back to a prior one.",
+          "observedInstead": [
+            "After reload the page renders the welcome screen with no prior messages, and the drawer stays on \"Loading threads…\" with zero rows for the whole 40s capture window.",
+            "During the post flow the agent logs no `GET /threads` (list) request at all, while `POST /threads` (create) succeeds elsewhere in the same session - the drawer never asks for the list."
+          ],
+          "inferredFromSource": [
+            "CopilotThreadsDrawer.tsx:255/262/271/296 gates useThreads({ enabled: licensed }); licensed is false unless the runtime reports status \"valid\"/\"expiring\", and licensePending (status === null) is exactly the branch that shows the loading state rather than the locked view - so with no license configured the query is disabled AND the spinner never resolves.",
+            "packages/react-core/src/v2 contains no localStorage/sessionStorage/cookie use (only v1-deprecated dev-console does), and page.tsx mounts CopilotChatConfigurationProvider with no threadId prop, so the active thread is in-memory and a reload mints a new one."
+          ],
+          "evidenceClass": "BLACK_BOX_REFERENCE",
+          "evidence": [
+            "screenshots/J-J-05-restored-after-reload-desktop-1440x900.png (welcome screen after reload)",
+            "screenshots/J-J-06-drawer-thread-list-desktop-1440x900.png (drawer pinned to Loading threads…)",
+            "logs/runs/J-J.json -> post[].drawer.rows === [] and postMetrics.threadListRequests === 0"
+          ]
+        }
+      },
+      {
+        "journey": "J-K",
+        "scenario": "Committed progress is delivered before terminalization; a resume from a cursor loses and duplicates nothing.",
+        "outcome": "UNCOVERED",
+        "ok": false,
+        "fixture": "d6/langgraph-typescript/{headless-simple,headless-complete}.json",
+        "runReport": "reference/logs/runs/J-K.json",
+        "shots": [],
+        "uncovered": {
+          "scenario": "Committed progress is delivered before terminalization; a resume from a cursor loses and duplicates nothing.",
+          "reason": "The canonical starter exposes no re-run/reconnect control on its chat surface, and the fixture columns named for recovery (headless-simple, headless-complete) target the headless client rather than this UI. Mid-stream socket loss was therefore not observable through the page.",
+          "fixture": "showcase/aimock/d6/langgraph-typescript/{headless-simple,headless-complete}.json",
+          "fixtureReachable": "headless fixtures match, but they drive a headless client, not the starter's chat surface",
+          "evidenceClass": "DOCUMENTED_REFERENCE",
+          "evidence": [
+            "reference-behavior-matrix.md R-A03"
+          ]
+        }
+      }
+    ],
+    "uncoveredDeclared": [
+      {
+        "journey": "J-D",
+        "scenario": "Mounted UI supplies current context to the next run; unmount removes it.",
+        "reason": "The pinned canonical starter mounts no useAgentContext anywhere in examples/integrations/langgraph-js/src, so no component can add or remove an entry of the AG-UI `context` array. The only context element observed on the wire is CopilotKit's always-on A2UI catalog entry.",
+        "fixture": "showcase/aimock/d6/langgraph-typescript/agent-config.json",
+        "fixtureReachable": "the column matches (context: langgraph-typescript) but its replies are content, not context propagation",
+        "evidenceClass": "OFFICIAL_FIXTURE_REFERENCE",
+        "evidence": [
+          "packages/react-core/src/v2/hooks/__tests__/use-agent-context-timing.test.tsx (21/21, 2026-09-28)",
+          "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json -> context[] holds only the A2UI catalog element"
+        ],
+        "record": "reference/logs/runs/J-D.json"
+      },
+      {
+        "journey": "J-G",
+        "scenario": "Runtime reaches a mandatory checkpoint, pauses, exposes an interrupt, resumes or ends.",
+        "reason": "The pinned agent graph registers only query_data, manage_todos, get_todos, generate_a2ui and search_flights (examples/integrations/langgraph-js/agent/src/agent.ts) with no interrupt() node, and the starter mounts no interrupt UI. The interrupt fixtures drive a schedule_meeting action registered by a different showcase app, so on this surface the tool call has no executor.",
+        "fixture": "showcase/aimock/d6/langgraph-typescript/{interrupt-headless,gen-ui-interrupt}.json",
+        "fixtureReachable": "prompts match the column; the schedule_meeting tool they return is unregistered on this surface",
+        "evidenceClass": "DOCUMENTED_REFERENCE",
+        "evidence": [
+          "reference-behavior-matrix.md R-A10"
+        ],
+        "record": "reference/logs/runs/J-G.json"
+      },
+      {
+        "journey": "J-K",
+        "scenario": "Committed progress is delivered before terminalization; a resume from a cursor loses and duplicates nothing.",
+        "reason": "The canonical starter exposes no re-run/reconnect control on its chat surface, and the fixture columns named for recovery (headless-simple, headless-complete) target the headless client rather than this UI. Mid-stream socket loss was therefore not observable through the page.",
+        "fixture": "showcase/aimock/d6/langgraph-typescript/{headless-simple,headless-complete}.json",
+        "fixtureReachable": "headless fixtures match, but they drive a headless client, not the starter's chat surface",
+        "evidenceClass": "DOCUMENTED_REFERENCE",
+        "evidence": [
+          "reference-behavior-matrix.md R-A03"
+        ],
+        "record": "reference/logs/runs/J-K.json"
+      }
+    ],
+    "referenceSurfaceFacts": [
+      "The threads drawer (copilotkit-threads-drawer, Lit, OPEN shadow root) paints as a persistent LEFT SIDEBAR on desktop; page.tsx notes the header launcher it registers exists only on mobile, where the drawer is off-canvas. There is no [aria-label] in light DOM at all - a '[aria-label=Open threads]' launcher selector finds nothing on this surface.",
+      "Threads drawer internals are addressable through shadow-piercing CSS: new thread = copilotkit-threads-drawer [part=\"new-thread-button\"], rows = li[data-thread-id] with the active row carrying .active. Thread NAMES are model-generated, so a row is identified by its data-thread-id, never by its text.",
+      "J-E turn 1 renders the component on the tool CALL, before the tool result that carries the reply marker - the pending state is only observable between those two, which is why journeys accept an intermediate observation (turn.mid) rather than waiting on the terminal marker alone.",
+      "The pinned Turbopack defect also fires on mid-run page reload, not only at boot: a reload recompiles globals.css, emits the invalid escape, and serves a Next build-error overlay. harness.mjs heal (cold-restart of .next, status<500 required) absorbs it; `heal` is exposed as its own command so a broken UI can be recovered without `boot` taking down a healthy mock/agent."
+    ]
   }
 }

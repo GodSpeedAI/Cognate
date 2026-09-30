@@ -1,0 +1,80 @@
+{
+ "journey": "J-F",
+ "steps": [
+  {
+   "turn": 1,
+   "prompt": "30-minute meeting to learn about CopilotKit",
+   "cleared": true,
+   "attempt": 1,
+   "midRendered": true,
+   "midClicked": true,
+   "replyRendered": true
+  }
+ ],
+ "requests": [
+  {
+   "user": "30-minute meeting to learn about CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32474
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "30-minute meeting to learn about CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 57574
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  }
+ ],
+ "ok": true,
+ "bodyAfterLastTurn": "Chat App CopilotKit 30-minute meeting to learn about CopilotKit Meeting Scheduled Tomorrow at 2:00 PM 30 min Meeting scheduled — calendar invite is on its way. Pie Chart (Controlled Generative UI) Bar Chart (Controlled Generative UI) Schedule Meeting (Human In The Loop) Search Flights (A2UI Fixed Schema) Sales Dashboard (A2UI Dynamic) Excalidraw Diagram (MCP App) Calculator App (Open Generative UI) Toggle Theme (Frontend Tools) Task Manager (Shared State) ✏️ No todos yet Create your first task to get started Add a task",
+ "mobile": {
+  "rendersLastReply": true,
+  "defaultPane": "chat"
+ },
+ "runtimeRequests": [
+  {
+   "i": 0,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 24694,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 1,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 100966,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  }
+ ],
+ "hits": 4,
+ "misses": 0,
+ "stateFieldOnAnyRequest": false,
+ "outcome": "GREEN"
+}

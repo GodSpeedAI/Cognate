@@ -1,3 +1,4 @@
+import type { Json } from "@cognate/events";
 import type { Projection } from "@cognate/projections";
 import { applyStateUpdate, StatePatchError, type AgentDefinition, type StateUpdate } from "@cognate/runtime-api";
 
@@ -22,7 +23,7 @@ export const sharedStateCanvasProjection: Projection = {
 export const sharedStateAgent: AgentDefinition = {
   id: JOURNEY_C_AGENT,
   version: "1.0.0",
-  async run(input, ctx) {
+  async run(input, ctx): Promise<Json> {
     if ((input as { readonly phase?: unknown }).phase === "write") {
       await ctx.updateSharedState("seed-todos", { snapshot: { todos: [{ id: "agent", text: "agent todo" }] } });
       return { written: true };
