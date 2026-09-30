@@ -1,254 +1,255 @@
-import { useState } from "react";
-import { useCognate, useRun } from "@cognate/react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { useCognate, useConnectionStatus, useRun } from "@cognate/react";
 import { ChatSurface } from "../ChatSurface.tsx";
 import { SharedStateSurface } from "../SharedStateSurface.tsx";
 import { RemoteCapabilitySurface } from "./RemoteCapabilitySurface.tsx";
+import { Disclosure, JourneyHead, Note } from "./primitives.tsx";
 import { JOURNEY_B_AGENT } from "../constants.ts";
 
-export type ViewMode = "split" | "chat" | "state" | "tools";
+export type ViewMode = "overview" | "chat" | "capability" | "state";
+
+const THREAD = "thread:demo";
+
+const NAV: readonly { readonly id: ViewMode; readonly step: string; readonly label: string }[] = [
+  { id: "overview", step: "", label: "Overview" },
+  { id: "chat", step: "01", label: "Conversation" },
+  { id: "capability", step: "02", label: "Frontend capability" },
+  { id: "state", step: "03", label: "Shared state" },
+];
+
+const STATUS_WORD: Record<string, string> = {
+  connecting: "Runtime connecting",
+  live: "Runtime connected",
+  reconnecting: "Runtime reconnecting",
+  closed: "Runtime disconnected",
+};
 
 export function App() {
   const client = useCognate();
-  const [view, setView] = useState<ViewMode>("split");
+  const connection = useConnectionStatus();
+  const [view, setView] = useState<ViewMode>("overview");
+  // Honour the OS preference on first load, then remember the operator's choice.
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const stored = globalThis.localStorage?.getItem("cognate-theme");
+    if (stored === "light" || stored === "dark") return stored;
+    return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
   const [offering, setOffering] = useState(true);
   const [lastBRunId, setLastBRunId] = useState<string>();
   const [invokingB, setInvokingB] = useState(false);
+  const [failureB, setFailureB] = useState<string>();
   const bRun = useRun(lastBRunId);
 
-  const invokeBrowserTool = async () => {
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      globalThis.localStorage?.setItem("cognate-theme", theme);
+    } catch {
+      // A blocked storage quota must not break the toggle.
+    }
+  }, [theme]);
+
+  const invokeBrowserTool = useCallback(async () => {
     setInvokingB(true);
+    setFailureB(undefined);
     try {
       const run = await client.startRun(JOURNEY_B_AGENT, {});
       setLastBRunId(run.runId);
+    } catch (error) {
+      setFailureB(`The agent run could not start. ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setInvokingB(false);
     }
-  };
+  }, [client]);
+
+  const statusWord = STATUS_WORD[connection] ?? "Runtime status unknown";
+  const online = connection === "live";
+
+  const capability = (
+    <CapabilityPanel
+      offering={offering}
+      setOffering={setOffering}
+      runId={lastBRunId}
+      invoking={invokingB}
+      invoke={invokeBrowserTool}
+      failure={failureB}
+      runOutput={bRun?.output}
+      runStatus={bRun?.status}
+    />
+  );
 
   return (
-    <div className="cognate-app-container">
-      {/* Top Header */}
-      <header className="app-header">
-        <div className="brand-group">
-          <div className="brand-logo">
-            <span className="logo-sparkle">✦</span>
-          </div>
-          <div>
-            <div className="brand-title">Cognate Copilot Reconstruction</div>
-            <div className="brand-subtitle">
-              Local-First Ports & Adapters Architecture · SQLite Event Log · Astryx UI
-            </div>
-          </div>
+    <div className="app">
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+
+      <header className="masthead">
+        <div className="masthead__identity">
+          <h1 className="masthead__mark">Cognate</h1>
+          <span className="masthead__sub">Three agent journeys, one local runtime</span>
         </div>
-
-        <div className="header-actions">
-          <div className="status-indicator">
-            <span className="status-dot"></span>
-            <span className="status-text">Runtime Connected</span>
-            <span className="status-tag">tenant-a</span>
-          </div>
-
-          <div className="view-selector">
-            <button
-              type="button"
-              className={`view-btn ${view === "split" ? "active" : ""}`}
-              onClick={() => setView("split")}
-            >
-              Split View
-            </button>
-            <button
-              type="button"
-              className={`view-btn ${view === "chat" ? "active" : ""}`}
-              onClick={() => setView("chat")}
-            >
-              Chat (J-A)
-            </button>
-            <button
-              type="button"
-              className={`view-btn ${view === "tools" ? "active" : ""}`}
-              onClick={() => setView("tools")}
-            >
-              Frontend Tool (J-B)
-            </button>
-            <button
-              type="button"
-              className={`view-btn ${view === "state" ? "active" : ""}`}
-              onClick={() => setView("state")}
-            >
-              Shared State (J-C)
-            </button>
-          </div>
+        <div className="masthead__tools">
+          <span className="runtime-status" data-state={online ? "online" : "offline"}>
+            <span className="runtime-status__dot" aria-hidden="true" />
+            {statusWord}
+            <span className="runtime-status__meta">tenant-a</span>
+          </span>
+          <button
+            type="button"
+            className="btn btn--quiet"
+            aria-pressed={theme === "dark"}
+            onClick={() => setTheme((current) => (current === "light" ? "dark" : "light"))}
+          >
+            {theme === "light" ? "Dark theme" : "Light theme"}
+          </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="app-main">
-        {view === "split" && (
-          <div className="split-grid">
-            {/* Left Column: Chat Surface */}
-            <section className="panel-card chat-panel-section">
-              <div className="panel-header">
-                <h2>Journey A · Conversational Assistant</h2>
-                <span className="badge">copilotkit-reconstruction.chat</span>
-              </div>
-              <p className="panel-desc">
-                Deterministic LLM streaming through local provider, ordered events, and thread-history projection.
-              </p>
-              <div className="panel-body">
-                <ChatSurface threadId="thread:demo" tenant="tenant-a" />
-              </div>
-            </section>
+      <nav className="journey-nav" aria-label="Journeys">
+        {NAV.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className="journey-nav__tab"
+            aria-current={view === item.id ? "page" : undefined}
+            onClick={() => setView(item.id)}
+          >
+            {item.step ? (
+              <span className="journey-nav__step" aria-hidden="true">
+                {item.step}
+              </span>
+            ) : null}
+            {item.label}
+          </button>
+        ))}
+      </nav>
 
-            {/* Right Column: Shared State & Browser Capability */}
-            <div className="split-right-column">
-              {/* Shared State Canvas */}
-              <section className="panel-card canvas-panel-section">
-                <div className="panel-header">
-                  <h2>Journey C · Bidirectional Shared State</h2>
-                  <span className="badge">useThreadSharedState</span>
-                </div>
-                <p className="panel-desc">
-                  Thread-scoped durable state stream. Agent writes, canvas edits (CAS patch), and agent observations.
-                </p>
-                <div className="panel-body">
-                  <SharedStateSurface />
-                </div>
-              </section>
-
-              {/* Mounted Browser Tool */}
-              <section className="panel-card tools-panel-section">
-                <div className="panel-header">
-                  <h2>Journey B · Frontend Browser Capability</h2>
-                  <span className="badge">useRemoteCapability</span>
-                </div>
-                <p className="panel-desc">
-                  Browser-mounted tool lease. Dynamically advertised when mounted; revoked upon unmount.
-                </p>
-                <div className="panel-body">
-                  <div className="tools-control-row">
-                    <button
-                      type="button"
-                      className="secondary-btn"
-                      onClick={() => setOffering((prev) => !prev)}
-                    >
-                      {offering ? "Unmount Tool Component" : "Mount Tool Component"}
-                    </button>
-                    <button
-                      type="button"
-                      className="primary-btn"
-                      disabled={invokingB}
-                      onClick={() => void invokeBrowserTool()}
-                    >
-                      {invokingB ? "Agent Invoking..." : "Ask Agent to Invoke Tool"}
-                    </button>
-                  </div>
-
-                  <RemoteCapabilitySurface offering={offering} runId={lastBRunId} />
-
-                  {bRun && (
-                    <div className="run-feedback">
-                      <span className="run-tag">Run {bRun.runId.slice(0, 8)}:</span>{" "}
-                      <span className="run-status">{bRun.status}</span>
-                      {bRun.output ? (
-                        <pre className="run-json">{JSON.stringify(bRun.output, null, 2)}</pre>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              </section>
+      <main className={view === "overview" ? "bench" : "focus"} id="main">
+        {view === "overview" ? (
+          <>
+            <div className="bench__column">
+              <JourneyFrame step="01" title="Conversation" claim="Send a message and watch the reply arrive as durable events, not a terminal-only result." grow>
+                <ChatSurface threadId={THREAD} tenant="tenant-a" />
+              </JourneyFrame>
             </div>
-          </div>
-        )}
-
-        {view === "chat" && (
-          <div className="focused-view">
-            <section className="panel-card focused-card">
-              <div className="panel-header">
-                <h2>Journey A · Conversational Assistant & AG-UI Endpoint</h2>
-                <span className="badge">copilotkit-reconstruction.chat</span>
-              </div>
-              <p className="panel-desc">
-                Chat turns stream durable events (<code>run.started</code>, <code>run.invocation.progress</code>, <code>run.completed</code>) into the <code>conversation-thread-history</code> projection. Also exposes a live AG-UI compatible SSE endpoint at <code>/agui</code>.
-              </p>
-              <div className="panel-body">
-                <ChatSurface threadId="thread:demo" tenant="tenant-a" />
-              </div>
-            </section>
-          </div>
-        )}
-
-        {view === "tools" && (
-          <div className="focused-view">
-            <section className="panel-card focused-card">
-              <div className="panel-header">
-                <h2>Journey B · Dynamic Frontend Browser Capability</h2>
-                <span className="badge">useRemoteCapability</span>
-              </div>
-              <p className="panel-desc">
-                Demonstrates how Cognate repairs Counterexample C1 (Scoped Client Capability Discovery): remote client tools publish a lease-bound offer to the kernel only while mounted.
-              </p>
-              <div className="panel-body">
-                <div className="tools-control-row">
-                  <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={() => setOffering((prev) => !prev)}
-                  >
-                    {offering ? "Unmount Tool Component" : "Mount Tool Component"}
-                  </button>
-                  <button
-                    type="button"
-                    className="primary-btn"
-                    disabled={invokingB}
-                    onClick={() => void invokeBrowserTool()}
-                  >
-                    {invokingB ? "Agent Invoking..." : "Ask Agent to Invoke Tool"}
-                  </button>
-                </div>
-
-                <RemoteCapabilitySurface offering={offering} runId={lastBRunId} />
-
-                {bRun && (
-                  <div className="run-feedback">
-                    <span className="run-tag">Run {bRun.runId}:</span>{" "}
-                    <span className="run-status">{bRun.status}</span>
-                    {bRun.output ? (
-                      <pre className="run-json">{JSON.stringify(bRun.output, null, 2)}</pre>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {view === "state" && (
-          <div className="focused-view">
-            <section className="panel-card focused-card">
-              <div className="panel-header">
-                <h2>Journey C · Bidirectional Shared State Canvas</h2>
-                <span className="badge">useThreadSharedState</span>
-              </div>
-              <p className="panel-desc">
-                Demonstrates Cognate's thread-scoped durable state stream. The agent can write state, the user can edit and patch state on the canvas, and subsequent agent runs observe the update.
-              </p>
-              <div className="panel-body">
+            <div className="bench__column">
+              <JourneyFrame step="02" title="Frontend capability" claim="A browser tool the agent can only reach while this surface is mounted.">
+                {capability}
+              </JourneyFrame>
+              <JourneyFrame step="03" title="Shared state" claim="The agent writes, you edit, and the next agent turn observes your edit.">
                 <SharedStateSurface />
-              </div>
-            </section>
-          </div>
-        )}
+              </JourneyFrame>
+            </div>
+          </>
+        ) : null}
+
+        {view === "chat" ? (
+          <JourneyFrame step="01" title="Conversation" claim="Send a message and watch the reply arrive as durable events, not a terminal-only result.">
+            <ChatSurface threadId={THREAD} tenant="tenant-a" />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "state" ? (
+          <JourneyFrame step="03" title="Shared state" claim="The agent writes, you edit, and the next agent turn observes your edit.">
+            <SharedStateSurface />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "capability" ? (
+          <JourneyFrame step="02" title="Frontend capability" claim="A browser tool the agent can only reach while this surface is mounted.">
+            {capability}
+          </JourneyFrame>
+        ) : null}
       </main>
 
-      {/* Footer Info */}
       <footer className="app-footer">
-        <div>
-          Cognate Substrate: <code>@cognate/runtime-bun</code> · <code>@cognate/react</code> · <code>@cognate/ag-ui</code> · <code>@cognate/domainforge</code>
-        </div>
-        <div>
-          Single Bun process · Port <code>3190</code> · AG-UI SSE: <code>http://127.0.0.1:3190/agui</code>
-        </div>
+        <span>
+          Local runtime on port <code>3190</code>
+        </span>
+        <Disclosure label="Runtime endpoints">
+          <p className="hint">
+            Connect <code>/cognate.v1.RuntimeService/</code> · AG-UI SSE <code>/agui</code>
+          </p>
+        </Disclosure>
       </footer>
     </div>
+  );
+}
+
+function JourneyFrame({
+  step,
+  title,
+  claim,
+  grow,
+  children,
+}: {
+  readonly step: string;
+  readonly title: string;
+  readonly claim: string;
+  readonly grow?: boolean;
+  readonly children: ReactNode;
+}): ReactNode {
+  const regionClass = grow ? "bench__region bench__region--grow" : "bench__region";
+  return (
+    <section className={regionClass}>
+      <JourneyHead step={`Journey ${step}`} title={title} claim={claim} />
+      {children}
+    </section>
+  );
+}
+
+function CapabilityPanel({
+  offering,
+  setOffering,
+  runId,
+  invoking,
+  invoke,
+  failure,
+  runOutput,
+  runStatus,
+}: {
+  readonly offering: boolean;
+  readonly setOffering: (value: boolean) => void;
+  readonly runId: string | undefined;
+  readonly invoking: boolean;
+  readonly invoke: () => Promise<void>;
+  readonly failure: string | undefined;
+  readonly runOutput: unknown;
+  readonly runStatus: string | undefined;
+}): ReactNode {
+  const applied = typeof runOutput === "object" && runOutput !== null ? ((runOutput as { acknowledgment?: unknown }).acknowledgment as { applied?: unknown } | undefined) : undefined;
+  const appliedValue = typeof applied?.applied === "string" ? applied.applied : undefined;
+  const discovered = typeof runOutput === "object" && runOutput !== null && Array.isArray((runOutput as { discovered?: unknown }).discovered)
+    ? ((runOutput as { discovered: readonly unknown[] }).discovered).length
+    : undefined;
+
+  return (
+    <>
+      <div className="actions">
+        <span className="actions__label">Mount</span>
+        <button type="button" className="btn btn--secondary" aria-pressed={offering} onClick={() => setOffering(!offering)}>
+          {offering ? "Unmount tool" : "Mount tool"}
+        </button>
+        <button type="button" className="btn btn--primary" disabled={invoking} aria-busy={invoking} onClick={() => void invoke()}>
+          {invoking ? "Agent invoking…" : "Ask agent to invoke"}
+        </button>
+      </div>
+      <p className="hint">
+        {offering ? "The tool is mounted, so the agent can discover it." : "Unmount to withdraw the offer from new agent calls."}
+      </p>
+
+      <RemoteCapabilitySurface offering={offering} runId={runId} />
+
+      {runStatus ? (
+        <p className="hint">
+          Agent run {runStatus}
+          {discovered !== undefined ? ` · discovered ${discovered} tool${discovered === 1 ? "" : "s"}` : ""}
+          {appliedValue ? ` · applied “${appliedValue}”` : runStatus === "completed" ? " · no tool was available" : ""}
+        </p>
+      ) : null}
+
+      {failure ? <Note>{failure}</Note> : null}
+    </>
   );
 }

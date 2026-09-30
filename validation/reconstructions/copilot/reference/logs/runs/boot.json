@@ -9,37 +9,27 @@
   "agent": {
    "up": true,
    "status": 200,
-   "tries": 3
+   "tries": 2
   },
   "uiAttempt": {
    "attempt": 1,
    "up": true,
    "status": 200,
-   "tries": 9,
+   "tries": 7,
    "cssBroken": false
   },
   "ui": {
    "up": true,
    "status": 200,
-   "tries": 9,
+   "tries": 7,
    "cssBroken": false,
    "attempts": 1
   }
  },
- "portsBefore": {
-  "ui": 3000,
-  "agent": 8123,
-  "mock": 4012,
-  "injector": 13361
- },
+ "portsBefore": {},
  "down": {
   "killed": [],
-  "foreignListeners": {
-   "ui": 3000,
-   "agent": 8123,
-   "mock": 4012,
-   "injector": 13361
-  }
+  "foreignListeners": {}
  },
  "ownership": {
   "ui": {
@@ -47,7 +37,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 769313,
+     "pid": 14341,
      "cwd": ".tmp/ref/copilotkit/examples/integrations/langgraph-js",
      "origin": "reference"
     }
@@ -60,7 +50,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 768840,
+     "pid": 14034,
      "cwd": ".tmp/ref/copilotkit/examples/integrations/langgraph-js/agent",
      "origin": "reference"
     }
@@ -73,7 +63,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 768012,
+     "pid": 13740,
      "cwd": ".tmp/ref/copilotkit",
      "origin": "reference"
     }
@@ -86,7 +76,7 @@
    "listening": true,
    "owners": [
     {
-     "pid": 768045,
+     "pid": 13814,
      "cwd": "validation/reconstructions/copilot/reference",
      "origin": "harness-sidecar"
     }

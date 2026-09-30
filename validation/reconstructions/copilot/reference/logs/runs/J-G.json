@@ -1,0 +1,16 @@
+{
+ "journey": "J-G",
+ "outcome": "UNCOVERED",
+ "ok": false,
+ "uncovered": {
+  "scenario": "Runtime reaches a mandatory checkpoint, pauses, exposes an interrupt, resumes or ends.",
+  "reason": "The pinned agent graph registers only query_data, manage_todos, get_todos, generate_a2ui and search_flights (examples/integrations/langgraph-js/agent/src/agent.ts) with no interrupt() node, and the starter mounts no interrupt UI. The interrupt fixtures drive a schedule_meeting action registered by a different showcase app, so on this surface the tool call has no executor.",
+  "fixture": "showcase/aimock/d6/langgraph-typescript/{interrupt-headless,gen-ui-interrupt}.json",
+  "fixtureReachable": "prompts match the column; the schedule_meeting tool they return is unregistered on this surface",
+  "evidenceClass": "DOCUMENTED_REFERENCE",
+  "evidence": [
+   "reference-behavior-matrix.md R-A10"
+  ]
+ },
+ "recorded_at": "2026-09-30T18:39:47.113Z"
+}

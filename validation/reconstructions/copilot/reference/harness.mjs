@@ -27,6 +27,7 @@
 
 import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -86,12 +87,25 @@ const die = (msg) => {
 
 /** Ports this harness owns; a foreign listener is reported, never killed. */
 async function portBusy(port) {
-  try {
-    const r = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1500) });
-    return r.status > 0;
-  } catch (e) {
-    return !/ECONNREFUSED|ECONNRESET|fetch failed|timed out/i.test(String(e));
-  }
+  // Kernel TCP probe, not an HTTP GET. Two observed reasons the HTTP form lied:
+  //   - a SYN to a closed port on this host is DROPPED, so the connect times out
+  //     instead of refusing, and the old `!refused` test read that timeout as
+  //     "busy" - which reported all four ports as up while nothing listened;
+  //   - aimock has no route for `/`, so an answer to `/` was never the question.
+  // A completed handshake means a listener exists, whatever it serves.
+  return await new Promise((resolve) => {
+    let settled = false;
+    const done = (v) => {
+      if (settled) return;
+      settled = true;
+      try { s.destroy(); } catch { /* already gone */ }
+      resolve(v);
+    };
+    const s = net.connect({ host: "127.0.0.1", port });
+    s.setTimeout(1500, () => done(false));
+    s.on("connect", () => done(true));
+    s.on("error", () => done(false));
+  });
 }
 
 const recorded = () => {
@@ -390,6 +404,204 @@ const JOURNEYS = {
     canvasAddLabel: "Add new todo",
     canvasWriteMarker: "New Todo",
   },
+
+  /* ---------------------------------------------------------------------- *
+   * R1 - the remaining canonical journeys. Catalog names live in
+   * .sea/interaction/canonical-journey-catalog.md; the prompt/fixture pairs
+   * below are the ones the pinned columns actually declare for this surface.
+   * ---------------------------------------------------------------------- */
+
+  // J-E controlled rendering (R-A08): the starter registers pieChart through
+  // useComponent (pending -> terminal card) and search_flights is a real backend
+  // tool on the agent, so both legs of "renderer shows pending and terminal state
+  // without a browser handler doing the work" are expressible.
+  //   d4/chat.json[27] -> [13]  and  d4/chat.json[41] -> [21]
+  "J-E": {
+    turns: [
+      {
+        prompt: "revenue distribution by category",
+        // The component renders on the tool call, BEFORE the result that carries this
+        // text, so the mid-wait is the pending state and marker is the terminal one.
+        mid: { waitFor: "Revenue by Category", shot: "J-E-01-controlled-genui-pending" },
+        marker: "Pie chart rendered above \u2014 Electronics is the largest slice, followed by Clothing, Food, and Books.",
+        shot: "J-E-02-controlled-genui-complete",
+      },
+      {
+        prompt: "flights from SFO to JFK for next Tuesday",
+        mid: { waitFor: "search_flights", shot: "J-E-03-backend-tool-pending" },
+        marker: "Two flights shown above \u2014 United at $349 (08:00) and Delta at $289 (10:15), both on time.",
+        shot: "J-E-04-backend-tool-complete",
+      },
+    ],
+    initialShot: "J-E-00-initial",
+    mobileShot: "J-E-05-after-backend-tool-mobile",
+  },
+
+  // J-F tool-based human decision (R-A09): d4/chat.json[40] asks the registered
+  // scheduleTime action, the starter's MeetingTimePicker renders inline, and the
+  // chosen slot's respond() carries the tool result that d4/chat.json[20] resolves.
+  "J-F": {
+    turns: [
+      {
+        prompt: "30-minute meeting to learn about CopilotKit",
+        mid: {
+          waitFor: "Pick a time that works for you",
+          shot: "J-F-01-hitl-pending",
+          clickRole: "button",
+          clickText: "Tomorrow",
+          clickShot: "J-F-02-hitl-slot-selected",
+        },
+        marker: "Meeting scheduled \u2014 calendar invite is on its way.",
+        shot: "J-F-03-hitl-resolved",
+      },
+    ],
+    initialShot: "J-F-00-initial",
+    mobileShot: "J-F-04-after-hitl-mobile",
+  },
+
+  // J-H declarative UI (R-A11): generate_a2ui is a backend tool on the agent and
+  // CopilotKit is mounted with a2ui={{ catalog: demonstrationCatalog }}, so the
+  // declarative surface is catalog-resolved on the client.
+  //   d6/gen-ui-declarative.json[2] -> [0] -> [1]
+  "J-H": {
+    turns: [
+      {
+        prompt: "Show me my sales dashboard for this quarter.",
+        marker: "Here's your Q2 sales dashboard.",
+        shot: "J-H-01-declarative-surface",
+      },
+    ],
+    initialShot: "J-H-00-initial",
+    mobileShot: "J-H-02-after-declarative-mobile",
+  },
+
+  // J-J rich thread (R-A05/R-A12-R-A13): one thread carrying text + generative UI +
+  // shared state, then reload, new thread, switch back. Restoration is asserted on
+  // re-rendered content, not on React-local state.
+  "J-J": {
+    turns: [
+      {
+        prompt: "good name for a goldfish",
+        marker: "How about Bubbles?",
+        shot: "J-J-01-after-text-turn",
+      },
+      {
+        prompt: "revenue distribution by category",
+        marker: "Pie chart rendered above \u2014 Electronics is the largest slice, followed by Clothing, Food, and Books.",
+        shot: "J-J-02-after-genui-turn",
+      },
+      {
+        prompt: "three todos about learning CopilotKit",
+        marker: "Done \u2014 added three todos about learning CopilotKit to your task manager.",
+        shot: "J-J-03-after-shared-state-turn",
+      },
+    ],
+    initialShot: "J-J-00-initial",
+    mobileShot: "J-J-04-mobile-after-mixed-turn",
+    // Post-turn flow. Every step records what it observed, and `expects`/`absents` make a
+    // wrong render fail the run instead of silently shooting a blank page.
+    //
+    // Measured on the reference before writing these: the threads drawer is a Lit custom
+    // element in an OPEN shadow root, painted as a persistent LEFT SIDEBAR on desktop
+    // (there is no header launcher and no [aria-label] anywhere in light DOM), with the
+    // new-thread control at part="new-thread-button" and rows at li[data-thread-id].
+    post: [
+      {
+        kind: "reload",
+        waitMs: 180000,
+        expects: [
+          "How about Bubbles?",
+          "Pie chart rendered above",
+          "Done \u2014 added three todos about learning CopilotKit to your task manager.",
+        ],
+        shot: "J-J-05-restored-after-reload",
+      },
+      { kind: "captureThread", shot: "J-J-06-drawer-thread-list" },
+      {
+        kind: "clickSelector",
+        selector: 'copilotkit-threads-drawer [part="new-thread-button"]',
+        timeout: 20000,
+        absents: ["How about Bubbles?"],
+        absentMs: 6000,
+        shot: "J-J-07-new-thread",
+      },
+      {
+        kind: "switchBack",
+        fromCaptured: true,
+        timeout: 30000,
+        expects: ["How about Bubbles?"],
+        shot: "J-J-08-switched-back",
+      },
+    ],
+    // The thread-LIFECYCLE half of J-J (reload restores, drawer creates and switches
+    // threads) is observed on this surface and does NOT occur. Recorded, not skipped:
+    // the capture runs, every step reports what it saw, and postMetrics counts the wire
+    // calls that settle it. Turns above remain the evidence for the rich-thread half.
+    postObservation: {
+      scenario: "Reload restores the thread; the drawer creates a thread and switches back to a prior one.",
+      observedInstead: [
+        "After reload the page renders the welcome screen with no prior messages, and the drawer stays on \"Loading threads…\" with zero rows for the whole 40s capture window.",
+        "During the post flow the agent logs no `GET /threads` (list) request at all, while `POST /threads` (create) succeeds elsewhere in the same session - the drawer never asks for the list.",
+      ],
+      inferredFromSource: [
+        "CopilotThreadsDrawer.tsx:255/262/271/296 gates useThreads({ enabled: licensed }); licensed is false unless the runtime reports status \"valid\"/\"expiring\", and licensePending (status === null) is exactly the branch that shows the loading state rather than the locked view - so with no license configured the query is disabled AND the spinner never resolves.",
+        "packages/react-core/src/v2 contains no localStorage/sessionStorage/cookie use (only v1-deprecated dev-console does), and page.tsx mounts CopilotChatConfigurationProvider with no threadId prop, so the active thread is in-memory and a reload mints a new one.",
+      ],
+      evidenceClass: "BLACK_BOX_REFERENCE",
+      evidence: [
+        "screenshots/J-J-05-restored-after-reload-desktop-1440x900.png (welcome screen after reload)",
+        "screenshots/J-J-06-drawer-thread-list-desktop-1440x900.png (drawer pinned to Loading threads…)",
+        "logs/runs/J-J.json -> post[].drawer.rows === [] and postMetrics.threadListRequests === 0",
+      ],
+    },
+  },
+
+  // Catalog journeys whose SCENARIO this pinned surface cannot express. Each is a
+  // recorded gap, not a skipped test: `run` writes logs/runs/<J>.json with
+  // outcome UNCOVERED and exits 0, and no gate may cite it as execution evidence.
+  "J-D": {
+    uncovered: {
+      scenario: "Mounted UI supplies current context to the next run; unmount removes it.",
+      reason:
+        "The pinned canonical starter mounts no useAgentContext anywhere in examples/integrations/langgraph-js/src, " +
+        "so no component can add or remove an entry of the AG-UI `context` array. The only context element observed " +
+        "on the wire is CopilotKit's always-on A2UI catalog entry.",
+      fixture: "showcase/aimock/d6/langgraph-typescript/agent-config.json",
+      fixtureReachable: "the column matches (context: langgraph-typescript) but its replies are content, not context propagation",
+      evidenceClass: "OFFICIAL_FIXTURE_REFERENCE",
+      evidence: [
+        "packages/react-core/src/v2/hooks/__tests__/use-agent-context-timing.test.tsx (21/21, 2026-09-28)",
+        "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json -> context[] holds only the A2UI catalog element",
+      ],
+    },
+  },
+  "J-G": {
+    uncovered: {
+      scenario: "Runtime reaches a mandatory checkpoint, pauses, exposes an interrupt, resumes or ends.",
+      reason:
+        "The pinned agent graph registers only query_data, manage_todos, get_todos, generate_a2ui and search_flights " +
+        "(examples/integrations/langgraph-js/agent/src/agent.ts) with no interrupt() node, and the starter mounts no " +
+        "interrupt UI. The interrupt fixtures drive a schedule_meeting action registered by a different showcase app, " +
+        "so on this surface the tool call has no executor.",
+      fixture: "showcase/aimock/d6/langgraph-typescript/{interrupt-headless,gen-ui-interrupt}.json",
+      fixtureReachable: "prompts match the column; the schedule_meeting tool they return is unregistered on this surface",
+      evidenceClass: "DOCUMENTED_REFERENCE",
+      evidence: ["reference-behavior-matrix.md R-A10"],
+    },
+  },
+  "J-K": {
+    uncovered: {
+      scenario: "Committed progress is delivered before terminalization; a resume from a cursor loses and duplicates nothing.",
+      reason:
+        "The canonical starter exposes no re-run/reconnect control on its chat surface, and the fixture columns named " +
+        "for recovery (headless-simple, headless-complete) target the headless client rather than this UI. Mid-stream " +
+        "socket loss was therefore not observable through the page.",
+      fixture: "showcase/aimock/d6/langgraph-typescript/{headless-simple,headless-complete}.json",
+      fixtureReachable: "headless fixtures match, but they drive a headless client, not the starter's chat surface",
+      evidenceClass: "DOCUMENTED_REFERENCE",
+      evidence: ["reference-behavior-matrix.md R-A03"],
+    },
+  },
 };
 
 /**
@@ -423,9 +635,55 @@ const sidecar = () => {
   }
 };
 
+/**
+ * Cold-restart the UI and prove it serves a CSS-valid page.
+ *
+ * Turbopack intermittently rewrites the compiled globals.css with an invalid escape
+ * (`border-\[var(--\e 6T\)]`, reported at 2029:25 or 2041 depending on the cache) and
+ * every route then answers 500 behind a Next build-error overlay - observed at boot,
+ * mid-session after a filesystem cache compaction, AND after a mid-run page reload
+ * (J-J). `.next` is the only remedy: the source file on disk is 125 lines and valid.
+ * Returns the waitUrl result, or dies - a UI that never comes back makes every later
+ * waitFor time out while looking like a reference failure.
+ */
+async function healUi(reason) {
+  console.error(`[heal] ${reason}; cold-restarting the UI (known Turbopack CSS-parse degradation)`);
+  const uiPid = recorded().ui;
+  if (uiPid) {
+    try { process.kill(-uiPid, "SIGKILL"); } catch { /* already gone */ }
+    try { process.kill(uiPid, "SIGKILL"); } catch { /* already gone */ }
+  }
+  fs.rmSync(path.join(EXAMPLE, ".next"), { recursive: true, force: true });
+  await sleep(1500);
+  const uiEnv = { ...process.env };
+  delete uiEnv.AGENT_URL;
+  start("ui", process.execPath, [NEXT, "dev", "--turbopack", "-p", String(PORTS.ui), "-H", "127.0.0.1"], { cwd: EXAMPLE, env: uiEnv });
+  // Require status < 500, not mere reachability: a healed-but-still-broken compile is
+  // exactly the state waitUrl would otherwise accept.
+  const recovered = await waitUrl(`http://127.0.0.1:${PORTS.ui}/`, 150, 2000, 45000);
+  if (!recovered.up) die(`UI failed to recover from the CSS failure; see ${RUNLOG}/ui.log`);
+  return recovered;
+}
+
 async function run(journey) {
   const spec = JOURNEYS[journey];
   if (!spec) die(`unknown journey ${journey}; known: ${Object.keys(JOURNEYS).join(", ")}`);
+  // A declared gap is recorded, not driven: the record states which fixture exists
+  // and why the scenario cannot be expressed here, so a reader can distinguish
+  // "uncovered behaviour" from "capture that never ran". No stack needed.
+  if (spec.uncovered) {
+    const res = {
+      journey,
+      outcome: "UNCOVERED",
+      ok: false,
+      uncovered: spec.uncovered,
+      recorded_at: new Date().toISOString(),
+    };
+    fs.mkdirSync(RUNLOG, { recursive: true });
+    fs.writeFileSync(path.join(RUNLOG, `${journey}.json`), JSON.stringify(res, null, 1));
+    console.log(JSON.stringify(res, null, 1));
+    return res;
+  }
   // Observed, not assumed: launched under Bun the browser dies before the first navigation
   // ("goto: Target page, context or browser has been closed", footer Bun v1.4.0), while the
   // identical script under node drives the reference fine. Fail loudly instead of misreporting
@@ -450,19 +708,7 @@ async function run(journey) {
   // looking like a reference failure.
   const pageProbe = await fetch(`http://127.0.0.1:${PORTS.ui}/`, { signal: AbortSignal.timeout(45000) }).catch(() => null);
   if (!pageProbe || pageProbe.status >= 500) {
-    console.error(`[heal] UI answered ${pageProbe ? pageProbe.status : "no response"}; cold-restarting (known Turbopack/Tailwind degradation)`);
-    const uiPid = recorded().ui;
-    if (uiPid) {
-      try { process.kill(-uiPid, "SIGKILL"); } catch {}
-      try { process.kill(uiPid, "SIGKILL"); } catch {}
-    }
-    fs.rmSync(path.join(EXAMPLE, ".next"), { recursive: true, force: true });
-    await sleep(1500);
-    const uiEnv = { ...process.env };
-    delete uiEnv.AGENT_URL;
-    start("ui", process.execPath, [NEXT, "dev", "--turbopack", "-p", String(PORTS.ui), "-H", "127.0.0.1"], { cwd: EXAMPLE, env: uiEnv });
-    const recovered = await waitUrl(`http://127.0.0.1:${PORTS.ui}/`, 90, 2000);
-    if (!recovered.up) die(`UI failed to recover from the CSS 500; see ${RUNLOG}/ui.log`);
+    await healUi(`UI answered ${pageProbe ? pageProbe.status : "no response"}`);
   }
   const res = { journey, steps: [], requests: [], ok: false };
   // requests.jsonl persists across runs until the next boot, so sidecar reads must be scoped
@@ -513,8 +759,27 @@ async function run(journey) {
     for (let i = 0; i < spec.turns.length; i++) {
       const turn = spec.turns[i];
       const sent = await sendTurn(page, turn.prompt);
-      const reply = await has(turn.marker, 150000);
-      const step = { turn: i + 1, prompt: turn.prompt, ...sent, replyRendered: reply };
+      const step = { turn: i + 1, prompt: turn.prompt, ...sent };
+      // Intermediate observation between send and terminal text. HITL and generative
+      // surfaces render on the tool CALL, before the tool result that carries the
+      // marker, so waiting only for the marker would never photograph the pending state
+      // these journeys exist to prove.
+      if (turn.mid) {
+        step.midRendered = await has(turn.mid.waitFor, turn.mid.waitMs ?? 90000);
+        if (turn.mid.shot) await shot(turn.mid.shot, "desktop");
+        if (turn.mid.clickSelector || turn.mid.clickRole) {
+          const target = turn.mid.clickSelector
+            ? page.locator(turn.mid.clickSelector).first()
+            : page.getByRole(turn.mid.clickRole, { name: new RegExp(turn.mid.clickText, "i") }).first();
+          step.midClicked = await target
+            .click({ timeout: turn.mid.clickMs ?? 20000 })
+            .then(() => true)
+            .catch((e) => { step.midClickError = String(e).split("\n")[0].slice(0, 160); return false; });
+          await page.waitForTimeout(1200);
+          if (turn.mid.clickShot) await shot(turn.mid.clickShot, "desktop");
+        }
+      }
+      step.replyRendered = await has(turn.marker, turn.markerMs ?? 150000);
       res.steps.push(step);
       await shot(turn.shot, "desktop");
       res.bodyAfterLastTurn = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, " ").slice(0, 1200);
@@ -563,6 +828,150 @@ async function run(journey) {
     res.mobile = { rendersLastReply: renders, defaultPane };
     await shot(spec.mobileShot, "mobile");
 
+    // Thread-scoped flow (J-J). Runs back at desktop width: the off-canvas drawer is not
+    // the surface under test here. Restoration is asserted on re-rendered CONTENT after a
+    // real reload, never on React-local state the page would keep anyway.
+    if (spec.post?.length) {
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.waitForTimeout(1200);
+      res.post = [];
+      // Wire evidence for the post flow: what the AGENT was actually asked for. The drawer
+      // lists threads through a `GET /threads` it only issues while licensed, and a reload
+      // that creates a thread (`POST /threads`) rather than replaying one is the direct
+      // proof that nothing was restored. Offsets make the delta specific to this run.
+      const agentLog = path.join(RUNLOG, "agent.log");
+      const agentLogOffset = fs.existsSync(agentLog) ? fs.statSync(agentLog).size : 0;
+      // Stable handle for "switch back to the thread I was in": a row's data-thread-id
+      // captured while it is active. Thread names are model-generated, so matching on the
+      // opening prompt's text is a guess; the id is not.
+      let capturedThreadId = null;
+      // The threads drawer is a Lit custom element in an OPEN shadow root; Playwright's
+      // engines pierce it, but its interior is invisible to document.body.innerText, so
+      // every step records the drawer's own text as evidence of what was actually there.
+      const drawerState = () =>
+        page.evaluate(() => {
+          const el = document.querySelector("copilotkit-threads-drawer");
+          const root = el?.shadowRoot;
+          if (!root) return { mounted: false, visible: false, activeThreadId: null, rows: [], text: "" };
+          const panel = root.querySelector('[part="root"]') ?? root.firstElementChild;
+          const rect = panel?.getBoundingClientRect();
+          const rows = [...root.querySelectorAll("li[data-thread-id]")].map((li) => ({
+            id: li.getAttribute("data-thread-id"),
+            active: li.classList.contains("active"),
+            text: (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 70),
+          }));
+          return {
+            mounted: true,
+            // `el.open` is the mobile off-canvas flag and reads false on desktop even
+            // while the sidebar is painted - visibility, not the flag, is the question.
+            visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+            activeThreadId: rows.find((r) => r.active)?.id ?? null,
+            rows,
+            text: (root.textContent || "").replace(/\s+/g, " ").slice(0, 700),
+          };
+        });
+      const openComposer = async (ms) =>
+        page
+          .locator("textarea")
+          .first()
+          .waitFor({ state: "visible", timeout: ms })
+          .then(() => true)
+          .catch(() => false);
+      for (const action of spec.post) {
+        const rec = { kind: action.kind };
+        try {
+          if (action.kind === "reload") {
+            // The reload itself can hang: Turbopack recompiles `/` on navigation and the
+            // corrupted globals.css turns that into a 2.3min compile ending in a 500, so
+            // domcontentloaded may never fire inside the timeout. A thrown reload would
+            // skip the heal below and leave every later step shooting an error overlay,
+            // so the timeout is recorded and routed to the same remedy as a 500.
+            try {
+              const resp = await page.reload({ waitUntil: "domcontentloaded", timeout: action.waitMs ?? 300000 });
+              rec.reloadStatus = resp?.status?.() ?? 0;
+            } catch (e) {
+              rec.reloadStatus = 0;
+              rec.reloadError = String(e).split("\n")[0].slice(0, 160);
+            }
+            let up =
+              rec.reloadStatus > 0 &&
+              rec.reloadStatus < 500 &&
+              (await openComposer(rec.reloadStatus ? 60000 : 1000));
+            if (!up) {
+              await healUi(`reload status ${rec.reloadStatus}${rec.reloadError ? ` (${rec.reloadError})` : ""} or no composer`);
+              rec.healed = true;
+              const rt = page
+                .waitForResponse((r) => r.url().includes("/api/copilotkit/"), { timeout: 300000 })
+                .catch(() => null);
+              await page.goto("http://127.0.0.1:3000/", { waitUntil: "domcontentloaded", timeout: 300000 });
+              await rt;
+              up = await openComposer(240000);
+            }
+            if (!up) rec.error = rec.error ?? "composer never became visible after reload";
+            await page.waitForTimeout(6000);
+          } else if (action.kind === "clickSelector") {
+            await page.locator(action.selector).first().click({ timeout: action.timeout ?? 20000 });
+            await page.waitForTimeout(action.settleMs ?? 2500);
+          } else if (action.kind === "clickText") {
+            await page.getByText(action.text, { exact: false }).first().click({ timeout: action.timeout ?? 20000 });
+            await page.waitForTimeout(action.settleMs ?? 2500);
+          } else if (action.kind === "captureThread") {
+            // Thread NAMES are model-generated and not guaranteed to match the opening
+            // prompt, so the stable handle is the row's data-thread-id captured while it
+            // is still the active thread - later steps address it by id, never by text.
+            // The drawer fetches asynchronously ("Loading threads…"), so wait for rows;
+            // if no row is marked active after the reload, fall back to the first row and
+            // SAY SO, because that fallback is an inference the record must not hide.
+            const deadline = Date.now() + (action.waitMs ?? 40000);
+            let d = await drawerState();
+            while ((!d.rows || d.rows.length === 0) && Date.now() < deadline) {
+              await page.waitForTimeout(1000);
+              d = await drawerState();
+            }
+            rec.rows = d.rows;
+            rec.activeThreadId = d.activeThreadId;
+            capturedThreadId = d.activeThreadId ?? d.rows?.[0]?.id ?? null;
+            rec.capturedVia = d.activeThreadId ? "active" : capturedThreadId ? "firstRow" : "none";
+          } else if (action.kind === "switchBack") {
+            const selector = action.fromCaptured
+              ? `copilotkit-threads-drawer li[data-thread-id="${capturedThreadId}"]`
+              : action.selector;
+            if (action.fromCaptured && !capturedThreadId) throw new Error("no captured thread id to switch back to");
+            rec.targetThreadId = capturedThreadId;
+            await page.locator(selector).first().click({ timeout: action.timeout ?? 30000 });
+            await page.waitForTimeout(action.settleMs ?? 4000);
+          } else {
+            rec.error = `unknown action kind ${action.kind}`;
+          }
+        } catch (e) {
+          rec.error = String(e).split("\n")[0].slice(0, 200);
+        }
+        if (action.expects?.length) {
+          rec.expects = [];
+          for (const t of action.expects) rec.expects.push({ text: t.slice(0, 60), rendered: await has(t, action.expectMs ?? 45000) });
+          rec.expectOk = rec.expects.every((e) => e.rendered);
+        }
+        if (action.absents?.length) {
+          rec.absents = [];
+          for (const t of action.absents) rec.absents.push({ text: t.slice(0, 60), rendered: await has(t, action.absentMs ?? 12000) });
+          rec.absentOk = rec.absents.every((e) => !e.rendered);
+        }
+        rec.drawer = await drawerState();
+        if (action.shot) await shot(action.shot, "desktop");
+        res.post.push(rec);
+      }
+      // Count what the agent was asked for DURING the post flow only.
+      let postAgentLog = "";
+      try {
+        postAgentLog = fs.readFileSync(agentLog, "utf8").slice(agentLogOffset);
+      } catch { /* agent.log missing: report zeros rather than throw */ }
+      res.postMetrics = {
+        threadListRequests: (postAgentLog.match(/GET \/threads(\?| |\[)/g) || []).length,
+        threadCreates: (postAgentLog.match(/POST \/threads(\?| |\[)/g) || []).length,
+        note: "list = GET /threads with no id; creates = POST /threads with no id",
+      };
+    }
+
     // Persist the archived run requests as evidence and summarize them.
     fs.mkdirSync(RUNLOG, { recursive: true });
     res.runtimeRequests = runtimePosts.map((p, i) => {
@@ -585,11 +994,28 @@ async function run(journey) {
     res.hits = res.requests.filter((r) => r.outcome === "HIT").length;
     res.misses = res.requests.filter((r) => r.outcome === "MISS").length;
     res.stateFieldOnAnyRequest = res.requests.some((r) => r.stateField);
-    res.ok =
-      res.steps.every((s) => s.cleared && s.replyRendered) &&
+    const postProblem = (res.post ?? []).some((p) => p.error || p.expectOk === false || p.absentOk === false);
+    const turnsOk =
+      res.steps.every((s) => s.cleared && s.replyRendered && s.midRendered !== false && s.midClicked !== false) &&
       res.misses === 0 &&
       res.hits > 0 &&
       (!spec.canvasShot || Boolean(res.canvas?.agentWriteVisible && res.canvas?.canvasWriteVisible));
+    // A journey may declare up front that its post flow can only be OBSERVED. When the
+    // steps fail as declared, the failure IS the evidence: it is recorded as
+    // OBSERVED_ABSENT with the measured reason and does not fail the capture, because the
+    // capture ran and recorded what the reference does instead. If the flow unexpectedly
+    // succeeds, it is reported GREEN and the pre-written observation is dropped rather
+    // than cited against a run that contradicts it.
+    if (spec.postObservation) {
+      if (postProblem) {
+        res.postOutcome = "OBSERVED_ABSENT";
+        res.postObservation = spec.postObservation;
+      } else {
+        res.postOutcome = "GREEN";
+      }
+    }
+    res.ok = turnsOk && (spec.postObservation ? true : !postProblem);
+    res.outcome = res.ok ? "GREEN" : "FAILED";
   } finally {
     fs.mkdirSync(RUNLOG, { recursive: true });
     fs.writeFileSync(path.join(RUNLOG, `${journey}.json`), JSON.stringify(res, null, 1));
@@ -620,7 +1046,16 @@ if (cmd === "boot") {
   const journey = argv[1];
   const r = await run(journey);
   console.log(JSON.stringify(r, null, 1));
-  process.exit(r.ok ? 0 : 1);
+  // Exit 0 for GREEN and for a RECORDED UNCOVERED gap (the gap is the evidence, and the
+  // record names the reason); only a capture that ran and failed is a failure. Callers
+  // must read `outcome`, never the code alone, to tell "proven" from "declared missing".
+  process.exit(r.outcome === "FAILED" ? 1 : 0);
+} else if (cmd === "heal") {
+  // Cold-restart only the UI: Turbopack's corrupted globals.css makes every route 500
+  // until `.next` is rebuilt, and `boot` would take down a healthy mock/agent with it.
+  const r = await healUi(argv[1] ?? "manual heal");
+  console.log(JSON.stringify(r, null, 1));
+  process.exit(0);
 } else if (cmd === "status") {
   const rec = recorded();
   const rows = [];
@@ -646,7 +1081,10 @@ if (cmd === "boot") {
     [
       "usage: node harness.mjs <command>",
       "  boot [--cold]   start llmock + injector + agent + UI, self-healing the CSS 500",
-      "  run <J-A|J-C>   drive one reference journey, write screenshots and logs/<x>.json",
+      `  run <journey>   drive one reference journey: ${Object.keys(JOURNEYS).join(" ")}`,
+      "                  writes screenshots + logs/<journey>.json with outcome",
+      "                  GREEN (exit 0) | UNCOVERED (exit 0, gap recorded, no stack needed)",
+      "                  | FAILED (exit 1)",
       "  status          recorded pids and port occupancy",
       "  shots           captured reference screenshots with sizes",
       "  down            stop every recorded process and verify the ports are free",

@@ -9,7 +9,6 @@ import { registerRuntimeService } from "@cognate/protocol-connect";
 import { devToken, devTokenAuthenticator } from "@cognate/protocol-connect-bun";
 import type { Caller, RuntimeService } from "@cognate/runtime-api";
 import { createRuntime, type ActionPolicy, type Runtime } from "@cognate/runtime-bun";
-import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 
@@ -80,13 +79,12 @@ function indexHtml(): string {
 <title>Cognate Copilot Reconstruction</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/astryx.css" />
-<link rel="stylesheet" href="/theme.css" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
 <div id="root"></div>
+<script>document.documentElement.dataset.theme="light"</script>
 <script type="module" src="/app.js"></script>
 </body>
 </html>
@@ -140,8 +138,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     throw new Error(`server: failed to bundle UI: ${build.logs.map((log) => String(log)).join("; ")}`);
   }
   const bundleJs = await build.outputs[0]!.text();
-  const cssPaths = stylesheetPaths();
-  const appCssPath = fileURLToPath(new URL("./ui/app.css", import.meta.url));
+  const appCssPath = fileURLToPath(new URL("./ui/tokens.css", import.meta.url));
   const appCss = existsSync(appCssPath) ? await Bun.file(appCssPath).text() : "";
 
   const server = Bun.serve({
@@ -170,10 +167,22 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
         const handler = connectHandlersByPath.get(url.pathname);
         return handler ? handler(request) : new Response("not found", { status: 404 });
       }
-      if (url.pathname === "/app.js") return new Response(bundleJs, { headers: { "content-type": "text/javascript" } });
-      if (url.pathname === "/astryx.css" && cssPaths[0]) return new Response(Bun.file(cssPaths[0]), { headers: { "content-type": "text/css" } });
-      if (url.pathname === "/theme.css" && cssPaths[1]) return new Response(Bun.file(cssPaths[1]), { headers: { "content-type": "text/css" } });
-      if (url.pathname === "/app.css") return new Response(appCss, { headers: { "content-type": "text/css" } });
+      if (url.pathname === "/app.js") {
+        // The bundle is large; compress it and let the browser reuse it across reloads.
+        const gzipped = Bun.gzipSync(new TextEncoder().encode(bundleJs));
+        return new Response(gzipped, {
+          headers: {
+            "content-type": "text/javascript; charset=utf-8",
+            "content-encoding": "gzip",
+            "cache-control": "public, max-age=3600",
+          },
+        });
+      }
+      if (url.pathname === "/app.css") {
+        return new Response(appCss, {
+          headers: { "content-type": "text/css; charset=utf-8", "cache-control": "public, max-age=3600" },
+        });
+      }
       if (url.pathname === "/") return new Response(indexHtml(), { headers: { "content-type": "text/html" } });
       return new Response("not found", { status: 404 });
     },
