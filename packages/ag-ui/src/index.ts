@@ -273,10 +273,13 @@ export function createProjector(options: { readonly threadId: string; readonly r
         } else {
           const kind = conditionKindOf(view);
           const supported = kind !== undefined && SUPPORTED_CONTINUATION_KINDS.has(kind);
+          // AG-UI 1.0.0 has no interrupt event, so run-level waits surface as CUSTOM. The value is
+          // self-sufficient: a generic client can act on it (forwardedProps.cognate.resolve/cancel)
+          // without parsing rawEvent, using the ids carried here.
           out.push({
             type: "CUSTOM",
             name: supported ? "cognate.continuation" : "cognate.unsupported_interaction",
-            value: { id: continuationId, type: waitType, kind: kind ?? "unknown", payload: view?.payload ?? null },
+            value: { id: continuationId, type: waitType, kind: kind ?? "unknown", payload: view?.payload ?? null, runId: options.runId, threadId: options.threadId },
             rawEvent: { cognate },
           });
         }
@@ -488,7 +491,15 @@ export function createAgUiHandler(options: EndpointOptions): (request: Request) 
         }
         cognateRunId = await resolveRunId();
         afterInboundAction = await positionBeforeAction(cognateRunId);
-        await service.resolveContinuation(caller, { continuationId: toolMessage.toolCallId!, action: "resume", input: { ok: true, value }, idempotencyKey: `agui:resolve:${toolMessage.toolCallId}:tool` });
+        // Frontend waits project the full continuation id as the wire toolCallId; remote-offer waits
+        // project the bare remote id (the continuation id is `<runId>.wait.remote:<remoteId>`). A
+        // generic AG-UI client echoes whichever id it received, so accept both shapes: a bare id is
+        // addressed to the thread's current run's remote wait. An unknown id still fails closed
+        // (not_found) through the service's own continuation lookup.
+        const continuationId = toolMessage.toolCallId!.includes(".wait.")
+          ? toolMessage.toolCallId!
+          : `${cognateRunId}.wait.remote:${toolMessage.toolCallId!}`;
+        await service.resolveContinuation(caller, { continuationId, action: "resume", input: { ok: true, value }, idempotencyKey: `agui:resolve:${continuationId}:tool` });
         mode = "full";
       } else if (input.messages.some((m) => m.role === "user")) {
         const userMessage = [...input.messages].reverse().find((m) => m.role === "user")!;
