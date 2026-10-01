@@ -70,6 +70,11 @@ export async function wireObservations(options: {
   readonly repoDir: string;
   readonly env?: Record<string, string>;
   readonly drainIntervalMs?: number;
+  /** Usage pass U7: the durable RealityTrace plugin gate (`settings.changed` → `plugins`
+   *  fold, read per drain cycle). When it returns false the drain cycle is skipped and
+   *  observations stay queued — at-least-once semantics mean nothing is lost, and enabling
+   *  the plugin drains the backlog. Absent gate = always drain (the pre-U7 behavior). */
+  readonly enabled?: () => boolean | Promise<boolean>;
 }): Promise<ObservationWiring> {
   const port = createSxrCliPort({ bin: options.bin, repoDir: options.repoDir, env: options.env });
   let workflow: SxrWorkflow | undefined;
@@ -81,14 +86,18 @@ export async function wireObservations(options: {
   void workflow;
   const delivery = new ObservationDelivery(options.store, { port, backoff: { baseMs: 250, maxMs: 4_000, maxAttempts: 5 } });
   const drainIntervalMs = options.drainIntervalMs ?? 1_000;
+  const drainOnce = async () => {
+    if (options.enabled && !(await options.enabled())) return;
+    await delivery.drain();
+  };
   const timer = setInterval(() => {
-    void delivery.drain().catch(() => {
+    void drainOnce().catch(() => {
       // Drain failures never touch committed events; the dispatcher's own retry/backoff/poison
       // bookkeeping records the states (the adapter's contract).
     });
   }, drainIntervalMs);
   // Drain immediately too, so short-lived boots (tests) deliver without waiting a full interval.
-  void delivery.drain().catch(() => {});
+  void drainOnce().catch(() => {});
   return {
     delivery,
     port,

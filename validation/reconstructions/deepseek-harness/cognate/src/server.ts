@@ -80,6 +80,7 @@ const GRANTED_CAPABILITIES = [
   "settings.changeCodingTools",
   "settings.changeSendBehavior",
   "settings.changePreset",
+  "settings.changePlugin",
   "observation.status",
   "observation.record",
 ];
@@ -248,6 +249,19 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
         bin: sxrBin,
         repoDir: join(home, "sxr-repo"),
         env: { XDG_DATA_HOME: join(home, "sxr-data"), XDG_STATE_HOME: join(home, "sxr-state") },
+        // Usage pass U7: the drain respects the durable RealityTrace plugin state
+        // (`settings.changePlugin` → `settings.changed` → `settings` projection). The read is
+        // per drain cycle, so a toggle takes effect without a restart, and a failed read is
+        // fail-closed: observations queue (at-least-once) and deliver once the plugin enables.
+        enabled: async () => {
+          try {
+            const rows = await getService().readProjection(LOCAL_OPERATOR, { name: "settings" });
+            const current = rows.find((row) => row.key === "current")?.value as { plugins?: Record<string, boolean> } | undefined;
+            return current?.plugins?.realitytrace === true;
+          } catch {
+            return false;
+          }
+        },
       });
     } catch (error) {
       console.warn(`[deepseek-harness] realitytrace: wiring failed (${error instanceof Error ? error.message : String(error)}); observations stay queued`);

@@ -134,10 +134,38 @@ export interface SettingsPatch {
   readonly sendBehavior?: SendBehavior;
   /** Usage pass U4: the default agent preset for NEW sessions (see agentCoding.ts's PRESET_TOOLS). */
   readonly preset?: AgentPreset;
+  /** Usage pass U7: global plugin enable state, per plugin id. Only plugins with real runtime
+   *  behavior behind them are toggleable (`TOGGLEABLE_PLUGINS`); a plugin absent from the map is
+   *  disabled. The projection fold merges this map per key (see projections/settings.ts). */
+  readonly plugins?: Record<string, boolean>;
 }
 
 /** Every General setting, fully resolved with defaults — the read-side shape the UI consumes. */
 export interface GeneralSettings extends Required<SettingsPatch> {}
+
+// -- Global plugins -----------------------------------------------------------------------------
+
+/** The global plugins a client can actually toggle (`settings.changePlugin`): only entries with
+ *  real runtime behavior behind them. RealityTrace observations gate the SXR evidence delivery
+ *  (`wireObservations`' drain gate); the other global plugins in the UI's inventory are always-on
+ *  compositions, so their switches stay informational (DEVIATIONS.md). */
+export const TOGGLEABLE_PLUGINS: readonly string[] = ["realitytrace"];
+
+export function isToggleablePluginId(value: unknown): value is string {
+  return typeof value === "string" && (TOGGLEABLE_PLUGINS as readonly string[]).includes(value);
+}
+
+/** A `settings.changePlugin` patch: at least one toggleable plugin id mapped to a boolean. */
+export function isPluginStatePatch(value: unknown): value is Record<string, boolean> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const entries = Object.entries(value as Record<string, unknown>);
+  return entries.length > 0 && entries.every(([id, enabled]) => isToggleablePluginId(id) && typeof enabled === "boolean");
+}
+
+/** Read-side helper: a plugin is enabled only when the durable map says so — absence means off. */
+export function pluginEnabled(plugins: unknown, id: string): boolean {
+  return typeof plugins === "object" && plugins !== null && !Array.isArray(plugins) && (plugins as Record<string, unknown>)[id] === true;
+}
 
 /**
  * Resolves a projection row's value (or anything) into a complete `GeneralSettings`, defaulting
@@ -162,5 +190,6 @@ export function resolveGeneralSettings(value: unknown, legacyAppearance?: string
     codingTools: typeof row.codingTools === "boolean" ? row.codingTools : DEFAULT_CODING_TOOLS,
     sendBehavior: isSendBehavior(row.sendBehavior) ? row.sendBehavior : DEFAULT_SEND_BEHAVIOR,
     preset: isAgentPreset(row.preset) ? row.preset : DEFAULT_AGENT_PRESET,
+    plugins: isPluginStatePatch(row.plugins) ? row.plugins : {},
   };
 }

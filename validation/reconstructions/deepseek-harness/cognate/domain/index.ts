@@ -146,12 +146,13 @@ export function usage2Bindings(domain: Domain): readonly CapabilityBinding[] {
     { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeCodingTools", version: "1.0.0" } },
     { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changeSendBehavior", version: "1.0.0" } },
     { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changePreset", version: "1.0.0" } },
+    { semanticId: domain.semanticId("UserPreferences"), capability: { id: "settings.changePlugin", version: "1.0.0" } },
   ];
 }
 
 export function bindUsage2(domain: Domain) {
   const contracts = bindCapabilities(domain.projection, usage2Bindings(domain));
-  if (contracts.length !== 9) throw new Error(`domain: expected 9 bound contracts, got ${contracts.length}`);
+  if (contracts.length !== 10) throw new Error(`domain: expected 10 bound contracts, got ${contracts.length}`);
   return { settingsChange: contracts.map((c) => c.semanticRef) };
 }
 
