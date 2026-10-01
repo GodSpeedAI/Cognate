@@ -117,6 +117,10 @@ Envelope schema were built and exercised out-of-tree (see
 - RealityTrace repository (https://github.com/GodSpeedAI/RealityTrace) @
   `f7fb1c307e1f7ceb15468986330e5ca8c9248d19`
 
+## Addendum (2026-10-01): installed from crates.io
+
+`realitytrace` 0.3.0 is now published on crates.io; `just setup-realitytrace` installs it from the registry instead of building the git tag. The pinned version and the `--extensions` behavior are unchanged, and AK-006 and CG-RT-002 pass against the registry build.
+
 ## Addendum (2026-09-25): structured correlation via `--extensions`
 
 RealityTrace 0.3.0 (tag `realitytrace-v0.3.0`) added `ingest --extensions`,

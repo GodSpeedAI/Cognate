@@ -83,6 +83,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed:** The fixture spawned `SXR_BIN` (default `.tmp/sxr-target/release/sxr`, built from a local checkout) and read the CEP schema from a machine-specific checkout path. RealityTrace v0.2.0 is released on GitHub (no binary assets) but its crates are **not** on crates.io (`cargo install realitytrace --version 0.2.0` fails).
 **Consequence:** Clean workers now need Rust/cargo and network access to GitHub to install the pinned tag (~minutes of compilation). Installation from crates.io or a prebuilt asset would be faster; neither exists yet.
 **Exit criterion:** Met. A follow-up improvement (not blocking): switch the recipe to the crates.io release or a checksummed binary asset once published.
+**Follow-up done (2026-10-01):** `realitytrace` 0.3.0 is published on crates.io; `just setup-realitytrace` now runs `cargo install realitytrace --version 0.3.0 --locked --root .tmp/realitytrace` (no GitHub tag or network access beyond the registry). AK-006 and CG-RT-002 pass against that binary (`.agents/evidence/2026-10-01-realitytrace-crates-io.md`).
 
 ## DEBT-011 — SQLite store assumes a single writer process
 **Status:** Open
