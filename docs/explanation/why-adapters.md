@@ -35,7 +35,7 @@ mechanically checkable rather than aspirational.
 | Contract (framework-owned) | Adapter | Engine |
 |---|---|---|
 | `KernelFactory` (`kernel-api`) | `kernel-cordis` | Cordis 4.0.0-rc.10 |
-| `SemanticRef` production (`kernel-api`) | `domainforge` | `@godspeedai/domainforge` 0.18.1 |
+| `SemanticRef` production (`kernel-api`) | `domainforge` | `@godspeedai/domainforge` 0.18.2 |
 | `CognitiveIndex` (`cognitive-api`) | `cognitive-ruvector` | `@ruvector/core` 0.1.32 |
 | portable snapshot | `cognitive-rvf` | `@ruvector/rvf` 0.3.4 |
 | `ObservationPort` | `realitytrace` | the RealityTrace CLI |

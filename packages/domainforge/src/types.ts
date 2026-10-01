@@ -1,7 +1,7 @@
 import type { CapabilityContract, SemanticRef } from "@cognate/kernel-api";
 
 export const PROJECTION_SCHEMA = "cognate.semantic.v1";
-export const BINDING = "@godspeedai/domainforge@0.18.1";
+export const BINDING = "@godspeedai/domainforge@0.18.2";
 
 export type SemanticKind =
   | "Entity" | "Resource" | "Flow" | "Role" | "Relation" | "Instance"
