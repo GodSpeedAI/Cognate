@@ -11,3 +11,8 @@ coverage/
 # Playwright run artifacts
 test-results/
 playwright-report/
+
+# Runtime logs & process records
+*.log
+!**/tests/**/*.log
+.harness-pids.json
