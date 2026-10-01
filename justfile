@@ -38,9 +38,9 @@ gate id:
 gates:
     bun scripts/gate.ts --all
 
-# Install the pinned RealityTrace CLI release (v0.3.0, adds ingest --extensions) used by AK-006 and CG-RT-002 (no local checkout needed)
+# Install the pinned RealityTrace CLI from crates.io (0.3.0, adds ingest --extensions) used by AK-006 and CG-RT-002 (no local checkout needed)
 setup-realitytrace:
-    cargo install --git https://github.com/GodSpeedAI/RealityTrace --tag realitytrace-v0.3.0 realitytrace --locked --root .tmp/realitytrace
+    cargo install realitytrace --version 0.3.0 --locked --root .tmp/realitytrace
 
 # Launch the DeepSeek reconstruction harness (mock model on :4010, workspace, and Cognate Console on :3180)
 harness-up *args:

@@ -17,7 +17,7 @@ Run `just --list` for prerequisites.
 | `just verify` | `check` + `typecheck` + `bun test ./tests/proof-routing.test.ts` + `bun scripts/gate.ts --implemented` | the regression baseline |
 | `just gate <ID>` | `bun scripts/gate.ts <ID>` | one requirement's proof gate; an unmet gate exits 1 |
 | `just gates` | `bun scripts/gate.ts --all` | every gate with PASS/FAIL and status drift; non-zero while any is unmet |
-| `just setup-realitytrace` | `cargo install --git https://github.com/GodSpeedAI/RealityTrace --tag realitytrace-v0.3.0 realitytrace --locked --root .tmp/realitytrace` | install the pinned RealityTrace CLI used by `AK-006` and `CG-RT-002` |
+| `just setup-realitytrace` | `cargo install realitytrace --version 0.3.0 --locked --root .tmp/realitytrace` | install the pinned RealityTrace CLI used by `AK-006` and `CG-RT-002` |
 
 `just verify` proves the checked-in substrate, not a deployable build. `just build` and
 `just dev` from the root are not recipes; `bun dev` runs `cognate dev` **inside a generated app**.
