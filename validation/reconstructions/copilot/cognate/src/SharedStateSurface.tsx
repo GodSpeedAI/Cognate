@@ -34,9 +34,9 @@ function runOutcome(status: string | undefined, output: unknown, todos: readonly
     : `Agent read ${observed.length} ${observed.length === 1 ? "row" : "rows"}; your edit was not present.`;
 }
 
-export function SharedStateSurface() {
+export function SharedStateSurface({ threadId = THREAD_ID }: { readonly threadId?: string } = {}) {
   const client = useCognate();
-  const { state, version, update } = useThreadSharedState(THREAD_ID);
+  const { state, version, update } = useThreadSharedState(threadId);
   const [running, setRunning] = useState<"write" | "observe" | undefined>();
   const [lastRunId, setLastRunId] = useState<string>();
   const [failure, setFailure] = useState<string>();
@@ -48,7 +48,7 @@ export function SharedStateSurface() {
     setRunning(phase);
     setFailure(undefined);
     try {
-      const started = await client.startRun(JOURNEY_C_AGENT, { phase }, { correlationId: THREAD_ID });
+      const started = await client.startRun(JOURNEY_C_AGENT, { phase }, { correlationId: threadId });
       setLastRunId(started.runId);
     } catch (error) {
       setFailure(`The agent run could not start. ${error instanceof Error ? error.message : String(error)}`);
@@ -144,7 +144,7 @@ export function SharedStateSurface() {
 
         <Disclosure label="Under the hood">
           <p className="hint">
-            Agent <code>{JOURNEY_C_AGENT}</code> on thread <code>{THREAD_ID}</code>. Writes are
+            Agent <code>{JOURNEY_C_AGENT}</code> on thread <code>{threadId}</code>. Writes are
             compare-and-set against revision <code>{typeof version === "number" ? version : 0}</code>.
           </p>
         </Disclosure>

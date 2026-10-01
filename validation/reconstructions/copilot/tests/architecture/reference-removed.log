@@ -1,0 +1,1127 @@
+
+=== reference-removed run ===
+started: 2026-10-01T03:56:40.139Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [155.86ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [140.59ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [39.22ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [39.56ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [86.44ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [94.45ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [105.98ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [116.79ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [55.28ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [30.05ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [44.46ms]
+
+ 11 pass
+ 0 fail
+ 196 expect() calls
+Ran 11 tests across 10 files. [1393.00ms]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [0.55ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [2.22ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.75ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [0.84ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.32ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.14ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [0.60ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [94.39ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [6.05ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1428.09ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.99ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [1.00ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [1.89ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [1.33ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.68ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.41ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [1.29ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.01ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [1.22ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.07ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [5.53ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.84ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [4.36ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.95ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [13.34ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [11.19ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.34ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.11ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [1.36ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.34ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.78ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [7.63ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [5.80ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.51ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.35ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 121 expect() calls
+Ran 43 tests across 9 files. [1.63s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T03:56:43.193Z
+
+=== reference-removed run ===
+started: 2026-10-01T03:58:44.030Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [138.06ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [87.24ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [27.80ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [25.01ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [77.80ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [52.71ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [88.80ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [114.36ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [40.87ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [32.17ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [43.33ms]
+
+ 11 pass
+ 0 fail
+ 196 expect() calls
+Ran 11 tests across 10 files. [1075.00ms]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [0.59ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [1.55ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.56ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [0.58ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.17ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.14ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [0.90ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [76.60ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [4.92ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1165.38ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.73ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.56ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [0.32ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [0.72ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.50ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.29ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.66ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [0.87ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [0.99ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.08ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [8.68ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.67ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [3.74ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.14ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [7.66ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [23.54ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.11ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.02ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.65ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.22ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.11ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.59ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [29.39ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [3.93ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.68ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.34ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 121 expect() calls
+Ran 43 tests across 9 files. [1370.00ms]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T03:58:46.498Z
+
+=== reference-removed run ===
+started: 2026-10-01T04:23:55.152Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [202.78ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [202.36ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [46.49ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [47.45ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [107.09ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [136.28ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [127.79ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [138.26ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [67.78ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [49.16ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [63.64ms]
+
+ 11 pass
+ 0 fail
+ 196 expect() calls
+Ran 11 tests across 10 files. [1.96s]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [3.45ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [6.71ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [3.51ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [1.33ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.30ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.40ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [1.36ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [362.95ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [15.07ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [3400.62ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [1.79ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.67ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [0.26ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [13.67ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [10.00ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.48ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [1.24ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [2.12ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [3.35ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.06ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [18.38ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.73ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [8.77ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.79ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [6.95ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [200.63ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.12ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.11ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [1.01ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.26ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.10ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.52ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [7.25ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [2.97ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.49ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.51ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 121 expect() calls
+Ran 43 tests across 9 files. [4.17s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T04:24:01.318Z
+
+=== reference-removed run ===
+started: 2026-10-01T04:24:56.366Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [164.18ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [127.28ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [23.96ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [48.34ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [85.44ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [61.19ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [98.00ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [115.77ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [41.23ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [28.51ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [45.64ms]
+
+ 11 pass
+ 0 fail
+ 196 expect() calls
+Ran 11 tests across 10 files. [1446.00ms]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [0.60ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [2.03ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.48ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [0.62ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.16ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.15ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [0.58ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [77.68ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [5.23ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1574.37ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.69ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.58ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [0.21ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [0.68ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.63ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.39ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [4.16ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.39ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [1.39ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.07ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [4.91ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.83ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [3.66ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.37ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [7.12ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [9.55ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.09ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.02ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.82ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.32ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.10ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.96ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [10.57ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [2.28ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.46ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.46ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 121 expect() calls
+Ran 43 tests across 9 files. [1.74s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T04:24:59.578Z
+
+=== reference-removed run ===
+started: 2026-10-01T04:29:52.618Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [135.07ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [103.96ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [37.37ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [37.72ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [82.48ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [75.38ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [101.62ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [116.91ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [49.39ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [30.32ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [43.64ms]
+
+ 11 pass
+ 0 fail
+ 196 expect() calls
+Ran 11 tests across 10 files. [1176.00ms]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [0.66ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [2.34ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [1.06ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [1.34ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.42ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.21ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [0.72ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [87.84ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [5.46ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1600.08ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.77ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.70ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [0.28ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [0.80ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.76ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.36ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.76ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.24ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [1.47ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.12ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [7.10ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.99ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [4.46ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.86ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [9.19ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [10.79ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.11ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.02ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.58ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.23ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.07ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.73ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [7.60ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [4.92ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.54ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.10ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 121 expect() calls
+Ran 43 tests across 9 files. [1.79s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T04:29:55.606Z
+
+=== reference-removed run ===
+started: 2026-10-01T12:48:46.886Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [135.05ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [240.76ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [98.82ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [21.25ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [31.92ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [87.01ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [62.86ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [89.36ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [115.37ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [43.51ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [23.59ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [44.38ms]
+
+ 12 pass
+ 0 fail
+ 240 expect() calls
+Ran 12 tests across 11 files. [1412.00ms]
+
+[retry] cd validation/reconstructions/copilot && bun test tests/architecture/ exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 1
+output tail:
+(last 60 of 127 lines)
+    at /home/sprime01/projects/cognate/packages/store-sqlite/src/index.ts:2:26
+
+error: Loading .node files won't work in the browser. Make sure to set target to "bun" or "node"
+    at /home/sprime01/projects/cognate/node_modules/.bun/@godspeedai+domainforge@0.18.2/node_modules/@godspeedai/domainforge/domainforge-core.linux-x64-gnu.node
+(fail) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [32.49ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [2293.17ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.96ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [1.11ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [2.04ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [0.88ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.72ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.40ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.85ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.46ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [1.11ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.04ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [3.30ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.81ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [4.48ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.25ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [8.54ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [8.68ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.09ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.02ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.87ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.24ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.59ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [6.83ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [3.15ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.48ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.48ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+
+1 tests failed:
+(fail) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [32.49ms]
+
+ 40 pass
+ 2 skip
+ 1 fail
+ 120 expect() calls
+Ran 43 tests across 9 files. [2.51s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T12:48:53.532Z
+
+=== reference-removed run ===
+started: 2026-10-01T12:49:31.426Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [122.67ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [310.17ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [70.57ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [16.86ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [24.18ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [81.90ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [51.72ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [85.54ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [121.17ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [43.67ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [20.18ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [44.03ms]
+
+ 12 pass
+ 0 fail
+ 239 expect() calls
+Ran 12 tests across 11 files. [1457.00ms]
+
+[retry] cd validation/reconstructions/copilot && bun test tests/architecture/ exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 1
+output tail:
+(last 60 of 127 lines)
+    at /home/sprime01/projects/cognate/packages/store-sqlite/src/index.ts:2:26
+
+error: Loading .node files won't work in the browser. Make sure to set target to "bun" or "node"
+    at /home/sprime01/projects/cognate/node_modules/.bun/@godspeedai+domainforge@0.18.2/node_modules/@godspeedai/domainforge/domainforge-core.linux-x64-gnu.node
+(fail) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [43.67ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1297.64ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.95ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.70ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [1.74ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [1.37ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [1.01ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.56ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.91ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.21ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [1.07ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.05ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [3.01ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.65ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [3.67ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.09ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [5.99ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [10.94ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.10ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.02ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.79ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.27ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.52ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [7.67ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [2.79ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.66ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.60ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+
+1 tests failed:
+(fail) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [43.67ms]
+
+ 40 pass
+ 2 skip
+ 1 fail
+ 120 expect() calls
+Ran 43 tests across 9 files. [1.53s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T12:49:36.255Z
+
+=== reference-removed run ===
+started: 2026-10-01T12:50:54.349Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [112.50ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [208.87ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [62.80ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [17.38ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [21.39ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [71.24ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [46.85ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [84.26ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [131.53ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [76.28ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [21.45ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [43.00ms]
+
+ 12 pass
+ 0 fail
+ 239 expect() calls
+Ran 12 tests across 11 files. [1235.00ms]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [0.63ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [1.49ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.39ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [0.58ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.27ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.09ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [0.52ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [94.37ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [5.36ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1218.42ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.69ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [1.52ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [1.85ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [0.84ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.55ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.26ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.63ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [0.92ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [0.96ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.04ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [2.20ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.51ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [4.50ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.61ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [7.23ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [8.89ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.10ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.03ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.73ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.22ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.53ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [6.60ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [2.94ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.51ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [5.01ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 123 expect() calls
+Ran 43 tests across 9 files. [1395.00ms]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T12:50:56.997Z
+
+=== reference-removed run ===
+started: 2026-10-01T17:24:33.607Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [131.88ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [257.08ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [82.16ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [19.77ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [36.27ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [78.38ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [53.88ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [90.92ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [115.98ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [51.42ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [24.13ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [45.74ms]
+
+ 12 pass
+ 0 fail
+ 240 expect() calls
+Ran 12 tests across 11 files. [1412.00ms]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [0.76ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [2.38ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.54ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [1.07ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.36ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.18ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [0.76ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [164.17ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [6.64ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [1939.35ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.82ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.90ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [3.19ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [0.93ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.61ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.27ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.72ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.02ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [4.43ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.05ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [11.15ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.63ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [4.02ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.24ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [13.55ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [121.69ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.16ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.03ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.71ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.27ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.10ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.62ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [6.26ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [7.91ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.47ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.46ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 123 expect() calls
+Ran 43 tests across 9 files. [2.33s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T17:24:37.368Z
+
+=== reference-removed run ===
+started: 2026-10-01T17:59:16.715Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [163.87ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [246.36ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [84.76ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [26.61ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [47.30ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [79.66ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [63.37ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [88.94ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [115.44ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [43.29ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [24.28ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [42.94ms]
+
+ 12 pass
+ 0 fail
+ 240 expect() calls
+Ran 12 tests across 11 files. [1.50s]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [3.33ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [2.59ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.64ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [1.15ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.26ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.09ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [1.35ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [281.99ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [24.08ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [2897.05ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [0.86ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > the boundary exists: application source imports @cognate/ag-ui (server + adapter composition) [0.78ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [2.61ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @cognate/ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [1.04ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is imported only from UI/presentation files [0.74ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @cognate/ui-astryx is absent from agents/domain logic files [0.37ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @cognate/kernel-cordis nor cordis [0.99ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @cognate/kernel-api / runtime packages [1.26ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @cognate/kernel-cordis, and kernel-cordis only by @cognate/runtime-bun [3.19ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.11ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [8.12ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.74ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [7.06ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.51ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [15.88ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [171.27ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.10ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.03ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [1.06ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.21ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.08ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.54ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [8.84ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [2.33ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.45ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.55ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 123 expect() calls
+Ran 43 tests across 9 files. [3.48s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-01T17:59:21.716Z

@@ -832,6 +832,100 @@ body {
   border-top: 1px dashed var(--rule);
 }
 
+/* ── Rich thread bench (journey 09) ────────────────────────────────────── */
+
+.threadbench {
+  flex: 1;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-5) var(--s-7);
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: var(--s-7);
+  align-items: start;
+}
+
+.threadbench > .journey__head {
+  grid-column: 1 / -1;
+}
+
+.threadbench__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  min-width: 0;
+}
+
+.panel {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  background: var(--bg-surface);
+  padding: var(--s-4);
+  display: grid;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.panel__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
+.thread-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  background: var(--bg-surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.thread-row:hover {
+  background: var(--bg-chip);
+}
+
+.thread-row[aria-current="true"] {
+  border-color: var(--accent);
+}
+
+.thread-row__id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+}
+
+.surface-stack {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.mcp-frame {
+  width: 100%;
+  min-height: 200px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius, 8px);
+  background: #fff;
+}
+
 /* ── Footer ────────────────────────────────────────────────────────────── */
 
 .app-footer {
@@ -864,6 +958,12 @@ body {
 
   .bench__column {
     gap: var(--s-6);
+  }
+
+  .threadbench {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+    padding: var(--s-5) var(--s-4) var(--s-6);
   }
 
   .focus {

@@ -305,6 +305,13 @@
         "mobile": {
           "rendersLastReply": true,
           "defaultPane": "chat"
+        },
+        "openEndedUncovered": {
+          "scenario": "MCP App / open-ended generative UI (interactive sandboxed app with return interaction)",
+          "reason": "The pinned starter wires its MCP Apps middleware to https://mcp.excalidraw.com (examples/integrations/langgraph-js route.ts, MCP_SERVER_URL override) and the pin ships no local MCP mock; the showcase compose files define only aimock, and showcase/harness/src/probes/scripts/d5-mcp-apps.ts states the probe depends on mcp.excalidraw.com. The reference surface cannot be executed locally and was not simulated.",
+          "fixtureReachable": "showcase/aimock/d6/langgraph-typescript/mcp-apps.json can serve the LLM turns, but the runtime cannot advertise or render MCP tools without the external MCP server.",
+          "evidenceClass": "DOCUMENTED_REFERENCE",
+          "cognateSide": "Built and proven from general primitives with a deterministic local MCP fixture: tests in cognate/test/J-H-open-ended-mcp.test.tsx (durable tool continuation, artifact, interaction continuation, settlement, replay, offer revocation); see .agents/evidence/2026-10-01-copilot-mcp-open-ended.md"
         }
       },
       {

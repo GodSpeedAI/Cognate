@@ -98,7 +98,7 @@ export function ChatSurface({ threadId = DEFAULT_THREAD_ID, tenant = "tenant-a" 
             </Disclosure>
           </div>
         ) : null}
-        {turns.length === 0 ? (
+        {turns.length === 0 && earlier.length === 0 ? (
           <p className="empty">
             No messages yet. Send one and the reply arrives as durable events, not as a
             terminal-only result.

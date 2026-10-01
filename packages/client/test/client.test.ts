@@ -218,4 +218,29 @@ describe("headless client (§25.1)", () => {
     const s: RunState = await until(() => client.run(runId).get(), (v) => v.position > 0, "position");
     expect(Object.keys(s).sort()).toEqual(["artifacts", "error", "openContinuations", "output", "position", "runId", "state", "status", "text"]);
   });
+
+  test("projection store refresh() re-reads without a new event (a fold can land after the event-triggered read)", async () => {
+    // A store refresh is scheduled per delivered event, but the runtime's projection fold can
+    // complete just after that read — and a run that then waits commits no further events. The
+    // public refresh() lets a consumer re-read once durable state changes without waiting for a
+    // stream event that may never come.
+    let rows: { key: string; value: Json }[] = [];
+    const stub = {
+      readProjection: () => Promise.resolve(rows),
+      events: (_caller: unknown, request: { signal?: AbortSignal }) => (async function* () {
+        const signal = request?.signal;
+        if (signal?.aborted) return;
+        await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }));
+      })(),
+    } as unknown as RuntimeService;
+    const probe = createClient({ service: stub, caller: alice });
+    const store = probe.projection("p");
+    await until(() => store.get(), (v) => v !== undefined, "initial read");
+    expect(store.get()).toEqual([]);
+    rows = [{ key: "run/1", value: { renders: 1 } }];
+    store.refresh();
+    await until(() => store.get(), (v) => (v?.length ?? 0) === 1, "refreshed row");
+    expect(store.get()).toEqual([{ key: "run/1", value: { renders: 1 } }]);
+    await probe.close();
+  });
 });

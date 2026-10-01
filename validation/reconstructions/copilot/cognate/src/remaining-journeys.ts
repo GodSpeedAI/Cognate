@@ -5,18 +5,36 @@ import type { Projection, ProjectionWrite } from "@cognate/projections";
 import type { AgentDefinition, Caller, RunContext } from "@cognate/runtime-api";
 import { invokeFrontend } from "@cognate/runtime-api";
 import { createRuntime, type Runtime } from "@cognate/runtime-bun";
+import {
+  DECLARATIVE_OPERATION,
+  JOURNEY_D_AGENT,
+  JOURNEY_E_AGENT,
+  JOURNEY_F_AGENT,
+  JOURNEY_G_AGENT,
+  JOURNEY_H_AGENT,
+  JOURNEY_J_AGENT,
+  JOURNEY_K_AGENT,
+  JOURNEY_MCP_AGENT,
+} from "./constants.ts";
 import { deterministicModelComponent } from "./journey.ts";
+import { mcpToolContract } from "./mcp-bridge.ts";
 import { sharedStateCanvasProjection } from "./shared-state.ts";
 
 // ── Canonical journey identities ──────────────────────────────────────────────
 // One agent id per canonical journey in .sea/interaction/canonical-journey-catalog.md.
-export const JOURNEY_D_AGENT = "copilotkit-reconstruction.agent-context";
-export const JOURNEY_E_AGENT = "copilotkit-reconstruction.controlled-rendering";
-export const JOURNEY_F_AGENT = "copilotkit-reconstruction.tool-decision";
-export const JOURNEY_G_AGENT = "copilotkit-reconstruction.runtime-interrupt";
-export const JOURNEY_H_AGENT = "copilotkit-reconstruction.declarative-ui";
-export const JOURNEY_J_AGENT = "copilotkit-reconstruction.rich-thread";
-export const JOURNEY_K_AGENT = "copilotkit-reconstruction.live-recovery";
+// The ids live in constants.ts so browser surfaces can name their agent without importing
+// this server-side module; they are re-exported here for the suite's imports.
+export {
+  DECLARATIVE_OPERATION,
+  JOURNEY_D_AGENT,
+  JOURNEY_E_AGENT,
+  JOURNEY_F_AGENT,
+  JOURNEY_G_AGENT,
+  JOURNEY_H_AGENT,
+  JOURNEY_J_AGENT,
+  JOURNEY_K_AGENT,
+  JOURNEY_MCP_AGENT,
+};
 
 export const CONTROLLED_RENDER_COMPONENT = "FlightSearchCard";
 export const CONTINUATION_MESSAGE = "Continuing after the meeting decision.";
@@ -102,7 +120,6 @@ export const journeyGAgent: AgentDefinition = {
 
 // ── J-H declarative UI: a catalog-constrained projection with a returned interaction ──
 export const DECLARATIVE_COMPONENT = "SalesDashboard";
-export const DECLARATIVE_OPERATION = "select-region";
 
 export const declarativeCatalog = {
   [DECLARATIVE_COMPONENT]: { props: ["region", "revenue"], operations: [DECLARATIVE_OPERATION] },
@@ -246,6 +263,105 @@ export const journeyKAgent: AgentDefinition = {
   },
 };
 
+// ── Open-ended Generative UI (MCP): tool invocation → UI resource → sandboxed interaction ──
+// The display constants live in constants.ts so browser surfaces never import this server module;
+// they are re-exported here for the server-side agent and tests.
+export { MCP_APP_COMPONENT, MCP_APP_OPERATION, MCP_APP_OPERATION_LABEL } from "./constants.ts";
+import { MCP_APP_COMPONENT, MCP_APP_OPERATION, MCP_APP_OPERATION_LABEL } from "./constants.ts";
+export const MCP_TOOL_CONTRACT = mcpToolContract("create_view");
+
+const MCP_DEFAULT_ROWS = [
+  { label: "Step 1", value: "Capture request" },
+  { label: "Step 2", value: "Route to capability" },
+  { label: "Step 3", value: "Render result" },
+] as const;
+
+/** Shape the MCP bridge returns for a tool invocation: structured content plus its UI resource. */
+export interface McpToolInvocation {
+  readonly tool?: unknown;
+  readonly viewId?: unknown;
+  readonly structured?: unknown;
+  readonly ui?: { readonly uri?: unknown; readonly mimeType?: unknown; readonly html?: unknown };
+}
+
+export const journeyMcpAgent: AgentDefinition = {
+  id: JOURNEY_MCP_AGENT,
+  version: "1.0.0",
+  async run(input, ctx) {
+    const title = text(field(input, "title")) || "Three-step flowchart";
+    const rawRows = field(input, "rows");
+    const rows = Array.isArray(rawRows) && rawRows.length > 0
+      ? rawRows.map((row) => ({ label: text(field(row, "label")), value: text(field(row, "value")) }))
+      : MCP_DEFAULT_ROWS.map((row) => ({ ...row }));
+
+    // Discovery is recorded for replay before selection, exactly like any other remote offer.
+    const offers = await ctx.remoteOffers("discover-mcp-tools");
+    const selected = offers.find((offer) => offer.contract.id === MCP_TOOL_CONTRACT);
+    if (!selected) {
+      const unavailable: Json = { offers: offers.map((offer) => offer.contract.id), tool: "no MCP tool offered" };
+      return unavailable;
+    }
+
+    // The selected tool call is committed as a durable `remote:mcp.create_view` continuation; the
+    // bridge's published offer resolves it over the MCP protocol (tools/call + resources/read).
+    const result = (await ctx.invokeRemoteOffer("invoke-mcp-tool", selected.id, { title, rows })) as McpToolInvocation;
+    const html = text(field(result.ui, "html"));
+    const resourceUri = text(field(result.ui, "uri"));
+    const viewId = text(field(result, "viewId"));
+    const tool = text(field(result, "tool"));
+    if (html === "" || resourceUri === "") throw new Error(`MCP tool ${tool || MCP_TOOL_CONTRACT} returned no UI resource`);
+
+    // The resolved UI resource becomes durable run truth through the general mechanisms: an
+    // artifact attributed to this run, and a render event the projection validates before display.
+    const artifactId = await ctx.artifact({ name: `mcp-ui-${viewId || "view"}.html`, mediaType: "text/html", bytes: new TextEncoder().encode(html) });
+    await ctx.emit("ui.render", {
+      component: MCP_APP_COMPONENT,
+      props: { tool, viewId, resourceUri },
+      artifactId,
+      operations: [{ id: MCP_APP_OPERATION, label: MCP_APP_OPERATION_LABEL }],
+    });
+
+    // The sandboxed app's interaction is a durable wait of its own: the host surface resolves it
+    // with the postMessage result the frame returned, and only then does the run settle.
+    const interaction = await ctx.waitFor("mcp-app-interaction", {
+      type: `mcp:${MCP_APP_OPERATION}`,
+      condition: { kind: "mcp_app_interaction", component: MCP_APP_COMPONENT, operation: MCP_APP_OPERATION, resourceUri, viewId },
+      payload: { component: MCP_APP_COMPONENT, operations: [MCP_APP_OPERATION], viewId, artifactId },
+    });
+    const settled: Json = { tool, viewId, artifactId, interaction };
+    return settled;
+  },
+}
+
+/**
+ * Open-ended UI has no component catalog — the MCP server is the catalog, and the containment
+ * boundary is the sandboxed frame, not schema validation. The projection therefore records the
+ * validated identity of the render (component, tool, resource, artifact, declared operations) so a
+ * replaying surface can rebuild the card without the live tool call.
+ */
+export const mcpAppProjection: Projection = {
+  name: "mcp-open-ended",
+  version: "1",
+  apply(event, state) {
+    if (event.eventType !== "ui.render" || !event.runId) return [];
+    if (field(event.payload, "component") !== MCP_APP_COMPONENT) return [];
+    const key = `${event.tenant}/run/${event.runId}`;
+    const current = state.get(key) as { readonly renders?: number } | undefined;
+    const rawOperations = field(event.payload, "operations");
+    const operations = Array.isArray(rawOperations) ? rawOperations.map((operation) => text(field(operation, "id"))) : [];
+    return [{
+      key,
+      value: {
+        component: MCP_APP_COMPONENT,
+        props: scalarProps(field(event.payload, "props")),
+        artifactId: text(field(event.payload, "artifactId")),
+        operations,
+        renders: (current?.renders ?? 0) + 1,
+      },
+    }];
+  },
+};
+
 export interface RemainingJourneysApp {
   readonly runtime: Runtime;
   readonly agUi: (request: Request) => Promise<Response>;
@@ -258,13 +374,14 @@ export async function createRemainingJourneysApp(store: string): Promise<Remaini
     store,
     policy: allowCapabilities("remaining-journeys", ["model.generate"]),
     actions: { authorize: () => ({ allow: true, reason: "copilotkit reconstruction journeys make no external commitment" }) },
-    agents: [journeyDAgent, journeyEAgent, journeyFAgent, journeyGAgent, journeyHAgent, journeyJAgent, journeyKAgent],
+    agents: [journeyDAgent, journeyEAgent, journeyFAgent, journeyGAgent, journeyHAgent, journeyJAgent, journeyKAgent, journeyMcpAgent],
     components: [deterministicModelComponent()],
     projections: [
       { projection: controlledRenderProjection, public: true },
       { projection: declarativeCatalogProjection, public: true },
       { projection: richThreadProjection, public: true },
       { projection: sharedStateCanvasProjection, public: true },
+      { projection: mcpAppProjection, public: true },
     ],
   });
   return {

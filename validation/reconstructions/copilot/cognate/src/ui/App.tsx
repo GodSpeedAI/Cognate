@@ -3,10 +3,19 @@ import { useCognate, useConnectionStatus, useRun } from "@cognate/react";
 import { ChatSurface } from "../ChatSurface.tsx";
 import { SharedStateSurface } from "../SharedStateSurface.tsx";
 import { RemoteCapabilitySurface } from "./RemoteCapabilitySurface.tsx";
+import {
+  AgentContextSurface,
+  ControlledRenderingSurface,
+  DeclarativeUiSurface,
+  RuntimeInterruptSurface,
+  ToolDecisionSurface,
+} from "./RemainingSurfaces.tsx";
+import { RichThreadView } from "./RichThreadView.tsx";
+import { McpOpenEndedSurface } from "./McpOpenEndedSurface.tsx";
 import { Disclosure, JourneyHead, Note } from "./primitives.tsx";
 import { JOURNEY_B_AGENT } from "../constants.ts";
 
-export type ViewMode = "overview" | "chat" | "capability" | "state";
+export type ViewMode = "overview" | "chat" | "capability" | "state" | "agent-context" | "controlled-rendering" | "tool-decision" | "runtime-interrupt" | "declarative-ui" | "rich-thread" | "open-ended-mcp";
 
 const THREAD = "thread:demo";
 
@@ -15,6 +24,13 @@ const NAV: readonly { readonly id: ViewMode; readonly step: string; readonly lab
   { id: "chat", step: "01", label: "Conversation" },
   { id: "capability", step: "02", label: "Frontend capability" },
   { id: "state", step: "03", label: "Shared state" },
+  { id: "agent-context", step: "04", label: "Agent context" },
+  { id: "controlled-rendering", step: "05", label: "Controlled rendering" },
+  { id: "tool-decision", step: "06", label: "Tool decision" },
+  { id: "runtime-interrupt", step: "07", label: "Runtime interrupt" },
+  { id: "declarative-ui", step: "08", label: "Declarative UI" },
+  { id: "rich-thread", step: "09", label: "Rich thread" },
+  { id: "open-ended-mcp", step: "10", label: "Open-ended MCP" },
 ];
 
 const STATUS_WORD: Record<string, string> = {
@@ -125,7 +141,7 @@ export function App() {
         ))}
       </nav>
 
-      <main className={view === "overview" ? "bench" : "focus"} id="main">
+      <main className={view === "overview" ? "bench" : view === "rich-thread" ? "threadbench" : "focus"} id="main">
         {view === "overview" ? (
           <>
             <div className="bench__column">
@@ -160,6 +176,60 @@ export function App() {
           <JourneyFrame step="02" title="Frontend capability" claim="A browser tool the agent can only reach while this surface is mounted.">
             {capability}
           </JourneyFrame>
+        ) : null}
+
+        {view === "agent-context" ? (
+          <JourneyFrame step="04" title="Agent context" claim="The mounted surface supplies application state as invocation input; unmounting stops supplying it.">
+            <AgentContextSurface threadId="thread:j-d" />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "controlled-rendering" ? (
+          <JourneyFrame step="05" title="Controlled rendering" claim="A renderer that is a pure function of durable invocation evidence: pending and terminal both derive from recorded events.">
+            <ControlledRenderingSurface />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "tool-decision" ? (
+          <JourneyFrame step="06" title="Tool decision" claim="The inline meeting UI holds the answer until a human accepts a slot; resolving it continues the run.">
+            <ToolDecisionSurface />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "runtime-interrupt" ? (
+          <JourneyFrame step="07" title="Runtime interrupt" claim="A run-level condition discovered without a tool result: resume continues the suspended run, cancel closes it.">
+            <RuntimeInterruptSurface startLabel="Start interrupt" reason="operator requested a pause" />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "declarative-ui" ? (
+          <JourneyFrame step="08" title="Declarative UI" claim="The catalog decides what may render, and the only actionable control is an operation it declared.">
+            <DeclarativeUiSurface />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "open-ended-mcp" ? (
+          <JourneyFrame
+            step="10"
+            title="Open-ended MCP"
+            claim="The agent bridges a live MCP server's tool; the tool's UI resource is recorded durably, rendered in a sandboxed frame, and the frame's interaction settles the run."
+          >
+            <McpOpenEndedSurface />
+          </JourneyFrame>
+        ) : null}
+
+        {view === "rich-thread" ? (
+          <>
+            <div className="journey__head">
+              <span className="journey__step">Journey 09</span>
+              <h2 className="journey__title">Rich thread</h2>
+              <p className="journey__claim">
+                One thread carrying conversation, a controlled render and shared state — each turn
+                durable, and the whole thread replayed from projections after a reload.
+              </p>
+            </div>
+            <RichThreadView />
+          </>
         ) : null}
       </main>
 

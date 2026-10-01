@@ -59,8 +59,8 @@ export interface CognateClient {
   updateThreadSharedState(threadId: string, update: StateUpdate, options?: { readonly idempotencyKey?: string; readonly expectedVersion?: number }): Promise<{ readonly state: Json; readonly version: number }>;
   /** Subscribe to tenant events from a position with automatic resume after disconnect; no gaps, no duplicates. */
   subscribe(options: { readonly afterPosition?: number; readonly runId?: string }, listener: (event: StoredEvent) => void): () => void;
-  /** A public projection, refreshed when events commit. */
-  projection(name: string): Readable<readonly { readonly key: string; readonly value: Json }[] | undefined>;
+  /** A public projection, refreshed when events commit; refresh() re-reads on demand. */
+  projection(name: string): Readable<readonly { readonly key: string; readonly value: Json }[] | undefined> & { readonly refresh: () => void };
   resolveContinuation(continuationId: string, action: "resume" | "cancel", input?: Json, options?: { readonly expectedVersion?: number; readonly reason?: string }): Promise<ContinuationView>;
   /**
    * Serve a frontend capability: open `frontend_capability` continuations naming it are executed locally and
@@ -399,10 +399,15 @@ class ProjectionStore implements Readable<readonly { readonly key: string; reado
   }
 
   scheduleRefresh(): void {
-    void this.refresh();
+    void this.readNow();
   }
 
-  private async refresh(): Promise<void> {
+  /** Re-reads the projection now. The fold can complete just after the event that scheduled the last read, and a waiting run commits no further events, so consumers re-read on durable state changes. */
+  refresh(): void {
+    void this.readNow();
+  }
+
+  private async readNow(): Promise<void> {
     const gen = ++this.gen;
     let value: readonly { readonly key: string; readonly value: Json }[];
     try {
@@ -704,7 +709,6 @@ export function createClient(options: ClientOptions): CognateClient {
     projection(name) {
       return engine.getProjectionStore(name);
     },
-
     async resolveContinuation(continuationId, action, input, resolveOptions) {
       const result = await service.resolveContinuation(caller, {
         continuationId,
