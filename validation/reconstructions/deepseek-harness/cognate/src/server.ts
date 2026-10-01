@@ -332,10 +332,12 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
         const handler = connectHandlersByPath.get(url.pathname);
         return handler ? handler(request) : new Response("not found", { status: 404 });
       }
-      if (url.pathname === "/app.js") return new Response(bundleJs, { headers: { "content-type": "text/javascript" } });
+      // The bundle is rebuilt at every boot, so the browser must never hold one across restarts —
+      // no-store keeps a stale UI (with stale handlers) from surviving a harness restart.
+      if (url.pathname === "/app.js") return new Response(bundleJs, { headers: { "content-type": "text/javascript", "cache-control": "no-store" } });
       if (url.pathname === "/astryx.css" && cssPaths[0]) return new Response(Bun.file(cssPaths[0]));
       if (url.pathname === "/theme.css" && cssPaths[1]) return new Response(Bun.file(cssPaths[1]));
-      if (url.pathname === "/app.css") return new Response(appCss, { headers: { "content-type": "text/css" } });
+      if (url.pathname === "/app.css") return new Response(appCss, { headers: { "content-type": "text/css", "cache-control": "no-store" } });
       if (url.pathname === "/") return new Response(indexHtml(), { headers: { "content-type": "text/html" } });
       return new Response("not found", { status: 404 });
     },

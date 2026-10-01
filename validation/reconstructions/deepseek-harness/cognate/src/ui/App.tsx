@@ -274,7 +274,9 @@ function useRealityTracePlugin(): { readonly enabled: boolean; readonly toggle: 
   const client = useCognate();
   const rows = useProjection("settings");
   const current = rows?.find((r) => r.key === "current");
-  const enabled = pluginEnabled(current?.value, "realitytrace");
+  // The row value is the WHOLE settings record — the plugin map lives in its `plugins` field.
+  const plugins = (current?.value as { plugins?: Record<string, boolean> } | undefined)?.plugins;
+  const enabled = pluginEnabled(plugins, "realitytrace");
   const toggle = useCallback(
     async (next: boolean) => {
       try {
