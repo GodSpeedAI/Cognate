@@ -75,6 +75,29 @@ for (const contract of ledger.acceptance_contracts) {
   if (!ids.has(contract.requirement)) errors.push(`${contract.id}: unknown requirement`);
   if (!ledger.requirements.find((entry) => entry.id === contract.requirement)?.acceptance.includes(contract.id)) errors.push(`${contract.id}: not bound by requirement`);
 }
+// Install skew: a stale node_modules makes pinned-native gates fail with golden mismatches
+// that look like flakes (observed 2026-09-30: domainforge 0.18.1 installed vs 0.18.2 pinned).
+// Fail here, with the fix in the message, instead of as an unexplained gate drift.
+for (const pinned of [
+  { name: "@godspeedai/domainforge", binding: "packages/domainforge/src/types.ts", pkgDir: "packages/domainforge" },
+] as const) {
+  const bindingText = readFileSync(pinned.binding, "utf8");
+  const expected = bindingText.match(/BINDING = "([^"]+)@([^"]+)"/);
+  if (!expected) {
+    errors.push(`${pinned.pkgDir}: cannot parse a BINDING = "name@version" from ${pinned.binding}`);
+    continue;
+  }
+  const [, name, version] = expected;
+  const installedPath = `${pinned.pkgDir}/node_modules/${name}/package.json`;
+  if (!existsSync(installedPath)) {
+    errors.push(`Install skew: ${name} is not installed under ${pinned.pkgDir}/node_modules; run: bun install --frozen-lockfile`);
+    continue;
+  }
+  const installed = (JSON.parse(readFileSync(installedPath, "utf8")) as { version?: string }).version;
+  if (installed !== version) {
+    errors.push(`Install skew: ${name} ${installed} installed but ${version} pinned in ${pinned.binding}; run: bun install --frozen-lockfile`);
+  }
+}
 if (errors.length) {
   for (const error of errors) console.error(error);
   process.exit(1);
