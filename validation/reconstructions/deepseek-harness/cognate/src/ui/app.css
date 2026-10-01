@@ -2529,6 +2529,69 @@ input:focus-visible {
   border-radius: 6px;
   cursor: pointer;
 }
+.trajectory-toolbar button[aria-pressed="true"] {
+  background: var(--cg-accent-interactive, #4176e6);
+  border-color: var(--cg-accent-interactive, #4176e6);
+  color: var(--cg-accent-contrast, #fff);
+}
+.trajectory-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--cg-border, #d7dbe0);
+  border-radius: 8px;
+  background: var(--cg-surface-sunken, #eef0f3);
+}
+.trajectory-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trajectory-timeline-label {
+  flex-shrink: 0;
+  width: 42px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cg-fg-muted, #6b7280);
+}
+.trajectory-timeline-track {
+  position: relative;
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--cg-surface, #f7f8fa);
+  border: 1px solid var(--cg-border, #d7dbe0);
+  overflow: hidden;
+}
+.trajectory-timeline-seg {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border-radius: 2px;
+}
+.tl-input .trajectory-timeline-seg {
+  background: var(--cg-accent-interactive, #4176e6);
+}
+.tl-model .trajectory-timeline-seg {
+  background: oklch(52% 0.15 305);
+}
+.tl-tools .trajectory-timeline-seg {
+  background: #b07b10;
+}
+.trace-duration {
+  flex-shrink: 0;
+  margin-left: 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: var(--cg-fg-muted, #6b7280);
+}
+.plugin-off-banner {
+  border: 1px dashed var(--cg-border-strong, #c3c8cf);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
 .trajectory-toolbar input {
   flex: 1;
   font-size: 12px;

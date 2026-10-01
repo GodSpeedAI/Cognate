@@ -19,6 +19,7 @@ import {
   isLanguageCode,
   isPerformanceDetailMode,
   isPermissionMode,
+  isPluginStatePatch,
   isSendBehavior,
   type SettingsPatch,
 } from "../settings.ts";
@@ -42,6 +43,9 @@ const SETTING_FIELDS: readonly SettingField[] = [
   { capability: "settings.changeCodingTools", field: "codingTools", validate: (v) => typeof v === "boolean" },
   { capability: "settings.changeSendBehavior", field: "sendBehavior", validate: isSendBehavior },
   { capability: "settings.changePreset", field: "preset", validate: isAgentPreset },
+  // Usage pass U7: the one global plugin with runtime behavior behind it. The value is a per-key
+  // patch (`{ plugins: { realitytrace: true } }`), merged per key by the settings projection fold.
+  { capability: "settings.changePlugin", field: "plugins", validate: isPluginStatePatch },
 ];
 
 export function settingsChangeComponent(options: {

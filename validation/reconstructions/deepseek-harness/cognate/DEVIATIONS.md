@@ -165,15 +165,15 @@ full-runtime-restart. Intentional deviations:
 - **Built-in plugins is an inspect-only inventory of this app's own plugins** — Session plugins =
   the model-facing tool catalog an agent preset composes (`agentCoding.ts`'s `PRESET_TOOLS` is the
   single source of truth), Global plugins = the always-on capabilities (provider hot-swap, session
-  history, workspace scoping, approvals, preferences) plus RealityTrace observations (listed
-  Disabled until its tranche wires it). There are NO enable/disable toggles of real capabilities:
-  the entries are informational, unlike the reference's panel (whose plugin rows were also purely
-  informational — its toggles live in the sidebar Plugins panel, whose switches this app renders
-  inert since nothing is genuinely toggleable yet).
-- **The sidebar Plugins global panel** replaces the center column when toggled (the reference's
-  panel surface per the 25b checkpoint) and lists the same honest inventory with View buttons +
-  Enable switches (inert, `NOT_IMPLEMENTED`); Refresh/Add plugin are inert too — no plugin
-  install backend exists.
+  history, workspace scoping, approvals, preferences) plus RealityTrace observations. **Usage pass
+  U7 gives the RealityTrace switch real behavior** — the one enable/disable toggle of a real
+  capability: it writes durable per-plugin state (`settings.changePlugin` → `settings.changed` →
+  the `settings` projection's `plugins` map, merged per key, default disabled, restart-surviving —
+  `test/J-PLG-toggle.test.ts`), and the observation drain gate reads that same fold per cycle
+  (off ⇒ observations stay queued; on ⇒ the backlog delivers, at-least-once). Every other switch
+  stays inert (`NOT_IMPLEMENTED` / "Not configured this build"): the remaining global plugins are
+  always-on compositions with nothing to toggle, and no plugin-install backend exists (Refresh /
+  Add plugin / View stay inert too).
 - **Agent presets: three of the reference's four.** Standard/PTC/Minimal are real and behavioral —
   a preset scopes the turn's model-facing tool catalog (`PRESET_TOOLS`), the composer sends the
   per-session choice (`AgentCodingInput.preset`), the Settings default (`settings.changePreset`)
@@ -203,10 +203,18 @@ deviations:
 - **No SYSTEM/CONTEXT rows.** This app sends no system prompt and no runtime-context snapshot, so
   the trace honestly has no such rows (the reference's rows show its agent's own prompt
   construction). The row-kind vocabulary is the same; the rows that don't apply simply don't occur.
-- **Timeline strip approximated away.** The reference's `region "Trajectory timeline"` (colored
-  duration segments) and the Calls toggle are not reproduced; Collapse turns + Search + per-row
-  durations (TOOL rows carry exact event-derived durations; requests get the next-event bound)
-  cover the toggle's substance. The reference's "Use actual duration" toggle defaults on here.
+- **Timeline strip + toolbar realized (usage pass U7).** The reference's `region "Trajectory
+  timeline"` now renders as three labeled lanes (Input / Model / Tools) with segments positioned
+  from the events' own timestamps (blue user / violet model / amber tools — this app's palette,
+  not the reference's), and the toolbar carries the reference's three toggles + search: `Use
+  actual duration` (renders event-derived durations on rows), `Collapse turns` / `Expand turns`,
+  and `Collapse calls` / `Expand calls` (folds a turn's tool rows into a "Collapsed calls, N tool
+  calls" line). The Event details header gained the reference's `· Step N` and the Timing tab
+  gained `Timing source: Session timestamps`. Still approximated: the timeline is a proportional
+  layout (the reference's exact segment geometry was not measured), the details' Payload/Schema
+  render formatted JSON rather than the expandable tree widget, request "Usage" (tokens) stays
+  unreproduced (no token accounting exists — same honest-zero policy), and "Hierarchy → Assistant
+  Message" remains a no-op button.
 - **Event details' Payload/Schema render formatted JSON**, not the reference's expandable JSON
  *tree* widget; Schema comes from this app's own `TOOL_DEFS` entry (the same catalog the preset
  scopes), not the reference's tool docs. Request "Usage" is folded into the request's Summary
@@ -224,7 +232,10 @@ RealityTrace adds the evidence layer. Trace-worthy events (`tool.call.started/co
 `message.completed`, `run.failed`) get an observation intent committed atomically with the event
 via the runtime's generic `outboxFor` hook — no runtime dependency on RealityTrace — and an
 `ObservationDelivery` drains them at-least-once in the background to the pinned SXR CLI v0.3.0
-(`just setup-realitytrace`; overridable via `SXR_BIN`). The Event details panel gains a
+(`just setup-realitytrace`; overridable via `SXR_BIN`). **Usage pass U7: the drain is gated by the
+durable RealityTrace plugin state** (`settings.changePlugin`; default disabled, so a fresh home
+queues observations until the plugin is enabled — journeys that exercise delivery enable it first,
+see `test/J-RT-realitytrace.test.ts`). The Event details panel gains a
 RealityTrace tab: per-event receipt state, observation id, SXR ledger position, attempts, and the
 "View SXR record" drill-down (the CEP `extensions.cognate` correlation payload, via the port's
 `readCorrelation`). `test/J-RT-realitytrace.test.ts` proves accepted receipts + ledger positions +

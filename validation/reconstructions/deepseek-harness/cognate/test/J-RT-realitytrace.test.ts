@@ -51,6 +51,10 @@ describe("J-RT-realitytrace", () => {
           model: "mock-model-1",
           apiKey: "",
         });
+        // Usage pass U7: the RealityTrace plugin gates the drain (default disabled) — this journey
+        // exercises the delivery path, so it enables the plugin first (exactly what the console's
+        // Plugins-panel switch does; J-PLG-toggle proves the gate itself).
+        await client.invoke("settings.changePlugin", { plugins: { realitytrace: true } });
         const ws = join(home, "ws");
         await mkdir(ws, { recursive: true });
         await writeFile(join(ws, "README.md"), "# Fixture project\n\nA tiny fixture workspace with a greet() helper in src/greet.ts.\n");

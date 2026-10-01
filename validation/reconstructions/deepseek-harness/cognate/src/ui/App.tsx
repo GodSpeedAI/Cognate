@@ -28,6 +28,7 @@ import {
   SEND_BEHAVIORS,
   isAppearanceMode,
   isPermissionMode,
+  pluginEnabled,
   resolveGeneralSettings,
   type AgentPreset,
   type AppearanceMode,
@@ -263,6 +264,28 @@ function useGeneralSettings(): GeneralSettings {
     }
     return resolveGeneralSettings(current?.value, legacyAppearance);
   }, [current]);
+}
+
+/** Usage pass U7: the durable RealityTrace plugin state and its toggle. The state folds from
+ *  `settings.changed` events (`plugins` map, per-key merge) so it survives a reload AND a full
+ *  runtime restart; the toggle invokes `settings.changePlugin`, whose only side effect is the
+ *  durable event — the observation drain gate reads the same fold per cycle (server.ts). */
+function useRealityTracePlugin(): { readonly enabled: boolean; readonly toggle: (enabled: boolean) => Promise<void> } {
+  const client = useCognate();
+  const rows = useProjection("settings");
+  const current = rows?.find((r) => r.key === "current");
+  const enabled = pluginEnabled(current?.value, "realitytrace");
+  const toggle = useCallback(
+    async (next: boolean) => {
+      try {
+        await client.invoke("settings.changePlugin", { plugins: { realitytrace: next } } as never);
+      } catch (error) {
+        console.error("settings: settings.changePlugin failed", error);
+      }
+    },
+    [client],
+  );
+  return { enabled, toggle };
 }
 
 /** Resolves the durable `appearance` setting ("light"/"dark"/"system") to the concrete theme the
@@ -964,6 +987,9 @@ const PRESET_DETAILS: Readonly<Record<AgentPreset, string>> = {
  *  plugins shared by everything. Search filters both. Read-only by design this pass (no
  *  enable/disable toggles of real capabilities — DEVIATIONS.md). */
 function BuiltInPluginsPane({ settings }: { readonly settings: GeneralSettings }) {
+  // Usage pass U7: the RealityTrace row reads its durable state and toggles for real; the other
+  // rows stay informational (DEVIATIONS.md).
+  const realitytrace = useRealityTracePlugin();
   const [inspect, setInspect] = useState<AgentPreset>(settings.preset);
   const [sessionOpen, setSessionOpen] = useState(true);
   const [globalOpen, setGlobalOpen] = useState(false);
@@ -1023,17 +1049,33 @@ function BuiltInPluginsPane({ settings }: { readonly settings: GeneralSettings }
         <>
           <p className="settings-description">Shared by the system and every session · {GLOBAL_PLUGIN_CATALOG.length} plugins</p>
           <ul className="plugins-list" aria-label="Global plugins">
-            {globalRows.map((p) => (
+            {globalRows.map((p) => {
+              const enabled = p.id === "realitytrace" ? realitytrace.enabled : p.enabled;
+              return (
               <li key={p.id}>
                 <div className="plugin-row">
                   <div className="plugin-row-text">
-                    <strong>{p.name}</strong> <span className={p.enabled ? "plugin-state" : "plugin-state off"}>{p.enabled ? "Enabled" : "Disabled"}</span>
+                    <strong>{p.name}</strong> <span className={enabled ? "plugin-state" : "plugin-state off"}>{enabled ? "Enabled" : "Disabled"}</span>
                     <span className="plugin-description">{p.description}</span>
                     <code>{p.id}</code>
                   </div>
+                  {p.id === "realitytrace" && (
+                    <div className="plugin-row-actions">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={realitytrace.enabled}
+                        aria-label={`Enable ${p.name}`}
+                        onClick={() => void realitytrace.toggle(!realitytrace.enabled)}
+                        title={realitytrace.enabled ? "Delivering run events to the SXR evidence ledger" : "Deliver run events to the SXR evidence ledger"}
+                        className="settings-switch"
+                      />
+                    </div>
+                  )}
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </>
       )}
@@ -2816,6 +2858,9 @@ function PresetMenu({
  *  (inert — nothing here is genuinely toggleable yet; DEVIATIONS.md). Rendered in place of the
  *  session surface; the sidebar's Plugins button toggles it. */
 function PluginsPanel({ onClose }: { readonly onClose: () => void }) {
+  // Usage pass U7: the RealityTrace switch is the one REAL plugin toggle — it writes the durable
+  // `plugins` state (`settings.changePlugin`) that the observation drain gate reads per cycle.
+  const realitytrace = useRealityTracePlugin();
   return (
     <div className="plugins-panel" role="region" aria-label="Plugins">
       <div className="plugins-panel-header">
@@ -2848,7 +2893,19 @@ function PluginsPanel({ onClose }: { readonly onClose: () => void }) {
                 <button type="button" aria-label={`View ${p.name}`} disabled title={NOT_IMPLEMENTED}>
                   View
                 </button>
-                <button type="button" role="switch" aria-checked={p.enabled} aria-label={`Enable ${p.name}`} disabled={!p.enabled} title={p.enabled ? NOT_IMPLEMENTED : "Not configured this build"} className="settings-switch" />
+                {p.id === "realitytrace" ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={realitytrace.enabled}
+                    aria-label={`Enable ${p.name}`}
+                    onClick={() => void realitytrace.toggle(!realitytrace.enabled)}
+                    title={realitytrace.enabled ? "Delivering run events to the SXR evidence ledger" : "Deliver run events to the SXR evidence ledger"}
+                    className="settings-switch"
+                  />
+                ) : (
+                  <button type="button" role="switch" aria-checked={p.enabled} aria-label={`Enable ${p.name}`} disabled={!p.enabled} title={p.enabled ? NOT_IMPLEMENTED : "Not configured this build"} className="settings-switch" />
+                )}
               </div>
             </div>
           </li>
@@ -2891,6 +2948,57 @@ const TRACE_ROLE_LABELS: Readonly<Record<string, string>> = {
   tool: "TOOL",
 };
 
+/** Format a duration the way the reference's trajectory rows show it ("1,408 ms"). */
+function formatDurationMs(ms: number): string {
+  return `${ms.toLocaleString("en-US")} ms`;
+}
+
+/** Usage pass U7 (reference-behavior-matrix.md §SS13 checkpoint 24): the trajectory timeline —
+ *  a horizontal duration bar per lane (Input / Model / Tools) above the table, positioned from
+ *  the events' own timestamps. Input marks where each turn begins (the turn's first recorded
+ *  event), Model spans each recorded `model.generate` invocation, Tools spans each tool call's
+ *  start→end. Colors are the app's identity (cobalt user / violet model / amber tools), not the
+ *  reference's palette. Returns undefined when the trace has no timestamped events yet. */
+function buildTrajectoryTimeline(trace: TraceRow | undefined): { readonly lanes: { readonly label: string; readonly cls: string; readonly segs: readonly { readonly left: number; readonly width: number }[] }[] } | undefined {
+  if (!trace || trace.turns.length === 0) return undefined;
+  const input: { start: number }[] = [];
+  const model: { start: number; end?: number }[] = [];
+  const tools: { start: number; end?: number }[] = [];
+  for (const turn of trace.turns) {
+    const starts = [...turn.requests.map((r) => Date.parse(r.startedAt)), ...turn.tools.map((t) => Date.parse(t.startedAt))].filter(Number.isFinite);
+    if (starts.length > 0) input.push({ start: Math.min(...starts) });
+    for (const request of turn.requests) {
+      const start = Date.parse(request.startedAt);
+      if (!Number.isFinite(start)) continue;
+      const duration = requestDurationMs(request, turn);
+      model.push({ start, end: duration !== undefined && duration > 0 ? start + duration : undefined });
+    }
+    for (const tool of turn.tools) {
+      const start = Date.parse(tool.startedAt);
+      if (!Number.isFinite(start)) continue;
+      const duration = toolDurationMs(tool);
+      tools.push({ start, end: duration !== undefined && duration > 0 ? start + duration : undefined });
+    }
+  }
+  const all = [...input.map((e) => e.start), ...model.flatMap((e) => [e.start, e.end ?? e.start]), ...tools.flatMap((e) => [e.start, e.end ?? e.start])];
+  if (all.length === 0) return undefined;
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  const span = Math.max(max - min, 1);
+  const place = (start: number, end?: number): { left: number; width: number } => {
+    const left = ((start - min) / span) * 100;
+    const width = end !== undefined ? Math.max(((end - start) / span) * 100, 0.6) : 1.2;
+    return { left: Math.min(left, 99.4), width: Math.min(width, 100 - Math.min(left, 99.4)) };
+  };
+  return {
+    lanes: [
+      { label: "Input", cls: "tl-input", segs: input.map((e) => place(e.start)) },
+      { label: "Model", cls: "tl-model", segs: model.map((e) => place(e.start, e.end)) },
+      { label: "Tools", cls: "tl-tools", segs: tools.map((e) => place(e.start, e.end)) },
+    ],
+  };
+}
+
 /** The Trajectory tab (SS13, checkpoints 24*): toolbar (Collapse turns / Search trajectory), a
  *  role-badged trace table (USER rows, ASSISTANT "Request #N" rows, TOOL `tool{args} -> result`
  *  rows), and the right-hand "Event details" panel (TOOL: Summary/Payload/Result/Schema/Timing;
@@ -2905,6 +3013,8 @@ function TrajectoryView({
   readonly onSelect: (detail: { readonly kind: "request" | "tool"; readonly turnIndex: number; readonly requestNumber?: number; readonly toolCallId?: string }) => void;
 }) {
   const [collapseTurns, setCollapseTurns] = useState(false);
+  const [collapseCalls, setCollapseCalls] = useState(false);
+  const [actualDuration, setActualDuration] = useState(false);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const turnMatches = (turn: TraceTurn) =>
@@ -2912,14 +3022,35 @@ function TrajectoryView({
     turn.userText.toLowerCase().includes(q) ||
     turn.requests.some((r) => (r.responseText ?? "").toLowerCase().includes(q) || (r.failure ?? "").toLowerCase().includes(q)) ||
     turn.tools.some((t) => t.tool.toLowerCase().includes(q) || t.args.toLowerCase().includes(q) || (t.result ?? "").toLowerCase().includes(q) || (t.error ?? "").toLowerCase().includes(q));
+  const timeline = buildTrajectoryTimeline(trace);
   return (
     <div className="trajectory-view">
       <div className="trajectory-toolbar" role="toolbar" aria-label="Trajectory toolbar">
-        <button type="button" aria-pressed={collapseTurns} onClick={() => setCollapseTurns((v) => !v)}>
-          {collapseTurns ? "Expand turns" : "Collapse turns"}
+        <button type="button" aria-pressed={actualDuration} aria-label="Use actual duration" onClick={() => setActualDuration((v) => !v)}>
+          Duration
         </button>
-        <input type="search" aria-label="Search trajectory" placeholder="Search trajectory" value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
+        <button type="button" aria-pressed={collapseTurns} aria-label={collapseTurns ? "Expand turns" : "Collapse turns"} onClick={() => setCollapseTurns((v) => !v)}>
+          Turns
+        </button>
+        <button type="button" aria-pressed={collapseCalls} aria-label={collapseCalls ? "Expand calls" : "Collapse calls"} onClick={() => setCollapseCalls((v) => !v)}>
+          Calls
+        </button>
+        <input type="search" aria-label="Search trajectory" placeholder="Search" value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
       </div>
+      {timeline !== undefined && (
+        <div className="trajectory-timeline" role="region" aria-label="Trajectory timeline">
+          {timeline.lanes.map((lane) => (
+            <div key={lane.label} className="trajectory-timeline-row">
+              <span className="trajectory-timeline-label">{lane.label}</span>
+              <span className={`trajectory-timeline-track ${lane.cls}`}>
+                {lane.segs.map((seg, i) => (
+                  <span key={i} className="trajectory-timeline-seg" style={{ left: `${seg.left}%`, width: `${seg.width}%` }} />
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="trajectory-table" role="table" aria-label="Execution trace">
         {!trace || trace.turns.length === 0 ? (
           <p className="empty-state small">No trace yet for this session.</p>
@@ -2946,21 +3077,37 @@ function TrajectoryView({
                       </button>
                       ASSISTANT
                     </span>
-                    <span className="trace-cell">{request.responseText ? request.responseText : request.failure ? request.failure : "(tool call only)"}</span>
+                    <span className="trace-cell">
+                      {request.responseText ? request.responseText : request.failure ? request.failure : "(tool call only)"}
+                      {actualDuration && turn !== undefined && requestDurationMs(request, turn) !== undefined && (
+                        <span className="trace-duration">{formatDurationMs(requestDurationMs(request, turn)!)}</span>
+                      )}
+                    </span>
                   </div>
                 ))}
-                {turn.tools.map((tool) => (
-                  <div key={tool.toolCallId} role="row" className="trace-row">
+                {collapseCalls ? (
+                  <div role="row" className="trace-row trace-collapsed">
                     <span className="trace-role-badge role-tool">TOOL</span>
-                    <button type="button" className="trace-cell trace-tool-btn" onClick={() => onSelect({ kind: "tool", turnIndex: turn.index, toolCallId: tool.toolCallId })}>
-                      <code>
-                        {tool.tool}
-                        {tool.args}
-                      </code>
-                      <span className="trace-tool-result">→ {tool.status === "failed" ? tool.error : tool.status === "running" ? "(running…)" : (tool.result ?? "(no output)")}</span>
-                    </button>
+                    <span className="trace-cell">Collapsed calls, {turn.tools.length} tool call{turn.tools.length === 1 ? "" : "s"}</span>
                   </div>
-                ))}
+                ) : (
+                  turn.tools.map((tool) => {
+                    const duration = toolDurationMs(tool);
+                    return (
+                      <div key={tool.toolCallId} role="row" className="trace-row">
+                        <span className="trace-role-badge role-tool">TOOL</span>
+                        <button type="button" className="trace-cell trace-tool-btn" onClick={() => onSelect({ kind: "tool", turnIndex: turn.index, toolCallId: tool.toolCallId })}>
+                          <code>
+                            {tool.tool}
+                            {tool.args}
+                          </code>
+                          <span className="trace-tool-result">→ {tool.status === "failed" ? tool.error : tool.status === "running" ? "(running…)" : (tool.result ?? "(no output)")}</span>
+                          {actualDuration && duration !== undefined && <span className="trace-duration">{formatDurationMs(duration)}</span>}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             ),
           )
@@ -2985,6 +3132,9 @@ function TraceDetailsPanel({
   const turn = trace?.turns.find((t) => t.index === detail.turnIndex);
   const request = detail.requestNumber !== undefined ? turn?.requests.find((r) => r.requestNumber === detail.requestNumber) : undefined;
   const tool = detail.toolCallId !== undefined ? turn?.tools.find((t) => t.toolCallId === detail.toolCallId) : undefined;
+  // Usage pass U7: the RealityTrace enrichment reflects the plugin's durable state — when the
+  // plugin is off, receipts stay queued and the panel says so instead of implying delivery.
+  const realitytrace = useRealityTracePlugin();
   const client = useCognate();
   const [tab, setTab] = useState<"summary" | "payload" | "result" | "schema" | "options" | "timing" | "ledger">(request ? "summary" : "summary");
   // Usage pass U6 (RealityTrace, Option A): the receipt layer for this row's events — queried on
@@ -3011,7 +3161,8 @@ function TraceDetailsPanel({
       cancelled = true;
     };
   }, [client, eventIds]);
-  const heading = request ? `Request #${request.requestNumber} Turn ${turn?.index}` : tool ? `TOOL Turn ${turn?.index}` : "";
+  const toolStep = tool && turn ? turn.tools.findIndex((t) => t.toolCallId === tool.toolCallId) + 1 : undefined;
+  const heading = request ? `Request #${request.requestNumber} Turn ${turn?.index}` : tool ? `TOOL Turn ${turn?.index} · Step ${toolStep}` : "";
   const tabs = request
     ? (["summary", "options", "timing", "ledger"] as const)
     : (["summary", "payload", "result", "schema", "timing", "ledger"] as const);
@@ -3096,6 +3247,8 @@ function TraceDetailsPanel({
                     : "(n/a)"
                   : ""}
             </dd>
+            <dt>Timing source</dt>
+            <dd>Session timestamps</dd>
           </dl>
         )}
         {tab === "ledger" && (
@@ -3103,6 +3256,11 @@ function TraceDetailsPanel({
             <p className="settings-description">
               RealityTrace receipts for this row's events — the trace itself stays event-sourced; this is the evidence layer.
             </p>
+            {!realitytrace.enabled && (
+              <p className="settings-description plugin-off-banner">
+                RealityTrace observations are disabled — enable the RealityTrace plugin in the sidebar Plugins panel. Events stay queued and deliver when enabled.
+              </p>
+            )}
             {ledger === undefined ? (
               <p className="settings-description">Checking receipts…</p>
             ) : ledger.length === 0 ? (
