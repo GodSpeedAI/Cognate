@@ -16,3 +16,6 @@ playwright-report/
 *.log
 !**/tests/**/*.log
 .harness-pids.json
+
+# Copilot reconstruction capture server runtime data
+validation/reconstructions/copilot/capture/.data/

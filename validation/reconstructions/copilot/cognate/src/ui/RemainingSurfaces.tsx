@@ -1,14 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { FrontendHandler } from "@cognate/client";
 import { useCapability, useContinuations, useCognate, useProjection, useRun } from "@cognate/react";
-import {
-  DECLARATIVE_OPERATION,
-  JOURNEY_D_AGENT,
-  JOURNEY_E_AGENT,
-  JOURNEY_F_AGENT,
-  JOURNEY_G_AGENT,
-  JOURNEY_H_AGENT,
-} from "../remaining-journeys.ts";
+import { DECLARATIVE_OPERATION, JOURNEY_D_AGENT, JOURNEY_E_AGENT, JOURNEY_F_AGENT, JOURNEY_G_AGENT, JOURNEY_H_AGENT } from "../constants.ts";
 
 type ProjectionRows = NonNullable<ReturnType<typeof useProjection>>;
 type ProjectionValue = ProjectionRows[number]["value"];
@@ -28,6 +21,18 @@ function label(value: unknown): string {
 
 export interface SurfaceProps {
   readonly onRunStarted?: (runId: string) => void;
+}
+
+/** One labelled state row; the aria-label is the assertion surface, the row is the reading surface. */
+function StateRow({ name, value }: { readonly name: string; readonly value: string }): ReactNode {
+  return (
+    <div className="readout__row">
+      <span className="readout__key">{name}</span>
+      <span className="readout__value" aria-label={name}>
+        {value}
+      </span>
+    </div>
+  );
 }
 
 /**
@@ -51,15 +56,20 @@ export function AgentContextSurface({ threadId, onRunStarted }: SurfaceProps & {
   };
 
   return (
-    <div>
-      <span aria-label="Published context">{JSON.stringify(published)}</span>
-      <button type="button" onClick={() => setPublished({ view: "workspace", panel: "activity" })}>
-        Alter published context
-      </button>
-      <button type="button" onClick={() => void start()}>
-        Start turn
-      </button>
-      <span aria-label="Turn context">{run === undefined ? "idle" : run.status === "completed" ? label(run.output) : run.status}</span>
+    <div className="surface-stack">
+      <div className="actions">
+        <span className="actions__label">Context</span>
+        <button type="button" className="btn btn--secondary" onClick={() => setPublished({ view: "workspace", panel: "activity" })}>
+          Alter published context
+        </button>
+        <button type="button" className="btn btn--primary" onClick={() => void start()}>
+          Start turn
+        </button>
+      </div>
+      <div className="readout">
+        <StateRow name="Published context" value={JSON.stringify(published)} />
+        <StateRow name="Turn context" value={run === undefined ? "idle" : run.status === "completed" ? label(run.output) : run.status} />
+      </div>
     </div>
   );
 }
@@ -68,26 +78,35 @@ export function AgentContextSurface({ threadId, onRunStarted }: SurfaceProps & {
  * J-E: a control renderer that is a pure function of durable invocation evidence. Pending and
  * terminal are both derived from recorded events; no browser handler is involved at any point.
  */
-export function ControlledRenderingSurface({ onRunStarted }: SurfaceProps) {
+export function ControlledRenderingSurface({ threadId, onRunStarted }: SurfaceProps & { readonly threadId?: string }) {
   const client = useCognate();
   const [runId, setRunId] = useState<string | undefined>(undefined);
+  const run = useRun(runId);
   const rows = useProjection("controlled-rendering");
   const value = asObject(runId === undefined ? undefined : rowValue(rows, `run/${runId}`));
 
   const start = async () => {
-    const started = await client.startRun(JOURNEY_E_AGENT, { query: "flights to lisbon" });
+    const started = await client.startRun(JOURNEY_E_AGENT, { query: "flights to lisbon" }, threadId === undefined ? undefined : { correlationId: threadId });
     setRunId(started.runId);
     onRunStarted?.(started.runId);
   };
 
+  const answer = label(asObject(run?.output)?.answer);
+
   return (
-    <div>
-      <button type="button" onClick={() => void start()}>
-        Request backend chart
-      </button>
-      <span aria-label="Controlled renderer phase">{value === undefined ? "idle" : label(value.phase)}</span>
-      <span aria-label="Controlled renderer component">{value === undefined ? "" : label(value.component)}</span>
-      <span aria-label="Controlled renderer cards">{value === undefined ? "0" : label(value.renders)}</span>
+    <div className="surface-stack">
+      <div className="actions">
+        <span className="actions__label">Renderer</span>
+        <button type="button" className="btn btn--primary" onClick={() => void start()}>
+          Request backend chart
+        </button>
+      </div>
+      <div className="readout">
+        <StateRow name="Controlled renderer phase" value={value === undefined ? "idle" : label(value.phase)} />
+        <StateRow name="Controlled renderer component" value={value === undefined ? "" : label(value.component)} />
+        <StateRow name="Controlled renderer cards" value={value === undefined ? "0" : label(value.renders)} />
+      </div>
+      {run?.status === "completed" && answer ? <p className="ledger__outcome">{answer}</p> : null}
     </div>
   );
 }
@@ -121,19 +140,31 @@ export function ToolDecisionSurface({ onRunStarted }: SurfaceProps) {
   };
 
   const waiting = run?.status === "waiting";
+  const output = asObject(run?.output);
+  const decision = asObject(output?.decision);
+  const decidedSlot = typeof decision?.slot === "string" ? decision.slot : undefined;
 
   return (
-    <div>
-      <button type="button" onClick={() => void start()}>
-        Offer meeting time
-      </button>
-      <span aria-label="Decision state">{run === undefined ? "idle" : run.status}</span>
+    <div className="surface-stack">
+      <div className="actions">
+        <span className="actions__label">Decision</span>
+        <button type="button" className="btn btn--primary" onClick={() => void start()}>
+          Offer meeting time
+        </button>
+      </div>
+      <div className="readout">
+        <StateRow name="Decision state" value={run === undefined ? "idle" : run.status} />
+      </div>
       {waiting ? (
-        <div>
-          <button type="button" onClick={() => decide("10:30")}>
+        <div className="actions">
+          <span className="actions__label">Slot</span>
+          <button type="button" className="btn btn--secondary" onClick={() => decide("10:30")}>
             Accept 10:30
           </button>
         </div>
+      ) : null}
+      {run?.status === "completed" && decidedSlot !== undefined ? (
+        <p className="ledger__outcome">Meeting scheduled — slot {decidedSlot} accepted, and the run continued past your decision.</p>
       ) : null}
     </div>
   );
@@ -156,22 +187,29 @@ export function RuntimeInterruptSurface({ startLabel, reason, onRunStarted }: Su
   };
 
   return (
-    <div>
-      <button type="button" onClick={() => void start()}>
-        {startLabel}
-      </button>
-      <span aria-label="Interrupt state">{run === undefined ? "idle" : run.status}</span>
+    <div className="surface-stack">
+      <div className="actions">
+        <span className="actions__label">Interrupt</span>
+        <button type="button" className="btn btn--primary" onClick={() => void start()}>
+          {startLabel}
+        </button>
+      </div>
+      <div className="readout">
+        <StateRow name="Interrupt state" value={run === undefined ? "idle" : run.status} />
+      </div>
       {run?.status === "waiting"
         ? continuations.open.map((continuation) => (
-            <div key={continuation.id}>
-              <span aria-label="Pending interrupt">{label((continuation.condition as { readonly kind?: unknown } | null)?.kind)}</span>
-              <span aria-label="Pending interrupt type">{continuation.type}</span>
-              <button type="button" onClick={() => void continuations.resolve(continuation.id, "resume", { resumed: true })}>
-                Resume interrupted run
-              </button>
-              <button type="button" onClick={() => void continuations.resolve(continuation.id, "cancel", {})}>
-                Cancel interrupted run
-              </button>
+            <div className="readout" key={continuation.id}>
+              <StateRow name="Pending interrupt" value={label((continuation.condition as { readonly kind?: unknown } | null)?.kind)} />
+              <StateRow name="Pending interrupt type" value={continuation.type} />
+              <div className="actions">
+                <button type="button" className="btn btn--secondary" onClick={() => void continuations.resolve(continuation.id, "resume", { resumed: true })}>
+                  Resume interrupted run
+                </button>
+                <button type="button" className="btn btn--secondary" onClick={() => void continuations.resolve(continuation.id, "cancel", {})}>
+                  Cancel interrupted run
+                </button>
+              </div>
             </div>
           ))
         : null}
@@ -200,17 +238,29 @@ export function DeclarativeUiSurface({ onRunStarted }: SurfaceProps) {
   };
 
   return (
-    <div>
-      <button type="button" onClick={() => void start()}>
-        Ask for declarative UI
-      </button>
-      <span aria-label="Declarative renderer">{value === undefined ? "waiting for a validated render" : "rendered"}</span>
+    <div className="surface-stack">
+      <div className="actions">
+        <span className="actions__label">Catalog</span>
+        <button type="button" className="btn btn--primary" onClick={() => void start()}>
+          Ask for declarative UI
+        </button>
+      </div>
+      <div className="readout">
+        <StateRow name="Declarative renderer" value={value === undefined ? "waiting for a validated render" : "rendered"} />
+        {value === undefined ? null : <StateRow name="Declarative component" value={label(value.component)} />}
+        {value === undefined ? null : <StateRow name="Bound revenue" value={props === undefined ? "" : label(props.revenue)} />}
+      </div>
       {value === undefined ? null : (
-        <div>
-          <span aria-label="Declarative component">{label(value.component)}</span>
-          <span aria-label="Bound revenue">{props === undefined ? "" : label(props.revenue)}</span>
+        <div className="actions">
+          <span className="actions__label">Operations</span>
           {operations.map((operation) => (
-            <button key={operation} type="button" disabled={interaction === undefined} onClick={() => interaction && void continuations.resolve(interaction.id, "resume", { region: "amer" })}>
+            <button
+              key={operation}
+              type="button"
+              className="btn btn--secondary"
+              disabled={interaction === undefined}
+              onClick={() => interaction && void continuations.resolve(interaction.id, "resume", { region: "amer" })}
+            >
               Select region
             </button>
           ))}
@@ -232,12 +282,12 @@ export function RichThreadSurface({ threadId }: { readonly threadId: string }) {
   const tools = value !== undefined && Array.isArray(value.tools) ? (value.tools as readonly { readonly type?: unknown }[]) : [];
 
   return (
-    <div>
-      <span aria-label="Replayed message">{value === undefined ? "" : label(value.text)}</span>
-      <span aria-label="Replayed tool">{tools.map((tool) => label(tool.type)).join(",")}</span>
-      <span aria-label="Replayed render">{renders.map((render) => label(render.component)).join(",")}</span>
-      <span aria-label="Replayed settlement">{value === undefined ? "idle" : label(value.status)}</span>
-      <span aria-label="Replayed thread">{threadId}</span>
+    <div className="readout">
+      <StateRow name="Replayed message" value={value === undefined ? "" : label(value.text)} />
+      <StateRow name="Replayed tool" value={tools.map((tool) => label(tool.type)).join(",")} />
+      <StateRow name="Replayed render" value={renders.map((render) => label(render.component)).join(",")} />
+      <StateRow name="Replayed settlement" value={value === undefined ? "idle" : label(value.status)} />
+      <StateRow name="Replayed thread" value={threadId} />
     </div>
   );
 }

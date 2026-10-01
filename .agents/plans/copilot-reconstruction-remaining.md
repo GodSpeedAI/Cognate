@@ -44,7 +44,7 @@ architecture (T0–T4); the normative phases and the 32 settlement gates live in
    verbatim after `**Summary:** ` or `just check` fails.
 
 
-## R1 — Reference captures for the remaining journeys (Phase 6 completion)
+## ~~R1 — Reference captures for the remaining journeys (Phase 6 completion)~~ — DONE 2026-09-30 (rev 24): 6 GREEN journeys + 3 recorded UNCOVERED (J-D/J-G/J-K), 31 reference shots, zero run-scoped misses; see `reference-manifest.json` journeyCoverage
 
 Extend `harness.mjs` `JOURNEYS` with one entry per canonical journey, each sending the
 fixture-declared prompt (constraint 1). Candidate fixtures already inventoried under
@@ -60,34 +60,34 @@ fixture-declared prompt (constraint 1). Candidate fixtures already inventoried u
 | J-J rich thread | `threadid-frontend-tool-roundtrip`, `headless-complete` |
 | J-K live recovery | `headless-simple`, re-run/reconnect flow |
 
-**Acceptance:** each journey `ok:true` with zero run-scoped misses, shots at desktop
-1440×900@2x and mobile 390×844 in `reference/screenshots/`, run report in `logs/runs/`.
-Journeys whose fixtures cannot express the scenario record that fact in the manifest instead
-of a synthetic prompt — uncovered behavior is a legitimate result.
+~~**Acceptance:** each journey `ok:true` with zero run-scoped misses, shots at desktop~~
+~~1440×900@2x and mobile 390×844 in `reference/screenshots/`, run report in `logs/runs/`.~~
+~~Journeys whose fixtures cannot express the scenario record that fact in the manifest instead~~
+~~of a synthetic prompt — uncovered behavior is a legitimate result.~~
 
-## R2 — Cognate-side journeys (Phases 7–9)
+## ~~R2 — Cognate-side journeys (Phases 7–9)~~ — DONE 2026-09-30 (rev 24): 11 settlement-evidence tests across 10 files, one per catalog journey, all composed from general primitives
 
 Implement J-D … J-K against Cognate primitives following the T0–T4 tranche order in
 [copilot-reconstruction.md](copilot-reconstruction.md) (GenUI/HITL questions belong to T3).
 Every journey test is named after its catalog ID and asserts **settlement evidence** — durable
 events/projections, never React-local state.
 
-**Acceptance:** `bun test validation/reconstructions/copilot/cognate/test/` green with one
-test per catalog journey. If a behavior cannot compose from general primitives, stop and
-write the architectural counterexample from the prompt's "Failure Is Valuable" section -
-a failed settlement is a valid result; a CopilotKit-specific kernel primitive is not.
+~~**Acceptance:** `bun test validation/reconstructions/copilot/cognate/test/` green with one~~
+~~test per catalog journey. If a behavior cannot compose from general primitives, stop and~~
+~~write the architectural counterexample from the prompt's "Failure Is Valuable" section -~~
+~~a failed settlement is a valid result; a CopilotKit-specific kernel primitive is not.~~
 
-## R3 — Protocol, state and purity suites (Phases 10, 12, 13, 14)
+## ~~R3 — Protocol, state and purity suites (Phases 10, 12, 13, 14)~~ — DONE 2026-10-01 (rev 25): `tests/protocol` 11/0, `tests/persistence` 5/0 (restart, SIGKILL crash, rebuild, cognitive non-authority), `tests/architecture` 45/0 (purity + gate-23 reference-removed); evidence in `.agents/evidence/2026-09-30-copilot-{protocol-suite,architecture-purity,persistence-suite}.md`; gate command documented in each tree's README
 
 Create `tests/protocol` (AG-UI interop with no CopilotKit present), `tests/architecture`
 (no CopilotKit import reachable from `packages/`; no kernel primitive named for the
 reference; cognitive outputs never authoritative), and the state-evidence checks
 (restart/replay survive, projections rebuild).
 
-**Acceptance:** the three trees run under `just verify` or a documented gate command;
-evidence recorded in `.agents/evidence/`.
+~~**Acceptance:** the three trees run under `just verify` or a documented gate command;~~
+~~evidence recorded in `.agents/evidence/`.~~
 
-## R4: Structural Visual Parity (Phase 11, gates 20-21)
+## ~~R4: Structural Visual Parity (Phase 11, gates 20-21)~~ — DONE 2026-10-01 (rev 25): 29 triptychs in `diffs/`, 5 divergences fixed (F1–F5), 13 named deviations (D1–D13), 2 reference-only checkpoints justified (D7); desktop+mobile rows for every journey with reference shots; critic-audited image pass
 
 For every journey that has a reference screenshot:
 
@@ -99,13 +99,13 @@ For every journey that has a reference screenshot:
 
 **Scope:** Match structure (layout, hierarchy, spacing, component placement). Do not alter Cognate's visual identity.
 
-**Acceptance:**
-- `diffs/` contains a comparison for every stable reference screen.
-- Every divergence has a disposition: fixed or named deviation.
-- Responsive equivalence is demonstrated at both viewports.
+~~**Acceptance:**~~
+~~- `diffs/` contains a comparison for every stable reference screen.~~
+~~- Every divergence has a disposition: fixed or named deviation.~~
+~~- Responsive equivalence is demonstrated at both viewports.~~
 
 
-## R5 - Provenance and parity report (Phases 15-16 preconditions)
+## ~~R5 - Provenance and parity report (Phases 15-16 preconditions)~~ — DONE 2026-10-01 (rev 25): primitive-provenance.md 14/14 'Special case? No'; parity-report.json/.md with all 32 gates (23 pass / 8 pass-with-recorded-gap / 1 open) + check-parity-report.mjs exit 0 over 175 cited paths
 
 - `primitive-provenance.md` - every P0/P1 matrix row mapped to the general Cognate primitive
   that implements it (gate 25).
@@ -113,26 +113,30 @@ For every journey that has a reference screenshot:
   gates, each row's evidence class with artifact paths, open deviations, and the three
   completion-standard answers.
 
-**Acceptance:** both files parse (`parity-report.json`), cite only artifacts that exist on
-disk, and no gate claims hold without an executable check behind it.
+~~**Acceptance:** both files parse (`parity-report.json`), cite only artifacts that exist on~~
+~~disk, and no gate claims hold without an executable check behind it.~~
 
-## R6 - Independent critic (Phase 16, gate 31)
+## ~~R6 - Independent critic (Phase 16, gate 31)~~ — DONE 2026-10-01 (rev 26): consolidated independent critic re-ran every gate from the artifacts alone (all suites serial green, 31/31 images systematic, 32-gate audit, completion standard concurred) — VERDICT: APPROVE, no R-block reopens; verdict recorded at `.agents/evidence/2026-10-01-copilot-r6-critic.md` (the five per-unit critic approvals preceded it)
 
 An independent pass re-runs the gates from the artifacts alone: verify every cited path,
 re-run the journey suites, and perform the systematic visual diff (image reads are
 available - one was used in revision 19 - but the pass must be systematic, not spot checks).
 
-**Acceptance:** critic verdict recorded in `.agents/`; any failed citation reopens the
-owning R-block.
+~~**Acceptance:** critic verdict recorded in `.agents/`; any failed citation reopens the~~
+~~owning R-block.~~
 
-## R7 - Settlement re-audit and closure
+## ~~R7 - Settlement re-audit and closure~~ — DONE 2026-10-01 (rev 26): gates 31/32 closed on the critic's evidence; critic findings applied (D14 + stale-line fixes); ledger audited, no entry contradicted so no edit required; settlement revision 26 recorded
 
 Re-enumerate the 32 gates from the prompt, attach evidence per gate, update
 `requirements/ledger.yaml` only with observed results, and record the final status revision.
 
-**Definition of done:** all applicable gates hold, `parity-report.md` answers **yes** to all
-three completion-standard questions, `just verify` is green, and the DeepSeek Harness
-regression (21 tests) still passes.
+~~**Definition of done:** all applicable gates hold, `parity-report.md` answers **yes** to all~~
+~~three completion-standard questions, `just verify` is green, and the DeepSeek Harness~~
+~~regression (21 tests) still passes.~~
+
+Observed (rev 26): 25 pass / 7 pass-with-recorded-gap / 0 open; all three answers **yes**;
+`just verify` 78/78; DeepSeek Harness regression 37 pass / 0 fail (the plan's 21-test figure
+predates that suite's growth — observed reality recorded in the settlement revision).
 
 ## Suggested order and dependency notes
 

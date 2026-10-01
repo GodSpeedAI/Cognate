@@ -1,0 +1,50 @@
+{
+  "capturedAt": "2026-10-01T03:08:38.744Z",
+  "server": "http://127.0.0.1:3190",
+  "port": 3190,
+  "viewportDesktop": {
+    "width": 1440,
+    "height": 900
+  },
+  "viewportMobile": {
+    "width": 390,
+    "height": 844
+  },
+  "deviceScaleFactor": 2,
+  "reducedMotion": "reduce",
+  "shots": [
+    "J-A-00-initial-desktop-1440x900.png",
+    "J-A-01-after-first-turn-desktop-1440x900.png",
+    "J-A-02-after-first-turn-mobile-390x844.png",
+    "J-C-00-initial-desktop-1440x900.png",
+    "J-C-01-after-todo-turn-desktop-1440x900.png",
+    "J-C-03-canvas-after-agent-write-desktop-1440x900.png",
+    "J-C-04-after-canvas-write-turn-desktop-1440x900.png",
+    "J-C-05-after-canvas-write-turn-mobile-390x844.png",
+    "J-E-00-initial-desktop-1440x900.png",
+    "J-E-02-controlled-genui-complete-desktop-1440x900.png",
+    "J-E-04-backend-tool-complete-desktop-1440x900.png",
+    "J-E-05-after-backend-tool-mobile-mobile-390x844.png",
+    "J-F-00-initial-desktop-1440x900.png",
+    "J-F-01-hitl-pending-desktop-1440x900.png",
+    "J-F-02-hitl-slot-selected-desktop-1440x900.png",
+    "J-F-03-hitl-resolved-desktop-1440x900.png",
+    "J-F-04-after-hitl-mobile-mobile-390x844.png",
+    "J-H-00-initial-desktop-1440x900.png",
+    "J-H-01-declarative-surface-desktop-1440x900.png",
+    "J-H-02-after-declarative-mobile-mobile-390x844.png",
+    "J-J-00-initial-desktop-1440x900.png",
+    "J-J-01-after-text-turn-desktop-1440x900.png",
+    "J-J-02-after-genui-turn-desktop-1440x900.png",
+    "J-J-03-after-shared-state-turn-desktop-1440x900.png",
+    "J-J-04-mobile-after-mixed-turn-mobile-390x844.png",
+    "J-J-05-restored-after-reload-desktop-1440x900.png",
+    "J-J-06-drawer-thread-list-desktop-1440x900.png",
+    "J-J-07-new-thread-desktop-1440x900.png",
+    "J-J-08-switched-back-desktop-1440x900.png"
+  ],
+  "pendingCaptures": {
+    "J-E-01-controlled-genui-pending": false,
+    "J-E-03-backend-tool-pending": false
+  }
+}

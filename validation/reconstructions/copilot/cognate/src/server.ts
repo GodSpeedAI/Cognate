@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAgUiHandler } from "@cognate/ag-ui";
 import { allowCapabilities, type Policy } from "@cognate/kernel-api";
+import { createClient } from "@cognate/client";
 import { registerRuntimeService } from "@cognate/protocol-connect";
 import { devToken, devTokenAuthenticator } from "@cognate/protocol-connect-bun";
 import type { Caller, RuntimeService } from "@cognate/runtime-api";
@@ -14,6 +15,23 @@ import { createFetchHandler } from "@connectrpc/connect/protocol";
 
 import { loadJourneyABindings, loadJourneyCBindings } from "./domain.ts";
 import { chatAgent, deterministicModelComponent, JOURNEY_A_AGENT, threadHistoryProjection } from "./journey.ts";
+import { connectMcpBridge, type McpBridge } from "./mcp-bridge.ts";
+import { startMcpFixtureServer } from "./mcp-fixture-server.ts";
+import {
+  controlledRenderProjection,
+  declarativeCatalogProjection,
+  journeyDAgent,
+  journeyEAgent,
+  journeyFAgent,
+  journeyGAgent,
+  journeyHAgent,
+  journeyJAgent,
+  journeyKAgent,
+  journeyMcpAgent,
+  JOURNEY_MCP_AGENT,
+  mcpAppProjection,
+  richThreadProjection,
+} from "./remaining-journeys.ts";
 import { remoteCapabilityAgent } from "./remote-capability.tsx";
 import { sharedStateAgent, sharedStateCanvasProjection } from "./shared-state.ts";
 
@@ -103,11 +121,30 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     store: storePath,
     policy: buildPolicy(),
     actions: buildActionPolicy(),
-    agents: [chatAgent, sharedStateAgent, remoteCapabilityAgent],
+    // The served runtime hosts every canonical journey agent (J-A..J-K + open-ended MCP) so each
+    // UI surface can start its runs; the agents and projections themselves stay exactly as the
+    // suite tests them.
+    agents: [
+      chatAgent,
+      sharedStateAgent,
+      remoteCapabilityAgent,
+      journeyDAgent,
+      journeyEAgent,
+      journeyFAgent,
+      journeyGAgent,
+      journeyHAgent,
+      journeyJAgent,
+      journeyKAgent,
+      journeyMcpAgent,
+    ],
     components: [deterministicModelComponent()],
     projections: [
       { projection: threadHistoryProjection, public: true },
       { projection: sharedStateCanvasProjection, public: true },
+      { projection: controlledRenderProjection, public: true },
+      { projection: declarativeCatalogProjection, public: true },
+      { projection: richThreadProjection, public: true },
+      { projection: mcpAppProjection, public: true },
     ],
   });
 
@@ -140,6 +177,21 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const bundleJs = await build.outputs[0]!.text();
   const appCssPath = fileURLToPath(new URL("./ui/tokens.css", import.meta.url));
   const appCss = existsSync(appCssPath) ? await Bun.file(appCssPath).text() : "";
+
+  // Open-ended MCP (gate 13): an isolated deterministic MCP server fixture stands in for the
+  // external MCP host the pinned reference cannot reach, and the consume bridge publishes its
+  // tools into the runtime's remote-offer set for the operator's caller. Disposal of the server
+  // revokes those offers through the bridge.
+  const fixture = await startMcpFixtureServer();
+  const bridgeClient = createClient({ service: runtime.service, caller: LOCAL_OPERATOR });
+  let bridge: McpBridge | undefined;
+  try {
+    bridge = await connectMcpBridge({ serverUrl: fixture.url, client: bridgeClient, agent: JOURNEY_MCP_AGENT });
+  } catch (error) {
+    await bridgeClient.close();
+    await fixture.close();
+    throw error;
+  }
 
   const server = Bun.serve({
     port: options.port,
@@ -193,6 +245,9 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     runtime,
     async stop() {
       server.stop(true);
+      await bridge.dispose();
+      await bridgeClient.close();
+      await fixture.close();
       await runtime.close();
     },
   };
