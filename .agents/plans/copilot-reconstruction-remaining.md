@@ -87,14 +87,22 @@ reference; cognitive outputs never authoritative), and the state-evidence checks
 **Acceptance:** the three trees run under `just verify` or a documented gate command;
 evidence recorded in `.agents/evidence/`.
 
-## R4 — Visual parity (Phase 11, gates 20–21)
+## R4: Structural Visual Parity (Phase 11, gates 20-21)
 
-Capture the Cognate side at the same fixed viewports for every journey that has a reference
-shot, then produce `diffs/` side-by-side evidence. Fix each visible divergence or record it
-as a named deviation with rationale.
+For every journey that has a reference screenshot:
 
-**Acceptance:** `diffs/` exists for all stable reference screens; every divergence has a
-disposition; responsive equivalence demonstrated at both viewports.
+1. Capture the Cognate screen at the same fixed viewports as the reference.
+2. Generate side-by-side comparisons in `diffs/`.
+3. Resolve each visible structural divergence one of two ways:
+   - Fix it.
+   - Record it as a named deviation with a rationale.
+
+**Scope:** Match structure (layout, hierarchy, spacing, component placement). Do not alter Cognate's visual identity.
+
+**Acceptance:**
+- `diffs/` contains a comparison for every stable reference screen.
+- Every divergence has a disposition: fixed or named deviation.
+- Responsive equivalence is demonstrated at both viewports.
 
 
 ## R5 - Provenance and parity report (Phases 15-16 preconditions)
