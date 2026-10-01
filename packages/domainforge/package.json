@@ -5,5 +5,5 @@
   "type": "module",
   "description": "Version-pinned adapter from DomainForge Graph output to Cognate SemanticRefs and read-only semantic projections (spec §7.1, §19).",
   "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/kernel-api": "workspace:*", "@godspeedai/domainforge": "0.18.1" }
+  "dependencies": { "@cognate/kernel-api": "workspace:*", "@godspeedai/domainforge": "0.18.2" }
 }

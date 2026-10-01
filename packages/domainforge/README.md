@@ -1,6 +1,6 @@
 # @cognate/domainforge
 
-Version-pinned adapter from `@godspeedai/domainforge@0.18.1`'s `Graph` output
+Version-pinned adapter from `@godspeedai/domainforge@0.18.2`'s `Graph` output
 to Cognate's `SemanticRef`s and a read-only `SemanticProjection` (spec §7.1,
 §19). `loadSemanticProjection` never throws: parse failures come back as a
 typed `SemanticError` (`syntax`, `unresolved_reference`, `ambiguous_identity`,
@@ -25,7 +25,7 @@ object to a `CapabilityContract`; unbound objects never become capabilities.
 | --- | --- | --- |
 | Entity, Resource, Flow, Role, Relation, Instance | yes | read-only semantic object |
 | Policy | yes | referenced constraint only (never a capability/permission) |
-| Metric, Dimension, Unit, Mapping, Projection | yes | read-only semantic object via 0.18.1 Graph accessors |
+| Metric, Dimension, Unit, Mapping, Projection | yes | read-only semantic object via 0.18.2 Graph accessors |
 | External | no | no SEA grammar, AST, or Graph declaration; not mappable |
 
 See `mappingTable` in `src/index.ts` for the full row data (meaning,
