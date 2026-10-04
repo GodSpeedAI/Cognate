@@ -83,7 +83,7 @@ export interface WorldDescriptor {
 
 /** The world named by the caller is not registered, or its provider is gone. Fail closed, never fall back. */
 export class WorldUnavailableError extends Error {
-  override readonly name = "WorldUnavailableError";
+  override readonly name: string = "WorldUnavailableError";
   constructor(readonly worldId: string, reason: string) {
     super(reason);
   }

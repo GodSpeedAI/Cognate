@@ -16,6 +16,8 @@
     "@cognate/domainforge": "workspace:*",
     "@cognate/events": "workspace:*",
     "@cognate/execution": "workspace:*",
+    "@cognate/execution-ssh": "workspace:*",
+    "@cognate/execution-wsl": "workspace:*",
     "@cognate/kernel-api": "workspace:*",
     "@cognate/projections": "workspace:*",
     "@cognate/protocol-connect": "workspace:*",

@@ -4,6 +4,7 @@ import type { Json } from "@cognate/events";
 import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
 import { CognitiveFrame, SurfaceView } from "./CognitiveFrame.tsx";
+import { SshWorkspaceForm, WorldBanner, WslWorkspaceForm, useExecutionWorlds } from "./RemoteWorkspaceForm.tsx";
 import type { TraceRow, TraceRequest, TraceTool, TraceTurn } from "../projections/sessionTrace.ts";
 import { TOOL_DEFS } from "../agents/agentCoding.ts";
 import {
@@ -67,6 +68,8 @@ interface WorkspaceRow {
   readonly id: string;
   readonly root: string;
   readonly title: string;
+  /** Where the root lives (`local`, or a connected SSH/WSL world). Absent on pre-remote records. */
+  readonly executionWorldId?: string;
 }
 
 interface SessionRow {
@@ -2692,6 +2695,7 @@ function MessageBubble({
  *  this pass — DEVIATIONS.md.) */
 function AddWorkspaceDialog({ onClose }: { readonly onClose: () => void }) {
   const client = useCognate();
+  const [place, setPlace] = useState<"local" | "ssh" | "wsl">("local");
   const [path, setPath] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -2708,6 +2712,7 @@ function AddWorkspaceDialog({ onClose }: { readonly onClose: () => void }) {
       setBusy(false);
     }
   }, [client, path, onClose]);
+  const places = [["local", "This computer"], ["ssh", "SSH"], ["wsl", "WSL"]] as const;
   return (
     <div className="modal-backdrop modal-backdrop-stacked">
       <div className="modal workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="add-workspace-heading" tabIndex={-1} ref={dialogRef}>
@@ -2717,29 +2722,69 @@ function AddWorkspaceDialog({ onClose }: { readonly onClose: () => void }) {
             ×
           </button>
         </div>
-        <p className="settings-description">Choose a folder for the agent to read and edit files in.</p>
-        <input
-          aria-label="Workspace directory path"
-          placeholder="/path/to/project"
-          value={path}
-          onChange={(e) => setPath(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && path.trim() && !busy) void submit();
-          }}
-          autoFocus
-        />
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
-          </p>
-        )}
-        <div className="modal-actions">
-          <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="btn-primary" disabled={busy || path.trim().length === 0} onClick={() => void submit()}>
-            Open
-          </button>
+        <div role="tablist" aria-label="Where the workspace lives" className="rw-tabs">
+          {places.map(([id, text], i) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              id={`ws-place-${id}`}
+              aria-selected={place === id}
+              aria-controls="ws-place-panel"
+              tabIndex={place === id ? 0 : -1}
+              className="rw-tab"
+              onClick={() => setPlace(id)}
+              onKeyDown={(e) => {
+                if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+                e.preventDefault();
+                const next = places[(i + (e.key === "ArrowRight" ? 1 : places.length - 1)) % places.length]![0];
+                setPlace(next);
+                requestAnimationFrame(() => document.getElementById(`ws-place-${next}`)?.focus());
+              }}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+        <div role="tabpanel" id="ws-place-panel" aria-labelledby={`ws-place-${place}`}>
+          {place === "local" ? (
+            <>
+              <p className="settings-description">Choose a folder for the agent to read and edit files in.</p>
+              <input
+                aria-label="Workspace directory path"
+                placeholder="/path/to/project"
+                value={path}
+                onChange={(e) => setPath(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && path.trim() && !busy) void submit();
+                }}
+                autoFocus
+              />
+              {error && (
+                <p role="alert" className="form-error">
+                  {error}
+                </p>
+              )}
+              <div className="modal-actions">
+                <button type="button" onClick={onClose}>
+                  Cancel
+                </button>
+                <button type="button" className="btn-primary" disabled={busy || path.trim().length === 0} onClick={() => void submit()}>
+                  Open
+                </button>
+              </div>
+            </>
+          ) : place === "ssh" ? (
+            <>
+              <p className="settings-description">Work in a folder on another machine over SSH. Files and commands stay on that machine.</p>
+              <SshWorkspaceForm onAdded={onClose} />
+            </>
+          ) : (
+            <>
+              <p className="settings-description">Work in a folder inside a WSL distribution on this machine.</p>
+              <WslWorkspaceForm onAdded={onClose} />
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -3455,6 +3500,7 @@ function HeroLanding({
 export function App() {
   const client = useCognate();
   const workspaces = useWorkspaces();
+  const worlds = useExecutionWorlds();
   const sessions = useSessions();
   const modelConfig = useModelConfig();
   const currentWorkspaceId = useCurrentWorkspaceId();
@@ -3688,7 +3734,7 @@ export function App() {
   const newSessionIn = useCallback(
     async (ws: WorkspaceRow) => {
       try {
-        await client.invoke("workspace.select", { path: ws.root } as never);
+        await client.invoke("workspace.select", { path: ws.root, worldId: ws.executionWorldId ?? "local" } as never);
       } catch (error) {
         console.error("workspace.select (new session in) failed", error);
         return;
@@ -4022,9 +4068,12 @@ export function App() {
                   const collapsedWs = collapsedWorkspaces.has(ws.id);
                   return (
                     <div key={ws.id} role="treeitem" aria-expanded={!collapsedWs} className="workspace-row">
-                      <span className="workspace-row-label" title={ws.root}>
+                      <span className="workspace-row-label" title={ws.executionWorldId && ws.executionWorldId !== "local" ? `${worlds.get(ws.executionWorldId)?.label ?? ws.executionWorldId}: ${ws.root}` : ws.root}>
                         <FolderIcon aria-hidden="true" />
                         {ws.title || ws.id}
+                        {ws.executionWorldId && ws.executionWorldId !== "local" ? (
+                          <span className="workspace-world-badge">{(worlds.get(ws.executionWorldId)?.kind ?? "remote").toUpperCase()} · {worlds.get(ws.executionWorldId)?.label ?? ws.executionWorldId}</span>
+                        ) : null}
                         <button
                           type="button"
                           className="icon-btn workspace-new-session-btn"
@@ -4201,6 +4250,12 @@ export function App() {
               )}
             </div>
             )}
+            {(() => {
+              const current = workspaces.find((w) => w.id === currentWorkspaceId);
+              return current?.executionWorldId && current.executionWorldId !== "local" ? (
+                <WorldBanner worldId={current.executionWorldId} label={worlds.get(current.executionWorldId)?.label ?? current.executionWorldId} />
+              ) : null;
+            })()}
             {planState && planState.todos.length > 0 && <TodoWidget todos={planState.todos} />}
             {pendingApproval ? (
               <ApprovalBar entry={pendingApproval} onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)} />

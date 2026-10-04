@@ -107,3 +107,27 @@ Narrow gates per tranche, then the reconstruction tests, architecture tests, typ
 `just verify`, `just gates`, plus the new live SSH gate. Record exact commands and results.
 Completion requires the canonical journeys to settle through the real Cognate
 agent/tool/workspace path with the local provider behaviourally intact.
+
+
+## Status (2026-10-04)
+
+| Tranche | State | Evidence |
+| --- | --- | --- |
+| T1 model + journey catalog | done (commit `953f556`) | `.sea/interaction/` |
+| T2 local provider, contracts, conformance kit | done (commit `953f556`) | `packages/execution` |
+| T3 SSH provider | done | `packages/execution-ssh` (23 hermetic tests incl. conformance); live gate against a real OpenSSH sshd |
+| T4 workspace routing + runtime world management | done | `execution.world.*` capabilities, `execution-worlds` projection, boot restore, bindings to `ExecutionWorld` / `WorldConnection` |
+| T5 end-to-end journeys | done | `J-RW-ssh-workspaces` (4 tests naming all ten catalog journeys), `E2E-remote-workspaces` (browser), live app journeys |
+| T6 WSL | **implemented, not just proven** | `packages/execution-wsl` (19 hermetic tests incl. conformance and pool behaviour); live gate against a real distro |
+| Live gate | `just remote-workspaces-live` | real `sshd` built in user space (`just setup-openssh`) + real WSL distro |
+
+### Decisions and deviations from the route above
+- **Host trust is probe-then-pin.** The provider has no trust-on-first-use; `execution.world.probe` reads the
+  key and refuses it, a human confirms the fingerprint in the dialog, and `connect` pins it.
+- **Commands are supervised** (own process group; ended on TERM or stdin EOF) because a real sshd without a
+  pty does not end a command when its channel closes.
+- **WSL runs everything over a pool of persistent shell sessions** instead of a `wsl.exe` launch per
+  operation (launches stall intermittently at the Windows level); commands get their own process group and
+  are killed from a second session on timeout/abort.
+- Secrets live only in the 0600 secret store; events/projections carry safe metadata and the pinned fingerprint.
+- Not done: SSH `@cert-authority`, keyboard-interactive/2FA, a native-Windows-host run of the WSL provider (DEBT-026).

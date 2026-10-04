@@ -35,6 +35,14 @@ objects, digest logged at startup).
 | 22 | `deepseek-harness.interaction::WorkspaceRecord` | `workspace.delete` v1.0.0 | `workspaceManageComponent` | Usage pass U3: the sidebar's Delete workspace action — removes the record (and a current pointer to it); sessions' events stay in history. |
 | 23 | `deepseek-harness.interaction::UserPreferences` | `settings.changePreset` v1.0.0 | `settingsChangeComponent` | Usage pass U4: the default agent preset for NEW sessions (Standard/PTC/Minimal) — the composer sends it as `AgentCodingInput.preset`, scoping the turn's tool catalog (`agentCoding.ts`'s PRESET_TOOLS); the sessions projection folds it into the row's mode badge. |
 
+| 24 | `deepseek-harness.interaction::ExecutionWorld` | `process.exec` v1.0.0 | `executionWorldsComponent` (`@cognate/execution`) | Remote Workspaces T4: the framework `filesystem.*` / `process.exec` family (one semantic anchor for the family) — where a workspace's files are read and commands run. |
+| 25 | `deepseek-harness.interaction::ExecutionWorld` | `execution.world.connect` v1.0.0 | `executionWorldsManageComponent` (`src/capabilities/executionWorlds.ts`) | Registers an SSH host / WSL distribution after verifying it can be used; secrets to the secret store, safe metadata + pinned host-key fingerprint to the durable record. |
+| 26 | `deepseek-harness.interaction::ExecutionWorld` | `execution.world.disconnect` v1.0.0 | same | Releases a world, deletes its secrets; refused while a workspace uses it. |
+| 27 | `deepseek-harness.interaction::WorldConnection` | `execution.world.probe` v1.0.0 | same | Reads a server's host key and stops (nothing authenticated); the human confirms the fingerprint. |
+| 28 | `deepseek-harness.interaction::WorldConnection` | `execution.world.check` v1.0.0 | same | Is the live connection usable now (reconnects lazily); the UI's reachability banner. |
+
+`bindExecutionWorlds` (`domain/index.ts`) binds #24-28. `execution.wsl.list` is a diagnostic read and is not bound.
+
 `tranche7Bindings`/`bindTranche7` (`domain/index.ts`) bind #6-10, alongside `tranche5Bindings` above.
 `tranche9Bindings`/`bindTranche9` (`domain/index.ts`) bind #11.
 `tranche10Bindings`/`bindTranche10` (`domain/index.ts`) bind #12.
