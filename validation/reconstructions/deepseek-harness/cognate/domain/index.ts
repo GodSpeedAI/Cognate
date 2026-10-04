@@ -176,3 +176,28 @@ export function bindUsage3(domain: Domain) {
   if (contracts.length !== 2) throw new Error(`domain: expected 2 bound contracts, got ${contracts.length}`);
   return { rename: contracts[0]!.semanticRef, remove: contracts[1]!.semanticRef };
 }
+
+
+/**
+ * Remote Workspaces (T4): the execution-world family, anchored on the `ExecutionWorld` and
+ * `WorldConnection` entities the T1 model already declares. `process.exec` stands for the framework
+ * `filesystem.*` / `process.exec` family (one semantic anchor, published by `@cognate/execution`);
+ * the `execution.world.*` capabilities are this app's runtime management of worlds. Pure reads of
+ * state (a world list) are not capabilities and are not bound.
+ */
+export function executionWorldBindings(domain: Domain): readonly CapabilityBinding[] {
+  return [
+    { semanticId: domain.semanticId("ExecutionWorld"), capability: { id: "process.exec", version: "1.0.0" } },
+    { semanticId: domain.semanticId("ExecutionWorld"), capability: { id: "execution.world.connect", version: "1.0.0" } },
+    { semanticId: domain.semanticId("ExecutionWorld"), capability: { id: "execution.world.disconnect", version: "1.0.0" } },
+    { semanticId: domain.semanticId("WorldConnection"), capability: { id: "execution.world.probe", version: "1.0.0" } },
+    { semanticId: domain.semanticId("WorldConnection"), capability: { id: "execution.world.check", version: "1.0.0" } },
+  ];
+}
+
+export function bindExecutionWorlds(domain: Domain) {
+  const contracts = bindCapabilities(domain.projection, executionWorldBindings(domain));
+  if (contracts.length !== 5) throw new Error(`domain: expected 5 bound contracts, got ${contracts.length}`);
+  const [family, connect, disconnect, probe, check] = contracts as [(typeof contracts)[number], (typeof contracts)[number], (typeof contracts)[number], (typeof contracts)[number], (typeof contracts)[number]];
+  return { family: family.semanticRef, connect: connect.semanticRef, disconnect: disconnect.semanticRef, probe: probe.semanticRef, check: check.semanticRef };
+}

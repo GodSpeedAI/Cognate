@@ -1,0 +1,9 @@
+{
+  "name": "@cognate/execution-wsl",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "WSL distribution as an execution world: filesystem and process ports over `wsl.exe -e sh -s`. Same contracts as every other provider.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cognate/execution": "workspace:*" }
+}

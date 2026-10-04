@@ -4,6 +4,7 @@
 // event itself, then this run durably records the resulting domain event). The run body only emits
 // — no I/O, no randomness, replay-safe by construction.
 import type { AgentDefinition } from "@cognate/runtime-api";
+import type { Json } from "@cognate/events";
 import type { SettingsPatch } from "../settings.ts";
 
 export type AgentConfigInput =
@@ -17,6 +18,11 @@ export type AgentConfigInput =
   /** Usage pass U3: the sidebar's Delete workspace action — removes the record (and a current
    *  pointer to it); the workspace's sessions' events stay in history. */
   | { readonly kind: "workspace.deleted"; readonly workspaceId: string }
+  /** A remote execution world (SSH host / WSL distribution) the operator connected. `connection` and
+   *  `metadata` carry only safe facts (host, user, auth *kind*, key *path*, pinned host-key fingerprint) —
+   *  never a password, passphrase or key material. */
+  | { readonly kind: "execution.world.connected"; readonly worldId: string; readonly worldKind: string; readonly label: string; readonly metadata: Readonly<Record<string, string>>; readonly connection: Json }
+  | { readonly kind: "execution.world.disconnected"; readonly worldId: string }
   | { readonly kind: "onboarding.dismissed"; readonly step: "notice" | "apikey" }
   | ({ readonly kind: "settings.changed" } & SettingsPatch);
 
@@ -52,6 +58,12 @@ export const agentConfigAgent: AgentDefinition = {
       case "workspace.deleted": {
         const { kind: _kind, ...payload } = command;
         await ctx.emit("workspace.deleted", payload);
+        return { ok: true };
+      }
+      case "execution.world.connected":
+      case "execution.world.disconnected": {
+        const { kind, ...payload } = command;
+        await ctx.emit(kind, payload as unknown as Json);
         return { ok: true };
       }
       case "onboarding.dismissed": {

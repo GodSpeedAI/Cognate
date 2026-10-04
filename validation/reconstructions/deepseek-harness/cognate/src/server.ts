@@ -15,13 +15,15 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 
-import { bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
+import { bindExecutionWorlds, bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
 import { sessionHistoryComponent } from "./capabilities/sessionHistory.ts";
 import { modelConfigureComponent } from "./capabilities/modelConfigure.ts";
 import { EXECUTION_CAPABILITY_IDS, createExecutionWorldRegistry, executionWorldsComponent, localExecutionWorld } from "@cognate/execution";
+import { executionWorldsManageComponent, restoreExecutionWorlds } from "./capabilities/executionWorlds.ts";
+import { executionWorldsProjection } from "./projections/executionWorlds.ts";
 import { cognitiveComponent } from "./capabilities/cognitive.ts";
 import { agentCognitiveAgent } from "./agents/agentCognitive.ts";
 import type { MediatorSpec } from "./cognitive/mediation.ts";
@@ -72,6 +74,7 @@ const GRANTED_CAPABILITIES = [
   "workspace.delete",
   "session.history",
   ...EXECUTION_CAPABILITY_IDS,
+  "execution.world.probe", "execution.wsl.list", "execution.world.connect", "execution.world.check", "execution.world.disconnect",
   "case.open", "criterion.freeze", "world.freeze", "world.fork", "world.attach", "world.discard", "verification.run", "case.derive", "world.settle", "risk.assess", "case.observe", "ui.focus.publish", "ui.context", "ui.request", "ui.pending", "experiment.round", "experiment.status", "method.review", "method.accept", "method.active",
   "tool.read",
   "tool.edit",
@@ -170,6 +173,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const subagentBindings = bindTranche10(domain);
   const usage2 = bindUsage2(domain);
   const usage3 = bindUsage3(domain);
+  const worldBindings = bindExecutionWorlds(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -191,7 +195,8 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     actions: buildActionPolicy(),
     agents: [agentConfigAgent, agentCodingAgent, agentCognitiveAgent],
     components: [
-      executionWorldsComponent(executionWorlds),
+      executionWorldsComponent(executionWorlds, { semanticRef: worldBindings.family }),
+      executionWorldsManageComponent({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, secrets, semanticRefs: worldBindings }),
       cognitiveComponent({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, extraMediators: options.extraMediators ?? [] }),
       secretPutComponent(secrets, bindings.secretPut.semanticRef),
       sessionHistoryComponent(getService, bindings.sessionHistory.semanticRef),
@@ -207,6 +212,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       { projection: modelConfigProjection, public: true },
       { projection: workspacesProjection, public: true },
       { projection: cognitiveProjection, public: true },
+      { projection: executionWorldsProjection, public: true },
       { projection: sessionsProjection, public: true },
       { projection: plansProjection, public: true },
       { projection: subagentsProjection, public: true },
@@ -222,6 +228,9 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   for (const row of await runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })) {
     if (row.key.startsWith("record/")) knownWorkspaceIds.add(row.key.slice("record/".length));
   }
+
+  // Re-register durable SSH/WSL worlds (lazy: nothing connects until a workspace uses one).
+  await restoreExecutionWorlds({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, secrets });
 
   const registry = new ProviderRegistry(runtime.kernel, bindings.modelGenerate.semanticRef);
   await runtime.kernel.mount(
@@ -367,6 +376,8 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       observations?.stop();
       server.stop(true);
       await runtime.close();
+      // Close every SSH/SFTP connection and WSL session this process opened.
+      await executionWorlds.dispose();
     },
   };
 }

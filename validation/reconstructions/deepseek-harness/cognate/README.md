@@ -5,6 +5,20 @@ execution and approvals: configure a model, choose a workspace, run a session, w
 the agent read/edit/run inside the workspace, and gate a privileged escalation behind a human
 decision. Model: `.sea/interaction/`. Method: `.agents/skills/building-with-cognate/SKILL.md`.
 
+## Remote Workspaces (SSH / WSL)
+
+A workspace is `(executionWorldId, root)`: the model-facing tools, the agent loop, sessions, plans and
+approvals never learn whether it is local, an SSH host, or a WSL distribution — the world's *provider*
+answers `filesystem.*` / `process.exec` (`@cognate/execution`, `-ssh`, `-wsl`). Add one from
+**Add workspace → SSH / WSL**: for SSH you verify the host (its fingerprint is shown and must be
+explicitly trusted, and is compared with `~/.ssh/known_hosts`), authenticate by agent, key file or
+password, then pick a folder on that machine. A connection can be reused for more workspaces; a remote
+workspace is badged in the sidebar; and if its world becomes unreachable a banner says so and why —
+nothing ever runs on this computer instead. Secrets (password, key passphrase) live only in the 0600
+`secrets.json`; durable state carries safe metadata and the pinned fingerprint. Journeys:
+`J-RW-ssh-workspaces` (ten catalog journeys), `E2E-remote-workspaces` (browser); the live gate
+`just remote-workspaces-live` runs against a real OpenSSH `sshd` and a real WSL distribution.
+
 ## Cognitive navigation (proof, 2026-10-03)
 
 The console can hold a **Case** around a human's desired difference: a settled world, a frozen

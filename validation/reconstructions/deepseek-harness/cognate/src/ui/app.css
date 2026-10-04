@@ -2781,3 +2781,43 @@ input:focus-visible {
 .cf-tone-fail { border-left-color: var(--cg-danger); }
 .cf-preflight h4 { margin: 0 0 4px; font-size: 12px; letter-spacing: 0.06em; }
 @media (max-width: 1100px) { .cognitive-frame { width: 300px; } }
+
+/* ---- Remote Workspaces (Add workspace dialog, world badge, unreachable banner) ------------------- */
+.rw-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--cg-border); margin: 4px 0 12px; }
+.rw-tab { font: inherit; font-size: 13px; padding: 6px 12px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--cg-text-muted); cursor: pointer; }
+.rw-tab[aria-selected="true"] { color: var(--cg-text); border-bottom-color: var(--cg-accent); font-weight: 500; }
+.rw-tab:focus-visible, .rw-saved-btn:focus-visible { outline: 2px solid var(--cg-accent); outline-offset: 2px; }
+.rw-step { display: flex; flex-direction: column; gap: 12px; }
+.rw-row { display: flex; gap: 10px; }
+.rw-row .rw-field:first-child { flex: 1; }
+.rw-port { width: 84px; }
+.rw-field { display: flex; flex-direction: column; gap: 4px; }
+.rw-label { font-size: 12px; font-weight: 500; color: var(--cg-text-muted); }
+.rw-hint { font-size: 12px; color: var(--cg-text-muted); }
+.rw-auth { border: none; padding: 0; margin: 0; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.rw-auth .rw-label { width: 100%; margin-bottom: 2px; padding: 0; }
+.rw-radio { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.rw-fingerprint { border: 1px solid var(--cg-border-strong); border-radius: var(--cg-radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--cg-surface-sunken); }
+.rw-fingerprint p { margin: 0; font-size: 13px; }
+.rw-fp, .rw-fingerprint code { font-family: var(--cg-font-mono); font-size: 12px; overflow-wrap: anywhere; }
+.rw-warn { color: var(--cg-text); font-size: 13px; border-left: 3px solid var(--cg-danger); padding-left: 8px; }
+.rw-ok { font-size: 13px; border-left: 3px solid var(--cg-success); padding-left: 8px; }
+.rw-connected { margin: 0; font-size: 13px; }
+.rw-saved { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--cg-border); }
+.rw-saved-btn { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; text-align: left; font: inherit; font-size: 13px; padding: 7px 10px; border: 1px solid var(--cg-border-strong); border-radius: var(--cg-radius-sm); background: var(--cg-surface-raised); color: var(--cg-text); cursor: pointer; }
+.rw-saved-btn:disabled { opacity: 0.6; cursor: wait; }
+.workspace-world-badge { margin-left: 6px; font-family: var(--cg-font-mono); font-size: 10px; letter-spacing: 0.04em; padding: 1px 5px; border: 1px solid var(--cg-border-strong); border-radius: 3px; color: var(--cg-text-muted); font-weight: 500; white-space: nowrap; }
+.world-banner { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin: 0 auto 8px; max-width: var(--cg-chat-column-max-width, 790px); width: calc(100% - 32px); border: 1px solid var(--cg-danger); background: var(--cg-danger-bg); color: var(--cg-text); border-radius: var(--cg-radius-md); padding: 10px 14px; font-size: 13px; }
+.world-banner button { font: inherit; font-size: 12.5px; padding: 5px 12px; border: 1px solid var(--cg-border-strong); border-radius: var(--cg-radius-sm); background: var(--cg-surface-raised); color: var(--cg-text); cursor: pointer; flex-shrink: 0; }
+.world-banner button:focus-visible { outline: 2px solid var(--cg-accent); outline-offset: 2px; }
+
+/* Remote Workspaces polish: the dialog's generic full-width input style must not apply to radios and
+   checkboxes, and the dialog header keeps its close button on the title line. */
+.workspace-dialog .rw-radio input { width: auto; margin: 0; padding: 0; flex-shrink: 0; }
+.workspace-dialog .rw-radio { display: flex; flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
+.workspace-dialog .rw-auth { flex-direction: row; }
+.workspace-dialog .rw-field input, .workspace-dialog .rw-field select { margin-top: 0; }
+.workspace-dialog .rw-field select { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid var(--cg-border, #d7dbe0); border-radius: 8px; background: var(--cg-surface-raised); color: var(--cg-text); }
+.workspace-dialog .dialog-banner { display: flex; justify-content: space-between; align-items: center; }
+.workspace-dialog .rw-port { width: 84px; }
+.workspace-world-badge { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }

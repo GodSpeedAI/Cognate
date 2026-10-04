@@ -598,3 +598,22 @@ policy alone have done"; evidence: Sentinel, RiskPreflight, LiveVerify, toy mod;
 a Component/fiber-lifetime binding instead of the `effects` shim; (3) closed Surface grammar —
 deficit: no governed representation capability; evidence: preflight, timeline, compare, ask in two
 surfaces; before promotion: a second renderer.
+
+
+## Remote Workspaces (2026-10-04)
+
+- **Trust is probe-then-pin, with no trust-on-first-use.** The Add-workspace dialog shows the host's
+  fingerprint (and whether it matches `~/.ssh/known_hosts`); connecting requires ticking "I trust this
+  host key"; the pinned fingerprint is part of the durable (non-secret) world record and the provider
+  refuses any other key.
+- **Secrets only in `secrets.json` (0600).** Passwords/passphrases are cleared from the form once sent;
+  events, projections and SQLite carry the auth *kind*, a key *path* and the fingerprint only
+  (`J-RW-ssh-workspaces` scans the SQLite bytes and event log for the password).
+- **Re-selecting a workspace now passes its world** (`workspace.select { path, worldId }`); previously a
+  remote root would have been re-added as a *local* workspace.
+- **`execution.wsl.list` and the WSL tab distinguish "not installed" from "not responding"**, with
+  `wsl.exe`'s own message and a "Try again" button, because WSL's service fails intermittently.
+- The approval card still renders from `tool.approval.requested` slightly before its continuation
+  exists (DEBT-025); unrelated to remote workspaces but visible in the same journeys.
+- No directory browser: the remote folder is typed (default: the remote home). A browser over
+  `filesystem.list` is the natural follow-up.
