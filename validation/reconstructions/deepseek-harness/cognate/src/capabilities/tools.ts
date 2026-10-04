@@ -1,59 +1,44 @@
 // Tool capabilities for `agent.coding`'s tool loop (T7): `tool.read`, `tool.edit`, `tool.bash`,
-// `tool.run_code`. Every call is scoped to a workspace root (`workspaceRoot` in the input) and
-// rejects any resolved path that escapes it. `tool.bash` and `tool.run_code` run as a real Bun
-// subprocess with `cwd` = the workspace root, a timeout, and output caps; output is not streamed
-// through `HandlerContext.progress` here because these calls are made from inside `agent.coding`'s
-// `ctx.invoke`, which already records the call and its result as a `run.invocation` event — a
-// second progress channel would just duplicate that. (`model.generate`'s use of `progress`, by
-// contrast, streams *within* a single already-recorded invocation — see `modelProvider.ts`.)
-import { resolve, sep } from "node:path";
-import { readFile, writeFile, stat } from "node:fs/promises";
-import type { Component, SemanticRef } from "@cognate/kernel-api";
+// `tool.run_code`.
+//
+// These are the model-facing tools and they have not changed shape: the model still calls
+// `read`/`edit`/`bash`/`run_code`. What changed (Remote Workspaces, tranches T2–T4) is where they
+// execute. This file no longer touches `node:fs` or `Bun.spawn`; it requires the framework-owned
+// `filesystem.*` / `process.exec` capabilities from `@cognate/execution` and delegates every
+// operation to the provider for the workspace's `executionWorldId`. A local workspace and an SSH
+// workspace take the exact same code path here; only the provider differs.
+//
+// Output is not streamed through `HandlerContext.progress`: these calls are made from inside
+// `agent.coding`'s `ctx.invoke`, which already records the call and its result as a
+// `run.invocation` event — a second progress channel would just duplicate that.
+export { PathEscapeError } from "@cognate/execution";
+import type { ExecInput, ExecResult, ReadInput, ReadResult, ResolveInput, ResolveResult, WriteInput } from "@cognate/execution";
+import type { CapabilityLease, Component, HandlerContext, SemanticRef } from "@cognate/kernel-api";
 
 const MAX_OUTPUT = 20_000;
-const DEFAULT_TIMEOUT_MS = 30_000;
-
-export class PathEscapeError extends Error {
-  override readonly name = "PathEscapeError";
-}
-
-/** Resolve `relativeOrAbsolute` against `workspaceRoot`, rejecting any escape from it. */
-export function resolveInWorkspace(workspaceRoot: string, relativeOrAbsolute: string): string {
-  const root = resolve(workspaceRoot);
-  const resolved = resolve(root, relativeOrAbsolute);
-  if (resolved !== root && !resolved.startsWith(root + sep)) {
-    throw new PathEscapeError(`path escapes workspace root: ${relativeOrAbsolute}`);
-  }
-  return resolved;
-}
 
 function cap(text: string): string {
   return text.length > MAX_OUTPUT ? `${text.slice(0, MAX_OUTPUT)}\n…(truncated)` : text;
 }
 
-async function runSubprocess(
-  argv: readonly string[],
-  options: { readonly cwd: string; readonly timeoutMs?: number },
-): Promise<{ readonly stdout: string; readonly stderr: string; readonly exitCode: number; readonly timedOut: boolean }> {
-  const proc = Bun.spawn([...argv], { cwd: options.cwd, stdout: "pipe", stderr: "pipe" });
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    proc.kill();
-  }, timeoutMs);
-  try {
-    const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
-    const exitCode = await proc.exited;
-    return { stdout: cap(stdout), stderr: cap(stderr), exitCode, timedOut };
-  } finally {
-    clearTimeout(timer);
-  }
+/**
+ * Invoke one framework execution capability through the lease this component resolved at
+ * activation. A failure (including `PathEscapeError` from the containment boundary) is rethrown as
+ * the original error so the outer `tool.<name>` invocation fails with it.
+ */
+async function delegate<I, O>(lease: CapabilityLease, input: I, ctx: HandlerContext): Promise<O> {
+  const result = await lease.invoke(input, ctx);
+  if (result.ok) return result.value as O;
+  const failure = result.failure;
+  if (failure.kind === "failed") throw failure.error;
+  throw new Error(`execution capability ${lease.contract.id} failed: ${failure.kind}`);
 }
 
 // -- tool.read ---------------------------------------------------------------------------------
 export interface ToolReadInput {
   readonly workspaceRoot: string;
+  /** The execution world that owns `workspaceRoot` (`@cognate/execution`). Defaults to `local`. */
+  readonly executionWorldId?: string;
   readonly file_path: string;
 }
 export interface ToolReadResult {
@@ -64,6 +49,8 @@ export interface ToolReadResult {
 // -- tool.edit ---------------------------------------------------------------------------------
 export interface ToolEditInput {
   readonly workspaceRoot: string;
+  /** The execution world that owns `workspaceRoot` (`@cognate/execution`). Defaults to `local`. */
+  readonly executionWorldId?: string;
   readonly file_path: string;
   readonly old_string: string;
   readonly new_string: string;
@@ -121,6 +108,8 @@ function diffLines(oldText: string, newText: string): { readonly diffLines: read
 // -- tool.bash ---------------------------------------------------------------------------------
 export interface ToolBashInput {
   readonly workspaceRoot: string;
+  /** The execution world that owns `workspaceRoot` (`@cognate/execution`). Defaults to `local`. */
+  readonly executionWorldId?: string;
   readonly command: string;
   readonly description?: string;
   readonly timeoutMs?: number;
@@ -142,6 +131,8 @@ export interface ToolBashResult {
 // an `bun -e` subprocess with `cwd` = the workspace root.
 export interface ToolRunCodeInput {
   readonly workspaceRoot: string;
+  /** The execution world that owns `workspaceRoot` (`@cognate/execution`). Defaults to `local`. */
+  readonly executionWorldId?: string;
   readonly code: string;
   readonly description?: string;
   readonly sandbox_permissions?: string;
@@ -175,18 +166,32 @@ export function toolCapabilitiesComponent(semanticRef?: SemanticRef): Component 
   return {
     id: "tools:all",
     provides: [contract("read"), contract("edit"), contract("bash"), contract("run_code")],
+    requires: {
+      resolve: { capability: "filesystem.resolve" },
+      read: { capability: "filesystem.readText" },
+      write: { capability: "filesystem.writeText" },
+      exec: { capability: "process.exec" },
+    },
     activate(fiber) {
-      fiber.provide(contract("read"), async (rawInput): Promise<ToolReadResult> => {
+      const dep = fiber.dependencies;
+      const world = (input: { readonly executionWorldId?: string }) => input.executionWorldId ?? "local";
+      const resolvePath = async (input: ToolReadInput | ToolEditInput, ctx: HandlerContext): Promise<string> => {
+        const out = await delegate<ResolveInput, ResolveResult>(dep.resolve!, { worldId: world(input), root: input.workspaceRoot, path: input.file_path }, ctx);
+        return out.path;
+      };
+
+      fiber.provide(contract("read"), async (rawInput, ctx): Promise<ToolReadResult> => {
         const input = rawInput as ToolReadInput;
-        const path = resolveInWorkspace(input.workspaceRoot, input.file_path);
-        const content = await readFile(path, "utf8");
-        return { file_path: input.file_path, content };
+        const path = await resolvePath(input, ctx);
+        const out = await delegate<ReadInput, ReadResult>(dep.read!, { worldId: world(input), path }, ctx);
+        return { file_path: input.file_path, content: out.content };
       });
 
-      fiber.provide(contract("edit"), async (rawInput): Promise<ToolEditResult> => {
+      fiber.provide(contract("edit"), async (rawInput, ctx): Promise<ToolEditResult> => {
         const input = rawInput as ToolEditInput;
-        const path = resolveInWorkspace(input.workspaceRoot, input.file_path);
-        const current = await readFile(path, "utf8");
+        const path = await resolvePath(input, ctx);
+        const worldId = world(input);
+        const current = (await delegate<ReadInput, ReadResult>(dep.read!, { worldId, path }, ctx)).content;
         const occurrences = countOccurrences(current, input.old_string);
         if (occurrences === 0) throw new Error(`tool.edit: old_string not found in ${input.file_path}`);
         if (occurrences > 1 && !input.replace_all) {
@@ -195,40 +200,30 @@ export function toolCapabilitiesComponent(semanticRef?: SemanticRef): Component 
         const next = input.replace_all
           ? current.split(input.old_string).join(input.new_string)
           : current.replace(input.old_string, input.new_string);
-        await writeFile(path, next, "utf8");
+        await delegate<WriteInput, unknown>(dep.write!, { worldId, path, content: next }, ctx);
         const diff = diffLines(current, next);
         return { file_path: input.file_path, replacements: input.replace_all ? occurrences : 1, ...diff };
       });
 
-      fiber.provide(contract("bash"), async (rawInput): Promise<ToolBashResult> => {
+      fiber.provide(contract("bash"), async (rawInput, ctx): Promise<ToolBashResult> => {
         const input = rawInput as ToolBashInput;
-        const root = resolve(input.workspaceRoot);
-        const { stdout, stderr, exitCode, timedOut } = await runSubprocess(["bash", "-lc", input.command], {
-          cwd: root,
-          timeoutMs: input.timeoutMs,
-        });
-        return { command: input.command, exitCode, stdout, stderr, timedOut };
+        const r = await delegate<ExecInput, ExecResult>(
+          dep.exec!,
+          { worldId: world(input), argv: ["bash", "-lc", input.command], cwd: input.workspaceRoot, ...(input.timeoutMs === undefined ? {} : { timeoutMs: input.timeoutMs }) },
+          ctx,
+        );
+        return { command: input.command, exitCode: r.exitCode, stdout: r.stdout, stderr: r.stderr, timedOut: r.timedOut };
       });
 
-      fiber.provide(contract("run_code"), async (rawInput): Promise<ToolRunCodeResult> => {
+      fiber.provide(contract("run_code"), async (rawInput, ctx): Promise<ToolRunCodeResult> => {
         const input = rawInput as ToolRunCodeInput;
-        const root = resolve(input.workspaceRoot);
-        const { stdout, stderr, exitCode, timedOut } = await runSubprocess(["bun", "-e", RUN_CODE_HARNESS(input.code)], {
-          cwd: root,
-          timeoutMs: input.timeoutMs,
-        });
-        return { exitCode, stdout: cap(stdout), stderr: cap(stderr), timedOut };
+        const r = await delegate<ExecInput, ExecResult>(
+          dep.exec!,
+          { worldId: world(input), argv: ["bun", "-e", RUN_CODE_HARNESS(input.code)], cwd: input.workspaceRoot, ...(input.timeoutMs === undefined ? {} : { timeoutMs: input.timeoutMs }) },
+          ctx,
+        );
+        return { exitCode: r.exitCode, stdout: cap(r.stdout), stderr: cap(r.stderr), timedOut: r.timedOut };
       });
     },
   };
-}
-
-/** Existence check used by `edit`'s read-before-edit guard in `agent.coding` (does the file exist on disk yet?). */
-export async function fileExists(workspaceRoot: string, filePath: string): Promise<boolean> {
-  try {
-    const info = await stat(resolveInWorkspace(workspaceRoot, filePath));
-    return info.isFile();
-  } catch {
-    return false;
-  }
 }

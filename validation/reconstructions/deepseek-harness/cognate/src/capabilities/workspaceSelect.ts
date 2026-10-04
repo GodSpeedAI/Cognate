@@ -1,26 +1,37 @@
-// `workspace.select`: validates the chosen directory exists, derives a stable workspace id from its
-// canonical (resolved) path, then starts `agent.config` to durably record `workspace.added` +
+// `workspace.select`: validates the chosen root in the selected execution world, derives a stable
+// workspace id from (world, root), then starts `agent.config` to durably record `workspace.added` +
 // `workspace.selected` (new workspace) or just `workspace.selected` (already known).
-import { createHash } from "node:crypto";
-import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
-import { resolve } from "node:path";
+//
+// The root is canonicalized and validated by the world's provider, not by this handler — so a
+// remote root is a POSIX path the provider owns, and an unknown/unreachable world fails the select
+// rather than silently falling back to the local machine.
+import { createHash, randomUUID } from "node:crypto";
+import type { ExecutionWorldRegistry } from "@cognate/execution";
 import type { Component, SemanticRef } from "@cognate/kernel-api";
 import type { Caller, RuntimeService } from "@cognate/runtime-api";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 
 export interface WorkspaceSelectInput {
   readonly path: string;
+  /** Which execution world owns this root. Defaults to `local` (existing behaviour). */
+  readonly worldId?: string;
 }
 
-export function workspaceIdFor(path: string): string {
-  return createHash("sha256").update(resolve(path)).digest("hex").slice(0, 16);
+/** Stable workspace identity: the same root in two different worlds is two different workspaces. */
+export function workspaceIdFor(worldId: string, root: string): string {
+  return createHash("sha256").update(`${worldId}\u0000${root}`).digest("hex").slice(0, 16);
+}
+
+function titleFor(root: string, worldId: string): string {
+  return root.split("/").filter(Boolean).pop() ?? worldId;
 }
 
 export function workspaceSelectComponent(options: {
   readonly getService: () => RuntimeService;
   readonly systemCaller: Caller;
   readonly getKnownWorkspaceIds: () => ReadonlySet<string>;
+  /** The execution worlds this app can place a workspace in. */
+  readonly registry: ExecutionWorldRegistry;
   readonly semanticRef?: SemanticRef;
 }): Component {
   return {
@@ -30,20 +41,23 @@ export function workspaceSelectComponent(options: {
       fiber.provide({ id: "workspace.select", version: "1.0.0", semanticRef: options.semanticRef }, async (rawInput) => {
         const input = rawInput as WorkspaceSelectInput;
         if (!input.path) throw new Error("workspace.select: path is required");
-        const canonicalPath = resolve(input.path);
-        const info = await stat(canonicalPath).catch(() => undefined);
-        if (!info || !info.isDirectory()) throw new Error(`workspace.select: not a directory: ${canonicalPath}`);
-        const workspaceId = workspaceIdFor(canonicalPath);
+        const worldId = input.worldId ?? "local";
+        // Unknown world -> WorldUnavailableError. There is no local fallback.
+        const provider = options.registry.get(worldId);
+        const root = provider.fileSystem.resolve(input.path, ".");
+        const stat = await provider.fileSystem.stat(root);
+        if (!stat || stat.kind !== "directory") throw new Error(`workspace.select: not a directory in world ${worldId}: ${root}`);
+        const workspaceId = workspaceIdFor(worldId, root);
         const service = options.getService();
         const isNew = !options.getKnownWorkspaceIds().has(workspaceId);
         await service.startRun(options.systemCaller, {
           agent: AGENT_CONFIG,
           input: isNew
-            ? { kind: "workspace.added", workspaceId, path: canonicalPath, title: canonicalPath.split("/").filter(Boolean).pop() ?? canonicalPath }
+            ? { kind: "workspace.added", workspaceId, root, title: titleFor(root, worldId), executionWorldId: worldId }
             : { kind: "workspace.selected", workspaceId },
           idempotencyKey: randomUUID(),
         });
-        return { ok: true, workspaceId, path: canonicalPath };
+        return { ok: true, workspaceId, root, executionWorldId: worldId };
       });
     },
   };

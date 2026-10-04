@@ -8,11 +8,16 @@ import type { Projection } from "@cognate/projections";
 
 export const workspacesProjection: Projection = {
   name: "workspaces",
-  version: "1.1.0",
+  version: "1.2.0",
   apply(event, state) {
     if (event.eventType === "workspace.added") {
-      const payload = event.payload as { readonly workspaceId: string; readonly path: string; readonly title: string };
-      return [{ key: `${event.tenant}/record/${payload.workspaceId}`, value: { id: payload.workspaceId, path: payload.path, title: payload.title } }];
+      const payload = event.payload as { readonly workspaceId: string; readonly root: string; readonly title: string; readonly executionWorldId: string };
+      return [
+        {
+          key: `${event.tenant}/record/${payload.workspaceId}`,
+          value: { id: payload.workspaceId, root: payload.root, title: payload.title, executionWorldId: payload.executionWorldId },
+        },
+      ];
     }
     if (event.eventType === "workspace.selected") {
       const payload = event.payload as { readonly workspaceId: string };
@@ -21,7 +26,7 @@ export const workspacesProjection: Projection = {
     if (event.eventType === "workspace.renamed") {
       const payload = event.payload as { readonly workspaceId: string; readonly title: string };
       const key = `${event.tenant}/record/${payload.workspaceId}`;
-      const existing = state.get(key) as { readonly id: string; readonly path: string; readonly title: string } | undefined;
+      const existing = state.get(key) as { readonly id: string; readonly root: string; readonly title: string; readonly executionWorldId: string } | undefined;
       if (!existing) return [];
       return [{ key, value: { ...existing, title: payload.title } }];
     }

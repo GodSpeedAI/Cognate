@@ -2,6 +2,16 @@
 
 ## Representation decisions (proposed, evidence class: proposed)
 
+0. **Remote Workspaces are modeled as framework-level journeys (`J-RW-*`) in this IDM.** The
+   execution-world abstraction belongs to Cognate, not to the DeepSeek Harness product; it is
+   recorded here because this reconstruction is where the workspace journeys live and because the
+   reconstruction's `domain/` is the only place that loads this `.sea` source. SSH is one *kind* of
+   `ExecutionWorld`, never a domain primitive — no `ssh_*` tool, entity, or capability appears in
+   the model. Evidence class: proposed (derived from Cognate's architecture and the donor mechanism
+   study, not from an observation of the reference product). What would overturn it: if Cognate
+   grows its own canonical `.sea` IDM, these journeys should move there and this file should
+   reference rather than own them.
+
 1. **`J-CFG-model-provider` and `J-WS-select` are separate canonical journeys**, not steps folded
    silently into `J-A-first-use`.
    - Competing interpretations: (a) fold both into `J-A-first-use` since the spec's Journey A text

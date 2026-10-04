@@ -87,7 +87,7 @@ describe("J-C-tool-execution", () => {
           threw = error;
         }
         expect(threw).toBeDefined();
-        expect(String((threw as Error)?.message ?? threw)).toMatch(/escapes workspace root/);
+        expect(String((threw as Error)?.message ?? threw)).toMatch(/escapes the workspace root/);
       } finally {
         await app.stop();
         await aimock.stop();

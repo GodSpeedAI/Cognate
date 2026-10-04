@@ -23,6 +23,10 @@ Canonical location for the DeepSeek Harness Web UI Interaction Domain Model, pro
 `J-C-tool-execution`, `J-D-approval`, `J-E-plan`, `J-F-delegation`, `J-G-persistence`,
 `J-H-cancellation`.
 
+Remote Workspaces (execution worlds) add: `J-RW-select-world`, `J-RW-add-workspace`,
+`J-RW-read-remote`, `J-RW-edit-remote`, `J-RW-exec-remote`, `J-RW-cancel-timeout`,
+`J-RW-conn-failure`, `J-RW-reconnect`, `J-RW-coexist`, `J-RW-switch`.
+
 `J-CFG-model-provider` and `J-WS-select` are evidence-driven additions beyond the spec's literal
 A–H list: the reference documents each as a full, independently-reachable journey (own actor,
 precondition, and settlement) rather than a step folded silently into `J-A-first-use`, so they are

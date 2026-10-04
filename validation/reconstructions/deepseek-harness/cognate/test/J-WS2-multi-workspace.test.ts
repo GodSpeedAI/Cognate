@@ -13,7 +13,7 @@ import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 interface WorkspaceRow {
   readonly id: string;
-  readonly path: string;
+  readonly root: string;
   readonly title: string;
 }
 
@@ -99,7 +99,7 @@ describe("J-WS2-multi-workspace", () => {
           await client.invoke("workspace.select", { path: wsA });
           await client.invoke("workspace.select", { path: wsB });
           const { records } = await readWorkspaces(app);
-          const aRow = records.find((r) => r.path === wsA)!;
+          const aRow = records.find((r) => r.root === wsA)!;
           await client.invoke("workspace.rename", { workspaceId: aRow.id, title: "Renamed A" });
         } finally {
           await app.stop();
@@ -109,7 +109,7 @@ describe("J-WS2-multi-workspace", () => {
       try {
         const { records, current } = await readWorkspaces(reopened);
         expect(records).toHaveLength(2);
-        const titles = new Map(records.map((r) => [r.path, r.title]));
+        const titles = new Map(records.map((r) => [r.root, r.title]));
         expect(titles.get(wsA)).toBe("Renamed A");
         expect(titles.get(wsB)).toBe("ws-b");
         expect(current).toBe((await readWorkspaces(reopened)).current);

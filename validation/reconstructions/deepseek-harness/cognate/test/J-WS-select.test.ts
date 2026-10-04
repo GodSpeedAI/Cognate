@@ -13,13 +13,13 @@ describe("J-WS-select", () => {
       const workspaceDir = await mkdtemp(join(tmpdir(), "deepseek-harness-ws-"));
       const { app, client } = await bootApp(home);
       try {
-        const first = (await client.invoke("workspace.select", { path: workspaceDir })) as { readonly workspaceId: string; readonly path: string };
+        const first = (await client.invoke("workspace.select", { path: workspaceDir })) as { readonly workspaceId: string; readonly root: string };
         expect(first.workspaceId).toBeTruthy();
 
         await app.runtime.idle();
         const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" });
-        const record = rows.find((r) => r.key === `record/${first.workspaceId}`)?.value as { readonly id: string; readonly path: string } | undefined;
-        expect(record?.path).toBe(first.path);
+        const record = rows.find((r) => r.key === `record/${first.workspaceId}`)?.value as { readonly id: string; readonly root: string } | undefined;
+        expect(record?.root).toBe(first.root);
         const current = rows.find((r) => r.key === "current")?.value;
         expect(current).toBe(first.workspaceId);
 

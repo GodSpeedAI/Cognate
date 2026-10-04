@@ -22,4 +22,4 @@ const journeyIds = projection.objects
   .filter((o: any) => o.kind === "EntityInstance")
   .map((o: any) => o.fields?.fields?.journey_id ?? o.name)
   .sort();
-console.log("Journey ids (10 expected):", JSON.stringify(journeyIds, null, 2));
+console.log("Journey ids (20 expected: 10 product + 10 Remote Workspaces):", JSON.stringify(journeyIds, null, 2));
