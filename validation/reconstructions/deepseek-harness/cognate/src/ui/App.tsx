@@ -64,7 +64,7 @@ import {
 
 interface WorkspaceRow {
   readonly id: string;
-  readonly path: string;
+  readonly root: string;
   readonly title: string;
 }
 
@@ -3681,7 +3681,7 @@ export function App() {
   const newSessionIn = useCallback(
     async (ws: WorkspaceRow) => {
       try {
-        await client.invoke("workspace.select", { path: ws.path } as never);
+        await client.invoke("workspace.select", { path: ws.root } as never);
       } catch (error) {
         console.error("workspace.select (new session in) failed", error);
         return;
@@ -4015,7 +4015,7 @@ export function App() {
                   const collapsedWs = collapsedWorkspaces.has(ws.id);
                   return (
                     <div key={ws.id} role="treeitem" aria-expanded={!collapsedWs} className="workspace-row">
-                      <span className="workspace-row-label" title={ws.path}>
+                      <span className="workspace-row-label" title={ws.root}>
                         <FolderIcon aria-hidden="true" />
                         {ws.title || ws.id}
                         <button

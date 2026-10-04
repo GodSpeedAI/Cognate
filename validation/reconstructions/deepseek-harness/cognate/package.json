@@ -15,6 +15,7 @@
     "@cognate/client": "workspace:*",
     "@cognate/domainforge": "workspace:*",
     "@cognate/events": "workspace:*",
+    "@cognate/execution": "workspace:*",
     "@cognate/kernel-api": "workspace:*",
     "@cognate/projections": "workspace:*",
     "@cognate/protocol-connect": "workspace:*",

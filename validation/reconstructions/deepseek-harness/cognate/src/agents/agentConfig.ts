@@ -8,7 +8,9 @@ import type { SettingsPatch } from "../settings.ts";
 
 export type AgentConfigInput =
   | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
-  | { readonly kind: "workspace.added"; readonly workspaceId: string; readonly path: string; readonly title: string }
+  /** `root` is provider-owned and opaque above the execution-world boundary; `executionWorldId`
+   *  names where that root lives (see `@cognate/execution`). */
+  | { readonly kind: "workspace.added"; readonly workspaceId: string; readonly root: string; readonly title: string; readonly executionWorldId: string }
   | { readonly kind: "workspace.selected"; readonly workspaceId: string }
   /** Usage pass U3: the sidebar's per-workspace Rename action (reference-behavior-matrix.md §12). */
   | { readonly kind: "workspace.renamed"; readonly workspaceId: string; readonly title: string }

@@ -21,6 +21,7 @@ import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
 import { sessionHistoryComponent } from "./capabilities/sessionHistory.ts";
 import { modelConfigureComponent } from "./capabilities/modelConfigure.ts";
+import { EXECUTION_CAPABILITY_IDS, createExecutionWorldRegistry, executionWorldsComponent, localExecutionWorld } from "@cognate/execution";
 import { workspaceSelectComponent } from "./capabilities/workspaceSelect.ts";
 import { workspacePathComponent } from "./capabilities/workspacePath.ts";
 import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
@@ -64,6 +65,7 @@ const GRANTED_CAPABILITIES = [
   "workspace.rename",
   "workspace.delete",
   "session.history",
+  ...EXECUTION_CAPABILITY_IDS,
   "tool.read",
   "tool.edit",
   "tool.bash",
@@ -168,6 +170,9 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     return serviceRef.current;
   };
   const knownWorkspaceIds = new Set<string>();
+  // Execution worlds: where a workspace's files live and its commands run. Local today; other
+  // providers (ssh, wsl, sandbox forks) register here without touching the tools or the agent.
+  const executionWorlds = createExecutionWorldRegistry([localExecutionWorld()]);
 
   const runtime = await createRuntime({
     store: storePath,
@@ -179,6 +184,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     actions: buildActionPolicy(),
     agents: [agentConfigAgent, agentCodingAgent],
     components: [
+      executionWorldsComponent(executionWorlds),
       secretPutComponent(secrets, bindings.secretPut.semanticRef),
       sessionHistoryComponent(getService, bindings.sessionHistory.semanticRef),
       workspacePathComponent(getService, toolBindings.workspacePath.semanticRef),
@@ -214,6 +220,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       getService,
       systemCaller: SYSTEM_CALLER,
       getKnownWorkspaceIds: () => knownWorkspaceIds,
+      registry: executionWorlds,
       semanticRef: bindings.workspaceSelect.semanticRef,
     }),
   );

@@ -33,6 +33,13 @@ Entity "UserPreferences"
 
 Entity "CanonicalJourney"
 
+// Remote Workspaces (T1). `ExecutionWorld` is where a workspace's filesystem and processes
+// actually live; `WorldConnection` is the live, disposable link to one world. Neither carries
+// SSH/library concepts — SSH is one kind of world, not a domain primitive.
+Entity "ExecutionWorld"
+
+Entity "WorldConnection"
+
 Resource "ModelConfig" units
 
 Resource "WorkspaceSelection" units
@@ -55,15 +62,39 @@ Resource "DurableSnapshot" units
 
 Resource "CancellationEvidence" units
 
+Resource "WorkspaceRoot" units
+
+Resource "ConnectionEvidence" units
+
+Resource "RemoteOperationEvidence" units
+
+Resource "ExecutionWorldSelection" units
+
+Resource "WorkspacePlacement" units
+
+Resource "FilesystemOperation" units
+
+Resource "ProcessExecution" units
+
 Role "Approver"
 
 Role "Operator"
+
+// The principal that owns the remote machine a workspace executes on. Authority over a world is
+// distinct from authority over a workspace's contents (see the security invariants in the plan).
+Role "HostAuthority"
 
 Relation "ApprovalAuthorization"
     subject: "Approver"
     predicate: "authorizes"
     object: "Operator"
     via: flow "ApprovalDecision"
+
+Relation "ExecutionAuthorization"
+    subject: "HostAuthority"
+    predicate: "authorizes"
+    object: "Operator"
+    via: flow "ProcessExecution"
 
 Flow "ModelConfig" from "User" to "ModelProvider" quantity 1
 
@@ -86,6 +117,22 @@ Flow "SubagentResult" from "ChildAgent" to "Subagent" quantity 1
 Flow "DurableSnapshot" from "Session" to "WorkspaceRecord" quantity 1
 
 Flow "CancellationEvidence" from "User" to "Session" quantity 1
+
+// Remote Workspaces (T1): the workspace→world placement, the provider-owned root handed back to
+// the workspace, and the two capability flows every filesystem/process tool consumes.
+Flow "ExecutionWorldSelection" from "User" to "ExecutionWorld" quantity 1
+
+Flow "WorkspacePlacement" from "WorkspaceRecord" to "ExecutionWorld" quantity 1
+
+Flow "WorkspaceRoot" from "ExecutionWorld" to "WorkspaceRecord" quantity 1
+
+Flow "FilesystemOperation" from "Tool" to "ExecutionWorld" quantity 1
+
+Flow "ProcessExecution" from "Tool" to "ExecutionWorld" quantity 1
+
+Flow "ConnectionEvidence" from "WorldConnection" to "ExecutionWorld" quantity 1
+
+Flow "RemoteOperationEvidence" from "Tool" to "WorkspaceRecord" quantity 1
 
 Instance j_a_first_use of "CanonicalJourney" {
     actor: "User",
@@ -215,6 +262,142 @@ Instance j_h_cancellation of "CanonicalJourney" {
     settlement: "The turn reaches an explicit interrupted or failed state (not silently hung), and a retried/resumed turn completes normally where the reference allows it",
     steps: "begin a streaming/tool run -> user cancels/interrupts (steer/interruptByParent) -> UI reflects the interrupted state -> user retries or resumes where the reference allows -> separately: inject a deterministic provider error (e.g. mock server connection_reset/stream_disconnect/server_error) -> compare failure/recovery behavior",
     variants: "user-initiated cancel vs injected provider-side failure (connection_reset, stream_disconnect, partial_disconnect, server_error, script_exhausted)"
+}
+
+// ── Remote Workspaces (T1) ────────────────────────────────────────────────────────────────────
+// These ten journeys are the interaction model for the execution-world abstraction. They are
+// framework-level journeys (they apply to any Cognate app with workspaces), modeled here because
+// this reconstruction is where the workspace journeys live. They do NOT change J-A..J-H: those
+// keep their meaning, and now settle against whichever world the selected workspace references.
+
+Instance j_rw_select_world of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "world.register, world.list, world.select",
+    evidence_class: "proposed",
+    initiating_condition: "The user wants a workspace that does not execute on the local machine",
+    journey_id: "J-RW-select-world",
+    precondition: "An execution-world provider for the requested kind is available (local, ssh, later wsl/container)",
+    purpose: "Make an execution location available to the app as a first-class, selectable world",
+    settlement: "The world is registered, listed with a stable id and kind, and selectable; no workspace has been added yet",
+    steps: "user declares a world (kind + provider configuration, including a secret reference rather than a secret) -> the provider validates what it can without performing work -> the world is registered and listed -> the user can select it when adding a workspace",
+    variants: "local world (always available, no configuration); ssh world (host, user, auth reference, host-key policy, optional jump chain); a world whose provider is missing fails closed and is listed as unavailable rather than silently falling back to local"
+}
+
+Instance j_rw_add_workspace of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "workspace.select, workspace.path",
+    evidence_class: "proposed",
+    initiating_condition: "A world is available and the user chooses a folder/root to work in",
+    journey_id: "J-RW-add-workspace",
+    precondition: "The chosen execution world is registered and its provider can reach the root",
+    purpose: "Create a durable workspace whose filesystem and processes are owned by one execution world",
+    settlement: "A WorkspaceRecord exists with a stable id, a title, an executionWorldId, and a provider-owned root; subsequent tool calls resolve to that world",
+    steps: "user picks a root in the selected world -> the provider canonicalizes and validates the root -> the workspace is recorded with its executionWorldId and opaque root -> the workspace appears in the sidebar and becomes selectable",
+    variants: "local root (an OS path); remote root (a POSIX path opaque to every layer above the provider); a root the provider cannot reach fails the add rather than creating a half-usable workspace"
+}
+
+Instance j_rw_read_remote of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "tool.read, filesystem.readText, filesystem.stat",
+    evidence_class: "proposed",
+    initiating_condition: "The agent's tool loop calls read for a path in a workspace whose execution world is not local",
+    journey_id: "J-RW-read-remote",
+    precondition: "The selected workspace's world is reachable and the path resolves inside the workspace root",
+    purpose: "Read a file's contents from wherever the workspace executes, with no transport-specific tool",
+    settlement: "The file's contents are returned through the ordinary tool.read result and recorded as tool.call.completed, identical in shape to a local read",
+    steps: "agent calls read(file_path) -> the tool resolves the workspace root and world -> the filesystem.readText capability is invoked against that world -> contents return to the tool loop",
+    variants: "file exists and is readable; file missing; path escapes the workspace root (denied by the provider boundary); the world is unreachable (fails closed, never reads a local file)"
+}
+
+Instance j_rw_edit_remote of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "tool.edit, filesystem.readText, filesystem.writeText",
+    evidence_class: "proposed",
+    initiating_condition: "The agent's tool loop calls edit for a path in a non-local workspace",
+    journey_id: "J-RW-edit-remote",
+    precondition: "The read-before-edit guard is satisfied and the path resolves inside the workspace root",
+    purpose: "Modify a file in place wherever the workspace executes",
+    settlement: "The replacement is applied on the workspace's machine and the ordinary tool.edit result (replacements + diff) is recorded",
+    steps: "agent calls edit(file_path, old_string, new_string) -> the tool reads through the world's filesystem -> the replacement is computed in the agent -> the new content is written back through the world's filesystem -> the diff returns to the tool loop",
+    variants: "unique replacement; replace_all; old_string not found; the write fails after the read (surface the failure, do not report success)"
+}
+
+Instance j_rw_exec_remote of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "tool.bash, tool.run_code, process.exec",
+    evidence_class: "proposed",
+    initiating_condition: "The agent's tool loop calls bash or run_code in a non-local workspace",
+    journey_id: "J-RW-exec-remote",
+    precondition: "The workspace's world is reachable and its process capability supports the requested cwd",
+    purpose: "Run a command or code snippet on the machine that owns the workspace",
+    settlement: "stdout, stderr and the exit status from the remote machine are returned through the ordinary tool.bash/tool.run_code result, with cwd = the workspace's root",
+    steps: "agent calls bash(command) -> the tool resolves the workspace root and world -> process.exec runs the command with cwd = the workspace's provider-owned root -> stdout/stderr/exitCode/timedOut return to the tool loop",
+    variants: "success; non-zero exit; timeout (terminated, timedOut true); the world unreachable (fails closed - never runs the command locally)"
+}
+
+Instance j_rw_cancel_timeout of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "session.interrupt, process.exec",
+    evidence_class: "proposed",
+    initiating_condition: "A remote tool run is in flight and the user cancels the turn, or a timeout elapses",
+    journey_id: "J-RW-cancel-timeout",
+    precondition: "The in-flight remote execution is observable through the run's cancellation signal or its deadline",
+    purpose: "Make remote execution as cancellable and bounded as local execution",
+    settlement: "The remote execution is terminated (or reported timedOut), the run reaches an explicit interrupted/failed state, and no orphan remote process keeps running for the aborted call",
+    steps: "a remote bash/run_code call starts -> the user interrupts the turn (or the timeout elapses) -> the process capability terminates the remote execution -> the tool result reports the interruption/timeout -> the turn settles as interrupted",
+    variants: "user cancellation; timeout expiry; cancellation while the connection itself is degrading"
+}
+
+Instance j_rw_conn_failure of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "filesystem.readText, process.exec",
+    evidence_class: "proposed",
+    initiating_condition: "A workspace's execution world becomes unreachable during or between operations",
+    journey_id: "J-RW-conn-failure",
+    precondition: "A workspace referencing the failed world is selected",
+    purpose: "Fail visibly and closed when a remote world is unavailable",
+    settlement: "The operation fails with an explicit, attributable error; no local execution is substituted and no partial success is reported",
+    steps: "an operation is invoked against an unreachable world -> the provider fails to connect or loses its connection -> the failure surfaces through the ordinary tool failure path (tool.call.failed) with a transport-neutral message",
+    variants: "connect-time failure; failure mid-operation; host-key verification failure (treated as a failure, never auto-accepted)"
+}
+
+Instance j_rw_reconnect of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "workspace.select, filesystem.readText, process.exec",
+    evidence_class: "proposed",
+    initiating_condition: "A world that previously failed is reachable again, or a subsequent invocation follows a disconnect",
+    journey_id: "J-RW-reconnect",
+    precondition: "The workspace and its world descriptor are durably recorded; the world's connection was lost",
+    purpose: "Let a later invocation succeed after a disconnect without changing the tool or agent semantics",
+    settlement: "The next operation against the workspace succeeds, through a re-established connection, with no change to the agent or tool code path",
+    steps: "a later tool call is invoked against a workspace whose connection dropped -> the provider re-establishes the connection (reusing the durable world descriptor) -> the operation proceeds normally",
+    variants: "connection reused without re-dialing (still live); re-dial after drop; the drop persists (fails closed again)"
+}
+
+Instance j_rw_coexist of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "workspace.select, workspace.path, tool.read, tool.bash",
+    evidence_class: "proposed",
+    initiating_condition: "The user has both a local workspace and at least one remote workspace",
+    journey_id: "J-RW-coexist",
+    precondition: "Two or more workspaces reference different execution worlds",
+    purpose: "Prove execution location is a property of the workspace, not of the app or the process",
+    settlement: "Operations on each workspace reach that workspace's own world; a read on the local workspace reads locally and a read on the remote workspace reads remotely, in the same process, without cross-talk",
+    steps: "user selects workspace A (local) and runs a read -> user selects workspace B (remote) and runs a read -> each operation resolves its own workspace's world -> the two results come from two different machines",
+    variants: "local then remote; remote then local; two remote workspaces on different hosts"
+}
+
+Instance j_rw_switch of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "workspace.select, tool.read, tool.bash, tool.edit",
+    evidence_class: "proposed",
+    initiating_condition: "The user switches the current workspace between execution worlds",
+    journey_id: "J-RW-switch",
+    precondition: "At least one local and one remote workspace exist",
+    purpose: "Switch execution location with no change to the model-facing tool catalog or the agent loop",
+    settlement: "After switching, the same tool definitions operate on the newly selected world; switching back restores the previous world's behaviour; no tool or agent implementation changed",
+    steps: "user selects the remote workspace -> the same read/edit/bash tools now execute remotely -> user selects the local workspace again -> the same tools execute locally again",
+    variants: "switch to remote; switch back to local; switch to a third world"
 }
 
 Policy every_canonical_flow_recorded as:

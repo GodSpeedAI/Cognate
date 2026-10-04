@@ -12,13 +12,13 @@ Validation succeeded: 0 violations total
 
 == domainforge parse interaction-model.sea --format human ==
 Graph parsed successfully: interaction-model.sea
-Entities: 14
-Resources: 11
-Flows: 11
-Roles: 2
-Relations: 1
+Entities: 17
+Resources: 18
+Flows: 18
+Roles: 3
+Relations: 2
 Resource instances: 0
-Entity instances: 10
+Entity instances: 20
 Policies: 1
 Patterns: 0
 
@@ -26,9 +26,4 @@ Patterns: 0
 AST parsed successfully: interaction-model.sea
 Namespace: deepseek-harness.interaction
 Version: 1.0.0
-Declarations: 51
-
-== domainforge fmt --check interaction-model.sea (expected to fail: known 0.18.1 forall->ForAll() formatter bug, see limitations.md) ==
-Would reformat interaction-model.sea (223 -> 223 lines)
-Error: File would be reformatted: interaction-model.sea
-(exit code: 1)
+Declarations: 80

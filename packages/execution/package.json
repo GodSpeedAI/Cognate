@@ -1,0 +1,17 @@
+{
+  "name": "@cognate/execution",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-owned execution-world contracts: filesystem and process ports, replaceable providers, and the filesystem.*/process.* capability component. No transport or library types.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./conformance": "./src/conformance.ts"
+  },
+  "dependencies": {
+    "@cognate/kernel-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cognate/kernel-cordis": "workspace:*"
+  }
+}

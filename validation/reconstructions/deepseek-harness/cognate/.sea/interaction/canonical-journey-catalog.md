@@ -298,3 +298,97 @@ runtime-and-provider.md}` and `.agents/prompts/deepseek-harness-reconstruction-t
 - **Evidence class**: inferred (the turn-lifecycle state machine — idle/running/error/interrupted
   — is assembled from several separate observations, not one single declarative source quote; see
   `assumptions-and-unknowns.md`).
+
+---
+
+# Remote Workspaces (T1) — `J-RW-*`
+
+These ten journeys model the execution-world abstraction (user-facing: **Remote Workspaces**).
+They are framework-level journeys — they apply to any Cognate app whose workspaces have an
+execution location — recorded here because this reconstruction is where the workspace journeys
+live. Their evidence class is **proposed**: derived from Cognate's own architecture and the donor
+mechanism study (`.agents/evidence/remote-workspaces-donor-provenance.md`), not from an
+observation of the reference product. They do not alter `J-A`..`J-H`; those keep their meaning and
+now settle against whichever world the selected workspace references.
+
+Each entry mirrors its `Instance ... of "CanonicalJourney"` in `interaction-model.sea`.
+
+## J-RW-select-world (`j_rw_select_world`)
+- **Purpose**: make an execution location available as a first-class, selectable world.
+- **Actor/role**: User. **Initiating condition**: the user wants a workspace that does not execute
+  locally.
+- **Steps**: declare a world (kind + provider configuration, secret *reference* not secret) →
+  provider validates what it can without performing work → world registered and listed → selectable.
+- **Capabilities (proposed)**: `world.register`, `world.list`, `world.select`.
+- **Settlement**: the world is listed with a stable id and kind and is selectable.
+- **Variants**: local (no configuration); ssh (host/user/auth reference/host-key policy/jump chain);
+  a missing provider fails closed and lists as unavailable rather than falling back to local.
+
+## J-RW-add-workspace (`j_rw_add_workspace`)
+- **Purpose**: create a durable workspace owned by one execution world.
+- **Steps**: pick a root in the selected world → provider canonicalizes and validates → workspace
+  recorded with `executionWorldId` + opaque root → appears in the sidebar.
+- **Capabilities (proposed)**: `workspace.select`, `workspace.path`.
+- **Settlement**: a `WorkspaceRecord` with id, title, `executionWorldId`, provider-owned root.
+- **Variants**: local root (OS path); remote root (POSIX path opaque above the provider); an
+  unreachable root fails the add.
+
+## J-RW-read-remote (`j_rw_read_remote`)
+- **Purpose**: read a file from wherever the workspace executes, with no transport-specific tool.
+- **Capabilities (proposed)**: `tool.read`, `filesystem.readText`, `filesystem.stat`.
+- **Settlement**: contents returned through the ordinary `tool.read` result and recorded as
+  `tool.call.completed`, identical in shape to a local read.
+- **Variants**: readable; missing; path escape (denied by the provider boundary); world unreachable
+  (fails closed — never reads a local file).
+
+## J-RW-edit-remote (`j_rw_edit_remote`)
+- **Purpose**: modify a file in place wherever the workspace executes.
+- **Capabilities (proposed)**: `tool.edit`, `filesystem.readText`, `filesystem.writeText`.
+- **Settlement**: replacement applied on the workspace's machine; ordinary `tool.edit` result
+  (replacements + diff) recorded.
+- **Variants**: unique; `replace_all`; not found; write fails after read (surface, never report
+  success).
+
+## J-RW-exec-remote (`j_rw_exec_remote`)
+- **Purpose**: run a command or code snippet on the machine that owns the workspace.
+- **Capabilities (proposed)**: `tool.bash`, `tool.run_code`, `process.exec`.
+- **Settlement**: remote stdout/stderr/exit status returned through the ordinary `tool.bash` /
+  `tool.run_code` result, `cwd` = the workspace's root.
+- **Variants**: success; non-zero exit; timeout (`timedOut` true); world unreachable (fails closed).
+
+## J-RW-cancel-timeout (`j_rw_cancel_timeout`)
+- **Purpose**: make remote execution as cancellable and bounded as local execution.
+- **Capabilities (proposed)**: `session.interrupt`, `process.exec`.
+- **Settlement**: the remote execution is terminated (or reported timed out), the run settles as
+  interrupted, and no orphan remote process keeps running for the aborted call.
+- **Variants**: user cancellation; timeout expiry; cancellation while the connection degrades.
+
+## J-RW-conn-failure (`j_rw_conn_failure`)
+- **Purpose**: fail visibly and closed when a remote world is unavailable.
+- **Capabilities (proposed)**: `filesystem.readText`, `process.exec`.
+- **Settlement**: explicit attributable error through `tool.call.failed`; no local substitution;
+  no partial success.
+- **Variants**: connect-time; mid-operation; host-key verification failure (never auto-accepted).
+
+## J-RW-reconnect (`j_rw_reconnect`)
+- **Purpose**: let a later invocation succeed after a disconnect without changing tool/agent
+  semantics.
+- **Capabilities (proposed)**: `workspace.select`, `filesystem.readText`, `process.exec`.
+- **Settlement**: the next operation succeeds through a re-established connection, unchanged code
+  path.
+- **Variants**: reuse a live connection; re-dial after a drop; persistent drop fails closed again.
+
+## J-RW-coexist (`j_rw_coexist`)
+- **Purpose**: prove execution location is a property of the workspace, not the app/process.
+- **Capabilities (proposed)**: `workspace.select`, `workspace.path`, `tool.read`, `tool.bash`.
+- **Settlement**: each operation reaches its own workspace's world in one process, no cross-talk.
+- **Variants**: local→remote; remote→local; two remote workspaces on different hosts.
+
+## J-RW-switch (`j_rw_switch`)
+- **Purpose**: switch execution location with no change to the model-facing tool catalog or the
+  agent loop.
+- **Capabilities (proposed)**: `workspace.select`, `tool.read`, `tool.bash`, `tool.edit`.
+- **Settlement**: after switching, the same tool definitions operate on the newly selected world;
+  switching back restores the previous behaviour; no tool/agent implementation changed.
+- **Variants**: switch to remote; back to local; to a third world.
+

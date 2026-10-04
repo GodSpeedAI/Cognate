@@ -135,6 +135,32 @@ For each journey, "semantic anchor" names the `.sea` object (`Entity`/`Instance`
 - Projections/artifacts: none new; reuses J-B's chat/trajectory rendering to show the
   interrupted/error state distinctly.
 
+## Remote Workspaces (T1) — proposed constructs
+
+New semantic anchors: `Entity "ExecutionWorld"`, `Entity "WorldConnection"`,
+`Resource "WorkspaceRoot"`, plus the `J-RW-*` journey instances. Proposed bindings (again
+*proposals*, made by hand in `domain/index.ts` once the components exist):
+
+| Semantic anchor | Capability id | Provider component |
+|---|---|---|
+| `ExecutionWorld` | `world.register` v1.0.0 | world-registry component |
+| `ExecutionWorld` | `world.list` v1.0.0 | world-registry component |
+| `ExecutionWorld` | `filesystem.readText` v1.0.0 | `@cognate/execution` execution-worlds component |
+| `ExecutionWorld` | `filesystem.stat` v1.0.0 | `@cognate/execution` execution-worlds component |
+| `ExecutionWorld` | `filesystem.writeText` v1.0.0 | `@cognate/execution` execution-worlds component |
+| `ExecutionWorld` | `process.exec` v1.0.0 | `@cognate/execution` execution-worlds component |
+| `WorkspaceRecord` | `workspace.select` v1.0.0 | `workspaceSelectComponent` (extended with a world) |
+| `WorkspaceRecord` | `workspace.path` v1.0.0 | `workspacePathComponent` (now returns `{ root, executionWorldId }`) |
+
+`tool.read` / `tool.edit` / `tool.bash` / `tool.run_code` keep their existing `Tool` anchor; only
+their *implementation* changes (they invoke `filesystem.*` / `process.exec` instead of `node:fs`
+and `Bun.spawn`). The model-facing tool catalog and the agent loop are unchanged.
+
+The framework-owned contracts and the replaceable providers live in `@cognate/execution` (local +
+deterministic memory providers) and `@cognate/execution-ssh` (SSH provider). The design rationale
+for providers-not-parallel-tools is in
+`docs/decisions/ADR-0013-execution-worlds-are-providers.md`.
+
 ## What downstream agents should NOT do
 
 - Do not call `bindCapabilities` "for everything" just because a `SemanticObject` exists for it —

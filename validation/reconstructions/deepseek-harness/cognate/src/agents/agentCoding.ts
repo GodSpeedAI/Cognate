@@ -18,7 +18,7 @@ import {
   planRequestChangesToolResult,
   splitPlanPrefix,
 } from "../domain/planGate.ts";
-import { PathEscapeError, fileExists } from "../capabilities/tools.ts";
+import { PathEscapeError } from "../capabilities/tools.ts";
 import type { ToolBashResult, ToolEditResult, ToolReadResult, ToolRunCodeResult } from "../capabilities/tools.ts";
 import type { PlanState, TodoItem } from "../projections/plans.ts";
 
@@ -239,7 +239,7 @@ function formatToolResult(name: string, result: Json): string {
 async function invokeTool(
   ctx: RunContext,
   sessionId: string,
-  workspaceRoot: string,
+  workspace: { readonly root: string; readonly executionWorldId: string },
   call: ToolCall,
   readFiles: Set<string>,
 ): Promise<string> {
@@ -252,7 +252,16 @@ async function invokeTool(
     const filePath = String(args.file_path ?? "");
     // Boxed in `ctx.step` (not called bare) so this filesystem read stays replay-safe: the same
     // recorded answer is returned on replay instead of re-touching the disk.
-    const existed = await ctx.step(`edit-exists:${call.id}`, () => fileExists(workspaceRoot, filePath));
+    const existed = await ctx.step(`edit-exists:${call.id}`, async () => {
+      try {
+        const worldId = workspace.executionWorldId;
+        const { path } = (await ctx.invoke("filesystem.resolve", { worldId, root: workspace.root, path: filePath })) as unknown as { path: string };
+        const { stat } = (await ctx.invoke("filesystem.stat", { worldId, path })) as unknown as { stat: { kind: string } | null };
+        return stat?.kind === "file";
+      } catch {
+        return false;
+      }
+    });
     if (existed && !readFiles.has(filePath)) {
       const error = `fs_not_observed: read ${filePath} before editing it`;
       await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error });
@@ -261,13 +270,13 @@ async function invokeTool(
   }
 
   try {
-    const result = (await ctx.invoke(`tool.${call.name}`, { workspaceRoot, ...args } as unknown as Json)) as unknown as Json;
+    const result = (await ctx.invoke(`tool.${call.name}`, { workspaceRoot: workspace.root, executionWorldId: workspace.executionWorldId, ...args } as unknown as Json)) as unknown as Json;
     if (call.name === "read") readFiles.add(String(args.file_path ?? ""));
     const text = formatToolResult(call.name, result);
     await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result });
     return text;
   } catch (error) {
-    const message = error instanceof PathEscapeError ? error.message : error instanceof Error ? error.message : String(error);
+    const message = error instanceof PathEscapeError || error instanceof Error ? error.message : String(error);
     await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: message });
     return `Error: ${message}`;
   }
@@ -311,7 +320,7 @@ export const agentCodingAgent: AgentDefinition = {
     }
 
     const history = (await ctx.invoke("session.history", { sessionId, excludeRunId: ctx.runId })) as unknown as ModelMessage[];
-    const workspace = (await ctx.invoke("workspace.path", { workspaceId })) as unknown as { readonly path: string };
+    const workspace = (await ctx.invoke("workspace.path", { workspaceId })) as unknown as { readonly root: string; readonly executionWorldId: string };
     const messages: ModelMessage[] = [...history, { role: "user", content: message }];
     const readFiles = new Set<string>();
 
@@ -414,10 +423,10 @@ export const agentCodingAgent: AgentDefinition = {
             resultText = approvalDeniedToolResult(permission);
             await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: resultText });
           } else {
-            resultText = await invokeTool(ctx, sessionId, workspace.path, call, readFiles);
+            resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles);
           }
         } else {
-          resultText = await invokeTool(ctx, sessionId, workspace.path, call, readFiles);
+          resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles);
         }
         messages.push({ role: "tool", content: resultText, toolCallId: call.id });
       }

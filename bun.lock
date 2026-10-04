@@ -206,6 +206,16 @@
         "@cognate/kernel-api": "workspace:*",
       },
     },
+    "packages/execution": {
+      "name": "@cognate/execution",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cognate/kernel-api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cognate/kernel-cordis": "workspace:*",
+      },
+    },
     "packages/kernel-api": {
       "name": "@cognate/kernel-api",
       "version": "0.0.0",
@@ -526,6 +536,7 @@
         "@cognate/client": "workspace:*",
         "@cognate/domainforge": "workspace:*",
         "@cognate/events": "workspace:*",
+        "@cognate/execution": "workspace:*",
         "@cognate/kernel-api": "workspace:*",
         "@cognate/projections": "workspace:*",
         "@cognate/protocol-connect": "workspace:*",
@@ -623,6 +634,8 @@
     "@cognate/e2e": ["@cognate/e2e@workspace:tests/e2e"],
 
     "@cognate/events": ["@cognate/events@workspace:packages/events"],
+
+    "@cognate/execution": ["@cognate/execution@workspace:packages/execution"],
 
     "@cognate/kernel-api": ["@cognate/kernel-api@workspace:packages/kernel-api"],
 
