@@ -272,7 +272,7 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     async sharedState(id: string): Promise<Json> {
       guard();
       const caller = { tenant: view.tenant, actor: context.actor };
-      const decision = core.actions.authorize({ caller, action: "thread.state.read", resource: view.correlationId });
+      const decision = await core.governor.govern({ kind: "action", caller, action: "thread.state.read", resource: view.correlationId });
       if (!decision.allow) throw new Error(`thread state read denied: ${decision.reason}`);
       return context.step(`shared-state:${id}`, async () => foldState(await core.store.readStream(threadStateStream(view.tenant, view.correlationId))));
     },
@@ -280,7 +280,7 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     async updateSharedState(id: string, update): Promise<{ readonly state: Json; readonly version: number }> {
       guard();
       const caller = { tenant: view.tenant, actor: context.actor };
-      const decision = core.actions.authorize({ caller, action: "thread.state.update", resource: view.correlationId });
+      const decision = await core.governor.govern({ kind: "action", caller, action: "thread.state.update", resource: view.correlationId });
       if (!decision.allow) throw new Error(`thread state update denied: ${decision.reason}`);
       return context.step(`shared-state.update:${id}`, async () => {
         const streamId = threadStateStream(view.tenant, view.correlationId);
@@ -335,7 +335,9 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       const done = find(stepId);
       if (done) return (field(done.payload, "result") as unknown as readonly RemoteCapabilityOffer[] | null) ?? [];
       const caller = { tenant: view.tenant, actor: context.actor };
-      const result = core.remoteOffers.list(caller, view.agent).filter((offer) => core.actions.authorize({ caller, action: "remote.offer.invoke", resource: offer.id }).allow);
+      const listed = core.remoteOffers.list(caller, view.agent);
+      const allowed = await Promise.all(listed.map(async (offer) => (await core.governor.govern({ kind: "action", action: "remote.offer.invoke", caller, resource: offer.id })).allow));
+      const result = listed.filter((_, index) => allowed[index]);
       await append({ eventType: "run.remote_offers", payload: { result: toJson(result as unknown as Json) }, metadata: { stepId } });
       return result;
     },
@@ -349,7 +351,7 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       if (!find(waitStep, "run.waiting")) {
         offer = core.remoteOffers.take({ tenant: view.tenant, actor: context.actor }, view.agent, offerId);
         if (!offer) throw new FrontendCapabilityError(`remote offer ${offerId} is unavailable`);
-        const decision = core.actions.authorize({ caller: { tenant: view.tenant, actor: context.actor }, action: "remote.offer.invoke", resource: offer.id });
+        const decision = await core.governor.govern({ kind: "action", caller: { tenant: view.tenant, actor: context.actor }, action: "remote.offer.invoke", resource: offer.id });
         if (!decision.allow) throw new FrontendCapabilityError(`remote offer ${offerId} denied: ${decision.reason}`);
       }
       const selected = offer;

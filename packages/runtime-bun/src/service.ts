@@ -4,6 +4,7 @@ import type { ContinuationRecord, TransitionOutcome } from "@cognate/continuatio
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@cognate/events";
 import { applyStateUpdate, type Caller, type ContinuationView, foldState, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@cognate/runtime-api";
 import type { Core } from "./core.ts";
+import type { ActionName } from "./governed-operation.ts";
 import { foldRun, isTerminal, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 const PAGE = 500;
@@ -11,8 +12,8 @@ const PAGE = 500;
 export function createService(core: Core, publicProjections: ReadonlySet<string>): RuntimeService {
   const { store } = core;
 
-  const authorize = (caller: Caller, action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "thread.state.read" | "thread.state.update" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke", resource: string) => {
-    const decision = core.actions.authorize({ caller, action, resource });
+  const authorize = async (caller: Caller, action: ActionName, resource: string): Promise<void> => {
+    const decision = await core.governor.govern({ kind: "action", action, caller, resource });
     if (!decision.allow) throw new ServiceError("permission_denied", decision.reason);
   };
 
@@ -31,7 +32,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
   return {
     async startRun(caller, request) {
-      authorize(caller, "run.start", request.agent);
+      await authorize(caller, "run.start", request.agent);
       const agent = core.agents.get(request.agent);
       if (!agent) throw new ServiceError("not_found", `agent ${request.agent} not found`);
       const runId = randomUUID();
@@ -106,7 +107,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async cancelRun(caller, request) {
-      authorize(caller, "run.cancel", request.runId);
+      await authorize(caller, "run.cancel", request.runId);
       for (let attempt = 0; attempt < 5; attempt++) {
         const { view, events } = await readRun(caller, request.runId);
         if (isTerminal(view)) return view;
@@ -160,7 +161,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
     async resolveContinuation(caller, request) {
       const record = await continuationFor(caller, request.continuationId);
-      authorize(caller, request.action === "resume" ? "continuation.resume" : "continuation.cancel", request.continuationId);
+      await authorize(caller, request.action === "resume" ? "continuation.resume" : "continuation.cancel", request.continuationId);
       const action = { actor: caller.actor, idempotencyKey: request.idempotencyKey, ...(request.expectedVersion !== undefined ? { expectedVersion: request.expectedVersion } : {}) };
       const outcome: TransitionOutcome =
         request.action === "resume"
@@ -243,7 +244,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async updateState(caller, request) {
-      authorize(caller, "run.state.update", request.runId);
+      await authorize(caller, "run.state.update", request.runId);
       const stateStreamId = runStateStream(request.runId);
       for (let attempt = 0; attempt < 5; attempt++) {
         const { view, events } = await readRun(caller, request.runId);
@@ -301,13 +302,13 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async readSharedState(caller, request) {
-      authorize(caller, "thread.state.read", request.threadId);
+      await authorize(caller, "thread.state.read", request.threadId);
       const events = await store.readStream(threadStateStream(caller.tenant, request.threadId));
       return { state: foldState(events), version: events.length };
     },
 
     async updateSharedState(caller, request) {
-      authorize(caller, "thread.state.update", request.threadId);
+      await authorize(caller, "thread.state.update", request.threadId);
       const streamId = threadStateStream(caller.tenant, request.threadId);
       for (let attempt = 0; attempt < 5; attempt++) {
         const events = await store.readStream(streamId);
@@ -362,7 +363,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async publishRemoteOffer(caller, request) {
-      authorize(caller, "remote.offer.publish", `${request.agent}:${request.contract.id}`);
+      await authorize(caller, "remote.offer.publish", `${request.agent}:${request.contract.id}`);
       if (!core.agents.has(request.agent)) throw new ServiceError("not_found", `agent ${request.agent} not found`);
       try {
         return core.remoteOffers.publish(caller, core.scopeId, request);
@@ -372,13 +373,15 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async listRemoteOffers(caller, request) {
-      authorize(caller, "remote.offer.list", request.agent);
+      await authorize(caller, "remote.offer.list", request.agent);
       if (!core.agents.has(request.agent)) throw new ServiceError("not_found", `agent ${request.agent} not found`);
-      return core.remoteOffers.list(caller, request.agent).filter((offer) => core.actions.authorize({ caller, action: "remote.offer.invoke", resource: offer.id }).allow);
+      const offers = core.remoteOffers.list(caller, request.agent);
+      const allowed = await Promise.all(offers.map(async (offer) => (await core.governor.govern({ kind: "action", action: "remote.offer.invoke", caller, resource: offer.id })).allow));
+      return offers.filter((_, index) => allowed[index]);
     },
 
     async revokeRemoteOffer(caller, request) {
-      authorize(caller, "remote.offer.revoke", request.offerId);
+      await authorize(caller, "remote.offer.revoke", request.offerId);
       // Hide cross-tenant or foreign-owner offers exactly like other service reads.
       if (!core.remoteOffers.revoke(caller, request.offerId)) throw new ServiceError("not_found", `remote offer ${request.offerId} not found`);
     },

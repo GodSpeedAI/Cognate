@@ -3,7 +3,11 @@ import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@c
 import type { Component, Kernel, Policy, Principal } from "@cognate/kernel-api";
 import type { Projection } from "@cognate/projections";
 import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-api";
+import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
+
+export { Governor, isWorldRef, validateGovernance } from "./governed-operation.ts";
+export type { Disposition, GovernanceAuthority, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
@@ -34,6 +38,8 @@ export interface RuntimeOptions {
   /** Kernel invocation policy for capabilities (default-deny if omitted). */
   readonly policy: Policy;
   readonly actions: ActionPolicy;
+  /** Governance of every consequential operation. Default `{ mode: "off" }` (local policy only) until Stage 6 wires SEA-Forge. */
+  readonly governance?: GovernanceOptions;
   readonly agents: readonly AgentDefinition[];
   /** Capability-providing components mounted in the root scope. */
   readonly components?: readonly Component[];
