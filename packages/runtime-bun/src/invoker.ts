@@ -2,6 +2,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Json } from "@cognate/events";
 import { isUnavailable } from "@cognate/kernel-api";
+import type { Governor } from "./governed-operation.ts";
 import type { Component, ComponentHandle, InvocationContext, InvocationFailure, Kernel, Policy, PolicyDecision, SemanticRef } from "@cognate/kernel-api";
 import { messageOf, toJson } from "./fold.ts";
 
@@ -27,7 +28,7 @@ export class Invoker {
   private readonly mounted: { readonly component: Component; readonly handle: ComponentHandle }[] = [];
   private kernel: Kernel | undefined;
 
-  constructor(private readonly userPolicy: Policy) {}
+  constructor(private readonly governor: Governor) {}
 
   /**
    * The policy handed to the kernel. The caller's tenant travels in the InvocationContext; this wrapper only
@@ -36,7 +37,7 @@ export class Invoker {
   readonly policy: Policy = {
     authorize: async (request) => {
       const slot = this.slots.getStore();
-      const decision = await this.userPolicy.authorize(request);
+      const decision = await this.governor.governCapability(request);
       if (slot) slot.decision = decision;
       return decision;
     },

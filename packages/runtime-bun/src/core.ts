@@ -5,7 +5,8 @@ import type { DurableStore, Json, OutboxIntent } from "@cognate/events";
 import type { Kernel, Principal } from "@cognate/kernel-api";
 import type { AgentDefinition } from "@cognate/runtime-api";
 import type { Invoker } from "./invoker.ts";
-import type { ActionPolicy, PendingEvent } from "./index.ts";
+import type { Governor } from "./governed-operation.ts";
+import type { PendingEvent } from "./index.ts";
 import type { RemoteOfferRegistry } from "./remote-offers.ts";
 
 export interface RecallResultJson {
@@ -19,7 +20,7 @@ export interface Core {
   readonly invoker: Invoker;
   readonly continuations: ContinuationService;
   readonly artifacts: ArtifactService;
-  readonly actions: ActionPolicy;
+  readonly governor: Governor;
   readonly agents: ReadonlyMap<string, AgentDefinition>;
   readonly scopeId: string;
   readonly recall: (query: { readonly text: string; readonly k: number; readonly actor: Principal; readonly tenant: string }) => Promise<RecallResultJson>;

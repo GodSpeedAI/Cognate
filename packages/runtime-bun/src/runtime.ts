@@ -12,6 +12,7 @@ import { executeOnce } from "./executor.ts";
 import { foldRun, isTerminal, RESUME_HANDLER, RUN_EXECUTE_TOPIC, RUNS, runStream } from "./fold.ts";
 import type { Runtime, RuntimeOptions } from "./index.ts";
 import { inspectCorrelation } from "./inspect.ts";
+import { Governor } from "./governed-operation.ts";
 import { Invoker } from "./invoker.ts";
 import { createService } from "./service.ts";
 import { RemoteOfferRegistry } from "./remote-offers.ts";
@@ -23,7 +24,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const ownsStore = typeof options.store === "string";
   const store: DurableStore = typeof options.store === "string" ? openSqliteStore({ path: options.store }) : options.store.store;
   const system: Principal = options.system ?? { id: "system", kind: "system" };
-  const invoker = new Invoker(options.policy);
+  const governor = new Governor(options.actions, options.policy, options.governance ?? { mode: "off" });
+  const invoker = new Invoker(governor);
   // The kernel is single-tenant by contract; the invoker supplies each call's tenant to the policy.
   const kernel = await createCordisKernel({ tenant: "runtime", principal: system, policy: invoker.policy });
   await invoker.attach(kernel, options.components ?? []);
@@ -51,7 +53,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     invoker,
     continuations,
     artifacts: new ArtifactService(store),
-    actions: options.actions,
+    governor,
     agents: new Map(options.agents.map((a) => [a.id, a])),
     scopeId: kernel.root.id,
     recall: recallFor(store, options.cognition),
