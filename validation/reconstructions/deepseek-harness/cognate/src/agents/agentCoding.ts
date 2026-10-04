@@ -58,6 +58,8 @@ export interface AgentCodingInput {
    *  `PRESET_TOOLS`); the composer sends the per-session choice, defaulting to the Settings →
    *  Agent presets "new task default". Absent (direct API runs) keeps the full catalog. */
   readonly preset?: string;
+  /** The cognitive Case this turn serves, when one is open (carried into mediation + evidence). */
+  readonly caseId?: string;
 }
 
 const MAX_TOOL_STEPS = 20;
@@ -134,6 +136,14 @@ async function invokeModelGenerate(ctx: RunContext, callIndex: number, messages:
   /* istanbul ignore next -- unreachable: the loop above always returns or throws */
   throw new Error("unreachable");
 }
+
+/** Shared-attention tools. Offered only while a Case is open (contextual exposure), never as part of the standing catalog. */
+export const UI_TOOL_DEFS: ToolDefinition[] = [
+  { name: "ui_context", description: "Get the semantic neighbourhood of what the human is currently focused on (what 'this' refers to).", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
+  { name: "ui_timeline", description: "Ask the console to show the consequential timeline of the focused item or case.", inputSchema: { type: "object", properties: { ref: { type: "string" } }, additionalProperties: false } },
+  { name: "ui_compare", description: "Ask the console to compare two worlds by semantic ref (world:<hash>, candidate:<hash>).", inputSchema: { type: "object", properties: { left: { type: "string" }, right: { type: "string" } }, additionalProperties: false } },
+  { name: "ui_inspect", description: "Ask the console to inspect a semantic ref.", inputSchema: { type: "object", properties: { ref: { type: "string" } }, additionalProperties: false } },
+];
 
 export const TOOL_DEFS: ToolDefinition[] = [
   {
@@ -286,10 +296,10 @@ export const agentCodingAgent: AgentDefinition = {
   id: AGENT_CODING,
   version: "1.0.0",
   async run(input, ctx) {
-    const { sessionId, workspaceId, message, mode, preset } = input as unknown as AgentCodingInput;
+    const { sessionId, workspaceId, message, mode, preset, caseId } = input as unknown as AgentCodingInput;
     // Usage pass U4 (§15): the preset scopes this turn's tool catalog; an absent preset (direct API
     // runs) keeps the full TOOL_DEFS list.
-    const turnTools = toolsForPreset(preset, TOOL_DEFS);
+    const turnTools = [...toolsForPreset(preset, TOOL_DEFS), ...(caseId ? UI_TOOL_DEFS : [])];
     // `mode` rides the turn event so the `sessions` projection can fold the session's CURRENT
     // access mode from run inputs (usage pass U2 — the composer's per-session access-mode dropdown
     // becomes this input's source); absent (direct API runs) keeps whatever the projection already
@@ -333,6 +343,7 @@ export const agentCodingAgent: AgentDefinition = {
 
       messages.push({ role: "assistant", content: response.message.content ?? "", toolCalls: response.toolCalls });
 
+      let changedThisStep = false;
       for (const call of response.toolCalls) {
         const args = (call.arguments ?? {}) as Record<string, unknown>;
         // Emitted once, up front, regardless of whether this call needs approval — so the UI (and
@@ -350,9 +361,34 @@ export const agentCodingAgent: AgentDefinition = {
           messages.push({ role: "tool", content: unknownTool, toolCallId: call.id });
           continue;
         }
-        const approvalDecision = approvalGate({ tool: call.name, args, mode });
+        let approvalDecision = approvalGate({ tool: call.name, args, mode });
+        // RiskPreflight (cognitive proof): a destructive shell operation is mediated — Sentinel over
+        // RiskPreflight over any lower-trust mods — and, when authority is needed, the semantic
+        // preflight Surface rides on the same durable approval continuation as any other gate.
+        let preflight: { readonly surface?: Json; readonly findings: readonly Json[] } | undefined;
+        if (call.name === "bash" && typeof args.command === "string" && !approvalDecision.required) {
+          const assessed = (await ctx.invoke("risk.assess", { worldId: workspace.executionWorldId, root: workspace.root, command: args.command, tool: "bash", toolCallId: call.id, ...(caseId ? { caseId } : {}) } as unknown as Json)) as unknown as { readonly approvalRequired: boolean; readonly surface?: Json; readonly findings: readonly Json[] };
+          for (const finding of assessed.findings) await ctx.emit("sentinel.finding", { sessionId, toolCallId: call.id, ...(finding as object) } as unknown as Json);
+          if (assessed.approvalRequired) {
+            approvalDecision = { required: true, permission: "destructive-filesystem", justification: `rm on ${args.command.replace(/^rm\s+(-\S+\s+)*/, "")}` };
+            preflight = { ...(assessed.surface ? { surface: assessed.surface } : {}), findings: assessed.findings };
+          }
+        }
         let resultText: string;
-        if (call.name === "todo_write") {
+        if (call.name.startsWith("ui_")) {
+          // Shared attention: a read/representation path only. It resolves "this" from the human's
+          // published focus and may ask the console to render a Surface; it cannot mutate truth.
+          try {
+            const out = call.name === "ui_context"
+              ? await ctx.invoke("ui.context", {} as unknown as Json)
+              : await ctx.invoke("ui.request", { op: call.name.slice(3), ...args } as unknown as Json);
+            resultText = JSON.stringify(out);
+            await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result: out } as unknown as Json);
+          } catch (error) {
+            resultText = `Error: ${error instanceof Error ? error.message : String(error)}`;
+            await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: resultText });
+          }
+        } else if (call.name === "todo_write") {
           const todos = (Array.isArray(args.todos) ? args.todos : []) as TodoItem[];
           await ctx.emit("plan.todos.updated", { sessionId, todos } as unknown as Json);
           const inProgress = todos.filter((t) => t.status === "in_progress").length;
@@ -412,11 +448,12 @@ export const agentCodingAgent: AgentDefinition = {
             tool: call.name,
             permission,
             justification,
+            ...(preflight?.surface ? { surface: preflight.surface } : {}),
           } as unknown as Json);
           const approval = (await ctx.waitFor(`approve:${call.id}`, {
             type: "tool-approval",
             condition: { kind: "human_approval" },
-            payload: { tool: call.name, args: summarizeArgs(args), permission, justification } as unknown as Json,
+            payload: { tool: call.name, args: summarizeArgs(args), permission, justification, ...(preflight?.surface ? { surface: preflight.surface } : {}) } as unknown as Json,
           })) as unknown as { readonly approved: boolean };
           await ctx.emit("tool.approval.decided", { sessionId, toolCallId: call.id, approved: approval.approved });
           if (!approval.approved) {
@@ -429,6 +466,13 @@ export const agentCodingAgent: AgentDefinition = {
           resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles);
         }
         messages.push({ role: "tool", content: resultText, toolCallId: call.id });
+        if (caseId && ["edit", "bash", "run_code"].includes(call.name) && !resultText.startsWith("Error:")) changedThisStep = true;
+      }
+      // LiveVerify: one observation per consequential batch (the debounce), only inside a Case that
+      // declared checks. Healthy runs add facts but no chat; the Case/frame update from the events.
+      if (caseId && changedThisStep) {
+        const observed = (await ctx.invoke("case.observe", { caseId, worldId: workspace.executionWorldId, root: workspace.root } as unknown as Json)) as unknown as { readonly facts?: readonly { readonly eventType: string; readonly payload: Json }[] };
+        for (const fact of observed.facts ?? []) await ctx.emit(fact.eventType, fact.payload);
       }
     }
 

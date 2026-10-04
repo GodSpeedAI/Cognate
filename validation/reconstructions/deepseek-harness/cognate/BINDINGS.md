@@ -39,6 +39,14 @@ objects, digest logged at startup).
 `tranche9Bindings`/`bindTranche9` (`domain/index.ts`) bind #11.
 `tranche10Bindings`/`bindTranche10` (`domain/index.ts`) bind #12.
 
+## Not bound (open gap, DEBT-023)
+
+- The cognitive-navigation capabilities (`case.open`, `case.derive`, `case.observe`,
+  `criterion.freeze`, `world.freeze|fork|attach|discard|settle`, `verification.run`, `risk.assess`,
+  `experiment.round|status`, `method.review|accept|active`, `ui.*`) are real executable capabilities
+  that *should* be bound but are not yet: the `.sea` model carries another tranche's uncommitted
+  edits. This is a gap, not a design decision; see `.agents/DEBT.md` DEBT-023.
+
 ## Not bound (deliberately)
 
 - `observation.status` / `observation.record` (usage pass U6) — a diagnostic read over the

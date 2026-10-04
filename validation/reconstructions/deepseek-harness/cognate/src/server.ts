@@ -22,6 +22,9 @@ import { secretPutComponent } from "./capabilities/secretPut.ts";
 import { sessionHistoryComponent } from "./capabilities/sessionHistory.ts";
 import { modelConfigureComponent } from "./capabilities/modelConfigure.ts";
 import { EXECUTION_CAPABILITY_IDS, createExecutionWorldRegistry, executionWorldsComponent, localExecutionWorld } from "@cognate/execution";
+import { cognitiveComponent } from "./capabilities/cognitive.ts";
+import { agentCognitiveAgent } from "./agents/agentCognitive.ts";
+import type { MediatorSpec } from "./cognitive/mediation.ts";
 import { workspaceSelectComponent } from "./capabilities/workspaceSelect.ts";
 import { workspacePathComponent } from "./capabilities/workspacePath.ts";
 import { toolCapabilitiesComponent } from "./capabilities/tools.ts";
@@ -33,6 +36,7 @@ import { observationCapabilityComponent, observationOutboxFor, wireObservations,
 import { workspaceManageComponent } from "./capabilities/workspaceManage.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
+import { cognitiveProjection } from "./projections/cognitive.ts";
 import { workspacesProjection } from "./projections/workspaces.ts";
 import { sessionsProjection } from "./projections/sessions.ts";
 import { plansProjection } from "./projections/plans.ts";
@@ -48,6 +52,8 @@ const SYSTEM_CALLER = { actor: { id: "system", kind: "system" as const }, tenant
 export interface ServerOptions {
   readonly port: number;
   readonly home: string;
+  /** Test hook: extra lower-trust mediators placed under Sentinel in `risk.assess`. */
+  readonly extraMediators?: readonly MediatorSpec[];
 }
 
 export interface AppServer {
@@ -66,6 +72,7 @@ const GRANTED_CAPABILITIES = [
   "workspace.delete",
   "session.history",
   ...EXECUTION_CAPABILITY_IDS,
+  "case.open", "criterion.freeze", "world.freeze", "world.fork", "world.attach", "world.discard", "verification.run", "case.derive", "world.settle", "risk.assess", "case.observe", "ui.focus.publish", "ui.context", "ui.request", "ui.pending", "experiment.round", "experiment.status", "method.review", "method.accept", "method.active",
   "tool.read",
   "tool.edit",
   "tool.bash",
@@ -182,9 +189,10 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     outboxFor: observationOutboxFor,
     policy: buildPolicy(),
     actions: buildActionPolicy(),
-    agents: [agentConfigAgent, agentCodingAgent],
+    agents: [agentConfigAgent, agentCodingAgent, agentCognitiveAgent],
     components: [
       executionWorldsComponent(executionWorlds),
+      cognitiveComponent({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, extraMediators: options.extraMediators ?? [] }),
       secretPutComponent(secrets, bindings.secretPut.semanticRef),
       sessionHistoryComponent(getService, bindings.sessionHistory.semanticRef),
       workspacePathComponent(getService, toolBindings.workspacePath.semanticRef),
@@ -198,6 +206,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     projections: [
       { projection: modelConfigProjection, public: true },
       { projection: workspacesProjection, public: true },
+      { projection: cognitiveProjection, public: true },
       { projection: sessionsProjection, public: true },
       { projection: plansProjection, public: true },
       { projection: subagentsProjection, public: true },

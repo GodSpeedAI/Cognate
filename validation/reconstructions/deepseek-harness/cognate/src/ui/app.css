@@ -2731,3 +2731,53 @@ input:focus-visible {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* ---- CognitiveFrame (cognitive-navigation proof) -------------------------------------------------
+   Same Cobalt tokens as the rest of the console. System-observed facts carry a RECORDED label and
+   monospace/hairline structure; generated prose never does. Meaning never rests on colour alone. */
+.cognitive-frame { width: 380px; }
+.cognitive-frame .right-panel-body { gap: 18px; }
+.cognitive-frame section { border-bottom: 1px solid var(--cg-border); padding-bottom: 14px; }
+.cognitive-frame section:last-child { border-bottom: none; }
+.cf-h { font-family: var(--cg-font-display); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cg-text-muted); margin: 0 0 6px; font-weight: 600; }
+.cognitive-frame p { margin: 4px 0; font-size: 13px; color: var(--cg-text); }
+.cf-quiet { color: var(--cg-text-muted) !important; font-size: 12px !important; }
+.cf-deviation { color: var(--cg-danger) !important; font-weight: 500; }
+.cf-worlds { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.cf-hash { display: flex; gap: 8px; align-items: baseline; text-align: left; font: inherit; font-size: 12px; background: transparent; border: 1px solid var(--cg-border-strong); border-radius: var(--cg-radius-sm); padding: 4px 8px; color: var(--cg-text); cursor: pointer; }
+.cf-hash code, .cognitive-frame code { font-family: var(--cg-font-mono); font-size: 12px; overflow-wrap: anywhere; }
+.cf-hash-settled { border-style: solid; }
+.cf-hash-candidate { border-style: dashed; border-color: var(--cg-accent); }
+.cf-hash-label { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; }
+.cf-recorded { font-family: var(--cg-font-mono); font-size: 9px; letter-spacing: 0.08em; padding: 1px 4px; border: 1px solid var(--cg-border-strong); border-radius: 3px; color: var(--cg-text-muted); font-weight: 500; }
+.cognitive-frame ul, .cognitive-frame ol { list-style: none; margin: 0; padding: 0; }
+.cf-row { width: 100%; text-align: left; font: inherit; font-size: 12.5px; background: transparent; border: 1px solid transparent; border-left: 2px solid var(--cg-border-strong); border-radius: 0; padding: 5px 8px; color: var(--cg-text); cursor: pointer; }
+.cf-row:hover { background: var(--cg-hover); }
+.cf-row[aria-pressed="true"] { background: var(--cg-active); border-left-color: var(--cg-accent); }
+.cf-row-fail { border-left-color: var(--cg-danger); }
+.cf-row:focus-visible, .cf-btn:focus-visible, .cf-hash:focus-visible, .cf-actions button:focus-visible { outline: 2px solid var(--cg-accent); outline-offset: 2px; }
+.cf-focused { color: var(--cg-accent); font-weight: 500; }
+.cf-primary { border-left: 2px solid var(--cg-accent); padding-left: 10px; }
+.cf-reachable { font-weight: 600; }
+.cf-unreachable { color: var(--cg-text-muted) !important; }
+.cf-btn, .cf-actions button { font: inherit; font-size: 12.5px; padding: 5px 12px; border: 1px solid var(--cg-border-strong); border-radius: var(--cg-radius-sm); background: var(--cg-surface-raised); color: var(--cg-text); cursor: pointer; }
+.cf-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cf-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.cf-timeline li { font-size: 12px; padding: 2px 0; font-family: var(--cg-font-mono); }
+.cf-pos { color: var(--cg-text-muted); }
+.cf-rejected { color: var(--cg-danger) !important; }
+.cf-method { border: 1px dashed var(--cg-border-strong); padding: 10px !important; border-radius: var(--cg-radius-sm); }
+.cf-view { border: 1px solid var(--cg-border-strong); border-radius: var(--cg-radius-sm); padding: 10px; margin-top: 8px; background: var(--cg-surface-raised); }
+.cf-view-head { display: flex; justify-content: space-between; align-items: center; }
+.cf-view-head h3 { margin: 0; font-size: 13px; }
+.cf-surface dl, .cf-entity, .cf-compare dl { margin: 6px 0; font-size: 12.5px; }
+.cf-surface dl > div, .cf-entity > div { display: flex; gap: 8px; }
+.cf-surface dt { color: var(--cg-text-muted); min-width: 84px; }
+.cf-surface dd { margin: 0; overflow-wrap: anywhere; }
+.cf-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cf-table { border-collapse: collapse; font-size: 12px; }
+.cf-table th, .cf-table td { border: 1px solid var(--cg-border); padding: 3px 6px; text-align: left; }
+.cf-callout { border-left: 3px solid var(--cg-border-strong); padding: 6px 10px; font-size: 13px; }
+.cf-tone-fail { border-left-color: var(--cg-danger); }
+.cf-preflight h4 { margin: 0 0 4px; font-size: 12px; letter-spacing: 0.06em; }
+@media (max-width: 1100px) { .cognitive-frame { width: 300px; } }

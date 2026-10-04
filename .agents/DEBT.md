@@ -164,3 +164,31 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Consequence:** `useProjection` is not a reliable live read model: it is eventually consistent with no signal to the reader, and can remain stale permanently rather than merely late. A surface that renders live state from a derived projection instead of the live durable store will show the wrong value. Existing consumers already compensate with flat sleeps — `validation/reconstructions/deepseek-harness/tests/drivers/cognate.ts:254-260` documents waiting out a refresh burst on replay and relying on `ProjectionStore`'s generation guard to discard responses that resolve after a newer request was issued, and notes a store's value can stay `undefined` well past a short fixed wait.
 **Exit criterion:** A projection read reports the position it has folded to (the stores already hold this: `StoreApi.getProjection(name)` returns a `ProjectionCheckpoint` with `position`, `packages/store-sqlite/src/index.ts:443` and `packages/store-memory/src/index.ts`, used by the runner for catch-up, but it is not reachable through `RuntimeService`), and `ProjectionStore` re-reads until its value covers the position of the event that triggered the refresh. A test proves a mounted `useProjection` reader converges after a projection-materialising write without a fixed sleep.
 
+
+## DEBT-022 — CubeSandbox provider absent; candidate forks are local directory copies
+**Status:** Open
+**Requirement(s):** none (cybernetic-navigation proof, spec W3)
+**Observed (2026-10-03):** `/dev/kvm` does not exist in this WSL2 environment and `sudo` needs a password; CubeSandbox's daemon stack (CubeAPI/Master/Cubelet, MySQL, Redis, root install, KVM) cannot be installed here. Candidate worlds are forked by `world.fork` as a copied directory registered as an `@cognate/execution` local world (`metadata.cubeSandbox: "absent"`).
+**Consequence:** Fork isolation is filesystem-level only: a candidate process runs as the same OS user on the same host. Lineage, hashes and evidence do not depend on the sandbox, so swapping the provider changes isolation, not truth. No claim of CubeSandbox support is made.
+**Exit criterion:** A CubeSandbox (or other KVM/microVM) `ExecutionWorldProvider` passes `executionWorldConformance` on a KVM host and `J-COG-cleanup` runs unchanged against it.
+
+## DEBT-023 — Cognitive capabilities are not bound to `.sea` anchors
+**Status:** Open
+**Requirement(s):** none (building-with-cognate rule: bind real capabilities explicitly)
+**Observed (2026-10-03):** `case.*`, `world.*`, `criterion.freeze`, `verification.run`, `risk.assess`, `experiment.*`, `method.*`, `ui.*` are published without `semanticRef`. The interaction model's `.sea` and handoff files carry another tranche's uncommitted edits (remote workspaces), so extending them here would interleave two tranches in one hunk set.
+**Consequence:** Runs record these invocations without semantic anchors (traceability rule #2 is unmet for them). No grammar change is needed; the model needs Entities (e.g. Case, WorldSnapshot, Criterion) and `bindCapabilities` entries.
+**Exit criterion:** The remote-workspaces edits are committed, the model is extended with the existing grammar, `domainforge-output.txt` / `cognate-adapter-output.txt` are regenerated, and BINDINGS.md lists the new bindings.
+
+## DEBT-024 — Proof gaps against the cybernetic-navigation spec
+**Status:** Open
+**Requirement(s):** none (spec `.agents/specs/cybernetic-navigation-proof.md`)
+**Observed (2026-10-03):** Not implemented: a UI path that creates a Case from a human purpose (Cases are opened through the `case.open` capability); `criterion.revise` as a capability/UI (pure `reviseCriterion` exists, so an observer-gap revision cannot be exercised end to end); parallel candidate search and ownership-based subagent concurrency; payment/budget estimates (none are supportable yet, so none are shown); recovery to a prior settled world (materialize/fork from an old `worldHash`); plan-deviation representation; method-recommendation controls other than Accept (Test candidate / Request evidence / Reject would be dead controls); a general model-tool catalog narrowing by `capabilityNeighborhood` (only the `ui_*` tools are Case-gated); the Revise action of the preflight (the existing Reject/Allow once card carries the Surface).
+**Consequence:** The proof shows the semantics and the single-candidate and bounded-search journeys; it does not yet show these affordances.
+**Exit criterion:** Each item is either implemented with a journey test or dropped from the spec with a recorded decision.
+
+## DEBT-025 — WebMCP verified against a polyfilled registry only; approval card precedes its continuation
+**Status:** Open
+**Requirement(s):** none (spec U2)
+**Observed (2026-10-03):** The WebMCP adapter calls `navigator.modelContext.provideContext`; the browser test installs a polyfill with that shape. Native browser support was not exercised. Separately, the console's approval card renders from `tool.approval.requested`, before `continuation.opened`, so an immediate click can find nothing to resolve (found by `E2E-cognitive-console`; the test waits for the continuation). `useProjection` staleness (DEBT-021) is hedged with a 1.5 s refresh.
+**Consequence:** A fast human click on a fresh approval card can be a silent no-op; native WebMCP behaviour is unproven.
+**Exit criterion:** The card disables its buttons until the continuation is open; the adapter is run in a browser that ships WebMCP.

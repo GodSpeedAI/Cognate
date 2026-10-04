@@ -547,3 +547,54 @@ New in this pass, all still governed by durable events/projections:
   no-op against the reference's disabled "Continue" button) — both sides now land on the same first
   dialog ("Internal Testing Notice" / its Cognate-branded equivalent) still open, instead of Cognate
   advancing to its second dialog first.
+
+## Cognitive-navigation proof (2026-10-03)
+
+Spec: `.agents/specs/cybernetic-navigation-proof.md`; plan: `.agents/plans/cybernetic-navigation-proof.md`.
+Everything below is a **local harness proof mechanism** unless marked otherwise; nothing changed in
+Cognate core, `.sea` grammar, or dependencies.
+
+| Mechanism | Kind | Where |
+| --- | --- | --- |
+| Event log, continuations, `@cognate/execution` worlds, RealityTrace outbox, policy | existing Cognate primitive | reused as-is |
+| World identity (`worldHash`), lineage fold, promotion check | local proof mechanism | `src/cognitive/world.ts` |
+| Frozen criterion, `criterionHash`, observer coverage | local proof mechanism | `src/cognitive/criterion.ts` |
+| `CaseProjection`, Reality, affordance field | derived (fold of events on every call; no store) | `src/cognitive/case.ts`, `affordance.ts` |
+| `MediationHost` (tiers, `next`, `next.trusted`, origin, trace), Sentinel, `userToyMod`, RiskPreflight, LiveVerify | local proof mechanism | `src/cognitive/mediation.ts`, `sentinel.ts`, `preflight.ts`, `liveverify.ts` |
+| Surface grammar (callout, entity, table, compare, timeline, preflight, ask) | local proof mechanism | `src/cognitive/surface.ts`, `src/ui/CognitiveFrame.tsx` |
+| Bounded search rounds, method review | local proof mechanism | `src/cognitive/experiment.ts`, `method.ts` |
+| Shared attention (`FocusContext`, WebMCP adapter) | local proof mechanism; focus is ephemeral | `src/cognitive/focus.ts`, `src/ui/webmcp.ts` |
+| `cognitive.*` capabilities | components over the above | `src/capabilities/cognitive.ts` |
+
+**World identity.** `worldHash = SHA-256("cognate.canonical.v1\n" + canonical JSON)` of the
+consequential manifest: workspace file digests, repo SHA, semantic-model / policy / environment
+hashes, criterion and method hashes. Origin case/run, parent, status, sandbox id and timestamps are
+lineage metadata on events and are *not* hashed, so a candidate promoted to settled keeps its hash
+(`repoSha != worldHash`; same Git SHA with a different policy is a different world).
+
+**Durable / reconstructible / ephemeral.** Durable: `case.opened`, `criterion.frozen`,
+`world.{baseline,candidate}.frozen`, `world.candidate.rejected`, `world.settled`,
+`verification.observed`, `sentinel.finding`, `experiment.round.completed`, `method.recommended`,
+`method.accepted`, approvals/continuations (all in the event log; the evidence-bearing ones also ride
+the RealityTrace outbox). Reconstructible: Case, Reality, affordance field, lineage, search state,
+active `methodHash`, the `cognitive` projection. Ephemeral: `FocusContext`, requested Surfaces
+(in-memory bridge), view state, hover/animation. Fork directories are disposable.
+
+**Authority.** `world.settle` and `method.accept` refuse any call made from inside a run
+(`ctx.runId`), and require a `user` actor; settlement additionally needs reachable mandatory
+conditions, current parent, and evidence. A lower-trust mediator cannot lower a trusted approval
+requirement (Sentinel compares against `next.trusted`, which re-runs only mediators at or above the
+chosen tier against a shadow core). `ui_*` / WebMCP tools are read/representation only; mutating
+actions are shown to the human as an `ask` and are never executed by the agent.
+
+**Deliberate differences / limits.** CubeSandbox is absent (DEBT-022). New capabilities are
+unbound to `.sea` (DEBT-023). Several spec items are not implemented (DEBT-024). RiskPreflight
+classifies the `rm -r` family only. Agent runs cannot await a child run, so `case.observe` returns
+facts and the agent emits them. Core-promotion candidates (none promoted): (1) world identity +
+lineage fold — deficit: no content-addressed world notion; evidence: used by cleanup, search and
+attention journeys; before promotion: a second app and a provider-owned manifest contract; (2)
+around-mediation with trusted-subchain — deficit: Cognate policy cannot ask "what would trusted
+policy alone have done"; evidence: Sentinel, RiskPreflight, LiveVerify, toy mod; before promotion:
+a Component/fiber-lifetime binding instead of the `effects` shim; (3) closed Surface grammar —
+deficit: no governed representation capability; evidence: preflight, timeline, compare, ask in two
+surfaces; before promotion: a second renderer.
