@@ -5,6 +5,18 @@ execution and approvals: configure a model, choose a workspace, run a session, w
 the agent read/edit/run inside the workspace, and gate a privileged escalation behind a human
 decision. Model: `.sea/interaction/`. Method: `.agents/skills/building-with-cognate/SKILL.md`.
 
+## Cognitive navigation (proof, 2026-10-03)
+
+The console can hold a **Case** around a human's desired difference: a settled world, a frozen
+criterion, candidate worlds forked into disposable execution worlds, mediated consequential
+operations (Sentinel over RiskPreflight over lower-trust mods), verified candidates, and a
+human-only settlement. Everything shown in the Cognitive Frame is derived server-side from durable
+events (`case.derive`); the agent's narrative never authors it. See `DEVIATIONS.md` ("Cognitive-
+navigation proof") for the mechanism table, state classification and limits, and
+`.agents/specs/cybernetic-navigation-proof.md` for the spec. Journeys: `J-COG-cleanup`,
+`J-COG-attention`, `J-COG-search`, `J-COG-liveverify`, `J-COG-realitytrace`,
+`E2E-cognitive-console` (browser), plus unit suites `cognitive-semantics` and `cognitive-focus`.
+
 ## Tool loop and approvals (T7-T8)
 
 `agent.coding` (`src/agents/agentCoding.ts`) runs a deterministic model/tool loop: `model.generate`

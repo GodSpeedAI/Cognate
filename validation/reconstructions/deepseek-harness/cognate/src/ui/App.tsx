@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import type { Json } from "@cognate/events";
 import { useCognate, useContinuations, useProjection } from "@cognate/react";
 import { renderMarkdown } from "./markdown.ts";
+import { CognitiveFrame, SurfaceView } from "./CognitiveFrame.tsx";
 import type { TraceRow, TraceRequest, TraceTool, TraceTurn } from "../projections/sessionTrace.ts";
 import { TOOL_DEFS } from "../agents/agentCoding.ts";
 import {
@@ -139,7 +140,7 @@ interface ToolEntry {
   readonly status: "running" | "success" | "failed";
   readonly result?: unknown;
   readonly error?: string;
-  readonly approval?: { readonly status: "pending" | "approved" | "denied"; readonly permission?: string; readonly justification?: string };
+  readonly approval?: { readonly status: "pending" | "approved" | "denied"; readonly permission?: string; readonly justification?: string; readonly surface?: unknown };
 }
 
 interface PlanTodo {
@@ -1865,10 +1866,10 @@ function useToolTimeline(runId: string | undefined): readonly ToolEntry[] {
           flush();
         }
       } else if (event.eventType === "tool.approval.requested") {
-        const p = event.payload as { readonly toolCallId: string; readonly permission?: string; readonly justification?: string };
+        const p = event.payload as { readonly toolCallId: string; readonly permission?: string; readonly justification?: string; readonly surface?: unknown };
         const prev = byId.get(p.toolCallId);
         if (prev) {
-          byId.set(p.toolCallId, { ...prev, approval: { status: "pending", permission: p.permission, justification: p.justification } });
+          byId.set(p.toolCallId, { ...prev, approval: { status: "pending", permission: p.permission, justification: p.justification, surface: p.surface } });
           flush();
         }
       } else if (event.eventType === "tool.approval.decided") {
@@ -2009,7 +2010,11 @@ function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly 
         <span className="approval-waiting">Waiting for approval</span>
       </div>
       <div role="group" aria-label="Approval details" className="approval-details">
-        Allow this operation with {entry.approval?.permission} permissions: {entry.approval?.justification}.
+        {entry.approval?.surface ? (
+          <SurfaceView surface={entry.approval.surface} />
+        ) : (
+          <>Allow this operation with {entry.approval?.permission} permissions: {entry.approval?.justification}.</>
+        )}
       </div>
       <div className="approval-actions">
         <button type="button" className="approval-btn approval-reject" onClick={() => onDecide(false)}>
@@ -3453,6 +3458,8 @@ export function App() {
   const sessions = useSessions();
   const modelConfig = useModelConfig();
   const currentWorkspaceId = useCurrentWorkspaceId();
+  // The open Case (if any) rides on each run so the agent gets the Case-scoped tools and mediation context.
+  const activeCaseId = useProjection("cognitive")?.find((r) => r.key === "activeCase")?.value as string | undefined;
   // Usage pass U2: every General setting resolves from the durable `settings` row (one merged
   // "current" row folded from `settings.changed` events); the concrete theme follows the
   // `appearance` setting (light/dark/system — system tracks the OS scheme live).
@@ -3746,12 +3753,12 @@ export function App() {
       runStartedAtRef.current = Date.now();
       const view = await client.startRun(
         "agent.coding",
-        { sessionId, workspaceId: currentWorkspaceId, message, mode, preset } as unknown as Json,
+        { sessionId, workspaceId: currentWorkspaceId, message, mode, preset, ...(activeCaseId ? { caseId: activeCaseId } : {}) } as unknown as Json,
         { idempotencyKey: crypto.randomUUID(), correlationId: `session:${sessionId}` },
       );
       setActiveRunId(view.runId);
     },
-    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on, accessModeOverrides, pendingAccessMode, settings.permission, presetOverrides, settings.preset],
+    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on, accessModeOverrides, pendingAccessMode, settings.permission, presetOverrides, settings.preset, activeCaseId],
   );
 
   const stop = useCallback(async () => {
@@ -4230,7 +4237,7 @@ export function App() {
       ) : traceDetail ? (
         <TraceDetailsPanel trace={trace} detail={traceDetail} onClose={() => setTraceDetail(undefined)} />
       ) : (
-        openChildRow && <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} />
+        openChildRow ? <RightPanel row={openChildRow} onClose={() => setOpenChildToolCallId(undefined)} /> : <CognitiveFrame awaitingDecision={Boolean(pendingApproval)} />
       )}
       {showSettings && <SettingsModels onClose={() => setShowSettings(false)} settings={settings} onOpenShortcuts={() => setShortcutsOpen(true)} />}
       {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}

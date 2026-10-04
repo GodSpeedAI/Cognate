@@ -25,7 +25,12 @@ import type { SxrWorkflow } from "@cognate/realitytrace";
 /** The events worth an evidence record: a step's start, completion, failure, the turn's final
  *  answer, and a failed run. Kept deliberately small — every observation is an SXR ingest
  *  subprocess; the tool-call/failure family is what the inspector enriches. */
-const OBSERVED_EVENT_TYPES = new Set(["tool.call.started", "tool.call.completed", "tool.call.failed", "message.completed", "run.failed"]);
+const OBSERVED_EVENT_TYPES = new Set([
+  "tool.call.started", "tool.call.completed", "tool.call.failed", "message.completed", "run.failed",
+  // Cognitive-navigation evidence that affects settlement rides the same outbox (no second evidence system).
+  "verification.observed", "world.baseline.frozen", "world.candidate.frozen", "world.candidate.rejected", "world.settled",
+  "sentinel.finding", "experiment.round.completed", "method.recommended", "method.accepted",
+]);
 
 /** Which capability an observation is about — `tool.<name>` for tool events (payload.tool), else
  *  omitted (the turn-level events are app events, not capability invocations). */
