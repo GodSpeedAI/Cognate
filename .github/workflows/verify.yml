@@ -46,7 +46,9 @@ jobs:
         run: |
           bun install --frozen-lockfile
           for d in compatibility/phase0/*/; do
-            if [ -f "$d/package.json" ]; then (cd "$d" && bun install --frozen-lockfile); fi
+            # The compatibility probes pin third-party packages; a stale lockfile there is
+            # not a regression in this repo, so they install unfrozen.
+            if [ -f "$d/package.json" ]; then (cd "$d" && bun install); fi
           done
       - name: Install the Playwright browser
         run: bunx playwright install --with-deps chromium
