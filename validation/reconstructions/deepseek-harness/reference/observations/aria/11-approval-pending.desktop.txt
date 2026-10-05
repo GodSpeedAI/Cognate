@@ -1,0 +1,34 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools" [expanded]
+  - treeitem "Waiting for approval [[scenario:approval]] run something risk" [selected]
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:approval]] run something risk"
+  - text: PTC mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: "[[scenario:approval]] run something risky 00:22"
+- button "Copy"
+- status: Deep diving...
+- button "Deep diving for 2s" [disabled]
+- button "Running code · Clear stale scratch cache outside the workspace"
+- text: Waiting for approval
+- group "Approval details": "Allow this operation with workspace-write permissions: Need to remove a stale cache directory outside the default workspace sandbox."
+- button "Reject"
+- button "Allow once"

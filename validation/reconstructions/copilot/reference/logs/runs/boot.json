@@ -1,0 +1,88 @@
+{
+ "steps": {
+  "mock": {
+   "up": true,
+   "status": 200,
+   "tries": 1
+  },
+  "injector": true,
+  "agent": {
+   "up": true,
+   "status": 200,
+   "tries": 2
+  },
+  "uiAttempt": {
+   "attempt": 1,
+   "up": true,
+   "status": 200,
+   "tries": 7,
+   "cssBroken": false
+  },
+  "ui": {
+   "up": true,
+   "status": 200,
+   "tries": 7,
+   "cssBroken": false,
+   "attempts": 1
+  }
+ },
+ "portsBefore": {},
+ "down": {
+  "killed": [],
+  "foreignListeners": {}
+ },
+ "ownership": {
+  "ui": {
+   "port": 3000,
+   "listening": true,
+   "owners": [
+    {
+     "pid": 14341,
+     "cwd": ".tmp/ref/copilotkit/examples/integrations/langgraph-js",
+     "origin": "reference"
+    }
+   ],
+   "allReferenceOrSidecar": true,
+   "referenceBacked": true
+  },
+  "agent": {
+   "port": 8123,
+   "listening": true,
+   "owners": [
+    {
+     "pid": 14034,
+     "cwd": ".tmp/ref/copilotkit/examples/integrations/langgraph-js/agent",
+     "origin": "reference"
+    }
+   ],
+   "allReferenceOrSidecar": true,
+   "referenceBacked": true
+  },
+  "mock": {
+   "port": 4012,
+   "listening": true,
+   "owners": [
+    {
+     "pid": 13740,
+     "cwd": ".tmp/ref/copilotkit",
+     "origin": "reference"
+    }
+   ],
+   "allReferenceOrSidecar": true,
+   "referenceBacked": true
+  },
+  "injector": {
+   "port": 13361,
+   "listening": true,
+   "owners": [
+    {
+     "pid": 13814,
+     "cwd": "validation/reconstructions/copilot/reference",
+     "origin": "harness-sidecar"
+    }
+   ],
+   "allReferenceOrSidecar": true,
+   "referenceBacked": false
+  }
+ }
+}

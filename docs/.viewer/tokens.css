@@ -1,0 +1,166 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Long Document · theme: Cobalt
+ * tone: technical · anchor hue: 256 (electric cobalt) · paper band: cool light
+ * display: grotesk-sans · nav: N3 side rail · footer: none (application shell)
+ * enrichment: none — typography only; the artifacts are the imagery
+ *
+ * Locked tokens. Every colour and face in viewer.css is referenced by name from here;
+ * a value that is not a token does not belong in the surface. Fonts are self-hosted from
+ * pinned local packages, so the viewer never reaches the network to render.
+ */
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* Cobalt — cool engineered paper, never #fff; cool charcoal ink, never #000 */
+  --color-paper: oklch(98.5% 0.004 250);
+  --color-paper-2: oklch(96.8% 0.005 250);
+  --color-paper-3: oklch(94.6% 0.006 250);
+  --color-rule: oklch(90.5% 0.008 250);
+  --color-rule-2: oklch(83% 0.01 252);
+  --color-ink: oklch(24% 0.02 258);
+  --color-ink-2: oklch(34% 0.018 257);
+  --color-muted: oklch(50% 0.014 255);
+  --color-faint: oklch(63% 0.012 252);
+  --color-accent: oklch(52% 0.2 256);
+  --color-accent-ink: oklch(99% 0.004 250);
+  --color-accent-soft: oklch(93% 0.032 256);
+  --color-focus: oklch(58% 0.2 256);
+  --color-graphite: oklch(23% 0.02 258);
+  --color-graphite-rule: oklch(32% 0.016 258);
+  --color-graphite-ink: oklch(91% 0.008 250);
+  --color-graphite-muted: oklch(72% 0.012 252);
+  --color-rail-overlay: oklch(24% 0.02 258 / 0.22);
+  --color-dialog-overlay: oklch(24% 0.02 258 / 0.28);
+  --color-added: oklch(94.5% 0.045 152);
+  --color-added-rule: oklch(72% 0.09 152);
+  --color-removed: oklch(94.5% 0.04 25);
+  --color-removed-rule: oklch(72% 0.1 25);
+  --color-warn: oklch(58% 0.13 62);
+  --color-warn-soft: oklch(95% 0.03 75);
+  --color-danger: oklch(52% 0.18 25);
+  --color-danger-soft: oklch(95% 0.03 25);
+  --color-clean: oklch(56% 0.12 152);
+
+  /* 2 + 1 faces: display, body, and one outlier register (code, paths, hashes, labels). */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.4375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.125rem;
+  --text-display: clamp(1.75rem, 1.2vw + 1.4rem, 2.25rem);
+
+  --leading-display: 1.12;
+  --leading-body: 1.62;
+  --leading-ui: 1.35;
+  --measure: 68ch;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  --radius-control: 6px;
+  --radius-surface: 10px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --rail-docs: 17rem;
+  --rail-context: 20rem;
+  --topbar-block: 3.25rem;
+  --modebar-block: 3.25rem;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  --shadow-whisper: 0 1px 2px oklch(24% 0.02 258 / 0.05);
+
+  /* Syntax highlighting stays inside the palette; never a rainbow. */
+  --color-tok-key: oklch(48% 0.15 296);
+  --color-tok-string: oklch(45% 0.1 152);
+  --color-tok-comment: oklch(60% 0.02 252);
+  --color-tok-number: oklch(50% 0.12 40);
+  --color-tok-name: oklch(34% 0.018 257);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 150ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+  }
+}

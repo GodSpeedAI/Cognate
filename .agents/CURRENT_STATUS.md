@@ -1,13 +1,22 @@
 # Current status
 
-**Status revision:** 8
+**Status revision:** 36
 
-**Stage:** Build v0 complete: 78 requirements implemented; DEBT-003 closed on DomainForge 0.18.1
+**Stage:** CEP/world_ref migration Stage 8: execution, RealityTrace, evidence, settlement
 
-**Summary:** Moved the DomainForge pin to @godspeedai/domainforge@0.18.1, which exposes all nine new Graph accessors; regenerated the golden projection (17 objects, External the only unmapped kind) with no adapter logic change; closed DEBT-003 with evidence. just verify and just gates pass 78/78; full suite 512 pass.
+**Summary:** A governed run's execution trace, evidence packet and settlement now cross to SEA-Forge as CEP envelopes. Evidence is an append-only ledger fact; settlement criteria are bound into the allow decision by hash; only an allow operation can settle. RealityTrace's own settlement stays a separate fact from SEA-Forge's.
 
-**Verified:** just verify 2026-09-26: 78 implemented, typecheck 0 errors, 78/78 gates; just gates 2026-09-26: 78/78; bun run test: 512 pass, 0 fail; CG-SEM-001 gate: 6 pass, 113 expects; accessor probe post-install: all nine new accessors are functions at 0.18.1; earlier: just verify 2026-09-25: 78 implemented, typecheck 0 errors, 78/78 gates; just gates 2026-09-25: 78/78; bun run test: 510 pass, 0 fail; 200 concurrent startRun: 0 failures on memory and SQLite stores (orchestrator repro that caught and verified the fix of a subagent contention regression); EXPLAIN QUERY PLAN: thread lookups use records_runs_correlation_idx; earlier: just verify 2026-09-25: substrate check (77 implemented, 0 blocked), typecheck (0 errors), 77/77 implemented gates; just gates 2026-09-25: 77/77 gates pass, including the §36 Playwright journey with RealityTrace v0.3.0; RealityTrace PR #2 (--extensions, envelope builder fix, release workflow publish fix): cargo fmt/clippy/test pass, CI pass; released as realitytrace-v0.3.0; AK-006: live write/read round-trip and duplicate delivery at the same ledger position (11 pass); CG-RT-002 adapter readCorrelation (16 pass); AK-008: UCB1 ranker contract written first (failed 2/6 on the greedy ranker), then 6/6 with capabilities and containment tests (14 pass). Evidence: [DEBT-003 close](evidence/2026-09-26-debt-003-close.md), [shared state](evidence/2026-09-25-shared-state.md), [RealityTrace correlation](evidence/2026-09-25-realitytrace-correlation.md), [UCB1 ranker](evidence/2026-09-25-ucb1-ranker.md), [audit closure](evidence/2026-09-25-audit-closure.md), [releases](evidence/2026-09-25-releases.md), [profiles, CLI, examples, E2E](evidence/m9-profiles.md), [wire and client](evidence/m8-wire-client.md), [independent audit](reports/independent-audit-2026-09-25.md).
+**Verified:**
+- bun run typecheck clean; just verify 78/78 on 3 of 3 serial runs
+- just sea-forge-live: 22 pass, 0 fail, including the end-to-end governed-settlement test against a real sxr verify
+- sea-rs just test 1170 passed, 0 failed at the Stage 8 commit
 
-**Limits:** Connect unary + server streaming only (DEBT-004); single SQLite writer (DEBT-011); erasure copies remain in continuation records and recall steps (DEBT-014); polling runtime loop (DEBT-015); Packages unpublished (DEBT-016); Bun 1.4.0 toMatchObject mutation (DEBT-017); intermittent RVF FsyncFailed retried in the E2E app (DEBT-018); The ledger is a candidate: no contract is frozen; crates.io upload of realitytrace 0.3.0 hit the new-crate rate limit; the git-tag install Cognate uses is unaffected. See [the debt register](DEBT.md).
+**Limits:**
+- Only sxr verify records an exit code; other evidence sources have no derived direction
+- AK-006 had one unexplained gate failure that did not reproduce
+- The full bun test suite fails 68 to 78 tests in this environment; cause not investigated
 
-**Next:** Operator decision: freeze the ledger (OPEN_QUESTIONS 3) or revise it; re-run the RealityTrace publish job after the rate limit clears; then release process (DEBT-016).
+**Next:** Stage 9: remaining boundaries (Context Kernel, Gauntlet, SWE_SEED, GodSpeed Agent); Cognate itself is unchanged by Stage 9
+
+**Evidence:**
+- .agents/evidence/2026-10-05-stage8-settlement.md

@@ -1,11 +1,11 @@
 // Durable run execution by deterministic replay (ADR-0011, spec §11, §12).
 // Each execution re-reads the run stream, re-enters the agent from the top, and answers every
 // RunContext call that already has a recorded result from the stream instead of repeating it.
-import { ConcurrencyError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
 import type { Principal, SemanticRef } from "@cognate/kernel-api";
-import { type ArtifactInput, ContinuationClosedError, foldState, InvocationFailedError, type RunContext, type WaitSpec } from "@cognate/runtime-api";
+import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@cognate/runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
-import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, toJson } from "./fold.ts";
+import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 /** Internal control flow: the execution stops here (suspended, cancelled, or lost a write race). */
 class Halt {
@@ -90,13 +90,31 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     actor: { id: view.startedBy, kind: (field<string>(meta(started), "startedByKind") ?? "user") as Principal["kind"] },
     signal: controller.signal,
 
+    // D1: fn may itself call emit/invoke/artifact. Those calls draw ids from the shared `counters`
+    // object; when a step is replayed, fn is never re-run, so the drift it originally caused must be
+    // replayed onto `counters` too, or every id born after this step collides with an id already
+    // recorded (and is silently dropped — see emit()). We record the net drift in the completion
+    // event and, on replay, advance `counters` by it before returning the cached result.
+    // Assumption: agent code drives one step/emit/invoke/artifact call at a time (spec's sequential
+    // execution model) — concurrent sibling steps racing on the same shared counters can misattribute
+    // drift between them and are not supported.
     async step<T extends Json>(id: string, fn: () => T | Promise<T>): Promise<T> {
       guard();
       const stepId = `step:${id}`;
       const done = find(stepId);
-      if (done) return field(done.payload, "result") as T;
+      if (done) {
+        const drift = field<{ readonly emit?: number; readonly invoke?: number; readonly artifact?: number }>(meta(done), "counters");
+        if (drift) {
+          counters.emit += drift.emit ?? 0;
+          counters.invoke += drift.invoke ?? 0;
+          counters.artifact += drift.artifact ?? 0;
+        }
+        return field(done.payload, "result") as T;
+      }
+      const before = { ...counters };
       const result = toJson(await fn());
-      await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId } });
+      const drift = { emit: counters.emit - before.emit, invoke: counters.invoke - before.invoke, artifact: counters.artifact - before.artifact };
+      await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId, counters: drift } });
       return result as T;
     },
 
@@ -111,16 +129,57 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     async invoke(capability: string, input: Json, options?: { readonly version?: string }): Promise<Json> {
       guard();
       const stepId = `invoke:${++counters.invoke}`;
-      let done = find(stepId);
+      // G1: progress events share this stepId (so a replayed invoke advances past them like any other
+      // recorded event) but are a distinct event type, so the completion check must name it explicitly.
+      let done = find(stepId, "run.invocation");
       if (!done) {
-        const outcome = await core.invoker.invoke({
-          capability,
-          ...(options?.version ? { version: options.version } : {}),
-          input: toJson(input),
-          tenant: view.tenant,
-          context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal },
-        });
+        // A crash between a progress call and the final run.invocation event leaves partial progress
+        // recorded for this stepId with no completion; re-executing calls the handler again under a
+        // fresh attempt number so consumers can discard the earlier partial attempt.
+        const priorAttempts = (recorded.get(stepId) ?? [])
+          .filter((e) => e.eventType === "run.invocation.progress")
+          .map((e) => field<number>(meta(e), "attempt") ?? 0);
+        const attempt = priorAttempts.length ? Math.max(...priorAttempts) + 1 : 0;
+        let seq = 0;
+        const progress = async (payload: Json): Promise<void> => {
+          guard();
+          await append({ eventType: "run.invocation.progress", payload: toJson(payload), metadata: { stepId, capability, attempt, seq: seq++ } });
+        };
+        const call = (approval?: { readonly approvalId: string }) =>
+          core.invoker.invoke({
+            capability,
+            ...(options?.version ? { version: options.version } : {}),
+            input: toJson(input),
+            tenant: view.tenant,
+            ...(approval ? { approval } : {}),
+            context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal, progress },
+          });
+        // Governance escalation (migration Stage 7). The decision to wait is recorded once, so a replay of
+        // this step reuses it rather than asking the authority again (which would open a second approval).
+        // The wait is a durable continuation; whoever resumes it, the resume only triggers a *revalidation*
+        // with the authority, which alone decides whether the call may proceed.
+        const gateStep = `${stepId}:governance`;
+        const recordedGate = find(gateStep, "run.governance.escalated");
+        let approvalId = recordedGate ? field<string>(meta(recordedGate), "approvalId") : undefined;
+        let expiresAt = recordedGate ? field<number>(meta(recordedGate), "expiresAt") : undefined;
+        let outcome = approvalId ? undefined : await call();
         guard();
+        if (outcome?.escalation) {
+          approvalId = outcome.escalation.approvalId;
+          expiresAt = outcome.escalation.expiresAt;
+          await append({ eventType: "run.governance.escalated", payload: { capability, approvalId }, metadata: { stepId: gateStep, capability, approvalId, expiresAt: expiresAt ?? null } });
+        }
+        if (approvalId) {
+          await context.waitFor(`governance:${stepId}`, {
+            type: "governance-approval",
+            condition: { kind: "governance_approval", approvalId },
+            payload: { capability, approvalId },
+            ...(typeof expiresAt === "number" ? { expiresAt } : {}),
+          });
+          outcome = await call({ approvalId });
+          guard();
+        }
+        if (!outcome) throw new Error("invoke: no outcome");
         done = await append({
           eventType: "run.invocation",
           // Input and result live in the erasable payload (spec §32); routing facts stay in metadata.
@@ -236,6 +295,106 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId } });
       return result;
     },
+
+    async sharedState(id: string): Promise<Json> {
+      guard();
+      const caller = { tenant: view.tenant, actor: context.actor };
+      const decision = await core.governor.govern({ kind: "action", caller, action: "thread.state.read", resource: view.correlationId });
+      if (!decision.allow) throw new Error(`thread state read denied: ${decision.reason}`);
+      return context.step(`shared-state:${id}`, async () => foldState(await core.store.readStream(threadStateStream(view.tenant, view.correlationId))));
+    },
+
+    async updateSharedState(id: string, update): Promise<{ readonly state: Json; readonly version: number }> {
+      guard();
+      const caller = { tenant: view.tenant, actor: context.actor };
+      const decision = await core.governor.govern({ kind: "action", caller, action: "thread.state.update", resource: view.correlationId });
+      if (!decision.allow) throw new Error(`thread state update denied: ${decision.reason}`);
+      return context.step(`shared-state.update:${id}`, async () => {
+        const streamId = threadStateStream(view.tenant, view.correlationId);
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const events = await core.store.readStream(streamId);
+          let state: Json;
+          try {
+            state = applyStateUpdate(foldState(events), update);
+          } catch (error) {
+            if (error instanceof StatePatchError) throw new Error(`invalid thread state update: ${error.message}`);
+            throw error;
+          }
+          try {
+            const outcome = await core.store.commit({
+              idempotency: {
+                scope: `${view.tenant}:${runId}:thread.state.update`,
+                key: id,
+                fingerprint: fingerprint({ threadId: view.correlationId, update: toJson(update) }),
+              },
+              appends: [{
+                streamId,
+                expectedVersion: events.length,
+                events: [{
+                  eventType: "state.changed",
+                  schemaVersion: 1,
+                  occurredAt: new Date().toISOString(),
+                  tenant: view.tenant,
+                  correlationId: view.correlationId,
+                  causationId: events.at(-1)?.eventId ?? lastEventId,
+                  runId,
+                  scopeId: started.scopeId,
+                  payload: toJson(update),
+                  metadata: { scope: "thread", threadId: view.correlationId, source: "agent", actor: context.actor.id, stepId: `shared-state.update:${id}` },
+                }],
+              }],
+              result: { state, version: events.length + 1 },
+            });
+            return outcome.result as { readonly state: Json; readonly version: number };
+          } catch (error) {
+            if (error instanceof ConcurrencyError) continue;
+            if (error instanceof IdempotencyMismatchError) throw new Error(`thread state update ${id} was replayed with different input`);
+            throw error;
+          }
+        }
+        throw new Error(`too much contention updating thread state for ${view.correlationId}`);
+      });
+    },
+
+    async remoteOffers(id: string): Promise<readonly RemoteCapabilityOffer[]> {
+      guard();
+      const stepId = `remote-offers:${id}`;
+      const done = find(stepId);
+      if (done) return (field(done.payload, "result") as unknown as readonly RemoteCapabilityOffer[] | null) ?? [];
+      const caller = { tenant: view.tenant, actor: context.actor };
+      const listed = core.remoteOffers.list(caller, view.agent);
+      const allowed = await Promise.all(listed.map(async (offer) => (await core.governor.govern({ kind: "action", action: "remote.offer.invoke", caller, resource: offer.id })).allow));
+      const result = listed.filter((_, index) => allowed[index]);
+      await append({ eventType: "run.remote_offers", payload: { result: toJson(result as unknown as Json) }, metadata: { stepId } });
+      return result;
+    },
+
+    async invokeRemoteOffer(id: string, offerId: string, input: Json, options: { readonly expiresAt?: number } = {}): Promise<Json> {
+      guard();
+      const waitStep = `wait:remote:${id}`;
+      // Availability is checked only before the durable selection. A replay resumes the same
+      // continuation even after a browser has disconnected or its offer has expired.
+      let offer: RemoteCapabilityOffer | undefined;
+      if (!find(waitStep, "run.waiting")) {
+        offer = core.remoteOffers.take({ tenant: view.tenant, actor: context.actor }, view.agent, offerId);
+        if (!offer) throw new FrontendCapabilityError(`remote offer ${offerId} is unavailable`);
+        const decision = await core.governor.govern({ kind: "action", caller: { tenant: view.tenant, actor: context.actor }, action: "remote.offer.invoke", resource: offer.id });
+        if (!decision.allow) throw new FrontendCapabilityError(`remote offer ${offerId} denied: ${decision.reason}`);
+      }
+      const selected = offer;
+      // On a replay this condition is ignored by waitFor because its recorded wait controls the
+      // durable result; use a neutral shape solely to retain the original method contract.
+      const result = (await context.waitFor(`remote:${id}`, {
+        type: `remote:${selected?.contract.id ?? "selected"}`,
+        condition: selected
+          ? { kind: "frontend_capability", capability: selected.contract.id, offerId: selected.id, leaseId: selected.leaseId, contractVersion: selected.contract.version }
+          : { kind: "frontend_capability" },
+        payload: toJson(input),
+        ...(options.expiresAt === undefined ? {} : { expiresAt: options.expiresAt }),
+      })) as { ok?: boolean; value?: Json; error?: string } | null;
+      if (!result || result.ok !== true) throw new FrontendCapabilityError(`remote offer ${offerId} failed: ${result?.error ?? "no result"}`);
+      return result.value ?? null;
+    },
   };
 
   try {
@@ -261,4 +420,3 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     if (core.controllers.get(runId) === controller) core.controllers.delete(runId);
   }
 }
-

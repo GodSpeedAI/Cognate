@@ -6,6 +6,11 @@
 // Required behaviours (§19 V0 golden fixtures): load, parse+typed collections
 // with stable IDs, determinism across two parses, rename => new identity,
 // missing reference => typed diagnostic, namespace change => new identity.
+//
+// 2026-10-01: fixture now pins @godspeedai/domainforge@0.18.2 (bun.lock
+// regenerated via scoped `bun install` in this directory). All assertions
+// below still characterize 0.16.0 behaviour accurately — no changes were
+// needed; the full suite passes unmodified against 0.18.2 (verified 3x).
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";

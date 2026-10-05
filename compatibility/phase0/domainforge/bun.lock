@@ -1,15 +1,15 @@
 {
-  "lockfileVersion": 2,
+  "lockfileVersion": 1,
   "configVersion": 1,
   "workspaces": {
     "": {
       "name": "cognate-phase0-domainforge",
       "dependencies": {
-        "@godspeedai/domainforge": "0.17.0",
+        "@godspeedai/domainforge": "0.18.2",
       },
     },
   },
   "packages": {
-    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.17.0", "", {}, "sha512-k2VhXy2BojdTae7/WuIlos1R7tjZz/+IvJG9ucNlfUPoOky7WwEJIJgCfc5cu+nydl8pinSCcgT0OpwmDV1bBA=="],
+    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.18.2", "", {}, "sha512-bpIBwHrhhYCXe6hZbcEoYMZcWSshqFV3yksuvPcHDKW0DnrQ0BhxByEcSn/misS0EzTLyPkZ9uG4dJcWJDUPgw=="],
   }
 }

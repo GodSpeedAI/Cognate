@@ -1,0 +1,52 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools2" [expanded]
+  - treeitem "[[scenario:delegate]] delegate this now" [selected]
+  - treeitem "[[scenario:plan]] make a plan now"
+  - treeitem "Waiting for approval [[scenario:approval]] run something risk"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:delegate]] delegate this"
+  - button "1 subagent" [expanded]
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: "[[scenario:delegate]] delegate this 00:25"
+- button "Copy"
+- status: Worked
+- button "Took 3s"
+- paragraph: "Tool result: started subagent f9b067fd-4449-46a9-a53e-91a48c56578c"
+- button "Copy"
+- button "Good response"
+- button "Bad response"
+- button "Branch into a new conversation"
+- button "Usage 0 tok"
+- text: 00:25
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 3 steps · 0 tok/s": 1 turns 3 steps0 tok/s
+- button "0% of context used": 0%
+- tree "Subagent sessions":
+  - treeitem "Summarize project status Summarize the current state of · continuable · completed 0 tok · 0s" [level=1]:
+    - text: Summarize project status Summarize the current state of · continuable · completed 0 tok 0s
+    - button "Open Summarize project status in sidebar"

@@ -1,0 +1,752 @@
+{
+  "config": {
+    "argv": [
+      "/home/sprime01/.cache/nub/node/26.8.2/bin/node",
+      "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/node_modules/.bin/playwright",
+      "test",
+      "journeys/",
+      "--config=playwright.config.ts",
+      "--reporter=json",
+      "--workers=1",
+      "--retries=2",
+      "--timeout=180000"
+    ],
+    "configFile": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/playwright.config.ts",
+    "rootDir": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "journeys/A-first-use.spec.ts",
+      "file": "journeys/A-first-use.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey A - first use",
+          "file": "journeys/A-first-use.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "launch shows initial UI with no workspace yet, then model config + workspace selection enable the composer",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5271,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:53:41.659Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-initial-ui",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/01-initial-ui-d0aa3519c5215b2d94faf2458a665c77a2ae4711.png"
+                        },
+                        {
+                          "name": "02-no-workspace-shell",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/02-no-workspace-shell-97ad33e50b3c51472275f5976f7f95c0deb8f2ad.png"
+                        },
+                        {
+                          "name": "03-model-configured",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/03-model-configured-dd5ef2b9fe9be1d6e7dc4739605717e49ea58e1d.png"
+                        },
+                        {
+                          "name": "04-workspace-chosen",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-A-first-use-Journ-fed67-lection-enable-the-composer/attachments/04-workspace-chosen-f20d90a9fd24c3cb677dbc3bc3f7fbb337de23a4.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0051d8eadacaa2f4e200-cab3bdff42e33d750d88",
+              "file": "journeys/A-first-use.spec.ts",
+              "line": 17,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/B-basic-session.spec.ts",
+      "file": "journeys/B-basic-session.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey B - basic session",
+          "file": "journeys/B-basic-session.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "send a deterministic prompt, see it stream to completion, then find it in history and switch back to it",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7036,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:53:48.460Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-sent",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/01-sent-88c1cb44c9f831a61045a56847d661e58ea10833.png"
+                        },
+                        {
+                          "name": "02-complete",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/02-complete-6febabb698286422c6e3564f07e3e91f396adcf5.png"
+                        },
+                        {
+                          "name": "03-second-session",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/03-second-session-c78946e5e2ac6da223552b2dcf162dcfd75e580a.png"
+                        },
+                        {
+                          "name": "04-switched-back",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-B-basic-session-J-8f5e2-story-and-switch-back-to-it/attachments/04-switched-back-7114f0b9aef89ef4eb9833572f8bf4cc45e5f6a8.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b139ff2bcb1d075284b6-faed5959d3b634390091",
+              "file": "journeys/B-basic-session.spec.ts",
+              "line": 18,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/C-tool-execution.spec.ts",
+      "file": "journeys/C-tool-execution.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey C - tool execution",
+          "file": "journeys/C-tool-execution.spec.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a multi-step coding task shows tool activity, produces a final answer, and actually mutates the workspace file on disk",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [
+                    {
+                      "type": "tool-activity-observed",
+                      "description": "false"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14068,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:53:55.512Z",
+                      "annotations": [
+                        {
+                          "type": "tool-activity-observed",
+                          "description": "false"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "01-tool-activity",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-C-tool-execution--3050d--the-workspace-file-on-disk/attachments/01-tool-activity-1c52bfa6f081bb5b353f40be2fc8d68885601aec.png"
+                        },
+                        {
+                          "name": "02-final-answer",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-C-tool-execution--3050d--the-workspace-file-on-disk/attachments/02-final-answer-653075f3663059aeddb88a151375d1bd9f954b9e.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "83293fdb4358f42d423a-b887efde7c81cdcf846e",
+              "file": "journeys/C-tool-execution.spec.ts",
+              "line": 23,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/D-approval.spec.ts",
+      "file": "journeys/D-approval.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey D - approval",
+          "file": "journeys/D-approval.spec.ts",
+          "line": 21,
+          "column": 6,
+          "specs": [
+            {
+              "title": "allow branch: approving a pending approval lets the run resume and complete",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [
+                    {
+                      "type": "scratch-cache-deleted",
+                      "description": "true"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9887,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:09.597Z",
+                      "annotations": [
+                        {
+                          "type": "scratch-cache-deleted",
+                          "description": "true"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "01-pending",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-D-approval-Journe-26dfd-the-run-resume-and-complete/attachments/01-pending-b10f990eeac59a2d7a1679e6b0f74f565e458700.png"
+                        },
+                        {
+                          "name": "02-approved-completed",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-D-approval-Journe-26dfd-the-run-resume-and-complete/attachments/02-approved-completed-732de617e5023d9dbaaf16f2d5b20fc490955a63.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "fb13459ecf7de800d022-05207dccba6a80789b8b",
+              "file": "journeys/D-approval.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "deny branch: denying a pending approval leaves the action un-executed and the workspace unchanged",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6363,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:19.491Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-pending",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-D-approval-Journe-376ed-and-the-workspace-unchanged/attachments/01-pending-2294f8c3b448ab4297054fb60a1ad69f028ecfd3.png"
+                        },
+                        {
+                          "name": "02-denied-completed",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-D-approval-Journe-376ed-and-the-workspace-unchanged/attachments/02-denied-completed-d0eff63c5d392240a0d3cee15efe797fbca025cb.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "fb13459ecf7de800d022-28668a7f61ce591b86db",
+              "file": "journeys/D-approval.spec.ts",
+              "line": 71,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/E-plan.spec.ts",
+      "file": "journeys/E-plan.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey E - plan",
+          "file": "journeys/E-plan.spec.ts",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a plan-mode task shows a plan review card and, once approved, a persisted to-dos state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6280,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:25.899Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-plan-review",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-E-plan-Journey-E--73d4f-ed-a-persisted-to-dos-state/attachments/01-plan-review-13f375eb515e1145ad00f0ec97fd85dac9b7a134.png"
+                        },
+                        {
+                          "name": "02-plan-completed",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-E-plan-Journey-E--73d4f-ed-a-persisted-to-dos-state/attachments/02-plan-completed-9fa6f6cda76c58e106fa003bcbdab1bc3a5a893d.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5f962577888fb5a12ac9-bc274bdda7482440a7a8",
+              "file": "journeys/E-plan.spec.ts",
+              "line": 24,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/F-delegation.spec.ts",
+      "file": "journeys/F-delegation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey F - delegation",
+          "file": "journeys/F-delegation.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "delegating a task shows the subagent as active, then completed, with the parent completing too",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5019,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:32.193Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-subagent-active",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-F-delegation-Jour-d1850-h-the-parent-completing-too/attachments/01-subagent-active-b1940da5b3b146a031766f1d85e3498c57360dae.png"
+                        },
+                        {
+                          "name": "02-parent-completed",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-F-delegation-Jour-d1850-h-the-parent-completing-too/attachments/02-parent-completed-fa3e1841c721d1a07ed0eaecf1ed4e4e724e7952.png"
+                        },
+                        {
+                          "name": "03-subagent-panel",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-F-delegation-Jour-d1850-h-the-parent-completing-too/attachments/03-subagent-panel-96b3ea57d90f5cc3b1d7bb4adb58cc6cf522c43b.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbc773fa06325fd34a3a-897563e824902d571764",
+              "file": "journeys/F-delegation.spec.ts",
+              "line": 26,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/G-persistence.spec.ts",
+      "file": "journeys/G-persistence.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey G - persistence",
+          "file": "journeys/G-persistence.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a completed multi-step session survives a real process kill + restart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7655,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:37.223Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-before-restart",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-G-persistence-Jou-1a2a8-a-real-process-kill-restart/attachments/01-before-restart-467736772f6a2a61d5665c3c3919da26693eda28.png"
+                        },
+                        {
+                          "name": "02-after-restart",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-G-persistence-Jou-1a2a8-a-real-process-kill-restart/attachments/02-after-restart-035e738cd66b553f5808fd503c18386e582a1e36.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "fe906b643fb63e6d10c9-48b1435d9097a06dc111",
+              "file": "journeys/G-persistence.spec.ts",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "documented difference: pending-approval survival across a full process restart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6954,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:44.887Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-pending-before-restart",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-G-persistence-Jou-a4aa7-ross-a-full-process-restart/attachments/01-pending-before-restart-4dd0473a632dfa2de3bf36c1af73a1aeda55d789.png"
+                        },
+                        {
+                          "name": "02-after-restart",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-G-persistence-Jou-a4aa7-ross-a-full-process-restart/attachments/02-after-restart-5e32ba8c047678fe8b5161b0d7587cd4e3a97b30.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "fe906b643fb63e6d10c9-c04c9b63ebbd59c3b9eb",
+              "file": "journeys/G-persistence.spec.ts",
+              "line": 59,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "journeys/H-cancellation.spec.ts",
+      "file": "journeys/H-cancellation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Journey H - cancellation and provider error",
+          "file": "journeys/H-cancellation.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "cancelling an in-flight run shows Stopped, keeps the partial reply, and a follow-up turn still works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4313,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:51.859Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-cancelled",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-H-cancellation-Jo-892e7--follow-up-turn-still-works/attachments/01-cancelled-abc9c6d5c278f6d91746fd754818aea881b9d19b.png"
+                        },
+                        {
+                          "name": "02-follow-up-completed",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-H-cancellation-Jo-892e7--follow-up-turn-still-works/attachments/02-follow-up-completed-2b5eb092fd91a6acf36f14b732c9caa824f953e0.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27546dcabeb74868d20d-627bb9a7c76ac1957784",
+              "file": "journeys/H-cancellation.spec.ts",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "a deterministic provider error triggers retries then a terminal failure, with a documented failure-code difference",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4460,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-27T18:54:56.184Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "01-retrying",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-H-cancellation-Jo-1edc0-ted-failure-code-difference/attachments/01-retrying-6c65bc8cb58d61c00222da6f587e300a1fa70fb6.png"
+                        },
+                        {
+                          "name": "02-terminal-failure",
+                          "contentType": "image/png",
+                          "path": "/home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/tests/test-results/journeys-H-cancellation-Jo-1edc0-ted-failure-code-difference/attachments/02-terminal-failure-6416859fbf7c5c0acf33793a3515d14237bc4b99.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27546dcabeb74868d20d-264c781b473436bec520",
+              "file": "journeys/H-cancellation.spec.ts",
+              "line": 51,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-27T18:53:41.133Z",
+    "duration": 79563.47899999999,
+    "expected": 11,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

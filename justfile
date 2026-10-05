@@ -5,6 +5,10 @@ setup:
     @bun --version
     @just --version
 
+# Launch the Artifact Viewer over the documentation tree (loopback only; Ctrl+C to stop)
+show-documents *args:
+    bun scripts/show-documents.ts {{args}}
+
 # Show the latest complete agent status without reading its history
 status:
     @tail -n 1 .agents/CURRENT_STATUS.yaml
@@ -34,6 +38,51 @@ gate id:
 gates:
     bun scripts/gate.ts --all
 
-# Install the pinned RealityTrace CLI release (v0.3.0, adds ingest --extensions) used by AK-006 and CG-RT-002 (no local checkout needed)
+# Install the pinned RealityTrace CLI from crates.io (0.3.0, adds ingest --extensions) used by AK-006 and CG-RT-002 (no local checkout needed)
 setup-realitytrace:
-    cargo install --git https://github.com/GodSpeedAI/RealityTrace --tag realitytrace-v0.3.0 realitytrace --locked --root .tmp/realitytrace
+    cargo install realitytrace --version 0.3.0 --locked --root .tmp/realitytrace
+
+# Build a user-space OpenSSH (sshd) into .tmp/openssh for the live remote-workspace gate (no root, no system install)
+setup-openssh:
+    bun scripts/setup-openssh.ts
+
+# Live gate: SSH and WSL execution-world providers and the full app against a REAL sshd and a REAL WSL distro (fails, never skips, without them)
+remote-workspaces-live:
+    bun scripts/remote-workspaces-live.ts
+
+# Live CEP authority loop: real sea-forge-server + DomainForge CLI + CEP validators. Fails, never skips.
+# Needs SEA_FORGE_SERVER_BIN (built in sea-rs: cargo build -p sea-forge-server), `domainforge` on PATH, CEP_REPO,
+# the pinned RealityTrace binary (`just setup-realitytrace`, or SXR_BIN) and cargo (its verifier runs `cargo test`).
+sea-forge-live:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fail() { echo "sea-forge-live: $1" >&2; exit 1; }
+    [ -n "${SEA_FORGE_SERVER_BIN:-}" ] && [ -x "$SEA_FORGE_SERVER_BIN" ] || fail "SEA_FORGE_SERVER_BIN must name an executable sea-forge-server"
+    [ -n "${CEP_REPO:-}" ] && [ -d "$CEP_REPO" ] || fail "CEP_REPO must name a canonical-evaluation-protocol checkout"
+    command -v domainforge >/dev/null || fail "the domainforge CLI must be on PATH"
+    command -v uv >/dev/null || fail "uv is required to run the CEP validators"
+    command -v cargo >/dev/null || fail "cargo is required: RealityTrace's verifier runs cargo test"
+    sxr_bin="${SXR_BIN:-.tmp/realitytrace/bin/realitytrace}"
+    [ -x "$sxr_bin" ] || fail "RealityTrace binary not found at $sxr_bin (run just setup-realitytrace, or set SXR_BIN)"
+    out=$(bun test packages/runtime-bun/test/sea-forge-live.test.ts packages/runtime-bun/test/sea-forge-authority.test.ts tests/integration/governed-settlement.live.test.ts 2>&1) && status=0 || status=$?
+    echo "$out" | tail -8
+    [ "$status" -eq 0 ] || fail "tests failed"
+    if echo "$out" | grep -Eq '^ *[1-9][0-9]* skip'; then fail "tests were skipped; a skip is not a pass"; fi
+
+# Launch the DeepSeek reconstruction harness (mock model on :4010, workspace, and Cognate Console on :3180)
+harness-up *args:
+    bun scripts/harness.ts up {{args}}
+
+# Tear down the running DeepSeek reconstruction harness
+harness-down *args:
+    bun scripts/harness.ts down {{args}}
+
+# Launch the reconstructed Cognate Copilot app (Cognate UI & Runtime on :3190, AG-UI on :3190/agui)
+copilot-up *args:
+    bun scripts/copilot.ts up {{args}}
+
+# Tear down the running reconstructed Cognate Copilot app
+copilot-down *args:
+    bun scripts/copilot.ts down {{args}}
+
+

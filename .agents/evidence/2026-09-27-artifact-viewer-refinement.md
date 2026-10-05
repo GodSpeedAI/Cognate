@@ -1,0 +1,9 @@
+# Artifact Viewer refinement evidence
+
+`just show-documents` launched a loopback viewer over 59 documents. Live Chromium inspection found that the document height expanded the page beyond the viewport, a desktop rail backdrop intercepted clicks, and CSS displayed hidden Edit and Loading sections. These were fixed. The 1024px breakpoint, 320px toolbar spacing and names, revision metadata, artifact links, and unsaved navigation were also corrected.
+
+The browser suite launched its own server and passed J0–J11: 56 tests across the server and browser files, including real Git revisions, Mermaid, search, compare, edit/save, unsaved discard, path confinement, fixed bars, narrow widths, and zero page or console errors. Eight Mermaid diagrams in six documentation pages were rendered in Chromium with every block in `ready` state. Seven replace useful text diagrams and one explains the architecture's authority and projection boundary. File trees and literal mappings remain text where a diagram would obscure the source.
+
+Hallmark review found the workbench structure appropriate for document reading; fixes addressed the backdrop, fixed viewport, hidden sections, touch controls, and token discipline. Independent Impeccable design and detector reviews found the hidden-state bug, 1024px collapse, mobile labels, contrast, missing favicon, and a table scroll cue. Material findings were fixed and verified. A fresh detector run left only an Inter usage warning, which is permitted for product interfaces.
+
+`just verify` passed all 78 implemented gates when run with loopback and browser process permissions. A sandboxed run without those permissions failed environment-dependent gates; the documentation gate initially found a viewer-specific `PRODUCT.md` under `docs/`, which was moved outside the documentation corpus and then passed.

@@ -29,6 +29,8 @@ export interface ToolCall {
 export interface ModelRequest {
   readonly messages: readonly ModelMessage[];
   readonly tools?: readonly ToolDefinition[];
+  /** Stream ordered progress through the invoking capability context when supported. */
+  readonly stream?: boolean;
   /** Request structured JSON output, optionally constrained by a JSON Schema. */
   readonly responseFormat?: { readonly type: "json"; readonly schema?: { readonly [key: string]: Json } };
   readonly maxTokens?: number;
@@ -43,7 +45,13 @@ export interface ModelResponse {
   readonly model: string;
 }
 
-export type ModelDelta = { readonly type: "text"; readonly text: string } | { readonly type: "tool_call"; readonly call: ToolCall } | { readonly type: "done"; readonly response: ModelResponse };
+export type ModelDelta =
+  | { readonly type: "text"; readonly text: string }
+  | { readonly type: "tool_call_start"; readonly callId: string; readonly name: string }
+  | { readonly type: "tool_call_args"; readonly callId: string; readonly delta: string }
+  | { readonly type: "tool_call_end"; readonly callId: string }
+  | { readonly type: "tool_call"; readonly call: ToolCall }
+  | { readonly type: "done"; readonly response: ModelResponse };
 
 /** Capability flags a provider declares; eligibility filters on them (spec §26, §8.2). */
 export interface ModelFeatures {

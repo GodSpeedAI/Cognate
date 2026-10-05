@@ -1,0 +1,82 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "wd-ref-ws" [expanded]
+  - treeitem "[[scenario:multi]] do the multi-step tas now" [selected]
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings" [expanded]
+- banner:
+  - navigation "Session hierarchy": "[[scenario:multi]] do the multi-step tas"
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: "[[scenario:multi]] do the multi-step task now 17:36"
+- button "Copy"
+- status: Worked
+- button "Took 2s" [disabled] [expanded]
+- text: Failed
+- 'button "Read Error: cannot read \"/tmp/claude-1000/-home-sprime01-projects-cognate/72343782-f277-4980-8789-6d38332ee32e/scratchpad/wd-ref-ws/src/greet.ts\": not found"'
+- button "Failed Bash Show working tree status"
+- text: Failed
+- 'button "Edit Error: cannot edit \"/tmp/claude-1000/-home-sprime01-projects-cognate/72343782-f277-4980-8789-6d38332ee32e/scratchpad/wd-ref-ws/src/greet.ts\": not found"'
+- paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
+- button "Copy"
+- button "Good response"
+- button "Bad response"
+- button "Branch into a new conversation"
+- button "Usage 0 tok"
+- text: 17:36
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 4 steps · 0 tok/s": 1 turns 4 steps0 tok/s
+- button "0% of context used": 0%
+- dialog "Settings":
+  - navigation:
+    - text: Settings
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins"
+    - button "Agent presets"
+  - button "Open configuration file"
+  - button "Close"
+  - text: Permission Choose the default permission mode for new sessions
+  - button "Workspace Write"
+  - text: Language
+  - button "English"
+  - text: Appearance
+  - button "Light"
+  - button "Dark" [pressed]
+  - button "System"
+  - text: Font size Only affects conversation content 14
+  - button "Increase font size"
+  - button "Decrease font size"
+  - text: px Work details Choose how much detail to show for tool calls
+  - button "Verbose"
+  - text: Performance & usage Choose how much performance and usage information to show
+  - button "Detailed"
+  - text: Coding Tools Shows trajectory, code diffs, and Agent preset switching in new chats
+  - switch "Coding Tools" [checked]
+  - text: Keyboard shortcuts
+  - paragraph: View and edit available shortcuts and input actions
+  - button "Edit shortcuts"
+  - text: Send behavior while busy What Enter and the Send button do while the agent is running; Cmd/Ctrl+Enter uses the other behavior
+  - button "Queue"
+  - text: "Current version: 0.1.7-rc.2"

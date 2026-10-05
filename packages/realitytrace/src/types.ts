@@ -20,6 +20,11 @@ export interface Observation {
   readonly inputRef?: string;
   readonly outputRef?: string;
   readonly timestamp: string;
+  /**
+   * The CEP `execution_trace` envelope for this observation, when the operation was governed. If present it is
+   * what RealityTrace is handed to record (content-addressed), instead of the bare observation.
+   */
+  readonly trace?: Json;
 }
 
 /**

@@ -6,27 +6,19 @@ containment property, are confirmed by the implementation and pinned by tests. T
 
 ## The shape
 
-```text
-all providers
-      │
-      ▼
-semantic / version / attribute constraints        deterministic: isCompatible
-      │
-      ▼
-security + policy                                  deterministic: Policy.authorize
-      │
-      ▼
-eligible, authorized candidates
-      │
-      ▼
-adaptive ranking (UCB1)                            learned, but only reorders this set
-      │
-      ▼
-selection
+```mermaid
+flowchart TD
+    all["All providers"] --> compatible["isCompatible · id, version, attributes"]
+    compatible --> eligible["Eligible candidates"]
+    eligible --> ranker["UCB1 ranks only this set"] --> selected["Selected provider"]
+    selected --> invoke["Invocation"] --> policy{"Policy.authorize · default deny"}
+    policy -- allowed --> handler["Provider handler"]
+    policy -- denied --> stop["No invocation"]
 ```
 
 The rule is one line: **adaptive ranking happens after deterministic eligibility, and cannot widen
-it.** The forbidden shape is "all providers → ranker chooses → skip the policy check".
+it.** Authorization is checked separately at invocation, after selection. The forbidden shape is
+"all providers → ranker chooses → skip the policy check".
 
 ## Three different "may I?" questions
 

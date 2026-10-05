@@ -5,6 +5,14 @@ directory; snippets are copied from working test/probe code, not the
 package's own docs. See `domainforge.test.ts` for the runnable proof and
 `.agents/evidence/phase0-domainforge.md` for the full evidence log.
 
+**2026-10-01:** this fixture now pins `@godspeedai/domainforge@0.18.2`
+(bumped from 0.18.1 on 2026-09-28; `bun.lock` regenerated via scoped
+`bun install` here). The notes below still characterize 0.16.0 behaviour as
+originally verified — the suite passes unmodified against 0.18.2 (3/3 runs,
+9 pass / 0 fail each). The one observed 0.18.1 → 0.18.2 change is outside this
+fixture: Policy expressions render as `forall f in flows: …` instead of
+`ForAll(f in flows: …)` (see the adapter golden).
+
 ## Import
 
 ```ts

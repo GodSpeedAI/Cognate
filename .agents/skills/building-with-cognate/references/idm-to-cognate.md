@@ -8,7 +8,7 @@ before trusting this table for anything it doesn't cover.
 ## What `packages/domainforge` actually does
 
 `loadSemanticProjection(source, { uri })` (`packages/domainforge/src/index.ts`) calls
-`Graph.parse(source)` from the pinned `@godspeedai/domainforge@0.17.0` binding — **not** a
+`Graph.parse(source)` from the pinned `@godspeedai/domainforge@0.18.2` binding — **not** a
 DomainForge CLI subprocess; the adapter links the Rust/native binding directly. It walks
 `graph.allEntities() / allResources() / allFlows() / allRoles() / allRelations() / allInstances()`
 and produces a `SemanticProjection`: a flat list of read-only `SemanticObject`s (`{ ref, kind,
@@ -18,7 +18,7 @@ name, namespace, fields }`) plus `SemanticRelation`s (`flow.from`, `flow.to`, `f
 opaque handle DomainForge concepts get before touching anything else in Cognate
 (`packages/kernel-api/src/types.ts`).
 
-The installed DomainForge 0.18.1 binding exposes every SEA-declared Graph collection to Cognate as
+The installed DomainForge 0.18.2 binding exposes every SEA-declared Graph collection to Cognate as
 read-only objects: Policy, Metric, Dimension, Unit, Mapping, Projection,
 Pattern, ConceptChange, and SEA `EntityInstance` (DEBT-003 closed 2026-09-26);
 `Instance` remains the programmatic `ResourceInstance` collection and has no SEA declaration. `External` is only a

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Artifact Viewer — Documentation Mode</title>
+    <meta name="description" content="A local projection of this repository's documentation: its Markdown, its Mermaid diagrams, and its Git history." />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/tokens.css" />
+    <link rel="stylesheet" href="/assets/viewer.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#doc-body">Skip to document</a>
+
+    <header class="topbar">
+      <div class="topbar__identity">
+        <span class="topbar__wordmark" aria-label="Artifact Viewer">Artifact<span class="topbar__wordmark-suffix"> Viewer</span></span>
+        <span class="topbar__mode">Documentation Mode</span>
+      </div>
+      <div class="topbar__tools">
+        <button class="icon-button" id="nav-toggle" type="button" aria-label="Documents" title="Documents" aria-expanded="true" aria-controls="nav-rail">
+          <svg class="icon-button__glyph" width="15" height="15" aria-hidden="true"><use href="#i-docs" /></svg>
+          <span>Documents</span>
+        </button>
+        <button class="search-trigger" id="search-trigger" type="button" aria-label="Search documentation" title="Search documentation" aria-haspopup="dialog">
+          <svg width="14" height="14" aria-hidden="true"><use href="#i-search" /></svg>
+          <span class="search-trigger__label" id="search-trigger-label">Search documentation</span>
+          <kbd id="search-trigger-hint">⌘K</kbd>
+        </button>
+        <button class="icon-button" id="context-toggle" type="button" aria-label="Document context" title="Document context" aria-expanded="true" aria-controls="context-rail">
+          <svg class="icon-button__glyph" width="15" height="15" aria-hidden="true"><use href="#i-context" /></svg>
+          <span>Context</span>
+        </button>
+        <button class="icon-button" id="keys-button" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts" aria-haspopup="dialog">
+          <svg class="icon-button__glyph" width="15" height="15" aria-hidden="true"><use href="#i-keyboard" /></svg>
+          <span>Keys</span>
+        </button>
+      </div>
+      <div class="progress" id="progress" hidden aria-hidden="true"></div>
+    </header>
+
+    <div class="shell" id="shell" data-nav="open" data-context="open">
+      <div class="rail-backdrop" id="rail-backdrop"></div>
+
+      <nav class="rail rail--docs" id="nav-rail" aria-label="Documents">
+        <div class="rail__head">
+          <h2 class="rail__title">Documents</h2>
+          <span class="rail__title" id="tree-count"></span>
+        </div>
+        <div class="rail__filter">
+          <label class="visually-hidden" for="tree-filter">Filter documents by path or title</label>
+          <input id="tree-filter" type="search" placeholder="Filter documents" autocomplete="off" spellcheck="false" />
+        </div>
+        <ul class="tree" id="tree" role="tree" aria-label="Documentation tree"></ul>
+        <p class="rail__note" id="tree-note"></p>
+      </nav>
+
+      <main class="reading" id="reading" tabindex="-1">
+        <div class="provstrip" id="provstrip" hidden></div>
+        <article class="doc" id="doc-body" tabindex="-1" aria-label="Document"></article>
+        <section class="source-view" id="doc-source" hidden aria-label="Markdown source"></section>
+        <section class="editor" id="doc-editor" hidden aria-label="Markdown editor"></section>
+        <section class="history" id="doc-history" hidden aria-label="Revision history"></section>
+        <section class="compare" id="doc-compare" hidden aria-label="Compare revisions"></section>
+        <section class="state" id="doc-state" hidden aria-live="polite"></section>
+      </main>
+
+      <aside class="rail rail--context" id="context-rail" aria-label="Document context">
+        <details class="context-section" id="section-outline" open>
+          <summary>Outline</summary>
+          <div class="context-section__body" id="outline-body"></div>
+        </details>
+        <details class="context-section" id="section-metadata" open>
+          <summary>Metadata</summary>
+          <div class="context-section__body" id="metadata-body"></div>
+        </details>
+        <details class="context-section" id="section-artifacts">
+          <summary>Artifacts</summary>
+          <div class="context-section__body" id="artifacts-body"></div>
+        </details>
+        <details class="context-section" id="section-relationships">
+          <summary>Relationships</summary>
+          <div class="context-section__body" id="relationships-body"></div>
+        </details>
+        <details class="context-section" id="section-provenance">
+          <summary>Provenance</summary>
+          <div class="context-section__body" id="provenance-body"></div>
+        </details>
+        <details class="context-section" id="section-revisions">
+          <summary>Revisions</summary>
+          <div class="context-section__body" id="revisions-body"></div>
+        </details>
+      </aside>
+    </div>
+
+    <footer class="modebar" aria-label="Document projection">
+      <div class="modebar__doc">
+        <span id="modebar-path">No document selected</span>
+        <span id="modebar-state"></span>
+      </div>
+      <div class="modebar__modes" role="group" aria-label="Projection">
+        <button class="mode" type="button" data-mode="read" aria-label="Read" title="Read" aria-pressed="true">
+          <svg width="15" height="15" aria-hidden="true"><use href="#i-read" /></svg>
+          <span class="mode__label">Read</span>
+        </button>
+        <button class="mode" type="button" data-mode="source" aria-label="Source" title="Source" aria-pressed="false">
+          <svg width="15" height="15" aria-hidden="true"><use href="#i-source" /></svg>
+          <span class="mode__label">Source</span>
+        </button>
+        <button class="mode" type="button" data-mode="edit" aria-label="Edit" title="Edit" aria-pressed="false">
+          <svg width="15" height="15" aria-hidden="true"><use href="#i-edit" /></svg>
+          <span class="mode__label">Edit</span>
+        </button>
+        <button class="mode" type="button" data-mode="history" aria-label="History" title="History" aria-pressed="false">
+          <svg width="15" height="15" aria-hidden="true"><use href="#i-history" /></svg>
+          <span class="mode__label">History</span>
+        </button>
+        <button class="mode" type="button" data-mode="compare" aria-label="Compare" title="Compare" aria-pressed="false">
+          <svg width="15" height="15" aria-hidden="true"><use href="#i-compare" /></svg>
+          <span class="mode__label">Compare</span>
+        </button>
+      </div>
+    </footer>
+
+    <dialog id="palette" aria-labelledby="palette-label">
+      <div class="palette__field">
+        <label class="visually-hidden" for="palette-input" id="palette-label">Search documents</label>
+        <input id="palette-input" type="search" role="combobox" aria-expanded="true" aria-controls="palette-results" aria-autocomplete="list" placeholder="Search documents, headings, and code" autocomplete="off" spellcheck="false" />
+      </div>
+      <ul class="palette__results" id="palette-results" role="listbox" aria-label="Search results"></ul>
+      <p class="dialog-hint"><span>↑ ↓ move</span><span>Enter open</span><span>Esc close</span></p>
+    </dialog>
+
+    <dialog id="keys" aria-labelledby="keys-title">
+      <div class="dialog__head">
+        <h2 class="dialog__title" id="keys-title">Keyboard</h2>
+      </div>
+      <div class="dialog__body">
+        <ul class="keymap" id="keymap"></ul>
+      </div>
+      <div class="dialog__foot">
+        <button class="button" type="button" data-close-dialog="keys">Close</button>
+      </div>
+    </dialog>
+
+    <dialog id="diagram" aria-labelledby="diagram-title">
+      <div class="dialog__head">
+        <h2 class="dialog__title" id="diagram-title">Diagram</h2>
+        <div class="diagram__tools">
+          <button class="icon-button" type="button" id="diagram-zoom-out" aria-label="Zoom out">
+            <svg class="icon-button__glyph" width="15" height="15" aria-hidden="true"><use href="#i-zoom-out" /></svg>
+          </button>
+          <button class="icon-button" type="button" id="diagram-zoom-in" aria-label="Zoom in">
+            <svg class="icon-button__glyph" width="15" height="15" aria-hidden="true"><use href="#i-zoom-in" /></svg>
+          </button>
+          <button class="icon-button" type="button" id="diagram-reset" aria-label="Reset zoom and position">
+            <svg class="icon-button__glyph" width="15" height="15" aria-hidden="true"><use href="#i-reset" /></svg>
+          </button>
+          <button class="icon-button" type="button" id="diagram-source-toggle" aria-expanded="false" aria-controls="diagram-source">Source</button>
+        </div>
+      </div>
+      <div class="dialog__body">
+        <div class="diagram-stage" id="diagram-stage">
+          <div class="diagram-stage__inner" id="diagram-stage-inner"></div>
+        </div>
+        <pre class="diagram-source" id="diagram-source" hidden></pre>
+      </div>
+      <div class="dialog__foot">
+        <button class="button" type="button" data-close-dialog="diagram">Return to document</button>
+      </div>
+    </dialog>
+
+    <dialog id="confirm" aria-labelledby="confirm-title">
+      <div class="dialog__head">
+        <h2 class="dialog__title" id="confirm-title">Unsaved changes</h2>
+      </div>
+      <div class="dialog__body">
+        <p class="state__body" id="confirm-message"></p>
+      </div>
+      <div class="dialog__foot">
+        <button class="button button--quiet" type="button" id="confirm-cancel">Cancel</button>
+        <button class="button" type="button" id="confirm-discard">Discard changes</button>
+        <button class="button button--primary" type="button" id="confirm-save">Save and continue</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <svg width="0" height="0" aria-hidden="true" style="position: absolute">
+      <defs>
+        <symbol id="i-docs" viewBox="0 0 16 16"><path d="M2 2h5v12H2zM9 2h5v12H9z" fill="none" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.4" /></symbol>
+        <symbol id="i-context" viewBox="0 0 16 16"><path d="M10.5 2v12M4 4h3M4 7h3M4 10h3" fill="none" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-keyboard" viewBox="0 0 16 16"><rect x="1.5" y="4" width="13" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M4 6.5h1M6.5 6.5h1M9 6.5h1M11.5 6.5h1M5 9.5h6" stroke="currentColor" stroke-width="1.2" /></symbol>
+        <symbol id="i-read" viewBox="0 0 16 16"><path d="M3 3h7l3 3v7H3z" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M5 8h6M5 10h4" stroke="currentColor" stroke-width="1.2" /></symbol>
+        <symbol id="i-source" viewBox="0 0 16 16"><path d="M6 4 2.5 8 6 12M10 4l3.5 4L10 12" fill="none" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-edit" viewBox="0 0 16 16"><path d="M3 13h2l7-7-2-2-7 7z" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M10 4l2 2" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-history" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M8 5v3.5l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-compare" viewBox="0 0 16 16"><path d="M4 3v10M12 3v10" stroke="currentColor" stroke-width="1.3" /><path d="M6.5 8 9 5.5M6.5 8 9 10.5" fill="none" stroke="currentColor" stroke-width="1.2" /></symbol>
+        <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" /></symbol>
+        <symbol id="i-zoom-in" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M7 5v4M5 7h4M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-zoom-out" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M5 7h4M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-reset" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 1 1.7 3.7" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M3 5v3h3" fill="none" stroke="currentColor" stroke-width="1.3" /></symbol>
+        <symbol id="i-focus" viewBox="0 0 16 16"><path d="M2 5V2h3M14 5V2h-3M2 11v3h3M14 11v3h-3" fill="none" stroke="currentColor" stroke-width="1.3" /></symbol>
+      </defs>
+    </svg>
+
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

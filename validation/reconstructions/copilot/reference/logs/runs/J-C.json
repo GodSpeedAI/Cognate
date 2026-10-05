@@ -1,0 +1,166 @@
+{
+ "journey": "J-C",
+ "steps": [
+  {
+   "turn": 1,
+   "prompt": "three todos about learning CopilotKit",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  },
+  {
+   "turn": 2,
+   "prompt": "three todos about learning CopilotKit",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  }
+ ],
+ "requests": [
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32468
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 57479
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 58328
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 83252
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32468
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 57479
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 58328
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 83252
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  }
+ ],
+ "ok": true,
+ "bodyAfterLastTurn": "Chat App CopilotKit three todos about learning CopilotKit enableAppMode manage_todos Done — added three todos about learning CopilotKit to your task manager. three todos about learning CopilotKit To Do 4 📚 Read the CopilotKit docs Start with the quickstart and explore the core hooks. 🚀 Build a CopilotKit prototype Wire up a basic chat and register a frontend tool. 🎯 Explore shared agent state Watch the canvas re-render as the agent writes to state. 🎯 New Todo Add a description Done 0 No completed todos yet",
+ "canvas": {
+  "agentWriteVisible": true,
+  "canvasWriteVisible": true,
+  "addControlFound": true,
+  "allTitlesVisible": true
+ },
+ "mobile": {
+  "rendersLastReply": true,
+  "defaultPane": "app"
+ },
+ "runtimeRequests": [
+  {
+   "i": 0,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 24688,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 1,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 100759,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 2,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 76270,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": true
+  }
+ ],
+ "hits": 16,
+ "misses": 0,
+ "stateFieldOnAnyRequest": false
+}

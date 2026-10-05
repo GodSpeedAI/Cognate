@@ -1,0 +1,98 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "u0-ws-b" [expanded]
+  - treeitem "[[scenario:multi]] another task 2min"
+  - treeitem "[[scenario:multi]] review and fix the 2min" [selected]
+  - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export functi 5min"'
+  - treeitem "u0-ws-a"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:multi]] review and fix the"
+  - text: Standard mode
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat"
+    - tab "Trajectory" [selected]
+- toolbar "Trajectory toolbar":
+  - button "Use actual duration": Duration
+  - button "Expand turns" [pressed]: Turns
+  - button "Collapse calls": Calls
+  - searchbox "Search trajectory"
+- region "Trajectory timeline"
+- table:
+  - rowgroup:
+    - row "SYSTEM, Initial System Prompt":
+      - cell "SYSTEM"
+      - cell "Initial System Prompt"
+    - row "USER, [[scenario:multi]] review and fix the greeting":
+      - cell "Turn 1 USER": USER
+      - cell "[[scenario:multi]] review and fix the greeting"
+    - row "Collapsed turn summary, 4 steps · 3 tool calls":
+      - cell
+      - cell "… 4 steps · 3 tool calls"
+- complementary "Event details":
+  - separator "Resize event details"
+  - text: TOOL Turn 1 · Step 1
+  - button "Close details"
+  - tablist "Event details":
+    - tab "Summary" [selected]
+    - tab "Payload"
+    - tab "Result"
+    - tab "Schema"
+    - tab "Timing"
+  - tabpanel "Summary":
+    - term: Hierarchy
+    - definition:
+      - button "Assistant Message"
+    - term: Status
+    - definition: Completed
+    - heading "Payload" [level=3]:
+      - button "Payload"
+    - text: "{"
+    - tree "Payload JSON":
+      - treeitem "file_path:\"src/greet.ts\""
+    - text: "}"
+    - heading "Result" [level=3]:
+      - button "Result"
+    - text: "<path>/tmp/u0-ws-b/src/greet.ts</path> <type>file</type> <content> 1: export function greet(name: string): string { 2: return `Hello, ${name}!`; 3: } (End of file - total 3 lines) </content>"
+    - heading "Schema" [level=3]:
+      - button "Schema"
+    - heading "read" [level=3]
+    - paragraph: Read a UTF-8 text file and return line-numbered content.
+    - heading "Parameters" [level=4]
+    - text: "{"
+    - tree "read parameters JSON":
+      - treeitem "type:\"object\","
+      - 'treeitem "Expand properties:{file_path: {type: \"string\", description: \"Path to read, resolved by the filesystem backend.\"}, offset: {type: \"number\", description: \"1-based first line to return. Defaults to 1.\"}, limit: {type: \"number\", description: \"Maximum number of lines to return. Defaults to 2000.\"}},"':
+        - button "Expand"
+        - text: "properties:{file_path: {type: \"string\", description: \"Path to read, resolved by the filesystem backend.\"}, offset: {type: \"number\", description: \"1-based first line to return. Defaults to 1.\"}, limit: {type: \"number\", description: \"Maximum number of lines to return. Defaults to 2000.\"}},"
+      - treeitem "Expand required:[\"file_path\"]":
+        - button "Expand"
+        - text: required:["file_path"]
+    - text: "}"
+    - heading "Timing" [level=3]:
+      - button "Timing"
+    - term: Started
+    - definition:
+      - button "2026-09-30 02:04:48.830"
+    - term: Duration
+    - definition: 1,408 ms
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 4 steps · 0 tok/s": 1 turns 4 steps0 tok/s
+- button "0% of context used": 0%

@@ -1,0 +1,929 @@
+{
+  "generatedAt": "2026-10-01T17:40:00Z",
+  "planUnit": "R5 of .agents/plans/copilot-reconstruction-remaining.md (Phase 15-16 preconditions)",
+  "reference": {
+    "commit": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
+    "manifest": "validation/reconstructions/copilot/reference-manifest.json"
+  },
+  "evidenceClasses": {
+    "BLACK_BOX_REFERENCE": "Actually executed against pinned CopilotKit (its own mock LLM per Phase 1B).",
+    "OFFICIAL_FIXTURE_REFERENCE": "Executed using official CopilotKit test fixtures/mocks.",
+    "DOCUMENTED_REFERENCE": "Supported by current official docs/source but not executable locally because it depends on unavailable external/proprietary infrastructure; the missing fixture or mechanism is named, never a paid endpoint."
+  },
+  "matrixRows": [
+    {
+      "id": "R-A01",
+      "priority": "P0",
+      "surface": "LangGraph JS starter \u2014 chat/app mode via frontend tool",
+      "evidenceClass": "BLACK_BOX_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-C.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-C-04-after-canvas-write-turn-desktop-1440x900.png",
+        "validation/reconstructions/copilot/reference/screenshots/J-C-05-after-canvas-write-turn-mobile-390x844.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/ui/RemoteCapabilitySurface.tsx",
+        "validation/reconstructions/copilot/cognate/src/remote-capability.tsx",
+        "validation/reconstructions/copilot/cognate/src/ui/App.tsx",
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md"
+      ],
+      "testId": "J-B-front-capability",
+      "status": "pass",
+      "notes": "Mechanism proven end to end (browser handler executes, presentation state changes). The reference's sidebar/toggle navigation maps to Cognate's journey navigation \u2014 named deviation D2, not a mechanism difference."
+    },
+    {
+      "id": "R-A02",
+      "priority": "P0",
+      "surface": "Shared state bidirectional (useAgent state/setState, canvas)",
+      "evidenceClass": "BLACK_BOX_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-C.json",
+        "validation/reconstructions/copilot/reference/logs/runs/run-req-J-C-02.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-C-03-canvas-after-agent-write-desktop-1440x900.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/shared-state.ts",
+        "validation/reconstructions/copilot/cognate/src/SharedStateSurface.tsx",
+        "packages/runtime-api/src/state.ts",
+        "validation/reconstructions/copilot/cognate/test/J-C-shared-state.test.tsx"
+      ],
+      "testId": "J-C-shared-state",
+      "status": "pass",
+      "notes": "Reference side proven on the wire (run-req-J-C-02.json contains the canvas-written 'New Todo'). Cognate side: agent write, terminal user CAS edit, distinct next run observes the edit. Canvas presentation differs by design (ledger vs card board) \u2014 deviation D5."
+    },
+    {
+      "id": "R-A03",
+      "priority": "P0",
+      "surface": "Current v2 chat \u2014 streaming, ordered intermediate events",
+      "evidenceClass": "DOCUMENTED_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-A.json",
+        "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/journey.ts",
+        "validation/reconstructions/copilot/cognate/src/ChatSurface.tsx",
+        "packages/ag-ui/test/live.test.ts",
+        "packages/ag-ui/test/reconnect.test.ts",
+        "validation/reconstructions/copilot/cognate/test/J-K-live-recovery.test.tsx"
+      ],
+      "testId": "J-A-chat-turn (+J-K-live-recovery)",
+      "status": "pass",
+      "notes": "Matrix class kept as recorded (DOCUMENTED_REFERENCE); the green J-A/J-C black-box runs additionally exercised streamed turns (manifest mockLlm.programmaticServing.proven: 'each leg streaming through the reference agent'). Cognate: live text while running, ordered durable deltas, cursor resume without loss (J-K). Adapter defect A1 (buffered SSE) repaired with regression tests."
+    },
+    {
+      "id": "R-A04",
+      "priority": "P0",
+      "surface": "Current v2 frontend tools \u2014 registration lifecycle",
+      "evidenceClass": "OFFICIAL_FIXTURE_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-C.json"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/ui/RemoteCapabilitySurface.tsx",
+        "packages/runtime-bun/src/executor.ts",
+        "validation/reconstructions/copilot/cognate/test/J-B-front-capability.test.tsx"
+      ],
+      "testId": "J-B-front-capability",
+      "status": "pass",
+      "notes": "Reference: official React-core frontend-tool timing suite 21/21 plus the black-box J-C enableAppMode chain. Cognate: mount publishes a lease-bound offer, agent discovers and invokes it, browser handler executes, unmount revokes for new calls, remount publishes a new lease. General mechanism = remote capability offer/lease (counterexample C1 repair)."
+    },
+    {
+      "id": "R-A05",
+      "priority": "P0",
+      "surface": "Frontend tool \u2014 historical renderer after unmount",
+      "evidenceClass": "DOCUMENTED_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/ui/RemoteCapabilitySurface.tsx",
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/test/J-J-rich-thread.test.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-B-front-capability.test.tsx"
+      ],
+      "testId": "J-J-rich-thread (+J-B-front-capability)",
+      "status": "pass",
+      "notes": "No black-box reference capture exists for this row (class unchanged). Cognate proves the separation directly: recorded calls stay renderable (useRemoteCapabilityHistory, richThreadProjection fold of run.waiting) while the live offer is gone and nothing is reauthorized."
+    },
+    {
+      "id": "R-A06",
+      "priority": "P0",
+      "surface": "Frontend tool \u2014 streaming arguments, phased rendering",
+      "evidenceClass": "OFFICIAL_FIXTURE_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md"
+      ],
+      "cognateEvidence": [
+        "packages/ag-ui/test/streaming-tool-args.test.ts",
+        "packages/ag-ui/src/index.ts",
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/tests/protocol/protocol.test.ts"
+      ],
+      "testId": "J-E-controlled-rendering (+tests/protocol J-F/J-B)",
+      "status": "pass-with-recorded-gap",
+      "notes": "Partial args before completion are proven at the adapter/wire level (streaming-tool-args.test.ts gates a mid-argument stream; TOOL_CALL_ARGS deltas fold to complete JSON by END) and phases derive from durable events (J-E pending\u2192terminal fold). Recorded gap: no cognate browser surface re-renders per arg chunk; the pending phase is real (projection fold) but not browser-photographed (D7)."
+    },
+    {
+      "id": "R-A07",
+      "priority": "P1",
+      "surface": "Agent-readable context (useAgentContext)",
+      "evidenceClass": "OFFICIAL_FIXTURE_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-D.json",
+        "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json"
+      ],
+      "cognateEvidence": [
+        "packages/ag-ui/test/inbound.test.ts",
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/src/ui/RemainingSurfaces.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-D-agent-context.test.tsx"
+      ],
+      "testId": "J-D-agent-context",
+      "status": "pass",
+      "notes": "Reference side: canonical starter mounts no useAgentContext (J-D UNCOVERED, recorded); class rests on the official React-core context-timing suite (21/21) \u2014 the starter cannot express the scenario, no fixture was synthesized. Cognate side passes: context arrives as immutable run input, unmount stops supplying it, agent writes go to a separate durable channel."
+    },
+    {
+      "id": "R-A08",
+      "priority": "P1",
+      "surface": "Controlled Generative UI / backend tool rendering",
+      "evidenceClass": "BLACK_BOX_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-E.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-E-02-controlled-genui-complete-desktop-1440x900.png",
+        "validation/reconstructions/copilot/reference/screenshots/J-E-04-backend-tool-complete-desktop-1440x900.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/src/ui/RemainingSurfaces.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-E-controlled-rendering.test.tsx"
+      ],
+      "testId": "J-E-controlled-rendering",
+      "status": "pass",
+      "notes": "Class upgraded from the matrix's DOCUMENTED_REFERENCE on the strength of the green J-E ok:true run (8 HIT / 0 MISS, shots at both viewports) \u2014 the upgrade discipline allows green ok:true runs. Cognate: renderer is a pure function of durable ui.render events; no browser handler exists."
+    },
+    {
+      "id": "R-A09",
+      "priority": "P1",
+      "surface": "Tool-based HITL (scheduleTime / MeetingTimePicker)",
+      "evidenceClass": "BLACK_BOX_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-F.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-F-01-hitl-pending-desktop-1440x900.png",
+        "validation/reconstructions/copilot/reference/screenshots/J-F-03-hitl-resolved-desktop-1440x900.png"
+      ],
+      "cognateEvidence": [
+        "packages/runtime-api/src/frontend.ts",
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/src/ui/RemainingSurfaces.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-F-tool-human-decision.test.tsx"
+      ],
+      "testId": "J-F-tool-human-decision",
+      "status": "pass",
+      "notes": "Class upgraded on the green J-F ok:true run (4 HIT / 0 MISS). Cognate: invokeFrontend creates a durable frontend:<capability> continuation; the inline useCapability handler is the other half; resolution is the recorded tool result and the run continues. D8 records the J-F-02 phase mismatch (reference's own capture caught the resolved state)."
+    },
+    {
+      "id": "R-A10",
+      "priority": "P1",
+      "surface": "Runtime interrupt (useInterrupt semantics)",
+      "evidenceClass": "DOCUMENTED_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-G.json"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/src/ui/RemainingSurfaces.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-G-runtime-interrupt.test.tsx",
+        "validation/reconstructions/copilot/tests/protocol/protocol.test.ts"
+      ],
+      "testId": "J-G-runtime-interrupt",
+      "status": "pass",
+      "notes": "Reference side UNCOVERED (J-G): the pinned agent graph registers no interrupt() node and the interrupt fixtures drive another surface's tool \u2014 DOCUMENTED_REFERENCE, recorded not synthesized. Cognate side passes: run-level waitFor continuation discovered without a tool result; resume/cancel both settle; on the wire the payload rides a CUSTOM event (AG-UI 1.0.0 has no interrupt event)."
+    },
+    {
+      "id": "R-A11",
+      "priority": "P1",
+      "surface": "A2UI declarative Generative UI",
+      "evidenceClass": "BLACK_BOX_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-H.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-H-01-declarative-surface-desktop-1440x900.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/src/ui/RemainingSurfaces.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-H-declarative-ui.test.tsx"
+      ],
+      "testId": "J-H-declarative-ui",
+      "status": "pass",
+      "notes": "Class upgraded on the green J-H ok:true run (6 HIT / 0 MISS; generate_a2ui resolves on the client against the pinned catalog). Cognate: application-owned catalog validates renders before display, rejected renders leave no projection row, and the only actionable control is a catalog-declared operation that resumes execution. Catalog scope differs (fixture content) \u2014 deviation D6."
+    },
+    {
+      "id": "R-A12",
+      "priority": "P1",
+      "surface": "Rich Threads \u2014 mixed thread, reload, restore",
+      "evidenceClass": "BLACK_BOX_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-J.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-J-03-after-shared-state-turn-desktop-1440x900.png",
+        "validation/reconstructions/copilot/reference/screenshots/J-J-05-restored-after-reload-desktop-1440x900.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/journey.ts",
+        "validation/reconstructions/copilot/cognate/src/remaining-journeys.ts",
+        "validation/reconstructions/copilot/cognate/src/ChatSurface.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-J-rich-thread.test.tsx"
+      ],
+      "testId": "J-J-rich-thread",
+      "status": "pass",
+      "notes": "Reference: mixed thread (text + GenUI + shared state) GREEN; the restoration half is OBSERVED_ABSENT on the reference itself (reload renders the welcome screen; drawer license-gated, threadListRequests 0) \u2014 the reference's observed absence is the black-box evidence. Cognate restores chat, tool waits and renders from durable projections (divergence direction favors Cognate \u2014 deviations D9-D11)."
+    },
+    {
+      "id": "R-A13",
+      "priority": "P1",
+      "surface": "Managed thread list (useThreads: rename/archive/delete/paginate/realtime)",
+      "evidenceClass": "DOCUMENTED_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference/logs/runs/J-J.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-J-06-drawer-thread-list-desktop-1440x900.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/ui/RichThreadView.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-J-rich-thread.test.tsx"
+      ],
+      "testId": "J-J-rich-thread",
+      "status": "pass-with-recorded-gap",
+      "notes": "Reference side: Intelligence-dependent and license-gated \u2014 the executed capture shows the drawer never lists (threadListRequests 0), so mutations were never observable; DOCUMENTED_REFERENCE. Cognate side implements the non-Intelligence subset (list from projections, new thread, switch back); rename/archive/delete/pagination/realtime and model-generated titles are implemented by neither side. Recorded as a gap, not simulated."
+    },
+    {
+      "id": "R-A14",
+      "priority": "P1",
+      "surface": "UI layouts (inline chat, popup, sidebar, thread drawer; responsive)",
+      "evidenceClass": "DOCUMENTED_REFERENCE",
+      "referenceEvidence": [
+        "validation/reconstructions/copilot/reference-behavior-matrix.md",
+        "validation/reconstructions/copilot/reference-manifest.json",
+        "validation/reconstructions/copilot/reference/screenshots/J-A-02-after-first-turn-mobile-390x844.png"
+      ],
+      "cognateEvidence": [
+        "validation/reconstructions/copilot/cognate/src/ChatSurface.tsx",
+        "validation/reconstructions/copilot/cognate/src/ui/RichThreadView.tsx",
+        "validation/reconstructions/copilot/diffs/summary.md",
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md"
+      ],
+      "testId": "J-J-rich-thread (+diffs responsive rows)",
+      "status": "pass-with-recorded-gap",
+      "notes": "Reference executed surface demonstrates inline chat + a threads drawer that paints as a persistent left sidebar on desktop and off-canvas on mobile (manifest referenceSurfaceFacts); popup is not part of any captured surface. Cognate demonstrates inline chat + thread list at both viewports (one desktop + one mobile row per journey); sidebar/popup chrome maps to Cognate's own layout identity \u2014 named deviations D2/D13, and a popup variant exists on neither executed side. Recorded as a gap."
+    }
+  ],
+  "gates": [
+    {
+      "id": 1,
+      "text": "Reference commit is pinned.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/reference-manifest.json"
+      ],
+      "check": {
+        "command": "node -e \"const m=require('./validation/reconstructions/copilot/reference-manifest.json'); if(m.commit!=='6e452e5342db53e9ab23d8b3c0a4592ec25ff554'||m.checkout.archiveCommit!==m.commit)process.exit(1);console.log('pinned:',m.commit)\"",
+        "observed": "pinned: 6e452e5342db53e9ab23d8b3c0a4592ec25ff554"
+      }
+    },
+    {
+      "id": 2,
+      "text": "Current consolidated examples, not legacy v1/v2 examples, define the primary reference suite.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/reference-manifest.json"
+      ],
+      "check": {
+        "command": "node -e \"const m=require('./validation/reconstructions/copilot/reference-manifest.json');console.log(JSON.stringify(m.selectedSurfaces))\"",
+        "observed": "{\"canonicalAgentApplication\":\"examples/integrations/langgraph-js\",\"generativeUiPlayground\":\"examples/showcases/generative-ui\",\"uiComponentReference\":\"packages/react-core/src/v2 and showcase/shell-docs current v2 reference\"}"
+      }
+    },
+    {
+      "id": 3,
+      "text": "All P0 behaviors pass.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/parity-report.json",
+        "validation/reconstructions/copilot/cognate/test",
+        "validation/reconstructions/copilot/reference/logs/runs/J-C.json"
+      ],
+      "check": {
+        "command": "node -e \"const r=require('./validation/reconstructions/copilot/parity-report.json');const p0=r.matrixRows.filter(x=>x.priority==='P0');const bad=p0.filter(x=>x.status==='open'||x.status==='fail');if(bad.length){console.error('open/failing P0:',bad.map(x=>x.id).join(','));process.exit(1)}console.log(p0.map(x=>x.id+':'+x.status).join(' '))\"",
+        "observed": "R-A01:pass R-A02:pass R-A03:pass R-A04:pass R-A05:pass R-A06:pass-with-recorded-gap"
+      },
+      "notes": "Five of six P0 rows pass outright. R-A06 carries one recorded sub-gap: streaming tool arguments are proven at the adapter/wire level (packages/ag-ui/test/streaming-tool-args.test.ts) and phases derive from durable events, but no cognate browser surface re-renders per arg chunk (see matrixRows R-A06 and followUp FU-6's D7 family). No P0 row is open or failing."
+    },
+    {
+      "id": 4,
+      "text": "All P1 behaviors pass.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/parity-report.json",
+        "validation/reconstructions/copilot/reference/logs/runs/J-G.json"
+      ],
+      "check": {
+        "command": "node -e \"const r=require('./validation/reconstructions/copilot/parity-report.json');const p1=r.matrixRows.filter(x=>x.priority==='P1');const open=p1.filter(x=>x.status==='open'||x.status==='fail');if(open.length){console.error('open P1:',open.map(x=>x.id).join(','));process.exit(1)}console.log(p1.map(x=>x.id+':'+x.status).join(' '))\"",
+        "observed": "R-A07:pass R-A08:pass R-A09:pass R-A10:pass R-A11:pass R-A12:pass R-A13:pass-with-recorded-gap R-A14:pass-with-recorded-gap"
+      },
+      "notes": "R-A07..R-A12 pass (R-A10's reference side is a recorded UNCOVERED with DOCUMENTED_REFERENCE class \u2014 the pinned agent graph has no interrupt node). Gaps: R-A13 managed thread mutations are Intelligence-dependent on the reference and unimplemented cognate-side; R-A14 popup/sidebar parity is a named deviation (D2/D13). Both gaps are recorded, not unresolved failures."
+    },
+    {
+      "id": 5,
+      "text": "Canonical agent-application UI is faithfully reconstructed.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/diffs/summary.md",
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+        "validation/reconstructions/copilot/cognate/screenshots"
+      ],
+      "check": {
+        "command": "node -e \"const fs=require('fs');const n=fs.readdirSync('validation/reconstructions/copilot/diffs').filter(f=>f.endsWith('.png')).length;if(n!==29)process.exit(1);console.log(n,'triptychs in diffs/')\"",
+        "observed": "29 triptychs in diffs/"
+      }
+    },
+    {
+      "id": 6,
+      "text": "Chat streaming matches reference interaction semantics.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-A-chat-turn.test.tsx",
+        "validation/reconstructions/copilot/cognate/test/J-K-live-recovery.test.tsx",
+        "packages/ag-ui/test/live.test.ts",
+        "validation/reconstructions/copilot/reference/logs/runs/J-A.json"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot/cognate && bun test test",
+        "observed": "11 pass / 0 fail, 196 expect() calls, Ran 11 tests across 10 files [1101.00ms]"
+      }
+    },
+    {
+      "id": 7,
+      "text": "Frontend tools work.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-B-front-capability.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-C.json",
+        "validation/reconstructions/copilot/architectural-counterexamples.md"
+      ],
+      "check": {
+        "command": "node -e \"const j=require('./validation/reconstructions/copilot/reference/logs/runs/J-C.json');if(!j.ok||j.misses!==0)process.exit(1);console.log('reference J-C ok:true',j.hits,'hits',j.misses,'misses')\" && cd validation/reconstructions/copilot/cognate && bun test test/J-B-front-capability.test.tsx",
+        "observed": "reference J-C ok:true 16 hits 0 misses; J-B-front-capability 1 pass / 0 fail"
+      }
+    },
+    {
+      "id": 8,
+      "text": "Backend tool rendering works.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-E-controlled-rendering.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-E.json"
+      ],
+      "check": {
+        "command": "node -e \"const j=require('./validation/reconstructions/copilot/reference/logs/runs/J-E.json');if(!j.ok||j.misses!==0)process.exit(1);console.log('reference J-E ok:true',j.hits,'hits',j.misses,'misses')\" && cd validation/reconstructions/copilot/cognate && bun test test/J-E-controlled-rendering.test.tsx",
+        "observed": "reference J-E ok:true 8 hits 0 misses; J-E-controlled-rendering 1 pass / 0 fail"
+      }
+    },
+    {
+      "id": 9,
+      "text": "Shared state works bidirectionally.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-C-shared-state.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/run-req-J-C-02.json"
+      ],
+      "check": {
+        "command": "grep -l \"New Todo\" validation/reconstructions/copilot/reference/logs/runs/run-req-J-C-*.json && cd validation/reconstructions/copilot/cognate && bun test test/J-C-shared-state.test.tsx",
+        "observed": "run-req-J-C-02.json carries the canvas-written 'New Todo'; J-C-shared-state 1 pass / 0 fail"
+      }
+    },
+    {
+      "id": 10,
+      "text": "Agent context works.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-D-agent-context.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-D.json",
+        "packages/ag-ui/test/inbound.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot/cognate && bun test test/J-D-agent-context.test.tsx",
+        "observed": "1 pass / 0 fail"
+      },
+      "notes": "Cognate side: passes (context as immutable run input; unmount stops supplying it). Reference side: UNCOVERED on the canonical starter \u2014 it mounts no useAgentContext anywhere, so no component can add/remove a context entry; the recorded class is OFFICIAL_FIXTURE_REFERENCE (pinned React-core timing suite 21/21). The reference-side evidence class is carried as recorded; no bare pass is claimed for the black-box surface."
+    },
+    {
+      "id": 11,
+      "text": "Controlled Generative UI works.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-E-controlled-rendering.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-E.json"
+      ],
+      "check": {
+        "command": "node -e \"const j=require('./validation/reconstructions/copilot/reference/logs/runs/J-E.json');if(!j.ok||j.misses!==0)process.exit(1);console.log('reference J-E ok:true',j.hits,'hits',j.misses,'misses')\" && cd validation/reconstructions/copilot/cognate && bun test test/J-E-controlled-rendering.test.tsx",
+        "observed": "reference J-E ok:true 8 hits 0 misses; J-E-controlled-rendering 1 pass / 0 fail"
+      }
+    },
+    {
+      "id": 12,
+      "text": "Declarative A2UI works.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-H-declarative-ui.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-H.json"
+      ],
+      "check": {
+        "command": "node -e \"const j=require('./validation/reconstructions/copilot/reference/logs/runs/J-H.json');if(!j.ok||j.misses!==0)process.exit(1);console.log('reference J-H ok:true',j.hits,'hits',j.misses,'misses')\" && cd validation/reconstructions/copilot/cognate && bun test test/J-H-declarative-ui.test.tsx",
+        "observed": "reference J-H ok:true 6 hits 0 misses; J-H-declarative-ui 1 pass / 0 fail"
+      }
+    },
+    {
+      "id": 13,
+      "text": "Selected open-ended/MCP application works.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/reference-manifest.json",
+        "validation/reconstructions/copilot/reference/logs/runs/J-H.json",
+        "validation/reconstructions/copilot/reference/screenshots"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot/cognate && bun test test/J-H-open-ended-mcp.test.tsx",
+        "observed": "1 pass / 0 fail / 43 expect() calls (~0.6 s): durable remote: tool continuation (RESUMED), UI resource recorded as a durable artifact byte-equal to the fixture document, durable mcp: interaction continuation resolved by the sandboxed frame's posted result, run completed citing it, fresh-client replay from projection + artifact with no live MCP server, bridge disposal revokes the offers (offers: [])."
+      },
+      "notes": "Cognate side: an MCP-app surface now exists and is proven \u2014 consume bridge over the existing offer/lease mechanism (tools/list \u2192 lease-bound offers; tools/call + resources/read on invocation), deterministic local MCP fixture (protocol-only @modelcontextprotocol/sdk 1.30.1, exactly the prompt's 'isolated deterministic MCP fixture'), sandboxed renderer (allow-scripts, opaque origin), settlement evidence per .agents/evidence/2026-10-01-copilot-mcp-open-ended.md. Reference side: remains DOCUMENTED_REFERENCE with the missing mechanism named \u2014 the pinned starter's MCP middleware requires https://mcp.excalidraw.com and the pin ships no local MCP mock (route.ts MCP_SERVER_URL override; showcase compose files define only aimock; d5-mcp-apps.ts 'depends on mcp.excalidraw.com') \u2014 recorded in reference-manifest.json journeyCoverage J-H.openEndedUncovered. The gap is the reference's own executability at the pin, not a Cognate capability; no reference behavior was simulated."
+    },
+    {
+      "id": 14,
+      "text": "Tool-based HITL works.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-F-tool-human-decision.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-F.json"
+      ],
+      "check": {
+        "command": "node -e \"const j=require('./validation/reconstructions/copilot/reference/logs/runs/J-F.json');if(!j.ok||j.misses!==0)process.exit(1);console.log('reference J-F ok:true',j.hits,'hits',j.misses,'misses')\" && cd validation/reconstructions/copilot/cognate && bun test test/J-F-tool-human-decision.test.tsx",
+        "observed": "reference J-F ok:true 4 hits 0 misses; J-F-tool-human-decision 1 pass / 0 fail"
+      }
+    },
+    {
+      "id": 15,
+      "text": "Runtime interrupt HITL works against a reference backend that supports it.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-G-runtime-interrupt.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-G.json",
+        "validation/reconstructions/copilot/tests/protocol/protocol.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot/cognate && bun test test/J-G-runtime-interrupt.test.tsx",
+        "observed": "1 pass / 0 fail"
+      },
+      "notes": "Cognate side: passes (resume and cancel both settle; distinct from a tool result; payload on the wire as a CUSTOM event). Reference side: the pinned agent graph registers no interrupt() node and the starter mounts no interrupt UI \u2014 the reference backend that would support it does not exist at the pin, so the condition 'against a reference backend that supports it' is satisfiable only as a recorded DOCUMENTED_REFERENCE gap (J-G UNCOVERED). The cognate side may pass while the reference side carries its recorded evidence class; that split is stated here."
+    },
+    {
+      "id": 16,
+      "text": "Thread creation, switching, restoration, and relevant management behavior work.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-J-rich-thread.test.tsx",
+        "validation/reconstructions/copilot/reference/logs/runs/J-J.json",
+        "validation/reconstructions/copilot/cognate/src/ui/RichThreadView.tsx"
+      ],
+      "check": {
+        "command": "node -e \"const j=require('./validation/reconstructions/copilot/reference/logs/runs/J-J.json');if(!j.ok)process.exit(1);console.log('reference J-J ok:true; postOutcome:',j.postOutcome,'postMetrics.threadListRequests:',j.postMetrics.threadListRequests)\" && cd validation/reconstructions/copilot/cognate && bun test test/J-J-rich-thread.test.tsx",
+        "observed": "reference J-J ok:true; postOutcome: OBSERVED_ABSENT postMetrics.threadListRequests: 0; J-J-rich-thread 1 pass / 0 fail"
+      },
+      "notes": "Cognate side: creation, switching and restoration work over durable projections; management mutations (rename/archive/delete/pagination) are unimplemented (R-A13 gap). Reference side: thread creation works (POST /threads succeeds elsewhere in the session) but restoration and the thread list are OBSERVED_ABSENT (license-gated useThreads never resolves; reload mints a fresh in-memory thread). Both sides' recorded behavior is stated; neither is masked."
+    },
+    {
+      "id": 17,
+      "text": "Rich UI is restored with its thread rather than only plain text.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/cognate/test/J-J-rich-thread.test.tsx",
+        "validation/reconstructions/copilot/cognate/src/ui/RichThreadView.tsx",
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot/cognate && bun test test/J-J-rich-thread.test.tsx",
+        "observed": "1 pass / 0 fail \u2014 chat text, tool wait and render replay from durable state without reauthorizing the offer"
+      },
+      "notes": "The reference could not perform this restoration on its own surface (D9) \u2014 the divergence direction favors Cognate and is recorded with the reference's own observed-absence evidence."
+    },
+    {
+      "id": 18,
+      "text": "Inline chat, popup, sidebar, and thread drawer parity is demonstrated where they exist in pinned v2.",
+      "status": "pass-with-recorded-gap",
+      "evidence": [
+        "validation/reconstructions/copilot/diffs/summary.md",
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+        "validation/reconstructions/copilot/reference-manifest.json"
+      ],
+      "check": {
+        "command": "node -e \"const s=require('fs').readFileSync('validation/reconstructions/copilot/diffs/DISPOSITIONS.md','utf8');if(!s.includes('| D2 |')||!s.includes('| D13 |'))process.exit(1);console.log('D1..D13 named deviations present; layout/affordance deviations D2/D13 recorded')\"",
+        "observed": "D1..D13 named deviations present; layout/affordance deviations D2/D13 recorded"
+      },
+      "notes": "Cognate side: inline chat and the thread list are demonstrated at both viewports (diffs rows). Reference side: the pinned v2 defines four layouts, but the executed surface captures only inline chat + the drawer (persistent left sidebar on desktop, off-canvas on mobile); popup is unexecuted on the reference. Sidebar/popup chrome maps to Cognate's own layout identity \u2014 named deviations D2/D13. Recorded as a gap on both sides rather than a bare pass."
+    },
+    {
+      "id": 19,
+      "text": "AG-UI interoperability passes independently of CopilotKit.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/protocol/protocol.test.ts",
+        "validation/reconstructions/copilot/tests/protocol/purity.test.ts",
+        "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/protocol/",
+        "observed": "11 pass / 0 fail, 148 expect() calls, Ran 11 tests across 2 files [681.00ms]"
+      },
+      "notes": "Official @ag-ui/client HttpAgent completes a run; the pinned reference RunAgentInput shape is sent verbatim; every SSE frame validates against the pinned @ag-ui/core EventSchema; a transitive-import scanner proves no CopilotKit specifier is reachable (and flags a synthetic dirty graph, so the proof is not vacuous). FU-1 resolved 2026-10-01: the standard tool-message path completes remote-offer round trips (tolerant id resolution in the adapter; regression tests in packages/ag-ui/test/remote-offer.test.ts and this suite). FU-3 resolved: run-level CUSTOM payloads carry runId/threadId so a generic client resolves interrupts via the standard forwardedProps field."
+    },
+    {
+      "id": 20,
+      "text": "Stable reference screens have side-by-side screenshot and diff evidence, and every visible divergence is fixed or recorded as a deviation.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/diffs/summary.md",
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md"
+      ],
+      "check": {
+        "command": "node -e \"const fs=require('fs');const n=fs.readdirSync('validation/reconstructions/copilot/diffs').filter(f=>f.endsWith('.png')).length;const d=fs.readFileSync('validation/reconstructions/copilot/diffs/DISPOSITIONS.md','utf8');const dev=d.split('## Named deviations')[1].split('## ')[0].split('\\n').filter(l=>/^\\| D\\d+ /.test(l)).length;const fix=d.split('## Fixed')[1].split('## ')[0].split('\\n').filter(l=>/^\\| F\\d+ /.test(l)).length;console.log(n,'triptychs;',dev,'named deviations;',fix,'fixed dispositions')\"",
+        "observed": "29 triptychs; 13 named deviations; 5 fixed dispositions"
+      },
+      "notes": "29 shared triptychs (reference | Cognate | pixel diff), 2 reference-only checkpoints (J-E-01/J-E-03 pending state, justified by D7), 0 Cognate-only. Every divergence is fixed (F1-F5) or a named deviation (D1-D13); brand regions are named deviations, never masked. R6 critic found one peripheral un-dispositioned divergence (reference per-message copy/tool icons on mobile checkpoints); recorded as deviation D14 at settlement."
+    },
+    {
+      "id": 21,
+      "text": "Responsive interaction is equivalent for selected viewports.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/diffs/summary.md"
+      ],
+      "check": {
+        "command": "node -e \"const s=require('fs').readFileSync('validation/reconstructions/copilot/diffs/summary.md','utf8');const rows=s.split('## Responsive equivalence')[1].split('\\n').filter(l=>/^\\| J-/.test(l));const bad=rows.filter(l=>!/ \\d+ \\| \\d+ /.test(l));if(bad.length)process.exit(1);console.log(rows.length,'journeys, each with desktop+mobile rows')\"",
+        "observed": "6 journeys, each with desktop+mobile rows"
+      }
+    },
+    {
+      "id": 22,
+      "text": "No CopilotKit runtime dependency exists.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/protocol/purity.test.ts",
+        "validation/reconstructions/copilot/tests/architecture/no-copilotkit-dependency.test.ts",
+        "validation/reconstructions/copilot/tests/architecture/no-reference-imports.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/protocol/",
+        "observed": "11 pass / 0 fail (purity: no copilotkit specifier or module reachable from the endpoint, the suite, or the AG-UI protocol packages; scanner flags a synthetic dirty graph)"
+      }
+    },
+    {
+      "id": 23,
+      "text": "Reconstruction still works after reference source is removed.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/architecture/reference-removed.log",
+        "validation/reconstructions/copilot/tests/architecture/reference-removed.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/architecture/",
+        "observed": "45 pass / 0 fail, 132 expect() calls, Ran 45 tests across 9 files [7.51s] \u2014 includes the live reference-removed run (checkout renamed aside, journey suite 11/11 and inner architecture run green without it, restore asserted)"
+      },
+      "notes": "tests/architecture/reference-removed.log additionally records 4 prior complete runs (2026-10-01 03:56-04:25), each: stash \u2192 journey suite exit 0 \u2192 inner architecture suite 41 pass/0 fail \u2192 checkout restored and asserted present. Concurrent-load discipline: one clean retry is built into the test."
+    },
+    {
+      "id": 24,
+      "text": "No CopilotKit-specific Cognate kernel primitive was added.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/architecture/kernel-primitives.test.ts",
+        "validation/reconstructions/copilot/primitive-provenance.md"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/architecture/kernel-primitives.test.ts",
+        "observed": "3 pass / 0 fail \u2014 packages/**/src defines no reference-named primitive; kernel packages contain no /copilot/i at all"
+      }
+    },
+    {
+      "id": 25,
+      "text": "Every P0/P1 feature maps cleanly to general Cognate primitives.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/primitive-provenance.md",
+        "validation/reconstructions/copilot/architectural-counterexamples.md"
+      ],
+      "check": {
+        "command": "node -e \"const s=require('fs').readFileSync('validation/reconstructions/copilot/primitive-provenance.md','utf8');const rows=s.split('\\n').filter(l=>/^\\| R-A\\d+ /.test(l)&&/\\| No \\|$/.test(l)).length;const nonNo=s.split('\\n').filter(l=>/^\\| R-A\\d+ /.test(l)&&!/\\| No \\|$/.test(l)).length;if(rows<14||nonNo!==0)process.exit(1);console.log(rows,'provenance rows (R-A01..R-A14) carry Special case? = No,',nonNo,'exceptions')\"",
+        "observed": "14 provenance rows (R-A01..R-A14) carry Special case? = No, 0 exceptions"
+      }
+    },
+    {
+      "id": 26,
+      "text": ".sea grammar was not modified.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/architecture/sea-unchanged.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/architecture/sea-unchanged.test.ts",
+        "observed": "4 pass / 0 fail \u2014 git porcelain/diff empty for .sea, packages/domainforge, packages/realitytrace; .sea/interaction holds only validation models and catalog docs; no reconstruction source writes to .sea/**"
+      }
+    },
+    {
+      "id": 27,
+      "text": "DomainForge was not modified specifically for this reconstruction.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/architecture/domainforge-realitytrace-unchanged.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/architecture/domainforge-realitytrace-unchanged.test.ts",
+        "observed": "5 pass / 0 fail \u2014 no working-tree or HEAD diff under packages/domainforge; no copilot-reconstruction commit subject; @godspeedai/domainforge 0.18.2 pin intact"
+      }
+    },
+    {
+      "id": 28,
+      "text": "RealityTrace was not modified specifically for this reconstruction.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/architecture/domainforge-realitytrace-unchanged.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/architecture/domainforge-realitytrace-unchanged.test.ts",
+        "observed": "5 pass / 0 fail \u2014 no working-tree or HEAD diff under packages/realitytrace; no copilot-reconstruction commit subject"
+      }
+    },
+    {
+      "id": 29,
+      "text": "RuVector remains disposable/rebuildable derived cognition.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/tests/persistence/cognition.test.ts"
+      ],
+      "check": {
+        "command": "cd validation/reconstructions/copilot && bun test tests/persistence/",
+        "observed": "5 pass / 0 fail, 166 expect() calls \u2014 as-built case (no cognitive index wired; identical behavior/authorization across restart) and the general Phase 14 sequence (delete RuVector index \u2192 restart \u2192 deterministic behavior, identical authorization, intact threads/events \u2192 rebuild from events \u2192 retrieval returns; mid-flight index destruction changes nothing authoritative)"
+      }
+    },
+    {
+      "id": 30,
+      "text": "All Cognate architecture and regression tests pass.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/reference-manifest.json"
+      ],
+      "check": {
+        "command": "just verify",
+        "observed": "78/78 gates pass (first attempt, serial run 2026-10-01, includes CG-PRF-002 Copilot profile acceptance behaviors)"
+      }
+    },
+    {
+      "id": 31,
+      "text": "Independent verifier approves with evidence.",
+      "status": "pass",
+      "evidence": [
+        ".agents/evidence/2026-10-01-copilot-r6-critic.md"
+      ],
+      "check": {
+        "command": "test -f .agents/evidence/2026-10-01-copilot-r6-critic.md && grep -q 'VERDICT: APPROVE' .agents/evidence/2026-10-01-copilot-r6-critic.md",
+        "observed": "VERDICT: APPROVE \u2014 R6 consolidated critic re-ran every gate serially (cognate 12/0, protocol 11/0, persistence 5/0, architecture 45/0 with live gate-23 cycle, checker exit 0/175 paths, just verify 78/78 last-and-alone, deepseek regression 37/0), performed the systematic 31-image pass, audited all 32 gates and the completion standard; no R-block reopens."
+      },
+      "notes": "Six independent verdicts of record: five per-unit critics (visual, protocol, persistence, architecture, parity-report) plus this consolidated R6 pass. Findings 1-3 (stale prose line, stale counts, mobile copy/tool icons) were applied before settlement; notes 4-6 recorded."
+    },
+    {
+      "id": 32,
+      "text": "No unresolved P0/P1 failures remain.",
+      "status": "pass",
+      "evidence": [
+        "validation/reconstructions/copilot/parity-report.json"
+      ],
+      "check": {
+        "command": "node -e \"const r=require('./validation/reconstructions/copilot/parity-report.json');const bad=r.matrixRows.filter(x=>x.status==='fail'||x.status==='open');console.log('matrix rows fail/open:',bad.map(x=>x.id).join(',')||'none')\"",
+        "observed": "matrix rows fail/open: none"
+      },
+      "notes": "Matrix rows: 11 pass / 3 pass-with-recorded-gap / 0 fail-open. Every recorded gap is a named disposition (R-A06 partial-args re-render proven at the wire level with the UI-leg note; R-A13 Intelligence-dependent documented class; R-A14 popup unexecuted both sides) plus D1-D14 deviations. Gate 31 approved; all three completion questions yes \u2014 nothing unresolved."
+    }
+  ],
+  "openDeviations": [
+    {
+      "id": "D1",
+      "summary": "Brand region: 'CopilotKit' wordmark + kite logo vs Cognate masthead/subtitle.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 Cognate visual identity out of scope by plan R4"
+    },
+    {
+      "id": "D2",
+      "summary": "Reference persistent left-sidebar navigation + Chat/App toggle vs Cognate top journey tab bar.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 substrate bench layout identity, presentation-owned elsewhere"
+    },
+    {
+      "id": "D3",
+      "summary": "Reference suggested-prompt pills under the composer; Cognate starts journeys through labeled controls.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 no equivalent control in the Cognate fixture; recorded, not fabricated"
+    },
+    {
+      "id": "D4",
+      "summary": "Reply/payload copy differs (deterministic Cognate fixtures vs reference fixture content).",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "non-structural note \u2014 fixture content, not structure"
+    },
+    {
+      "id": "D5",
+      "summary": "Reference todo card board + tool chips vs Cognate versioned state ledger; conversation placement differs.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 ledger is the tested surface; agent\u2192canvas\u2192agent round trip equivalent in outcome"
+    },
+    {
+      "id": "D6",
+      "summary": "Reference chart bodies (donut/bar) and full dashboard vs Cognate component/phase/cards and catalog scalars.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 fixture/catalog scope; information and control equivalence holds at each side's scope"
+    },
+    {
+      "id": "D7",
+      "summary": "J-E pending phase not UI-photographable on the Cognate surface (~5ms run vs ~100ms first streamed event); J-E suite asserts the pending fold instead.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 left uncaptured rather than mislabeled"
+    },
+    {
+      "id": "D8",
+      "summary": "J-F-02 compares different run phases: the reference's own 'slot-selected' capture caught the resolved state; Cognate's decision control resolves in one activation with a single slot.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 resolved phase compared by the J-F-03 triptych"
+    },
+    {
+      "id": "D9",
+      "summary": "After reload the reference renders its welcome screen (restoration OBSERVED_ABSENT, license-gated); Cognate restores the thread from durable projections.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 divergence direction favors Cognate; recorded with the reference's own wire metrics"
+    },
+    {
+      "id": "D10",
+      "summary": "Reference drawer pinned to 'Loading threads\u2026' with zero rows; Cognate lists durable threads with status/turn counts.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 same direction as D9"
+    },
+    {
+      "id": "D11",
+      "summary": "Reference shows the same welcome screen for 'new thread' and 'switched back' (byte-identical J-J-07/08); Cognate shows a genuine fresh thread and a genuine restored one.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 same direction as D9"
+    },
+    {
+      "id": "D12",
+      "summary": "Reference composes generative components inline in the transcript; Cognate's transcript carries message turns, renders appear in journey panels and the replay readout.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 presentation-layer composition difference, recorded"
+    },
+    {
+      "id": "D13",
+      "summary": "Affordance regions differ: Cognate masthead runtime indicator + theme toggle vs reference launcher bubble + Chat/App segmented control.",
+      "evidence": "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+      "disposition": "named deviation \u2014 brand/affordance region (as D1/D2)"
+    },
+    {
+      "id": "REF-ONLY-J-E-01",
+      "summary": "J-E-01-controlled-genui-pending has no Cognate capture: the pending state is not photographable on the Cognate surface.",
+      "evidence": "validation/reconstructions/copilot/diffs/summary.md",
+      "disposition": "reference-only checkpoint justified by D7"
+    },
+    {
+      "id": "REF-ONLY-J-E-03",
+      "summary": "J-E-03-backend-tool-pending has no Cognate capture: same pending-state reason.",
+      "evidence": "validation/reconstructions/copilot/diffs/summary.md",
+      "disposition": "reference-only checkpoint justified by D7"
+    },
+    {
+      "id": "D14",
+      "description": "Reference chat rows carry per-message copy/tool action icons; the Cognate transcript rows do not reproduce them (affordances live at surface level: stop/send, journey controls, HITL/interrupt controls).",
+      "evidence": [
+        "diffs/J-A-02-after-first-turn-mobile-390x844.png",
+        "diffs/J-C-05-after-canvas-write-turn-mobile-390x844.png"
+      ],
+      "disposition": "Named deviation \u2014 peripheral/P2 detail-level affordance, not a structural control; recorded, never masked (found by the R6 critic's systematic pass)."
+    }
+  ],
+  "followUps": [
+    {
+      "id": "FU-1",
+      "title": "RESOLVED 2026-10-01: remote-offer waits resolve via the standard AG-UI tool-message path",
+      "description": "The adapter's tool-message resolve path now accepts both wire shapes: a full continuation id (frontend waits) or a bare remote id, which it addresses to the thread's current run's remote continuation (`<runId>.wait.remote:<remoteId>`); unknown ids still fail closed through the service's continuation lookup. Wire projection is unchanged (archived shapes stay valid). Regression tests: packages/ag-ui/test/remote-offer.test.ts (generic client completes the round trip, TOOL_CALL_RESULT projected, run completes) and the copilot protocol suite's 'a generic AG-UI client completes the remote-offer round trip via the standard tool-message path' test, which failed with RUN_ERROR not_found before the fix.",
+      "evidence": [
+        "packages/ag-ui/test/remote-offer.test.ts",
+        "validation/reconstructions/copilot/tests/protocol/protocol.test.ts",
+        "packages/ag-ui/src/index.ts"
+      ],
+      "foundBy": "tests/protocol; confirmed by its critic",
+      "resolved": true
+    },
+    {
+      "id": "FU-2",
+      "title": "Reference-side MCP App surface remains DOCUMENTED_REFERENCE (gate 13 cognate leg closed)",
+      "description": "Closed on the Cognate side: consume bridge over the offer/lease mechanism + deterministic local MCP fixture + sandboxed renderer, proven by cognate/test/J-H-open-ended-mcp.test.tsx (see .agents/evidence/2026-10-01-copilot-mcp-open-ended.md). Remaining: if a future pin ships a locally executable MCP-app surface (local mock server), execute it and add the side-by-side comparison; today the pinned surface requires https://mcp.excalidraw.com.",
+      "evidence": [
+        "validation/reconstructions/copilot/reference-manifest.json",
+        "validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx",
+        ".agents/evidence/2026-10-01-copilot-mcp-open-ended.md"
+      ]
+    },
+    {
+      "id": "FU-3",
+      "title": "RESOLVED 2026-10-01: run-level CUSTOM payloads are self-sufficient; resolution rides the standard forwardedProps field",
+      "description": "AG-UI 1.0.0 has no interrupt event, so run-level waits surface as CUSTOM (cognate.continuation / cognate.unsupported_interaction) \u2014 projecting a tool call for them would contradict the reference's own characterization (RUN_FINISHED plus interrupt payload, not a tool result). The payload now carries everything a generic client needs to act through the STANDARD RunAgentInput.forwardedProps field (forwardedProps.cognate.resolve/cancel): continuation id, type, kind, payload, runId, threadId \u2014 no rawEvent parsing required. Asserted by packages/ag-ui/test/remote-offer.test.ts and the copilot protocol suite's runtime-interrupt test.",
+      "evidence": [
+        "packages/ag-ui/test/remote-offer.test.ts",
+        "validation/reconstructions/copilot/tests/protocol/protocol.test.ts",
+        "packages/ag-ui/src/index.ts"
+      ],
+      "resolved": true
+    },
+    {
+      "id": "FU-4",
+      "title": "Independent critic verdict (gate 31) is pending",
+      "description": "Plan R6: an independent pass must re-run the gates from the artifacts alone \u2014 verify every cited path (check-parity-report.mjs), re-run the journey suites, and perform the systematic visual diff across diffs/ and both screenshot sets \u2014 and record its verdict in .agents/. This report is the groundwork, not the verdict.",
+      "evidence": [
+        ".agents/plans/copilot-reconstruction-remaining.md",
+        "validation/reconstructions/copilot/check-parity-report.mjs"
+      ]
+    },
+    {
+      "id": "FU-5",
+      "title": "Managed thread mutations (R-A13) unimplemented on both executed surfaces",
+      "description": "Rename/archive/delete/pagination/realtime and model-generated thread titles are Intelligence-dependent in the pinned reference (license-gated useThreads never listed threads in any capture) and are not implemented in the reconstruction. If the critic upgrades R-A13's priority, the general shape is a thread-metadata mutation capability over the durable thread correlation plus a projection fold \u2014 not a CopilotKit-specific primitive.",
+      "evidence": [
+        "validation/reconstructions/copilot/reference/logs/runs/J-J.json",
+        "validation/reconstructions/copilot/cognate/src/ui/RichThreadView.tsx"
+      ]
+    },
+    {
+      "id": "FU-6",
+      "title": "Pending-state side-by-side photography (J-E-01/J-E-03) remains reference-only",
+      "description": "D7: the Cognate run completes in ~5ms while the streamed channel delivers its first event ~100ms later, so every app-issued read returns the terminal fold. A deliberate capture-mode latency (presentation-owned, e.g. a fixture knob) would make the pending state photographable; until then the pending fold is proven by cognate/test/J-E-controlled-rendering.test.tsx and the checkpoints stay reference-only.",
+      "evidence": [
+        "validation/reconstructions/copilot/diffs/DISPOSITIONS.md",
+        "validation/reconstructions/copilot/cognate/test/J-E-controlled-rendering.test.tsx"
+      ]
+    }
+  ],
+  "completionStandard": {
+    "q1": {
+      "question": "Can a developer/user familiar with current CopilotKit perform the same important application interactions through substantially the same interfaces and UI behaviors, while Cognate is doing all of the work underneath?",
+      "answer": "yes",
+      "basis": [
+        "Every important application interaction in the prompt's Objective list is performable in the reconstruction through interfaces matching the reference's observed or documented behavior: chat streaming, frontend tools, backend tool rendering, shared state, agent context, controlled Generative UI, declarative A2UI, tool-based HITL, runtime interrupt, rich-thread restore and switching, layouts (chat + sidebar-as-tabs, D2), and AG-UI interoperability \u2014 12/12 journey tests green (cd validation/reconstructions/copilot/cognate && bun test test) and 29 side-by-side structural-parity triptychs with every divergence fixed (F1-F5) or named (D1-D13).",
+        "Open-ended Generative UI (MCP App) is performable and proven with the prompt's own prescribed isolated deterministic MCP fixture (cognate/test/J-H-open-ended-mcp.test.tsx, 1 pass / 0 fail / 43 expect()): tool invocation, UI resource, sandboxed interactive frame, posted result settling the run, replay, and offer revocation. The pinned reference cannot execute that surface locally (external mcp.excalidraw.com; no local mock ships in the pin \u2014 reference-manifest.json J-H openEndedUncovered), so its interface parity rests on the pin's own source (MCPAppsActivityRenderer's sandboxed-iframe mechanism), carried as DOCUMENTED_REFERENCE with the missing mechanism named \u2014 the prompt's evidence-class system applied as designed; no reference behavior was simulated.",
+        "Q1 asks whether the interactions are performable while Cognate does all of the work underneath \u2014 they are, for every surface. Per-row evidence classes (BLACK_BOX_REFERENCE / OFFICIAL_FIXTURE_REFERENCE / DOCUMENTED_REFERENCE) live in matrixRows; exactly one row (R-A13, managed hosted thread list) plus the MCP surface's reference leg rest on the documented class, and both name their missing mechanism."
+      ]
+    },
+    "q2": {
+      "question": "Can every reconstructed behavior be explained as a composition or projection of existing general Cognate primitives rather than a CopilotKit exception?",
+      "answer": "yes",
+      "basis": [
+        "primitive-provenance.md: 14/14 P0/P1 rows end 'Special case? No', each grounded in named mechanisms and real files (remote capability offer/lease + useRemoteCapability for frontend tools; thread-scoped durable state with CAS for shared state; ui.render events + catalog projection for GenUI/A2UI; invokeFrontend continuation for tool HITL; run-level waitFor for interrupts; event replay + projections for rich threads).",
+        "The two architectural counterexamples were repaired as domain-general runtime mechanisms (C1 remote capability offers, C2 thread-scoped durable state) plus the A1 adapter defect repair \u2014 architectural-counterexamples.md; tests/architecture/kernel-primitives.test.ts proves no reference-named kernel primitive exists (3 pass / 0 fail)."
+      ]
+    },
+    "q3": {
+      "question": "Can an ordinary AG-UI participant interoperate with the Cognate implementation without CopilotKit being present at all?",
+      "answer": "yes",
+      "basis": [
+        "tests/protocol 11/11: the official @ag-ui/client HttpAgent (no CopilotKit) completes a run; the pinned reference RunAgentInput shape streams a schema-valid run verbatim; every SSE frame validates against the pinned @ag-ui/core EventSchema; a transitive-import scanner proves no CopilotKit specifier is reachable and flags a synthetic dirty graph so the proof is not vacuous.",
+        "Recorded caveat (followUps FU-1/FU-3): two resolution paths \u2014 a remote offer answered by a standard tool message, and runtime-interrupt resume/cancel \u2014 currently require the endpoint's forwardedProps.cognate extension; chat, state, run lifecycle and frontend-tool HITL (J-F) interoperate with standard frames alone."
+      ]
+    }
+  },
+  "observedRuns": {
+    "recordedAt": "2026-10-01T04:44:30Z",
+    "cognateJourneys": "cd validation/reconstructions/copilot/cognate && bun test test \u2192 11 pass / 0 fail, 196 expect() calls, 10 files [1189.00ms]",
+    "protocol": "cd validation/reconstructions/copilot && bun test tests/protocol/ \u2192 11 pass / 0 fail, 148 expect() calls, 2 files [947.00ms]",
+    "persistence": "cd validation/reconstructions/copilot && bun test tests/persistence/ \u2192 5 pass / 0 fail, 166 expect() calls, 3 files [1311.00ms]",
+    "architectureSkipFlag": "COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1 bun test tests/architecture/ \u2192 44 pass / 1 skip / 0 fail, 45 tests [14.46s]",
+    "architectureFull": "bun test tests/architecture/ \u2192 45 pass / 0 fail, 132 expect() calls, 9 files [7.51s] (live reference-removed run; log also records 4 prior runs, all exit 0 with restore confirmed)",
+    "justVerify": "just verify \u2192 78/78 gates pass (first attempt, serial; no concurrent-load flake occurred)",
+    "checker": "node validation/reconstructions/copilot/check-parity-report.mjs \u2192 see checkerResult after running"
+  },
+  "checkerResult": {
+    "command": "node validation/reconstructions/copilot/check-parity-report.mjs",
+    "exitCode": 0,
+    "output": "ok: parsed validation/reconstructions/copilot/parity-report.json | ok: checked 174 cited artifact paths against the repository root | ok: parity-report.json is valid (parses; all cited paths exist; 32 gates present with statuses; executable checks behind every non-open gate; 14 matrix rows; completion standard answered)"
+  }
+}

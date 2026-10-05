@@ -1,0 +1,17 @@
+{
+ "journey": "J-D",
+ "outcome": "UNCOVERED",
+ "ok": false,
+ "uncovered": {
+  "scenario": "Mounted UI supplies current context to the next run; unmount removes it.",
+  "reason": "The pinned canonical starter mounts no useAgentContext anywhere in examples/integrations/langgraph-js/src, so no component can add or remove an entry of the AG-UI `context` array. The only context element observed on the wire is CopilotKit's always-on A2UI catalog entry.",
+  "fixture": "showcase/aimock/d6/langgraph-typescript/agent-config.json",
+  "fixtureReachable": "the column matches (context: langgraph-typescript) but its replies are content, not context propagation",
+  "evidenceClass": "OFFICIAL_FIXTURE_REFERENCE",
+  "evidence": [
+   "packages/react-core/src/v2/hooks/__tests__/use-agent-context-timing.test.tsx (21/21, 2026-09-28)",
+   "validation/reconstructions/copilot/reference/logs/runs/run-req-J-A-00.json -> context[] holds only the A2UI catalog element"
+  ]
+ },
+ "recorded_at": "2026-09-30T18:39:46.436Z"
+}

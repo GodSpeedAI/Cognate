@@ -2,6 +2,7 @@
 # Purpose: portable, implementation-aligned reference for agents writing .sea files
 # Accuracy baseline: checked against domainforge-core/grammar/sea.pest and current CLI source on 2026-07-07;
 # re-verified against CLI source plus the 0.17.0 debug binary (validate/parse/fmt live runs) on 2026-09-25.
+# CLI 0.18.1 (crates.io release) re-checked 2026-09-28: fmt still rewrites forall quantifiers into unparseable ForAll(...) and drops // comments.
 
 ---
 meta:
@@ -345,7 +346,7 @@ cli:
       note: "Current CLI prints import graph stats. It does not provide --out in the current source."
     project:
       usage: "domainforge project --format <format> [options] <input.sea> <output>"
-      formats: "29 formats at 0.17.0 — run `domainforge project --help`. Single-file: calm, kg (legacy, prefer rdf), protobuf, proto. Directory: ai-llm, ai-graph-ml, cep-eval, ai-learning, lean, rdf, bpmn, cmmn, archimate, otel-semconv, baml, dspy, zenml, cloudevents, asyncapi, devbox, cell, dagger, cedar, gauge, alloy, tla, domain-python, domain-typescript, domain-rust."
+      formats: "29 formats at 0.18.1 — run `domainforge project --help`. Single-file: calm, kg (legacy, prefer rdf), protobuf, proto. Directory: ai-llm, ai-graph-ml, cep-eval, ai-learning, lean, rdf, bpmn, cmmn, archimate, otel-semconv, baml, dspy, zenml, cloudevents, asyncapi, devbox, cell, dagger, cedar, gauge, alloy, tla, domain-python, domain-typescript, domain-rust."
       formats_single_file_or_path: ["calm", "kg", "protobuf", "proto"]
       formats_directory_output: ["ai-llm", "ai-graph-ml", "cep-eval", "ai-learning", "lean", "rdf", "bpmn", "cmmn", "archimate", "otel-semconv", "baml", "dspy", "zenml", "cloudevents", "asyncapi", "devbox", "cell", "dagger", "cedar", "gauge", "alloy", "tla", "domain-python", "domain-typescript", "domain-rust"]
       common_options:

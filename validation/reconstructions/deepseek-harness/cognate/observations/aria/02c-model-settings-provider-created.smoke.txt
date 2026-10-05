@@ -1,0 +1,40 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session" [disabled]: New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - paragraph: No workspace selected
+  - button "Settings"
+- main:
+  - alert: Unable to create default workspace. Use Choose workspace to select a folder.
+  - button "Standard mode" [disabled]
+  - textbox "Workspace directory path":
+    - /placeholder: /path/to/project
+  - button "Choose workspace" [disabled]
+- dialog "Settings":
+  - heading "Settings" [level=2]
+  - button "Open configuration file" [disabled]
+  - button "Close settings": ×
+  - navigation "Settings sections":
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins" [disabled]
+    - button "Agent presets" [disabled]
+  - heading "Models" [level=3]
+  - paragraph: Enter your API key to use models from the following provider.
+  - text: mock-model — mock-model-1 API key configured
+  - button "Edit mock-model (mock-model)": Edit
+  - button "Delete mock-model (mock-model)" [disabled]: Delete
+  - text: API key
+  - textbox "API key":
+    - /placeholder: Configured — enter a new value to replace
+  - button "Customized settings"
+  - button "Cancel"
+  - button "Apply" [disabled]
+  - button "Add model provider"

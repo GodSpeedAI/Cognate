@@ -6,7 +6,7 @@ import type { Component, ComponentHandle, Policy } from "@cognate/kernel-api";
 import { defineProfile } from "@cognate/profile";
 import type { ComponentEntry, ProfileDefinition } from "@cognate/profile";
 import type { AgentDefinition, Caller, RunContext } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
+import { createRuntime, type GovernanceOptions, governanceFromEnv } from "@cognate/runtime-bun";
 import type { ActionPolicy, Runtime } from "@cognate/runtime-bun";
 
 export const LOOP_AGENT = "agent.loop";
@@ -163,6 +163,11 @@ export interface HarnessOptions {
   readonly caller?: Caller;
   /** Additional agents (e.g. subagents) served by the runtime alongside the loop agent. */
   readonly agents?: readonly AgentDefinition[];
+  /**
+   * Governance of consequential operations. Default: taken from the environment (`COGNATE_GOVERNANCE`,
+   * `COGNATE_SEA_FORGE_SOCKET`, `COGNATE_WORLD_REF`); with nothing set it is `off` (local policy only).
+   */
+  readonly governance?: GovernanceOptions;
 }
 
 export interface Harness {
@@ -255,7 +260,7 @@ export async function createHarness(options: HarnessOptions): Promise<Harness> {
   const policy: Policy = rulePolicy("harness-allow-all", [() => ({ allow: true, policyId: "harness-allow-all", reason: "harness policy allows all invocations by default (spec §29.2)" })]);
   const actions: ActionPolicy = { authorize: () => ({ allow: true, reason: "harness actions policy allows system and default users (spec §29.2)" }) };
 
-  const runtime = await createRuntime({ store: options.store, policy, actions, agents: [loopAgent, ...(options.agents ?? [])] });
+  const runtime = await createRuntime({ store: options.store, policy, actions, governance: options.governance ?? governanceFromEnv(process.env), agents: [loopAgent, ...(options.agents ?? [])] });
 
   async function mount(component: Component): Promise<ComponentHandle> {
     const handle = await runtime.kernel.mount(withToolRegistry(component));

@@ -29,6 +29,13 @@ const agents: AgentDefinition[] = [
       return { seen: await ctx.state("seen") };
     },
   },
+  {
+    id: "agent.threadStateWriter",
+    version: "1.0.0",
+    async run(_input, ctx) {
+      return await ctx.updateSharedState("write", { snapshot: { source: "agent" } });
+    },
+  },
 ];
 
 /** Wraps a service so the event stream can be severed on demand, simulating network loss. */
@@ -103,6 +110,42 @@ describe("headless client (§25.1)", () => {
     expect(done.output).toEqual({ seen: { flag: true } });
   });
 
+  test("thread shared state observes caller and agent writes and hydrates a new client from the canonical snapshot", async () => {
+    await setup();
+    const threadId = "thread-shared-client";
+    const shared = client.threadSharedState(threadId);
+    const callerWrite = await client.updateThreadSharedState(threadId, { snapshot: { source: "caller" } }, { expectedVersion: 0 });
+    expect(callerWrite).toEqual({ state: { source: "caller" }, version: 1 });
+    await until(() => shared.get(), (value) => value.version === 1, "caller thread state event");
+
+    const run = await client.startRun("agent.threadStateWriter", null, { correlationId: threadId });
+    await until(() => shared.get(), (value) => value.version === 2 && (value.state as { source?: string }).source === "agent", "agent thread state event");
+    expect((await runtime.service.getRun(alice, { runId: run.runId })).runId).toBe(run.runId);
+
+    const reloaded = createClient({ service: runtime.service, caller: alice, reconnect: { baseMs: 10, maxMs: 50 } });
+    try {
+      const reloadedState = reloaded.threadSharedState(threadId);
+      await until(() => reloadedState.get(), (value) => value.version === 2, "canonical thread state after reload");
+      expect(reloadedState.get().state).toEqual({ source: "agent" });
+    } finally {
+      await reloaded.close();
+    }
+  });
+
+  test("thread state catches durable updates made while the client event stream reconnects", async () => {
+    const f = await setup();
+    const threadId = "thread-shared-reconnect";
+    const shared = client.threadSharedState(threadId);
+    const statuses: string[] = [];
+    client.status.subscribe((status) => statuses.push(status));
+    await until(() => client.status.get(), (status) => status === "live", "client live");
+    f.cut();
+    await until(() => statuses, (seen) => seen.includes("reconnecting"), "client reconnecting");
+    await runtime.service.updateSharedState(alice, { threadId, update: { snapshot: { afterReconnect: true } }, idempotencyKey: "thread-reconnect" });
+    await until(() => shared.get(), (value) => value.version === 1, "replayed thread update");
+    expect(shared.get().state).toEqual({ afterReconnect: true });
+  });
+
   test("frontend capabilities are served by the client and the run resumes; unregistered ones stay open", async () => {
     await setup();
     const { runId } = await client.startRun("agent.chat", { amount: 1 });
@@ -120,6 +163,27 @@ describe("headless client (§25.1)", () => {
     expect(done.output).toMatchObject({ approved: true, focus: { centered: true } });
     expect(done.artifacts).toHaveLength(1);
     expect(new TextDecoder().decode((await client.artifact(done.artifacts[0]!)).bytes)).toBe("done");
+  });
+
+  test("a mounted remote offer renews its lease and close revokes it", async () => {
+    await setup();
+    const stop = await client.offerCapability({
+      leaseId: "editor-mounted", agent: "agent.chat", contract: { id: "editor.focus", version: "1.0.0" },
+      description: "Focus an open editor", inputSchema: { type: "object" }, ttlMs: 20,
+    }, () => ({ focused: true }));
+    const first = (await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" }))[0]!;
+    await Bun.sleep(70);
+    const renewed = (await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" }))[0]!;
+    expect(renewed.id).toBe(first.id);
+    expect(renewed.expiresAt).toBeGreaterThan(first.expiresAt);
+    await stop();
+    expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" })).toEqual([]);
+    await client.offerCapability({
+      leaseId: "editor-remounted", agent: "agent.chat", contract: { id: "editor.focus", version: "1.0.0" },
+      description: "Focus an open editor", inputSchema: { type: "object" }, ttlMs: 20,
+    }, () => ({ focused: true }));
+    await client.close();
+    expect(await runtime.service.listRemoteOffers(alice, { agent: "agent.chat" })).toEqual([]);
   });
 
   test("subscriptions resume from the last position after a network cut, without gaps or duplicates", async () => {
@@ -153,5 +217,30 @@ describe("headless client (§25.1)", () => {
     const { runId } = await client.startRun("agent.chat", { amount: 9 });
     const s: RunState = await until(() => client.run(runId).get(), (v) => v.position > 0, "position");
     expect(Object.keys(s).sort()).toEqual(["artifacts", "error", "openContinuations", "output", "position", "runId", "state", "status", "text"]);
+  });
+
+  test("projection store refresh() re-reads without a new event (a fold can land after the event-triggered read)", async () => {
+    // A store refresh is scheduled per delivered event, but the runtime's projection fold can
+    // complete just after that read — and a run that then waits commits no further events. The
+    // public refresh() lets a consumer re-read once durable state changes without waiting for a
+    // stream event that may never come.
+    let rows: { key: string; value: Json }[] = [];
+    const stub = {
+      readProjection: () => Promise.resolve(rows),
+      events: (_caller: unknown, request: { signal?: AbortSignal }) => (async function* () {
+        const signal = request?.signal;
+        if (signal?.aborted) return;
+        await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }));
+      })(),
+    } as unknown as RuntimeService;
+    const probe = createClient({ service: stub, caller: alice });
+    const store = probe.projection("p");
+    await until(() => store.get(), (v) => v !== undefined, "initial read");
+    expect(store.get()).toEqual([]);
+    rows = [{ key: "run/1", value: { renders: 1 } }];
+    store.refresh();
+    await until(() => store.get(), (v) => (v?.length ?? 0) === 1, "refreshed row");
+    expect(store.get()).toEqual([{ key: "run/1", value: { renders: 1 } }]);
+    await probe.close();
   });
 });

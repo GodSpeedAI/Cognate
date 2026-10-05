@@ -40,7 +40,7 @@ test("§3.2/§3.3: DomainForge and RealityTrace are consumed as pinned releases 
     }
   }
   expect(offenders).toEqual([]);
-  expect(readFileSync("justfile", "utf8")).toMatch(/--tag realitytrace-v\d+\.\d+\.\d+/);
+  expect(readFileSync("justfile", "utf8")).toMatch(/cargo install realitytrace --version \d+\.\d+\.\d+ --locked/);
 });
 
 test("§3.7: the canonical proto schema defines framework concepts only, never domain ontology", () => {

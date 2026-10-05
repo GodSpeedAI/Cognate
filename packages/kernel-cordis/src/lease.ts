@@ -101,6 +101,9 @@ async function invoke(
     tenant: callerTenant,
     scopeId: provider.scopeId,
     signal: controller.signal,
+    // Always callable: a handler never needs to guard `ctx.progress?.(...)` even when the caller
+    // did not supply a channel (spec: no-op outside a run).
+    progress: context.progress ?? (async () => {}),
   };
 
   const ran = (async (): Promise<InvocationResult<unknown>> => {

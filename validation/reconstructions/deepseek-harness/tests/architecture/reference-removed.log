@@ -1,0 +1,112 @@
+PASS: (a) moved /home/sprime01/projects/cognate/.tmp/ref/deepseek-harness to /tmp/deepseek-harness-ref-stash.7G1Tpi (outside the repo)
+bun install v1.4.0 (34cbb9a40)
+
+Checked 248 installs across 247 packages (no changes) [613.00ms]
+PASS: (b) bun install --frozen-lockfile
+$ tsc -p tsconfig.json
+PASS: (c) bun run typecheck
+bun test v1.4.0 (34cbb9a40)
+
+validation/reconstructions/deepseek-harness/cognate/test/J-G-persistence.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-E-plan.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-F-delegation.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-H-cancellation.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-B-basic-session.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-C-tool-execution.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-WS-select.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-D-approval.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-CFG-model-provider.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+validation/reconstructions/deepseek-harness/cognate/test/J-H-provider-error.test.ts:
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+[domain] loaded 51 semantic objects (digest sha256:43e412c95eaed7a95d7e2e2522f404f44b59c16d7d633fae77fafdc96cff6864) from /home/sprime01/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea
+
+ 19 pass
+ 0 fail
+ 119 expect() calls
+Ran 19 tests across 10 files. [26.65s]
+PASS: (d) bun test validation/reconstructions/deepseek-harness/cognate/test
+[mock-model] listening on http://127.0.0.1:4010 (chunk delay 40ms)
+[capture] smoke/01-first-launch
+[capture] smoke/03-no-workspace
+[capture] smoke/02-model-settings
+[capture] smoke/02b-model-settings-custom-form
+[capture] smoke/02c-model-settings-provider-created
+[capture] smoke/02d-model-settings-redacted-key
+[capture] smoke/04-workspace-selected
+[capture] smoke/05-empty-session
+[mock-model] scenario=plain step=0 stream=true
+[capture] smoke/06-user-message
+[capture] smoke/07-streaming
+[mock-model] scenario=multi step=0 stream=true
+[mock-model] scenario=multi step=1 stream=true
+[mock-model] scenario=multi step=2 stream=true
+[mock-model] scenario=multi step=3 stream=true
+[capture] smoke/08-tool-running
+[capture] smoke/09-tool-complete
+[capture] smoke/10-file-change-collapsed
+[capture] smoke/10-file-change-expanded
+[mock-model] scenario=approval step=0 stream=true
+[capture] smoke/11-approval-pending
+[capture] smoke/11b-approval-pending-after-reload
+[mock-model] scenario=approval step=1 stream=true
+[capture] smoke/12-approval-resolved-allow
+[mock-model] scenario=approval step=0 stream=true
+[mock-model] scenario=approval step=1 stream=true
+[capture] smoke/12-approval-resolved-deny
+[mock-model] scenario=plan step=0 stream=true
+[mock-model] scenario=plan step=1 stream=true
+[capture] smoke/13-plan-active
+[capture] smoke/13b-plan-review-prompt
+[mock-model] scenario=plan step=2 stream=true
+[capture] smoke/13c-plan-completed
+[mock-model] scenario=delegate step=0 stream=true
+[mock-model] scenario=delegate step=1 stream=true
+[mock-model] scenario=child step=0 stream=true
+[capture] smoke/14-subagent-active
+[capture] smoke/14b-subagent-completed-panel
+[capture] smoke/15-completed-session
+[mock-model] scenario=plain step=0 stream=true
+[capture] smoke/19-cancelled
+[mock-model] scenario=error step=0 stream=true
+[mock-model] scenario=error step=0 stream=true
+[mock-model] scenario=error step=0 stream=true
+[mock-model] scenario=error step=0 stream=true
+[mock-model] scenario=error step=0 stream=true
+[mock-model] scenario=error step=0 stream=true
+[capture] smoke/18-error
+[capture] smoke/16-session-history
+[capture] smoke/17-restored-after-reload
+[capture] smoke/20-theme-variant
+PASS: (e) Cognate-only Playwright capture smoke (mock model + APP, no reference on disk)
+PASS: (f) reference restored to /home/sprime01/projects/cognate/.tmp/ref/deepseek-harness

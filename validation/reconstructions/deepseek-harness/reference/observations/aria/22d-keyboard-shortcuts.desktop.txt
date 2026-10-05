@@ -1,0 +1,137 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "u0-ws-a" [expanded]
+  - treeitem "New Session" [selected]
+- button "Settings" [expanded]
+- banner:
+  - button "Open right sidebar"
+- text: Into the Unknown Preview
+- button "Choose workspace": u0-ws-a
+- button "Standard mode"
+- textbox "Describe what you want to build, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- dialog "Settings":
+  - navigation:
+    - text: Settings
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins"
+    - button "Agent presets"
+  - button "Open configuration file"
+  - button "Close"
+  - text: Permission Choose the default permission mode for new sessions
+  - button "Workspace Write"
+  - text: Language
+  - button "English"
+  - text: Appearance
+  - button "Light"
+  - button "Dark"
+  - button "System" [pressed]
+  - text: Font size Only affects conversation content 15
+  - button "Increase font size"
+  - button "Decrease font size"
+  - text: px Work details Choose how much detail to show for tool calls
+  - button "Standard"
+  - text: Performance & usage Choose how much performance and usage information to show
+  - button "Detailed"
+  - text: Coding Tools Shows trajectory, code diffs, and Agent preset switching in new chats
+  - switch "Coding Tools" [checked]
+  - text: Keyboard shortcuts
+  - paragraph: View and edit available shortcuts and input actions
+  - button "Edit shortcuts"
+  - text: Send behavior while busy What Enter and the Send button do while the agent is running; Cmd/Ctrl+Enter uses the other behavior
+  - button "Queue"
+  - text: "Current version: 0.1.7-rc.2"
+- dialog "Keyboard shortcuts":
+  - banner:
+    - heading "Keyboard shortcuts" [level=2]
+    - button "Close keyboard shortcuts"
+  - search "Search shortcuts":
+    - searchbox "Search shortcuts"
+  - region "Application":
+    - list:
+      - listitem:
+        - button "Edit shortcut for Open keyboard shortcuts"
+        - text: Open keyboard shortcuts Ctrl /
+      - listitem:
+        - button "Edit shortcut for New Session"
+        - text: New Session No shortcut
+      - listitem:
+        - button "Edit shortcut for Toggle left sidebar"
+        - text: Toggle left sidebar No shortcut
+      - listitem:
+        - button "Edit shortcut for Search sessions"
+        - text: Search sessions No shortcut
+      - listitem:
+        - button "Edit shortcut for Add workspace"
+        - text: Add workspace No shortcut
+      - listitem:
+        - button "Edit shortcut for Rename session"
+        - text: Rename session No shortcut
+      - listitem:
+        - button "Edit shortcut for Fork session"
+        - text: Fork session No shortcut
+      - listitem:
+        - button "Edit shortcut for Archive session"
+        - text: Archive session No shortcut
+      - listitem:
+        - button "Edit shortcut for Open settings"
+        - text: Open settings No shortcut
+      - listitem:
+        - button "Edit shortcut for Open locally"
+        - text: Open locally No shortcut
+      - listitem:
+        - button "Edit shortcut for Toggle right sidebar"
+        - text: Toggle right sidebar No shortcut
+      - listitem:
+        - button "Edit shortcut for Workspace files"
+        - text: Workspace files No shortcut
+      - listitem:
+        - button "Edit shortcut for New terminal"
+        - text: New terminal No shortcut
+      - listitem:
+        - button "Edit shortcut for Split"
+        - text: Split No shortcut
+      - listitem:
+        - button "Edit shortcut for Toggle panel fullscreen"
+        - text: Toggle panel fullscreen No shortcut
+      - listitem:
+        - button "Edit shortcut for Refresh current page"
+        - text: Refresh current page No shortcut
+      - listitem:
+        - button "Edit shortcut for Close current page or window"
+        - text: Close current page or window No shortcut
+  - region "Message input":
+    - heading "Message input" [level=3]
+    - list:
+      - listitem: Use the complementary Queue / Steer action Ctrl Enter
+      - listitem: Open reference menu @
+      - listitem: New line Shift Enter
+      - listitem: Send message Enter
+      - listitem: Open command menu /
+      - listitem: Stop generating Esc Esc
+  - region "Menus and dialogs":
+    - heading "Menus and dialogs" [level=3]
+    - list:
+      - listitem: Close menu or top dialog Esc
+      - listitem: Move menu selection ↑ ↓
+      - listitem: Select menu item Enter
+  - region "Approval area":
+    - heading "Approval area" [level=3]
+    - list:
+      - listitem: Allow once Enter
+      - listitem: Reject Esc
+  - contentinfo:
+    - button "Restore all defaults" [disabled]

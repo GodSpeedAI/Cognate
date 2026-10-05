@@ -1,0 +1,45 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "deepseek-harness-smoke-ws.SVUNU8 [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: deepseek-harness-smoke-ws.SVUNU8
+      - treeitem "[[scenario:approval]] run something risky now" [selected]
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - paragraph: "[[scenario:approval]] run something risky"
+  - button "Copy"
+  - text: 02:09 PM
+  - status: Worked
+  - button "Took 2s" [disabled]
+  - paragraph: "Tool result: Error: the user rejected escalating this program to \"workspace-write\"; it stays denied, so stop and explain instead of working around it"
+  - button "Copy"
+  - button "Good response" [disabled]
+  - button "Bad response" [disabled]
+  - button "Branch into a new conversation" [disabled]
+  - text: Usage 0 tok 02:09 PM
+  - textbox "Message or run a task, / commands, @ files or sessions"
+  - button "Add files or run commands" [disabled]
+  - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
+  - button "Select model, current mock-model-1" [disabled]: mock-model-1
+  - button "Send message" [disabled]
+  - text: 1 turns 2 steps · 0 tok/s 0% of context used

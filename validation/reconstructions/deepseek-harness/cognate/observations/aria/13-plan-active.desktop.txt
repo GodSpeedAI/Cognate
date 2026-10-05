@@ -1,0 +1,43 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "r7w /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: r7w
+      - treeitem "/plan make a plan now [[scenario:plan]] now" [selected]
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": /plan make a plan now [[scenario:plan]]
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - status: plan · Plan mode on. Use /plan off to leave.
+  - paragraph: /plan make a plan now [[scenario:plan]]
+  - button "Copy"
+  - text: 06:30 PM
+  - status: Deep diving for 5s
+  - region "To-dos":
+    - button "To-dos 1 in progress · 1 pending"
+  - textbox "describe your task to generate plan"
+  - button "Add files or run commands" [disabled]
+  - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
+  - button "Plan mode on, press to turn off": Plan
+  - button "Select model, current mock-model-1" [disabled]: mock-model-1
+  - button "Stop generating"
+  - text: 0 turns 0 steps · 0 tok/s 0% of context used

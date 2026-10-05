@@ -62,6 +62,37 @@ export function kitAgents(counters: Counters): AgentDefinition[] {
       },
     },
     {
+      // D1 regression: a step whose fn itself emits must not leave the run's emit counter behind on
+      // replay (spec §11, §12) — a waitFor after it forces the whole agent to re-enter from the top.
+      id: "agent.replayEmits",
+      version: "1.0.0",
+      async run(_input, ctx): Promise<Json> {
+        await ctx.step("burst", async () => {
+          await ctx.emit("burst.one", { n: 1 });
+          await ctx.emit("burst.two", { n: 2 });
+          await ctx.emit("burst.three", { n: 3 });
+          return { ok: true };
+        });
+        // Reached only on the replayed (post-resume) execution, so it proves the step's replay
+        // advances the shared emit counter: without that, this draws an id already used inside the
+        // step and is silently dropped instead of recorded (the D1 defect).
+        await ctx.waitFor("gate", { type: "replay-gate", condition: {}, payload: {} });
+        await ctx.emit("burst.four", { n: 4 });
+        return { done: true };
+      },
+    },
+    {
+      // G1 regression: a capability handler publishing progress into the invoking run; the waitFor
+      // after the invoke forces a second, replayed execution that must not repeat the handler's calls.
+      id: "agent.progressUser",
+      version: "1.0.0",
+      async run(input, ctx): Promise<Json> {
+        const result = await ctx.invoke("tool.progress", input);
+        await ctx.waitFor("gate", { type: "progress-gate", condition: {}, payload: {} });
+        return { result };
+      },
+    },
+    {
       id: "agent.stateReader",
       version: "1.0.0",
       async run(_input, ctx): Promise<Json> {
@@ -69,6 +100,22 @@ export function kitAgents(counters: Counters): AgentDefinition[] {
         await ctx.waitFor("go", { type: "state-check", condition: {}, payload: {} });
         const after = await ctx.state("after");
         return { before, after };
+      },
+    },
+    {
+      id: "agent.threadStateReader",
+      version: "1.0.0",
+      async run(_input, ctx): Promise<Json> {
+        return ctx.sharedState("thread");
+      },
+    },
+    {
+      id: "agent.threadStateWriter",
+      version: "1.0.0",
+      async run(_input, ctx): Promise<Json> {
+        const updated = await ctx.updateSharedState("thread", { snapshot: { agent: true } });
+        await ctx.waitFor("replay", { type: "thread-state-replay", condition: {}, payload: {} });
+        return updated;
       },
     },
   ];
@@ -150,6 +197,36 @@ export function runtimeServiceConformance(name: string, factory: RuntimeFactory,
       const artifact = await service.getArtifact(alice, { artifactId: (done.output as { artifactId: string }).artifactId });
       expect(new TextDecoder().decode(artifact.bytes)).toBe("# Refund\n42");
       expect(await service.resolveContinuation(alice, { continuationId: continuation!.id, action: "resume", input: { approved: true }, idempotencyKey: "approve-1" })).toMatchObject({ outcome: "duplicate" });
+    });
+
+    test("a step's internal emits survive replay: no collision, no drop, correct order (D1)", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.replayEmits", input: null, idempotencyKey: "d1" });
+      await until(service, alice, runId, "waiting");
+      const [c] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      await service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: {}, idempotencyKey: "d1-go" });
+      expect((await until(service, alice, runId, "completed")).output).toEqual({ done: true });
+      const events = await collect(service.events(alice, { runId }));
+      const emitted = events.filter((e) => e.eventType.startsWith("burst."));
+      expect(emitted.map((e) => e.eventType)).toEqual(["burst.one", "burst.two", "burst.three", "burst.four"]);
+      expect(emitted.map((e) => e.payload)).toEqual([{ n: 1 }, { n: 2 }, { n: 3 }, { n: 4 }]);
+    });
+
+    test("a handler's progress calls are durable, ordered, and never repeated on replay (G1)", async () => {
+      const { service } = await open();
+      const { runId } = await service.startRun(alice, { agent: "agent.progressUser", input: { key: "p" }, idempotencyKey: "g1" });
+      await until(service, alice, runId, "waiting");
+      const [c] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      await service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: {}, idempotencyKey: "g1-go" });
+      await until(service, alice, runId, "completed");
+      const events = await collect(service.events(alice, { runId }));
+      const progressEvents = events.filter((e) => e.eventType === "run.invocation.progress");
+      expect(progressEvents).toHaveLength(3);
+      expect(progressEvents.map((e) => e.metadata?.seq)).toEqual([0, 1, 2]);
+      expect(progressEvents.map((e) => e.payload)).toEqual([{ i: 0 }, { i: 1 }, { i: 2 }]);
+      expect(progressEvents.every((e) => e.metadata?.stepId === "invoke:1")).toBe(true);
+      const invocationIndex = events.findIndex((e) => e.eventType === "run.invocation");
+      expect(progressEvents.every((e) => e.position < events[invocationIndex]!.position)).toBe(true);
     });
 
     test("a rejected continuation ends the run on the agent's own terms", async () => {
@@ -296,6 +373,43 @@ export function runtimeServiceConformance(name: string, factory: RuntimeFactory,
       const { runId } = await service.startRun(alice, { agent: "agent.stateReader", input: null, idempotencyKey: "st8" });
       await until(service, alice, runId, "waiting");
       expect(await code(service.updateState(mallory, { runId, update: { snapshot: {} }, idempotencyKey: "u8" }))).toBe("permission_denied");
+    });
+
+    test("thread shared state survives completed runs, is CAS guarded and tenant-isolated", async () => {
+      const { service } = await open();
+      const threadId = "thread-shared-state";
+      const first = await service.startRun(alice, { agent: "agent.threadStateReader", input: null, idempotencyKey: "thread-1", correlationId: threadId });
+      expect((await until(service, alice, first.runId, "completed")).output).toEqual({});
+
+      const changed = await service.updateSharedState(alice, { threadId, update: { snapshot: { edited: true } }, idempotencyKey: "thread-edit", expectedVersion: 0 });
+      expect(changed).toEqual({ state: { edited: true }, version: 1 });
+      expect(await service.updateSharedState(alice, { threadId, update: { snapshot: { edited: true } }, idempotencyKey: "thread-edit", expectedVersion: 0 })).toEqual(changed);
+      expect(await code(service.updateSharedState(alice, { threadId, update: { snapshot: { edited: false } }, idempotencyKey: "thread-stale", expectedVersion: 0 }))).toBe("failed_precondition");
+      expect(await code(service.readSharedState(mallory, { threadId }))).toBe("permission_denied");
+      expect(await service.readSharedState(bob, { threadId })).toEqual({ state: {}, version: 0 });
+      await service.updateSharedState(alice, { threadId: "other-thread", update: { snapshot: { separate: true } }, idempotencyKey: "thread-other" });
+
+      const second = await service.startRun(alice, { agent: "agent.threadStateReader", input: null, idempotencyKey: "thread-2", correlationId: threadId });
+      expect((await until(service, alice, second.runId, "completed")).output).toEqual({ edited: true });
+
+      const [event] = (await collect(service.events(alice, {}))).filter((candidate) => candidate.eventType === "state.changed" && candidate.metadata?.threadId === threadId && candidate.metadata?.source === "caller");
+      expect(event).toMatchObject({ correlationId: threadId, runId: null, metadata: { threadId, source: "caller" } });
+      expect((await collect(service.events(alice, { correlationId: threadId }))).every((candidate) => candidate.correlationId === threadId)).toBe(true);
+    });
+
+    test("agent thread shared-state writes are replay-safe and durable", async () => {
+      const { service } = await open();
+      const threadId = "thread-agent-replay";
+      const { runId } = await service.startRun(alice, { agent: "agent.threadStateWriter", input: null, idempotencyKey: "thread-agent", correlationId: threadId });
+      await until(service, alice, runId, "waiting");
+      const [continuation] = await service.listContinuations(alice, { runId, status: "OPEN" });
+      await service.resolveContinuation(alice, { continuationId: continuation!.id, action: "resume", input: {}, idempotencyKey: "thread-agent-go" });
+      expect((await until(service, alice, runId, "completed")).output).toEqual({ state: { agent: true }, version: 1 });
+      expect(await service.readSharedState(alice, { threadId })).toEqual({ state: { agent: true }, version: 1 });
+      const events = await collect(service.events(alice, {}));
+      const changes = events.filter((event) => event.eventType === "state.changed" && event.metadata?.threadId === threadId);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]).toMatchObject({ correlationId: threadId, runId, metadata: { threadId, source: "agent" } });
     });
 
     test("listRuns returns the caller's tenant runs oldest-first, filterable by correlationId and agent", async () => {

@@ -1,0 +1,61 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools2" [expanded]
+  - treeitem "[[scenario:plan]] make a plan now" [selected]
+  - treeitem "Waiting for approval [[scenario:approval]] run something risk"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:plan]] make a plan"
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: plan Plan mode on. Use /plan off to leave. [[scenario:plan]] make a plan 00:25
+- button "Copy"
+- status: Worked
+- button "Took 4s"
+- paragraph: "Tool result: Plan approved — plan mode exited; carry out the plan starting with your next step."
+- 'button "Open plan: Update greeting"': Update greeting Plan · Markdown Open
+- button "Copy"
+- button "Good response"
+- button "Bad response"
+- button "Branch into a new conversation"
+- button "Usage 0 tok"
+- text: 00:25
+- region "To-dos":
+  - button "To-dos 1 in progress · 1 pending"
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"'
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- button "1 turns 3 steps · 0 tok/s": 1 turns 3 steps0 tok/s
+- button "0% of context used": 0%
+- tablist:
+  - tab "Update greeting Close" [selected]:
+    - text: Update greeting
+    - button "Close"
+  - button "New tab"
+  - button "Split" [disabled]
+  - button "Fullscreen"
+  - button "Collapse right sidebar"
+- region "Update greeting":
+  - heading "Update greeting" [level=1]
+  - list:
+    - listitem: Read src/greet.ts
+    - listitem: Change "Hello" to "Howdy"
+    - listitem: Report the change

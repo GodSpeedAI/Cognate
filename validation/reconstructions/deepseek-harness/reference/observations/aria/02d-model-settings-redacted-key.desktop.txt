@@ -1,0 +1,47 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions": No sessions yet
+- button "Settings" [expanded]
+- banner
+- text: Into the Unknown Preview
+- button "Choose workspace"
+- button "Standard mode"
+- textbox "Choose workspace"
+- button "Add files or run commands" [disabled]
+- button "Send message" [disabled]
+- dialog "Settings":
+  - navigation:
+    - text: Settings
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins"
+    - button "Agent presets"
+  - button "Open configuration file"
+  - button "Close"
+  - heading "Models" [level=2]
+  - paragraph: Enter your API keys to use models from the following providers.
+  - list:
+    - listitem:
+      - text: DeepSeek
+      - img "API key missing"
+      - button "Edit DeepSeek (deepseek-official)": Edit
+    - listitem:
+      - text: Mock Model Custom
+      - img "API key configured"
+      - button "Edit Mock Model (mock-model)": Edit
+      - button "Delete Mock Model (mock-model)": Delete
+      - text: Mock Model mock-model API key
+      - textbox "API key":
+        - /placeholder: Configured — enter a new value to replace
+      - group: Customized settings
+      - button "Cancel"
+      - button "Apply"
+  - button "Add model provider"
