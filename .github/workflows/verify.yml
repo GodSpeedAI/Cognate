@@ -13,21 +13,47 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Keep in step with packages/domainforge BINDING and the realitytrace pin in the justfile.
+  DOMAINFORGE_VERSION: "0.19.0"
+
 jobs:
   verify:
     name: verify (ubuntu)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
       - uses: extractions/setup-just@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache pinned CLIs
+        id: clis
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/domainforge
+            .tmp/realitytrace
+          key: clis-${{ runner.os }}-df${{ env.DOMAINFORGE_VERSION }}-${{ hashFiles('justfile') }}
+      - name: Install the DomainForge CLI and RealityTrace
+        if: steps.clis.outputs.cache-hit != 'true'
+        run: |
+          cargo install domainforge-core --version "$DOMAINFORGE_VERSION" --features cli --locked
+          just setup-realitytrace
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          bun install --frozen-lockfile
+          for d in compatibility/phase0/*/; do
+            if [ -f "$d/package.json" ]; then (cd "$d" && bun install --frozen-lockfile); fi
+          done
+      - name: Install the Playwright browser
+        run: bunx playwright install --with-deps chromium
       # The regression baseline: substrate check, typecheck, gate-runner tests and
       # every gate claimed implemented. Live gates that need a real SEA-Forge,
       # sshd or WSL stay out of CI and are run locally (`just sea-forge-live`).
       - name: just verify
-        run: just verify
+        run: |
+          export PATH="$HOME/.cargo/bin:$PWD/.tmp/realitytrace/bin:$PATH"
+          just verify
