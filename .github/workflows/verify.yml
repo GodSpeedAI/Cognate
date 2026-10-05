@@ -1,0 +1,33 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify (ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: extractions/setup-just@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # The regression baseline: substrate check, typecheck, gate-runner tests and
+      # every gate claimed implemented. Live gates that need a real SEA-Forge,
+      # sshd or WSL stay out of CI and are run locally (`just sea-forge-live`).
+      - name: just verify
+        run: just verify
