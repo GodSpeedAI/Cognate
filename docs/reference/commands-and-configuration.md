@@ -17,7 +17,7 @@ Run `just --list` for prerequisites.
 | `just verify` | `check` + `typecheck` + `bun test ./tests/proof-routing.test.ts` + `bun scripts/gate.ts --implemented` | the regression baseline |
 | `just gate <ID>` | `bun scripts/gate.ts <ID>` | one requirement's proof gate; an unmet gate exits 1 |
 | `just gates` | `bun scripts/gate.ts --all` | every gate with PASS/FAIL and status drift; non-zero while any is unmet |
-| `just setup-realitytrace` | `cargo install --git https://github.com/GodSpeedAI/RealityTrace --tag realitytrace-v0.3.0 realitytrace --locked --root .tmp/realitytrace` | install the pinned RealityTrace CLI used by `AK-006` and `CG-RT-002` |
+| `just setup-realitytrace` | `cargo install realitytrace --version 0.3.0 --locked --root .tmp/realitytrace` | install the pinned RealityTrace CLI used by `AK-006` and `CG-RT-002` |
 
 `just verify` proves the checked-in substrate, not a deployable build. `just build` and
 `just dev` from the root are not recipes; `bun dev` runs `cognate dev` **inside a generated app**.
@@ -133,7 +133,7 @@ Dev authentication: `Authorization: Bearer <tenant>:<principalId>` via
 | Playwright | `1.63.0` | `tests/e2e` |
 | happy-dom | `20.14.5` | DOM in component tests |
 
-Upstream engine pins (exact): `cordis@4.0.0-rc.10`, `@godspeedai/domainforge@0.18.1`,
+Upstream engine pins (exact): `cordis@4.0.0-rc.10`, `@godspeedai/domainforge@0.18.2`,
 `@ruvector/core@0.1.32`, `@ruvector/rvf@0.3.4`, `@ag-ui/*@1.0.0`, `@connectrpc/*@2.2.0`,
 `@bufbuild/protobuf@2.15.0`, `@modelcontextprotocol/sdk@1.30.1`, `@a2a-js/sdk@1.2.1`,
 `@astryxdesign/*@0.6.3`, `zod@3.25.76`.

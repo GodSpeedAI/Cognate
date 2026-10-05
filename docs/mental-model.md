@@ -76,15 +76,13 @@ flows, scheduled events, and "wait until a capability exists".
 
 Full table with package assignments in [architecture.md](architecture.md).
 
-```text
-  .sea  →  semantics            what the application means
-            ↓
-        execution              what is alive; what may act
-            ↓
-  events (SQLite)  →  durable  what happened
-            ├──→ cognition      what is relevant now   (derived, rebuildable)
-            ├──→ evidence       what an outside observer recorded (optional)
-            └──→ projections    what each surface shows
+```mermaid
+flowchart TD
+    sea[".sea source"] --> semantics["Semantics · meaning"] --> execution["Execution · what may act"]
+    execution --> events[("Events in SQLite · what happened")]
+    events --> cognition["Cognition · relevant now"]
+    events -. optional observation .-> evidence["Evidence · outside observation"]
+    events --> projections["Projections · what each surface shows"]
 ```
 
 (The plane table, the package assignments, and the dependency rules are in
@@ -128,14 +126,15 @@ of the split is erasure, which becomes a single payload delete instead of a sear
 
 Only one path can make something true or permitted:
 
-```text
-Caller (authenticated at the transport)
-  → RuntimeService (ActionPolicy)
-    → RunContext.invoke / service.invoke
-      → kernel.resolve (deterministic eligibility)
-        → Policy.authorize (default deny)  ← the authority decision
-          → provider handler
-            → durable event, or an external commitment
+```mermaid
+flowchart TD
+    caller["Authenticated caller"] --> service["RuntimeService · ActionPolicy"]
+    service --> invoke["RunContext.invoke / service.invoke"]
+    invoke --> resolve["kernel.resolve · deterministic eligibility"]
+    resolve --> policy{"Policy.authorize · default deny"}
+    policy -- allowed --> provider["Provider handler"]
+    policy -- denied --> stop["No invocation"]
+    provider --> outcome["Durable event or external commitment"]
 ```
 
 Everything off that path is a read, a projection, or a ranking decision that is already inside an

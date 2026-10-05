@@ -6,6 +6,24 @@ import { createAgUiHandler } from "../src/index.ts";
 
 export const agents: AgentDefinition[] = [
   {
+    id: "agent.context",
+    version: "1.0.0",
+    async run(input) { return input; },
+  },
+  {
+    id: "agent.remote",
+    version: "1.0.0",
+    async run(_input, ctx) {
+      // Consumes a client-published remote offer (the lease-bound browser/MCP capability path):
+      // list what is currently offered, select the first, and commit a durable remote wait.
+      const offers = await ctx.remoteOffers("list");
+      const offer = offers[0];
+      if (!offer) return { applied: null };
+      const applied = await ctx.invokeRemoteOffer("apply", offer.id, { from: "agent" });
+      return { applied };
+    },
+  },
+  {
     id: "agent.copilot",
     version: "1.0.0",
     async run(input, ctx) {

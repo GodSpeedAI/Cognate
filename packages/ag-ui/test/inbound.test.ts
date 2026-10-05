@@ -26,6 +26,18 @@ describe("AG-UI inbound (§24)", () => {
     expect(runs).toHaveLength(1);
   });
 
+  test("agent-readable context is captured as immutable run input, separate from shared state", async () => {
+    env = await setup();
+    const context = [{ description: "Selected record", value: "case-42" }];
+    const result = await post(env.url, { ...user("inspect"), context, state: { editable: true }, forwardedProps: { cognate: { agent: "agent.context" } } });
+    expect(finished(result.events).result).toMatchObject({ status: "completed", output: { message: "inspect", context } });
+    const runs = await env.runtime.service.listRuns(alice, { agent: "agent.context" });
+    expect(runs).toHaveLength(1);
+    expect(runs[0]!.input).toEqual({ message: "inspect", context });
+    const events = await Array.fromAsync(env.runtime.service.events(alice, { runId: runs[0]!.runId }));
+    expect(events.find((event) => event.eventType === "state.changed")?.payload).toMatchObject({ snapshot: { editable: true } });
+  });
+
   test("approval and frontend tool results resume the run through the service", async () => {
     env = await setup();
     const first = finished((await post(env.url, user("refund"))).events);

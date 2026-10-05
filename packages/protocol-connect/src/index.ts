@@ -13,6 +13,7 @@ import {
   type JsonPatchOp as PbJsonPatchOp,
   ResolveOutcome as PbResolveOutcome,
   type Run,
+  type RemoteCapabilityOffer as PbRemoteCapabilityOffer,
   RunStatus as PbRunStatus,
   RuntimeService as RuntimeServiceDesc,
   type SemanticRef as PbSemanticRef,
@@ -20,7 +21,7 @@ import {
 } from "@cognate/proto";
 import type { Json, StoredEvent } from "@cognate/events";
 import type { SemanticRef } from "@cognate/kernel-api";
-import type { Caller, ContinuationView, JsonPatchOp, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@cognate/runtime-api";
+import type { Caller, ContinuationView, JsonPatchOp, RemoteCapabilityOffer, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@cognate/runtime-api";
 import { ServiceError } from "@cognate/runtime-api";
 
 export interface HandlerOptions {
@@ -295,6 +296,23 @@ function stateUpdateFromWire(update: PbStateUpdate | undefined): StateUpdate {
   return { snapshot: valueToJson(update?.kind.case === "snapshot" ? update.kind.value : undefined) };
 }
 
+function offerInit(offer: RemoteCapabilityOffer) {
+  return {
+    id: offer.id, leaseId: offer.leaseId, agent: offer.agent, scopeId: offer.scopeId,
+    capability: offer.contract.id, contractVersion: offer.contract.version, attributes: jsonToValue(offer.contract.attributes ?? {}),
+    description: offer.description, inputSchema: jsonToValue(offer.inputSchema), outputSchema: offer.outputSchema === undefined ? undefined : jsonToValue(offer.outputSchema), expiresAt: BigInt(offer.expiresAt),
+  };
+}
+
+function offerFromWire(offer: PbRemoteCapabilityOffer): RemoteCapabilityOffer {
+  const attributes = valueToJson(offer.attributes);
+  return {
+    id: offer.id, leaseId: offer.leaseId, agent: offer.agent, scopeId: offer.scopeId,
+    contract: { id: offer.capability, version: offer.contractVersion, ...(attributes && typeof attributes === "object" && !Array.isArray(attributes) ? { attributes: attributes as Readonly<Record<string, Json>> } : {}) },
+    description: offer.description, inputSchema: valueToJson(offer.inputSchema), ...(offer.outputSchema === undefined ? {} : { outputSchema: valueToJson(offer.outputSchema) }), expiresAt: Number(offer.expiresAt),
+  };
+}
+
 // ── error mapping ─────────────────────────────────────────────────────────────────
 
 function throwConnectError(e: unknown): never {
@@ -385,6 +403,7 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
         const iterable = service.events(caller, {
           afterPosition: toNumber(req.afterPosition),
           runId: req.runId,
+          correlationId: req.correlationId,
           follow: req.follow,
           signal: context.signal,
         });
@@ -476,6 +495,48 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
         throwConnectError(e);
       }
     },
+    async readSharedState(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const result = await withDeadline(context, service.readSharedState(caller, { threadId: req.threadId }));
+        return { state: jsonToValue(result.state), version: BigInt(result.version) };
+      } catch (e) { throwConnectError(e); }
+    },
+    async updateSharedState(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const result = await withDeadline(context, service.updateSharedState(caller, {
+          threadId: req.threadId,
+          update: stateUpdateFromWire(req.update),
+          idempotencyKey: req.idempotencyKey,
+          expectedVersion: toNumber(req.expectedVersion),
+        }));
+        return { state: jsonToValue(result.state), version: BigInt(result.version) };
+      } catch (e) { throwConnectError(e); }
+    },
+    async publishRemoteOffer(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const attributes = decodeValue(req.attributes, depth);
+        if (attributes === null || typeof attributes !== "object" || Array.isArray(attributes)) throw new ConnectError("offer attributes must be an object", Code.InvalidArgument);
+        const offer = await withDeadline(context, service.publishRemoteOffer(caller, { leaseId: req.leaseId, agent: req.agent, contract: { id: req.capability, version: req.contractVersion, attributes: attributes as Readonly<Record<string, Json>> }, description: req.description, inputSchema: decodeValue(req.inputSchema, depth), ...(req.outputSchema === undefined ? {} : { outputSchema: decodeValue(req.outputSchema, depth) }), ttlMs: Number(req.ttlMs) }));
+        return offerInit(offer);
+      } catch (e) { throwConnectError(e); }
+    },
+    async listRemoteOffers(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const offers = await withDeadline(context, service.listRemoteOffers(caller, { agent: req.agent }));
+        return { offers: offers.map(offerInit) };
+      } catch (e) { throwConnectError(e); }
+    },
+    async revokeRemoteOffer(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        await withDeadline(context, service.revokeRemoteOffer(caller, { offerId: req.offerId }));
+        return {};
+      } catch (e) { throwConnectError(e); }
+    },
   });
 }
 
@@ -524,7 +585,7 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
       return (async function* () {
         try {
           const stream = client.streamEvents(
-            { afterPosition: toBigInt(request.afterPosition), runId: request.runId, follow: request.follow ?? false },
+            { afterPosition: toBigInt(request.afterPosition), runId: request.runId, correlationId: request.correlationId, follow: request.follow ?? false },
             { headers, signal },
           );
           for await (const event of stream) {
@@ -610,6 +671,40 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
       } catch (e) {
         throwServiceError(e);
       }
+    },
+    async readSharedState(caller, request) {
+      try {
+        const response = await client.readSharedState({ threadId: request.threadId }, { headers: headersFor(caller) });
+        return { state: valueToJson(response.state), version: Number(response.version) };
+      } catch (e) { throwServiceError(e); }
+    },
+    async updateSharedState(caller, request) {
+      try {
+        const response = await client.updateSharedState({
+          threadId: request.threadId,
+          update: stateUpdateFieldInit(request.update),
+          idempotencyKey: request.idempotencyKey,
+          expectedVersion: toBigInt(request.expectedVersion),
+        }, { headers: headersFor(caller) });
+        return { state: valueToJson(response.state), version: Number(response.version) };
+      } catch (e) { throwServiceError(e); }
+    },
+    async publishRemoteOffer(caller, request) {
+      try {
+        const offer = await client.publishRemoteOffer({ leaseId: request.leaseId, agent: request.agent, capability: request.contract.id, contractVersion: request.contract.version, attributes: jsonToValue(request.contract.attributes ?? {}), description: request.description, inputSchema: jsonToValue(request.inputSchema), outputSchema: request.outputSchema === undefined ? undefined : jsonToValue(request.outputSchema), ttlMs: BigInt(request.ttlMs) }, { headers: headersFor(caller) });
+        return offerFromWire(offer);
+      } catch (e) { throwServiceError(e); }
+    },
+    async listRemoteOffers(caller, request) {
+      try {
+        const response = await client.listRemoteOffers({ agent: request.agent }, { headers: headersFor(caller) });
+        return response.offers.map(offerFromWire);
+      } catch (e) { throwServiceError(e); }
+    },
+    async revokeRemoteOffer(caller, request) {
+      try {
+        await client.revokeRemoteOffer({ offerId: request.offerId }, { headers: headersFor(caller) });
+      } catch (e) { throwServiceError(e); }
     },
   };
 }

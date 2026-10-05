@@ -22,12 +22,34 @@ service RuntimeService {
   rpc ReadProjection(ReadProjectionRequest) returns (ReadProjectionResponse);
   rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
   rpc UpdateState(UpdateStateRequest) returns (UpdateStateResponse);
+  rpc ReadSharedState(ReadSharedStateRequest) returns (ReadSharedStateResponse);
+  rpc UpdateSharedState(UpdateSharedStateRequest) returns (UpdateSharedStateResponse);
+  rpc PublishRemoteOffer(PublishRemoteOfferRequest) returns (RemoteCapabilityOffer);
+  rpc ListRemoteOffers(ListRemoteOffersRequest) returns (ListRemoteOffersResponse);
+  rpc RevokeRemoteOffer(RevokeRemoteOfferRequest) returns (RevokeRemoteOfferResponse);
 }
 
 message StreamEventsRequest {
   optional uint64 after_position = 1;
   optional string run_id = 2;
   bool follow = 3;
+  optional string correlation_id = 4;
+}
+
+message ReadSharedStateRequest { string thread_id = 1; }
+message ReadSharedStateResponse {
+  google.protobuf.Value state = 1;
+  uint64 version = 2;
+}
+message UpdateSharedStateRequest {
+  string thread_id = 1;
+  StateUpdate update = 2;
+  string idempotency_key = 3;
+  optional uint64 expected_version = 4;
+}
+message UpdateSharedStateResponse {
+  google.protobuf.Value state = 1;
+  uint64 version = 2;
 }
 
 message ReadProjectionRequest {
@@ -42,3 +64,34 @@ message ProjectionEntry {
 message ReadProjectionResponse {
   repeated ProjectionEntry entries = 1;
 }
+
+message RemoteCapabilityOffer {
+  string id = 1;
+  string lease_id = 2;
+  string agent = 3;
+  string scope_id = 4;
+  string capability = 5;
+  string contract_version = 6;
+  google.protobuf.Value attributes = 7;
+  string description = 8;
+  google.protobuf.Value input_schema = 9;
+  optional google.protobuf.Value output_schema = 10;
+  uint64 expires_at = 11;
+}
+
+message PublishRemoteOfferRequest {
+  string lease_id = 1;
+  string agent = 2;
+  string capability = 3;
+  string contract_version = 4;
+  google.protobuf.Value attributes = 5;
+  string description = 6;
+  google.protobuf.Value input_schema = 7;
+  optional google.protobuf.Value output_schema = 8;
+  uint64 ttl_ms = 9;
+}
+
+message ListRemoteOffersRequest { string agent = 1; }
+message ListRemoteOffersResponse { repeated RemoteCapabilityOffer offers = 1; }
+message RevokeRemoteOfferRequest { string offer_id = 1; }
+message RevokeRemoteOfferResponse {}

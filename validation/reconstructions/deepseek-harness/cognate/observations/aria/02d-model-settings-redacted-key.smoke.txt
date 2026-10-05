@@ -1,0 +1,62 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session" [disabled]: New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - paragraph: No workspace selected
+  - button "Settings"
+- main:
+  - alert: Unable to create default workspace. Use Choose workspace to select a folder.
+  - button "Standard mode" [disabled]
+  - textbox "Workspace directory path":
+    - /placeholder: /path/to/project
+  - button "Choose workspace" [disabled]
+- dialog "Settings":
+  - heading "Settings" [level=2]
+  - button "Open configuration file" [disabled]
+  - button "Close settings": ×
+  - navigation "Settings sections":
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins" [disabled]
+    - button "Agent presets" [disabled]
+  - heading "Add model provider" [level=3]
+  - tablist "How to add":
+    - tab "Third-party model provider"
+    - tab "Custom model API" [selected]
+  - text: Provider ID
+  - textbox "Provider ID":
+    - /placeholder: acme-gateway
+    - text: mock-model
+  - paragraph: Lowercase identifier, starting with a letter, that uniquely names this provider in requests and as its credential name.
+  - text: Display name
+  - textbox "Display name": mock-model
+  - text: Base URL
+  - textbox "Base URL":
+    - /placeholder: https://gateway.example/v1
+    - text: http://127.0.0.1:4010/v1
+  - text: API protocol
+  - combobox "API protocol":
+    - option "OpenAI Chat Completions" [selected]
+    - option "OpenAI Responses"
+    - option "Anthropic Messages"
+  - text: API key
+  - textbox "API key"
+  - region "Models":
+    - text: Models
+    - button "Fetch available models"
+    - button "Add model"
+    - textbox "Model 1 ID":
+      - /placeholder: Model ID
+      - text: mock-model-1
+    - textbox "Model 1 display name":
+      - /placeholder: Display name
+      - text: mock-model-1
+  - button "Cancel"
+  - button "Create provider" [disabled]

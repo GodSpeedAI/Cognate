@@ -1,0 +1,281 @@
+{
+ "journey": "J-J",
+ "steps": [
+  {
+   "turn": 1,
+   "prompt": "good name for a goldfish",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  },
+  {
+   "turn": 2,
+   "prompt": "revenue distribution by category",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  },
+  {
+   "turn": 3,
+   "prompt": "three todos about learning CopilotKit",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  }
+ ],
+ "requests": [
+  {
+   "user": "good name for a goldfish",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32455
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "revenue distribution by category",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 57429
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "revenue distribution by category",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 82664
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 107615
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 132626
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "three todos about learning CopilotKit",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 133475
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  }
+ ],
+ "ok": true,
+ "bodyAfterLastTurn": "Chat App CopilotKit good name for a goldfish How about Bubbles? It is friendly, classic, and easy to call out at the tank. If you want alternatives: Goldie, Finley, or Mango. revenue distribution by category Revenue by Category Breakdown of revenue across product categories Electronics 42,000 42% Clothing 28,000 28% Food 18,000 18% Books 12,000 12% Pie chart rendered above — Electronics is the largest slice, followed by Clothing, Food, and Books. three todos about learning CopilotKit enableAppMode manage_todos Done — added three todos about learning CopilotKit to your task manager. Pie Chart (Controlled Generative UI) Bar Chart (Controlled Generative UI) Schedule Meeting (Human In The Loop) Search Flights (A2UI Fixed Schema) Sales Dashboard (A2UI Dynamic) Excalidraw Diagram (MCP App) Calculator App (Open Generative UI) Toggle Theme (Frontend Tools) Task Manager (Shared State) To Do 3 📚 Read the CopilotKit docs Start with the quickstart and explore the core hooks. 🚀 Build a CopilotKit prototype Wire up a basic chat and register a frontend tool. 🎯 Explore shared agent state Watch the canvas re-render as the agent writes to state. Done 0 No completed todos yet",
+ "mobile": {
+  "rendersLastReply": true,
+  "defaultPane": "app"
+ },
+ "post": [
+  {
+   "kind": "reload",
+   "reloadStatus": 0,
+   "reloadError": "TimeoutError: page.reload: Timeout 180000ms exceeded.",
+   "healed": true,
+   "expects": [
+    {
+     "text": "How about Bubbles?",
+     "rendered": false
+    },
+    {
+     "text": "Pie chart rendered above",
+     "rendered": false
+    },
+    {
+     "text": "Done — added three todos about learning CopilotKit to your t",
+     "rendered": false
+    }
+   ],
+   "expectOk": false,
+   "drawer": {
+    "mounted": true,
+    "visible": true,
+    "activeThreadId": null,
+    "rows": [],
+    "text": " New Conversation Recent Conversations Loading threads… "
+   }
+  },
+  {
+   "kind": "captureThread",
+   "rows": [],
+   "activeThreadId": null,
+   "capturedVia": "none",
+   "drawer": {
+    "mounted": true,
+    "visible": true,
+    "activeThreadId": null,
+    "rows": [],
+    "text": " New Conversation Recent Conversations Loading threads… "
+   }
+  },
+  {
+   "kind": "clickSelector",
+   "absents": [
+    {
+     "text": "How about Bubbles?",
+     "rendered": false
+    }
+   ],
+   "absentOk": true,
+   "drawer": {
+    "mounted": true,
+    "visible": true,
+    "activeThreadId": null,
+    "rows": [],
+    "text": " New Conversation Recent Conversations Loading threads… "
+   }
+  },
+  {
+   "kind": "switchBack",
+   "error": "Error: no captured thread id to switch back to",
+   "expects": [
+    {
+     "text": "How about Bubbles?",
+     "rendered": false
+    }
+   ],
+   "expectOk": false,
+   "drawer": {
+    "mounted": true,
+    "visible": true,
+    "activeThreadId": null,
+    "rows": [],
+    "text": " New Conversation Recent Conversations Loading threads… "
+   }
+  }
+ ],
+ "postMetrics": {
+  "threadListRequests": 0,
+  "threadCreates": 0,
+  "note": "list = GET /threads with no id; creates = POST /threads with no id"
+ },
+ "runtimeRequests": [
+  {
+   "i": 0,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 24675,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 1,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 100617,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 2,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 151933,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 3,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 202425,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  },
+  {
+   "i": 4,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 253064,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  }
+ ],
+ "hits": 12,
+ "misses": 0,
+ "stateFieldOnAnyRequest": false,
+ "postOutcome": "OBSERVED_ABSENT",
+ "postObservation": {
+  "scenario": "Reload restores the thread; the drawer creates a thread and switches back to a prior one.",
+  "observedInstead": [
+   "After reload the page renders the welcome screen with no prior messages, and the drawer stays on \"Loading threads…\" with zero rows for the whole 40s capture window.",
+   "During the post flow the agent logs no `GET /threads` (list) request at all, while `POST /threads` (create) succeeds elsewhere in the same session - the drawer never asks for the list."
+  ],
+  "inferredFromSource": [
+   "CopilotThreadsDrawer.tsx:255/262/271/296 gates useThreads({ enabled: licensed }); licensed is false unless the runtime reports status \"valid\"/\"expiring\", and licensePending (status === null) is exactly the branch that shows the loading state rather than the locked view - so with no license configured the query is disabled AND the spinner never resolves.",
+   "packages/react-core/src/v2 contains no localStorage/sessionStorage/cookie use (only v1-deprecated dev-console does), and page.tsx mounts CopilotChatConfigurationProvider with no threadId prop, so the active thread is in-memory and a reload mints a new one."
+  ],
+  "evidenceClass": "BLACK_BOX_REFERENCE",
+  "evidence": [
+   "screenshots/J-J-05-restored-after-reload-desktop-1440x900.png (welcome screen after reload)",
+   "screenshots/J-J-06-drawer-thread-list-desktop-1440x900.png (drawer pinned to Loading threads…)",
+   "logs/runs/J-J.json -> post[].drawer.rows === [] and postMetrics.threadListRequests === 0"
+  ]
+ },
+ "outcome": "GREEN"
+}

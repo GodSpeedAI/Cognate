@@ -12,8 +12,10 @@ import { executeOnce } from "./executor.ts";
 import { foldRun, isTerminal, RESUME_HANDLER, RUN_EXECUTE_TOPIC, RUNS, runStream } from "./fold.ts";
 import type { Runtime, RuntimeOptions } from "./index.ts";
 import { inspectCorrelation } from "./inspect.ts";
+import { Governor } from "./governed-operation.ts";
 import { Invoker } from "./invoker.ts";
 import { createService } from "./service.ts";
+import { RemoteOfferRegistry } from "./remote-offers.ts";
 
 const DELIVERY = { baseMs: 50, maxMs: 5_000, maxAttempts: 10 };
 const TOPICS = [RUN_EXECUTE_TOPIC, "continuation.resume"];
@@ -22,7 +24,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const ownsStore = typeof options.store === "string";
   const store: DurableStore = typeof options.store === "string" ? openSqliteStore({ path: options.store }) : options.store.store;
   const system: Principal = options.system ?? { id: "system", kind: "system" };
-  const invoker = new Invoker(options.policy);
+  const governor = new Governor(options.actions, options.policy, options.governance ?? { mode: "off" });
+  const invoker = new Invoker(governor);
   // The kernel is single-tenant by contract; the invoker supplies each call's tenant to the policy.
   const kernel = await createCordisKernel({ tenant: "runtime", principal: system, policy: invoker.policy });
   await invoker.attach(kernel, options.components ?? []);
@@ -50,12 +53,13 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     invoker,
     continuations,
     artifacts: new ArtifactService(store),
-    actions: options.actions,
+    governor,
     agents: new Map(options.agents.map((a) => [a.id, a])),
     scopeId: kernel.root.id,
     recall: recallFor(store, options.cognition),
     outboxFor: options.outboxFor ?? (() => []),
     controllers: new Map(),
+    remoteOffers: new RemoteOfferRegistry(),
     execute,
     kick: () => kick(),
   };
@@ -137,6 +141,37 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
 
   const names = [...(options.projections ?? []).map((p) => p.projection.name), ...(cognitionRunner ? [COGNITION_PROJECTION.name] : [])];
 
+  async function pollApprovals(): Promise<number> {
+    const authority = options.governance?.authority;
+    if (!authority?.approvalState) return 0;
+    const SYSTEM_ACTOR = system;
+    let acted = 0;
+    for (const record of await continuations.list({ status: "OPEN" })) {
+      if (record.type !== "governance-approval") continue;
+      const approvalId = (record.condition as { approvalId?: unknown } | null)?.approvalId;
+      if (typeof approvalId !== "string") continue;
+      const state = await authority.approvalState(approvalId);
+      if (state === "approved") {
+        // Idempotent per approval: a second pass (or a second runtime) cannot resume it twice.
+        const outcome = await continuations.resume(record.id, { actor: SYSTEM_ACTOR, idempotencyKey: `governance-resume:${approvalId}`, input: { approvalId, state } });
+        if (outcome.kind === "transitioned") acted++;
+      } else if (state === "rejected" || state === "expired" || state === "used") {
+        const outcome = await continuations.cancel(record.id, { actor: SYSTEM_ACTOR, idempotencyKey: `governance-close:${approvalId}`, reason: `approval ${approvalId} is ${state}` });
+        if (outcome.kind === "transitioned") {
+          acted++;
+          void execute(record.runId).catch(() => {});
+        }
+      }
+    }
+    if (acted) kick();
+    return acted;
+  }
+
+  let approvalTimer: ReturnType<typeof setInterval> | undefined;
+  if ((options.governance?.approvalPollMs ?? 0) > 0 && options.governance?.authority?.approvalState) {
+    approvalTimer = setInterval(() => void pollApprovals().catch(() => {}), options.governance.approvalPollMs);
+  }
+
   async function quiescent(): Promise<boolean> {
     if (ticking || pending.size > 0 || chains.size > 0) return false;
     const now = Date.now();
@@ -171,6 +206,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       await store.erasePayload(eventId, reason, actor.id);
     },
 
+    pollApprovals,
+
     async idle(timeoutMs = 10_000) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
@@ -186,6 +223,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      if (approvalTimer) clearInterval(approvalTimer);
       await ticking;
       await Promise.allSettled([...chains.values()]);
       for (const runner of runners) await runner.stop();

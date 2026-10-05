@@ -37,7 +37,7 @@ Per [`requirements/ledger.yaml`](../requirements/ledger.yaml): `CG-RT-001` (Obse
 
 ## Running the RealityTrace gates
 
-`just setup-realitytrace` installs the pinned CLI (RealityTrace v0.3.0, tag `realitytrace-v0.3.0`, binary `realitytrace`) into `.tmp/realitytrace/`; AK-006 and CG-RT-002 use it by default, or `SXR_BIN` when set. The recipe builds from the tag with cargo, which does not depend on the crates.io publication ([`.agents/evidence/2026-09-25-releases.md`](../.agents/evidence/2026-09-25-releases.md); DEBT-010 closed).
+`just setup-realitytrace` installs the pinned CLI (RealityTrace 0.3.0 from crates.io, binary `realitytrace`) into `.tmp/realitytrace/`; AK-006 and CG-RT-002 use it by default, or `SXR_BIN` when set. The recipe is `cargo install` from the crates.io release (originally built from the git tag before the crate was published; [`.agents/evidence/2026-10-01-realitytrace-crates-io.md`](../.agents/evidence/2026-10-01-realitytrace-crates-io.md); DEBT-010 closed).
 
 ## Related
 

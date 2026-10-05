@@ -2,33 +2,15 @@
 
 Cognate separates six concerns that a monolithic agent framework usually conflates: what something means, what is currently executing, what happened, what is relevant, how it is represented, and how it is transported (spec §2). No layer may silently become authoritative for a responsibility belonging to another layer.
 
-```text
-                       .sea
-                        │
-                        ▼
-                   DomainForge
-                        │
-                        ▼
-                 SEMANTIC PLANE
-                        │
-                        ▼
-                 EXECUTION PLANE
-                        │
-              ┌─────────┴─────────┐
-              ▼                   ▼
-        DURABLE EVENT LOG    RealityTrace
-              │
-              ▼
-        COGNITIVE PLANE
-        RuVector / RVF
-              │
-              ▼
-       PROJECTION / WIRE
-     Protobuf / Connect / AG-UI
-              │
-              ▼
-        CLIENT / UI PLANE
-       React 19 / Astryx
+```mermaid
+flowchart TD
+    sea[".sea source"] --> forge["DomainForge"] --> semantic["Semantic plane"]
+    semantic --> execution["Execution plane"]
+    execution --> log[("Durable event log · SQLite")]
+    execution -. optional observation .-> trace["RealityTrace"]
+    log --> cognition["Cognitive plane · RuVector / RVF"]
+    log --> projection["Projection / wire · Protobuf / Connect / AG-UI"]
+    projection --> client["Client / UI · React / Astryx"]
 ```
 
 ## Planes (spec §7)
@@ -50,6 +32,15 @@ Two paths run through the same durable event log but never merge:
 
 - **Authority path**: `Context` → `Capability` (eligibility, then policy at invocation) → `Component`/fiber → reversible effect, durable fact, or external commitment. Only this path can change what is true or authorized (spec §32, [security.md](security.md)).
 - **Projection path**: durable events → `Projection` → any read-side representation (application state, AG-UI stream, cognitive index, audit view). Projections are derived and rebuildable; a projection failure must not corrupt authoritative history (spec §11), and cognitive ranking built on projections can narrow eligible choices but never grant authority (`CG-CAP-002`, spec §3.6).
+
+```mermaid
+flowchart LR
+    context["Context"] --> capability["Capability: eligibility and policy"] --> fiber["Component / fiber"]
+    fiber --> events[("Durable event log")]
+    fiber -. guarded external commitment .-> outside["External system"]
+    events --> projection["Rebuildable projection"]
+    projection --> views["UI · AG-UI · cognition · audit"]
+```
 
 ## Package topology (spec §27)
 

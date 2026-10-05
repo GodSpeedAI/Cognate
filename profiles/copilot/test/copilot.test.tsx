@@ -7,7 +7,7 @@
 // no assertion below was changed).
 import { GlobalRegistrator } from "./setup-dom.ts";
 import { afterAll, describe, expect, test } from "bun:test";
-import { render, waitFor } from "@testing-library/react";
+import { cleanup, render, waitFor } from "@testing-library/react";
 import { EventSchema } from "@ag-ui/core/schemas";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -25,6 +25,11 @@ import { COPILOT_AGENT, copilotProfile, copilotRegistry, createCopilotApp, Gener
 const dir = mkdtempSync(join(tmpdir(), "cognate-copilot-"));
 afterAll(async () => {
   rmSync(dir, { recursive: true, force: true });
+  // React schedules follow-up work on a macrotask. Unmount and let it run while `window` still exists;
+  // otherwise it can fire after unregister() and surface as an unhandled "window is not defined" error that
+  // fails the whole file (flaky under load, observed ~1 run in 4). Test mechanics only; no assertion changed.
+  cleanup();
+  for (let tick = 0; tick < 3; tick++) await new Promise((resolve) => setTimeout(resolve, 0));
   // Unregister so happy-dom's global fetch/Request/Response don't leak into later test files run in the
   // same `bun test` process (mirrors packages/ui-astryx/test/surfaces.test.tsx).
   await GlobalRegistrator.unregister();

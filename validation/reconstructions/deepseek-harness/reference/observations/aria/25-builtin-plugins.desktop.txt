@@ -1,0 +1,192 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "u0-ws-b" [expanded]
+  - treeitem "New Session" [selected]
+  - treeitem "[[scenario:multi]] another task 5min"
+  - treeitem "[[scenario:multi]] review and fix the 5min"
+  - 'treeitem "# Summary Here is what I found: - first point - second point ```ts export functi 8min"'
+  - treeitem "u0-ws-a"
+- button "Settings" [expanded]
+- banner:
+  - button "Open right sidebar"
+- text: Into the Unknown Preview
+- button "Choose workspace": u0-ws-b
+- button "Standard mode"
+- textbox "Describe what you want to build, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current Mock Model 1": Mock Model 1
+- button "Send message" [disabled]
+- dialog "Settings":
+  - navigation:
+    - text: Settings
+    - button "General"
+    - button "Models"
+    - button "Built-in plugins"
+    - button "Agent presets"
+  - button "Open configuration file"
+  - button "Close"
+  - heading "Built-in plugins" [level=2]
+  - paragraph: Inspect the plugins this deployment ships.
+  - text: Search plugins
+  - searchbox "Search plugins"
+  - button "Session plugins" [expanded]
+  - button "Choose the agent preset to inspect": Standard mode (default)
+  - paragraph: Composed per session by agent presets · 29 plugins
+  - list:
+    - listitem:
+      - button "persona, persona, Enabled":
+        - strong: persona
+        - text: Enabled Composition-authored deployment persona section for the DeepSeek Harness
+        - code: persona
+    - listitem:
+      - button "agent-instructions, agent-instructions, Enabled":
+        - strong: agent-instructions
+        - text: Enabled Workspace context loader for AGENTS.md/CLAUDE.md instruction files
+        - code: agent-instructions
+    - listitem:
+      - button "tool-bash, tool-bash, Enabled":
+        - strong: tool-bash
+        - text: Enabled Model-facing bash tool with optional generic background-job and sandbox-escalation support
+        - code: tool-bash
+    - listitem:
+      - button "tool-pwsh, tool-pwsh, Disabled":
+        - strong: tool-pwsh
+        - text: Disabled Model-facing pwsh tool over the bash executor seam
+        - code: tool-pwsh
+    - listitem:
+      - button "tool-fs, tool-fs, Enabled":
+        - strong: tool-fs
+        - text: Enabled Model-facing filesystem tools (read, write, edit) over the DeepSeek Harness filesystem seam (ctx.fs)
+        - code: tool-fs
+    - listitem:
+      - button "tool-fs-search, tool-fs-search, Enabled":
+        - strong: tool-fs-search
+        - text: Enabled Model-facing filesystem discovery tools (glob, grep) backed by the packaged ripgrep binary (@vscode/ripgrep)
+        - code: tool-fs-search
+    - listitem:
+      - button "tool-jobs, tool-jobs, Enabled":
+        - strong: tool-jobs
+        - text: Enabled Model-facing background job control tools (job_output, job_list, job_kill) over the ctx.jobs registry
+        - code: tool-jobs
+    - listitem:
+      - button "skill-filesystem, skill-filesystem, Enabled":
+        - strong: skill-filesystem
+        - text: Enabled Local filesystem skill provider for the DeepSeek Harness
+        - code: skill-filesystem
+    - listitem:
+      - button "tool-skill, tool-skill, Enabled":
+        - strong: tool-skill
+        - text: Enabled Model-facing skill loading tool for the DeepSeek Harness
+        - code: tool-skill
+    - listitem:
+      - button "command-goal, command-goal, Enabled":
+        - strong: command-goal
+        - text: Enabled Human-facing slash command for persisted same-session goals
+        - code: command-goal
+    - listitem:
+      - button "tool-goal, tool-goal, Enabled":
+        - strong: tool-goal
+        - text: Enabled Model-facing same-session goal tools with execution-time authority checks
+        - code: tool-goal
+    - listitem:
+      - button "tool-ask-user, tool-ask-user, Enabled":
+        - strong: tool-ask-user
+        - text: Enabled Model-facing ask_user_question tool over the ctx.userQuestions seam
+        - code: tool-ask-user
+    - listitem:
+      - button "tool-todo, tool-todo, Enabled":
+        - strong: tool-todo
+        - text: Enabled Model-facing todo_write tool over the DeepSeek Harness event-sourced session log
+        - code: tool-todo
+    - listitem:
+      - button "tool-web, tool-web, Enabled":
+        - strong: tool-web
+        - text: Enabled Model-facing web tools (web_search, web_fetch) over the DeepSeek Harness web capability seam (ctx.web)
+        - code: tool-web
+    - listitem:
+      - button "tool-present, present, Enabled":
+        - strong: tool-present
+        - text: Enabled Explicit workspace file delivery declarations for the DeepSeek Harness
+        - code: present
+    - listitem:
+      - button "plugin-manager/tools, tool-plugin-manager, Disabled":
+        - strong: plugin-manager/tools
+        - text: Disabled
+        - code: tool-plugin-manager
+    - listitem:
+      - button "plan-mode, plan-mode, Enabled":
+        - strong: plan-mode
+        - text: Enabled Logged per-agent plan mode with deployment guidance, a direct slash command, and a user-reviewed exit
+        - code: plan-mode
+    - listitem:
+      - button "compaction-basic, compaction-basic, Enabled":
+        - strong: compaction-basic
+        - text: Enabled Token-meter-driven compaction policy and LLM summarization backend for the DeepSeek Harness
+        - code: compaction-basic
+    - listitem:
+      - button "command-compact, command-compact, Enabled":
+        - strong: command-compact
+        - text: Enabled Human-facing slash command for explicit session compaction
+        - code: command-compact
+    - listitem:
+      - button "compaction-tool-result-pruner, tool-result-pruner, Enabled":
+        - strong: compaction-tool-result-pruner
+        - text: Enabled Replay-safe model-free head/middle/tail pruning for tool-result surface nodes
+        - code: tool-result-pruner
+    - listitem:
+      - button "tool-subagent-control, tool-subagent-control, Enabled":
+        - strong: tool-subagent-control
+        - text: Enabled Globally named send_message, interrupt_agent, and list_agents tools over ctx.subagents continuations
+        - code: tool-subagent-control
+    - listitem:
+      - button "tool-subagent-control/list-agents, tool-subagent-list-agents, Enabled":
+        - strong: tool-subagent-control/list-agents
+        - text: Enabled
+        - code: tool-subagent-list-agents
+    - listitem:
+      - button "tool-subagent, tool-subagent, Enabled":
+        - strong: tool-subagent
+        - text: Enabled Model-facing subagent delegation tool over the ctx.subagents seam
+        - code: tool-subagent
+    - listitem:
+      - button "tool-subagent, tool-subagent-fork, Enabled":
+        - strong: tool-subagent
+        - text: Enabled Model-facing subagent delegation tool over the ctx.subagents seam
+        - code: tool-subagent-fork
+    - listitem:
+      - button "tool-subagent, tool-subagent-codex, Disabled":
+        - strong: tool-subagent
+        - text: Disabled Model-facing subagent delegation tool over the ctx.subagents seam
+        - code: tool-subagent-codex
+    - listitem:
+      - button "tool-subagent, tool-subagent-claude-code, Disabled":
+        - strong: tool-subagent
+        - text: Disabled Model-facing subagent delegation tool over the ctx.subagents seam
+        - code: tool-subagent-claude-code
+    - listitem:
+      - button "workflow-ptc, workflow-ptc, Enabled":
+        - strong: workflow-ptc
+        - text: Enabled Workflow orchestration in the shared sandboxed Node PTC runtime
+        - code: workflow-ptc
+    - listitem:
+      - button "tool-workflow, tool-workflow, Enabled":
+        - strong: tool-workflow
+        - text: "Enabled Model-facing workflow tool: run a JavaScript orchestration script over ctx.workflowEngine"
+        - code: tool-workflow
+    - listitem:
+      - button "tool-ralph, tool-ralph, Disabled":
+        - strong: tool-ralph
+        - text: Disabled Model-facing fresh-agent Ralph loop over the workflow and subagent seams
+        - code: tool-ralph
+  - button "Global plugins"
+  - paragraph: Shared by the system and every session · 185 plugins

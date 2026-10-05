@@ -3,11 +3,17 @@ import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@c
 import type { Component, Kernel, Policy, Principal } from "@cognate/kernel-api";
 import type { Projection } from "@cognate/projections";
 import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-api";
+import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
+
+export { SeaForgeAuthority, buildAuthorityRequest, interpretDecision, interpretSettlement, type EvidenceReceipt, type SeaForgeAuthorityOptions, type SettlementReceipt } from "./sea-forge-authority.ts";
+export { ENV_ACTOR, ENV_MODE, ENV_SOCKET, ENV_WORLD, governanceFromEnv } from "./governance-env.ts";
+export { Governor, isWorldRef, parseTimeoutSeconds, timeoutSecsEnforcer, validateGovernance } from "./governed-operation.ts";
+export type { ApprovalReference, AuthorityReference, ApprovalState, CapabilityHooks, ConstraintEnforcer, GovernanceEscalation, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
-  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
+  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "thread.state.read" | "thread.state.update" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke" | "remote.offer.invoke"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
 }
 
 export interface CognitionOptions {
@@ -34,6 +40,8 @@ export interface RuntimeOptions {
   /** Kernel invocation policy for capabilities (default-deny if omitted). */
   readonly policy: Policy;
   readonly actions: ActionPolicy;
+  /** Governance of every consequential operation. Default `{ mode: "off" }` (local policy only) until Stage 6 wires SEA-Forge. */
+  readonly governance?: GovernanceOptions;
   readonly agents: readonly AgentDefinition[];
   /** Capability-providing components mounted in the root scope. */
   readonly components?: readonly Component[];
@@ -69,6 +77,12 @@ export interface Runtime {
   rebuildCognition(): Promise<void>;
   /** Erase an event payload under retention/privacy policy; derived views and the cognitive index drop it (spec §32). */
   erase(eventId: string, reason: string, actor: Principal): Promise<void>;
+  /**
+   * One pass over runs waiting on a governance approval: ask the authority where each approval stands, resume
+   * the approved ones and cancel the rejected or expired ones. A resume only triggers revalidation; the
+   * authority decides again when the run retries. Returns how many waits it acted on.
+   */
+  pollApprovals(): Promise<number>;
   /** Wait until background work queued so far has been processed (tests and graceful shutdown). */
   idle(timeoutMs?: number): Promise<void>;
   close(): Promise<void>;

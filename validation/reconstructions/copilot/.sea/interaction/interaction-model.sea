@@ -1,0 +1,186 @@
+@namespace "copilotkit-reconstruction.interaction"
+@version "0.2.0"
+@owner "cognate-reconstruction"
+@profile "default"
+
+// SEA has no native journey construct. Canonical journey records are Entity
+// instances; the companion catalog owns structured settlement and evidence.
+Entity "ApplicationUser"
+Entity "AgentRuntime"
+Entity "ConversationThread"
+Entity "ChatSurface"
+Entity "RemoteCapabilityOffer"
+Entity "ApplicationCanvas"
+Entity "ContextContributor"
+Entity "ToolInvocation"
+Entity "DecisionGate"
+Entity "DecisionMaker"
+Entity "DeclarativeSurface"
+Entity "CanonicalJourney"
+
+Resource "UserMessage" units
+Resource "AssistantMessage" units
+Resource "StreamEvidence" units
+Resource "ThreadHistory" units
+Resource "SharedStateSnapshot" units
+Resource "InvocationArguments" units
+Resource "ToolResult" units
+Resource "ContextSnapshot" units
+Resource "HumanResponse" units
+Resource "InterruptResponse" units
+Resource "UiOperation" units
+Resource "ResumeCursor" units
+
+Role "ConversationParticipant"
+Role "CapabilityOfferingClient"
+Role "DecisionMaker"
+
+Flow "UserMessage" from "ApplicationUser" to "AgentRuntime" quantity 1
+Flow "AssistantMessage" from "AgentRuntime" to "ChatSurface" quantity 1
+Flow "StreamEvidence" from "AgentRuntime" to "ConversationThread" quantity 1
+Flow "ThreadHistory" from "ConversationThread" to "ApplicationUser" quantity 1
+Flow "SharedStateSnapshot" from "AgentRuntime" to "ApplicationCanvas" quantity 1
+Flow "InvocationArguments" from "AgentRuntime" to "RemoteCapabilityOffer" quantity 1
+Flow "ToolResult" from "RemoteCapabilityOffer" to "AgentRuntime" quantity 1
+Flow "ContextSnapshot" from "ContextContributor" to "AgentRuntime" quantity 1
+Flow "HumanResponse" from "ApplicationUser" to "DecisionGate" quantity 1
+Flow "InterruptResponse" from "DecisionMaker" to "AgentRuntime" quantity 1
+Flow "UiOperation" from "AgentRuntime" to "DeclarativeSurface" quantity 1
+Flow "ResumeCursor" from "ConversationThread" to "ChatSurface" quantity 1
+
+Instance j_a_chat_turn of "CanonicalJourney" {
+    actor: "ApplicationUser",
+    capabilities: "conversation.start, conversation.send, conversation.stream, conversation.observe",
+    evidence_class: "documented_reference",
+    initiating_condition: "A user has an available agent-chat affordance and supplies a message",
+    journey_id: "J-A-chat-turn",
+    precondition: "A deterministic scenario is available; a thread identity is supplied or created",
+    purpose: "Exchange a user message for a visible streamed agent response in a conversation",
+    settlement: "A terminal response is visible and durable thread evidence is readable by the same identity",
+    steps: "open or create thread -> submit message -> execution starts -> project text incrementally -> terminal response visible -> observe thread evidence",
+    variants: "inline chat, popup, sidebar, and responsive drawer are projections; their captured visual behavior remains unexecuted"
+}
+
+Instance j_b_front_capability of "CanonicalJourney" {
+    actor: "CapabilityOfferingClient",
+    capabilities: "capability.offer, capability.revoke, frontend.invoke, frontend.complete",
+    evidence_class: "documented_reference",
+    initiating_condition: "A mounted client component offers an agent-eligible browser capability",
+    journey_id: "J-B-front-capability",
+    precondition: "A caller-, scope-, and lease-bound offer is current and policy permits invocation",
+    purpose: "Let an agent select a live browser capability and receive its result without preserving stale authority",
+    settlement: "A durable invocation records terminal result or explicit recovery; unmount revokes eligibility for new calls while preserving historical rendering provenance",
+    steps: "mount -> advertise current offer -> agent selects -> stream arguments -> browser executes -> return result -> unmount revokes new-call offer -> remount may advertise a new lease",
+    variants: "dependency or availability change replaces the offer; disconnect uses lease expiry; existing invocation survives as durable continuation evidence"
+}
+
+Instance j_c_shared_state of "CanonicalJourney" {
+    actor: "ApplicationUser",
+    capabilities: "state.observe, state.update, state.stream",
+    evidence_class: "documented_reference",
+    initiating_condition: "An active agent and application canvas share an editable todo/application state",
+    journey_id: "J-C-shared-state",
+    precondition: "A thread-scoped state projection has an expected version and permitted writer",
+    purpose: "Synchronize agent and user edits so each subsequent observation sees committed state",
+    settlement: "Agent-originated change updates the canvas and a user-originated committed update is visible to the next agent turn",
+    steps: "agent writes state -> project canvas update -> user edits state with versioned update -> capture next turn input -> agent observes committed value",
+    variants: "chat/application mode is presentation state; partial state streaming is documented but unexecuted"
+}
+
+Instance j_d_agent_context of "CanonicalJourney" {
+    actor: "ContextContributor",
+    capabilities: "context.contribute, context.withdraw",
+    evidence_class: "documented_reference",
+    initiating_condition: "A mounted client component supplies application context for a selected agent",
+    journey_id: "J-D-agent-context",
+    precondition: "Contribution is in scope for the target agent before invocation begins",
+    purpose: "Make current UI context readable by an agent without turning it into agent-writable shared state",
+    settlement: "The next run receives the current serialized context snapshot and unmount removes the contribution from later runs",
+    steps: "mount contribution -> change client value -> start run -> capture immutable input snapshot -> agent reads snapshot -> unmount withdraws contribution",
+    variants: "A live context mutation during an active run is uncharacterized and must not be inferred"
+}
+
+Instance j_e_controlled_rendering of "CanonicalJourney" {
+    actor: "AgentRuntime",
+    capabilities: "tool.invoke, tool.render",
+    evidence_class: "documented_reference",
+    initiating_condition: "The agent selects a backend tool or developer-controlled UI component",
+    journey_id: "J-E-controlled-rendering",
+    precondition: "A permitted backend capability or renderer catalog entry exists",
+    purpose: "Project tool arguments and status through a developer-defined component without executing a browser handler for backend work",
+    settlement: "In-progress and terminal renderer state reflects invocation evidence, including a distinct failure outcome",
+    steps: "agent invokes -> project pending arguments/status -> backend executes or renderer awaits result -> project terminal result or failure",
+    variants: "A2UI helper tools suppress duplicate generic cards; exact selection behavior is documented only"
+}
+
+Instance j_f_tool_human_decision of "CanonicalJourney" {
+    actor: "DecisionMaker",
+    capabilities: "decision.request, decision.respond, tool.complete",
+    evidence_class: "documented_reference",
+    initiating_condition: "An agent-selected tool requires an inline human answer before it can finish",
+    journey_id: "J-F-tool-human-decision",
+    precondition: "A durable waiting tool invocation and response schema are available",
+    purpose: "Obtain an approve, reject, or structured human tool result and continue execution",
+    settlement: "Exactly one recorded human response resolves the waiting tool result and the agent continues or records refusal",
+    steps: "invoke tool -> render inline decision UI -> wait -> human responds -> persist tool result -> continue agent execution",
+    variants: "approve, reject, and structured response; this is distinct from a runtime interrupt"
+}
+
+Instance j_g_runtime_interrupt of "CanonicalJourney" {
+    actor: "DecisionMaker",
+    capabilities: "continuation.observe, continuation.resolve, run.resume",
+    evidence_class: "documented_reference",
+    initiating_condition: "The runtime ends a run with an interrupt outcome and pending interrupt payload",
+    journey_id: "J-G-runtime-interrupt",
+    precondition: "A durable continuation identifies the suspended run and accepted response",
+    purpose: "Resolve or cancel a runtime-enforced decision and resume its suspended execution",
+    settlement: "All pending interrupt responses are recorded and resume begins, or cancellation reaches an explicit terminal outcome",
+    steps: "run reaches interrupt -> project payload -> human resolves or cancels -> record response -> resume run or record terminal cancellation",
+    variants: "inline and manually placed interrupt UI; must never be collapsed into J-F tool result semantics"
+}
+
+Instance j_h_declarative_ui of "CanonicalJourney" {
+    actor: "AgentRuntime",
+    capabilities: "ui.catalog.project, ui.interaction.return",
+    evidence_class: "documented_reference",
+    initiating_condition: "The agent emits a catalog-constrained declarative UI operation",
+    journey_id: "J-H-declarative-ui",
+    precondition: "A client catalog validates and resolves every emitted operation",
+    purpose: "Render permitted structured UI and return a user's interaction to execution",
+    settlement: "Validated operations render against current data and the recorded interaction reaches the agent without unvalidated component execution",
+    steps: "emit operation -> validate catalog/schema -> resolve component -> bind data -> user interacts -> return interaction to agent",
+    variants: "fixed and dynamic A2UI; Open-JSON-UI status remains uncharacterized"
+}
+
+Instance j_j_rich_thread of "CanonicalJourney" {
+    actor: "ApplicationUser",
+    capabilities: "thread.create, thread.select, thread.restore, thread.replay",
+    evidence_class: "documented_reference",
+    initiating_condition: "A user creates or selects a thread, or reopens the application after a reload",
+    journey_id: "J-J-rich-thread",
+    precondition: "Thread identity and durable event history are available; managed hosted list operations are not assumed",
+    purpose: "Restore chat, tool, and generative-UI history to the active thread without reviving stale client authority",
+    settlement: "The selected thread replays its conversation and renderable invocation artifacts, while unmounted offers remain unavailable for new calls",
+    steps: "create or select thread -> bind active agent -> append events -> reload or reconnect -> replay events/provenance -> render history -> expose current offers only",
+    variants: "per-thread agent clone; rename/archive/delete/pagination/realtime managed list behavior is documented but outside executable local evidence"
+}
+
+Instance j_k_live_recovery of "CanonicalJourney" {
+    actor: "ApplicationUser",
+    capabilities: "event.subscribe, event.resume, run.observe",
+    evidence_class: "proposed_repair",
+    initiating_condition: "A run emits committed progress while connected or a client reconnects with a durable position",
+    journey_id: "J-K-live-recovery",
+    precondition: "Ordered event subscription supports follow and a resumable cursor",
+    purpose: "Project progress promptly and recover exactly from a durable event position",
+    settlement: "The client observes ordered committed progress before terminalization and reconnects without duplicate or lost committed events",
+    steps: "subscribe from cursor -> receive committed progress -> connection loss -> resume after position -> project remaining events -> terminal state",
+    variants: "text chunks, tool argument chunks, and state events; black-box reconnect behavior remains unexecuted"
+}
+
+Policy every_modeled_flow_has_positive_quantity as:
+    forall f in flows: (f.quantity > 0)
+
+Metric "canonical_journey_count" as:
+    count(instances)
+    @unit "count"

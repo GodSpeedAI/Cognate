@@ -1,0 +1,56 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "deepseek-harness-smoke-ws.SVUNU8 Waiting for approval [[scenario:approval]] run something risky Approval now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: deepseek-harness-smoke-ws.SVUNU8
+      - treeitem "Waiting for approval [[scenario:approval]] run something risky Approval now" [selected]
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": "[[scenario:approval]] run something risky"
+  - text: PTC mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - paragraph: "[[scenario:approval]] run something risky"
+  - button "Copy"
+  - text: 02:09 PM
+  - status: Deep diving for 1s
+  - status: Deep diving for 1s
+  - button "Running code · Clear stale scratch cache outside the workspace" [disabled]
+  - text: Waiting for approval
+  - group "Approval details": "Allow this operation with workspace-write permissions: Need to remove a stale cache directory outside the default workspace sandbox.."
+  - button "Reject"
+  - button "Allow once"
+- tabpanel "Review · turn 2":
+  - tablist:
+    - tab "Review · turn 2 Close" [selected]:
+      - text: Review · turn 2
+      - button "Close": ×
+    - button "Add tab" [disabled]
+    - button "Split" [disabled]
+    - button "Fullscreen" [disabled]
+    - button "Collapse right sidebar" [disabled]
+  - toolbar "Review view":
+    - button "List view"
+    - button "Split view" [pressed]
+    - button "Code view" [disabled]
+    - text: src/greet.ts +1 -1
+    - button "Line wrap"
+    - button "Open greet.ts in sidebar"
+    - button "Show file location" [disabled]
+    - button "More ways to open" [disabled]
+  - text: "@@ -1,4 +1,4 @@ 1 export function greet(name: string): string { 2 return `Hello, ${name}!`; 3 } 4 1 export function greet(name: string): string { 2 return `Howdy, ${name}!`; 3 } 4"

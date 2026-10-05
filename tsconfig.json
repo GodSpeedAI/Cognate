@@ -15,5 +15,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["packages/*/src", "packages/*/test", "profiles/*/src", "profiles/*/test", "tests", "scripts"]
+  "include": ["packages/*/src", "packages/*/test", "profiles/*/src", "profiles/*/test", "tests", "scripts", "docs/.viewer/src"]
 }

@@ -4,15 +4,16 @@ import type { ContinuationRecord, TransitionOutcome } from "@cognate/continuatio
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@cognate/events";
 import { applyStateUpdate, type Caller, type ContinuationView, foldState, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@cognate/runtime-api";
 import type { Core } from "./core.ts";
-import { foldRun, isTerminal, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, toJson } from "./fold.ts";
+import type { ActionName } from "./governed-operation.ts";
+import { foldRun, isTerminal, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 const PAGE = 500;
 
 export function createService(core: Core, publicProjections: ReadonlySet<string>): RuntimeService {
   const { store } = core;
 
-  const authorize = (caller: Caller, action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update", resource: string) => {
-    const decision = core.actions.authorize({ caller, action, resource });
+  const authorize = async (caller: Caller, action: ActionName, resource: string): Promise<void> => {
+    const decision = await core.governor.govern({ kind: "action", action, caller, resource });
     if (!decision.allow) throw new ServiceError("permission_denied", decision.reason);
   };
 
@@ -31,7 +32,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
   return {
     async startRun(caller, request) {
-      authorize(caller, "run.start", request.agent);
+      await authorize(caller, "run.start", request.agent);
       const agent = core.agents.get(request.agent);
       if (!agent) throw new ServiceError("not_found", `agent ${request.agent} not found`);
       const runId = randomUUID();
@@ -106,7 +107,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async cancelRun(caller, request) {
-      authorize(caller, "run.cancel", request.runId);
+      await authorize(caller, "run.cancel", request.runId);
       for (let attempt = 0; attempt < 5; attempt++) {
         const { view, events } = await readRun(caller, request.runId);
         if (isTerminal(view)) return view;
@@ -160,7 +161,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
     async resolveContinuation(caller, request) {
       const record = await continuationFor(caller, request.continuationId);
-      authorize(caller, request.action === "resume" ? "continuation.resume" : "continuation.cancel", request.continuationId);
+      await authorize(caller, request.action === "resume" ? "continuation.resume" : "continuation.cancel", request.continuationId);
       const action = { actor: caller.actor, idempotencyKey: request.idempotencyKey, ...(request.expectedVersion !== undefined ? { expectedVersion: request.expectedVersion } : {}) };
       const outcome: TransitionOutcome =
         request.action === "resume"
@@ -243,7 +244,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     },
 
     async updateState(caller, request) {
-      authorize(caller, "run.state.update", request.runId);
+      await authorize(caller, "run.state.update", request.runId);
       const stateStreamId = runStateStream(request.runId);
       for (let attempt = 0; attempt < 5; attempt++) {
         const { view, events } = await readRun(caller, request.runId);
@@ -299,6 +300,91 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       }
       throw new ServiceError("unavailable", `too much contention updating state for run ${request.runId}`);
     },
+
+    async readSharedState(caller, request) {
+      await authorize(caller, "thread.state.read", request.threadId);
+      const events = await store.readStream(threadStateStream(caller.tenant, request.threadId));
+      return { state: foldState(events), version: events.length };
+    },
+
+    async updateSharedState(caller, request) {
+      await authorize(caller, "thread.state.update", request.threadId);
+      const streamId = threadStateStream(caller.tenant, request.threadId);
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const events = await store.readStream(streamId);
+        const currentVersion = events.length;
+        let state: Json;
+        try {
+          state = applyStateUpdate(foldState(events), request.update);
+        } catch (error) {
+          if (error instanceof StatePatchError) throw new ServiceError("invalid_argument", error.message);
+          throw error;
+        }
+        try {
+          const outcome = await store.commit({
+            idempotency: {
+              scope: `${caller.tenant}:${caller.actor.id}:thread.state.update`,
+              key: request.idempotencyKey,
+              fingerprint: fingerprint({ threadId: request.threadId, update: toJson(request.update), expectedVersion: request.expectedVersion ?? null }),
+            },
+            appends: [{
+              streamId,
+              // Let the store check idempotency before the CAS. A duplicate request must return its
+              // recorded result even if a later write has advanced the stream since the first call.
+              expectedVersion: request.expectedVersion ?? currentVersion,
+              events: [{
+                eventType: "state.changed",
+                schemaVersion: 1,
+                occurredAt: new Date().toISOString(),
+                tenant: caller.tenant,
+                correlationId: request.threadId,
+                causationId: events.at(-1)?.eventId ?? null,
+                runId: null,
+                scopeId: core.scopeId,
+                payload: toJson(request.update),
+                metadata: { scope: "thread", threadId: request.threadId, source: "caller", actor: caller.actor.id },
+              }],
+            }],
+            result: { state, version: currentVersion + 1 },
+          });
+          return outcome.result as { state: Json; version: number };
+        } catch (error) {
+          if (error instanceof ConcurrencyError) {
+            if (request.expectedVersion !== undefined && request.expectedVersion !== currentVersion) {
+              throw new ServiceError("failed_precondition", `thread ${request.threadId} state is at version ${currentVersion}`);
+            }
+            continue;
+          }
+          if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
+          throw error;
+        }
+      }
+      throw new ServiceError("unavailable", `too much contention updating state for thread ${request.threadId}`);
+    },
+
+    async publishRemoteOffer(caller, request) {
+      await authorize(caller, "remote.offer.publish", `${request.agent}:${request.contract.id}`);
+      if (!core.agents.has(request.agent)) throw new ServiceError("not_found", `agent ${request.agent} not found`);
+      try {
+        return core.remoteOffers.publish(caller, core.scopeId, request);
+      } catch (error) {
+        throw new ServiceError("invalid_argument", error instanceof Error ? error.message : "invalid remote offer");
+      }
+    },
+
+    async listRemoteOffers(caller, request) {
+      await authorize(caller, "remote.offer.list", request.agent);
+      if (!core.agents.has(request.agent)) throw new ServiceError("not_found", `agent ${request.agent} not found`);
+      const offers = core.remoteOffers.list(caller, request.agent);
+      const allowed = await Promise.all(offers.map(async (offer) => (await core.governor.govern({ kind: "action", action: "remote.offer.invoke", caller, resource: offer.id })).allow));
+      return offers.filter((_, index) => allowed[index]);
+    },
+
+    async revokeRemoteOffer(caller, request) {
+      await authorize(caller, "remote.offer.revoke", request.offerId);
+      // Hide cross-tenant or foreign-owner offers exactly like other service reads.
+      if (!core.remoteOffers.revoke(caller, request.offerId)) throw new ServiceError("not_found", `remote offer ${request.offerId} not found`);
+    },
   };
 }
 
@@ -307,8 +393,11 @@ function continuationView(record: ContinuationRecord): ContinuationView {
 }
 
 /** Catch up from `afterPosition`, then (when following) switch to live commits without gaps or duplicates. */
-async function* eventStream(core: Core, caller: Caller, request: { readonly afterPosition?: number; readonly runId?: string; readonly signal?: AbortSignal; readonly follow?: boolean }): AsyncGenerator<StoredEvent> {
-  const visible = (e: StoredEvent) => e.tenant === caller.tenant && (request.runId === undefined || e.runId === request.runId);
+async function* eventStream(core: Core, caller: Caller, request: { readonly afterPosition?: number; readonly runId?: string; readonly correlationId?: string; readonly signal?: AbortSignal; readonly follow?: boolean }): AsyncGenerator<StoredEvent> {
+  const visible = (e: StoredEvent) =>
+    e.tenant === caller.tenant &&
+    (request.runId === undefined || e.runId === request.runId) &&
+    (request.correlationId === undefined || e.correlationId === request.correlationId);
   const signal = request.signal;
   let position = request.afterPosition ?? 0;
 
@@ -349,4 +438,3 @@ async function* eventStream(core: Core, caller: Caller, request: { readonly afte
     signal?.removeEventListener("abort", notify);
   }
 }
-

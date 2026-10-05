@@ -1,0 +1,72 @@
+{
+ "journey": "J-H",
+ "steps": [
+  {
+   "turn": 1,
+   "prompt": "Show me my sales dashboard for this quarter.",
+   "cleared": true,
+   "attempt": 1,
+   "replyRendered": true
+  }
+ ],
+ "requests": [
+  {
+   "user": "Show me my sales dashboard for this quarter.",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 32475
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "Show me my sales dashboard for this quarter.",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 46015
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  },
+  {
+   "user": "Show me my sales dashboard for this quarter.",
+   "outcome": "HIT",
+   "stateField": false,
+   "bytes": 34640
+  },
+  {
+   "user": "",
+   "outcome": "HIT"
+  }
+ ],
+ "ok": true,
+ "bodyAfterLastTurn": "Chat App CopilotKit Show me my sales dashboard for this quarter. QUARTERLY REVENUE $4.2M ↑ +12% QoQ NEW CUSTOMERS 186 ↑ +8% WIN RATE 31% ↓ -2 pts AVG DEAL SIZE $22.6k ↑ +5% Jan Feb Mar Apr May Jun 0 450000 900000 1350000 1800000 Here's your Q2 sales dashboard. Pie Chart (Controlled Generative UI) Bar Chart (Controlled Generative UI) Schedule Meeting (Human In The Loop) Search Flights (A2UI Fixed Schema) Sales Dashboard (A2UI Dynamic) Excalidraw Diagram (MCP App) Calculator App (Open Generative UI) Toggle Theme (Frontend Tools) Task Manager (Shared State) ✏️ No todos yet Create your first task to get started Add a task 0",
+ "mobile": {
+  "rendersLastReply": true,
+  "defaultPane": "chat"
+ },
+ "runtimeRequests": [
+  {
+   "i": 0,
+   "path": "/api/copilotkit/agent/default/run",
+   "bytes": 24695,
+   "keys": [
+    "threadId",
+    "runId",
+    "tools",
+    "context",
+    "forwardedProps",
+    "state",
+    "messages"
+   ],
+   "hasStateField": true,
+   "mentionsNewTodo": false
+  }
+ ],
+ "hits": 6,
+ "misses": 0,
+ "stateFieldOnAnyRequest": false,
+ "outcome": "GREEN"
+}

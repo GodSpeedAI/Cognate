@@ -118,6 +118,10 @@ The operator published `@godspeedai/domainforge` 0.17.0. Before changing the pin
 
 With the pin at 0.17.0: AK-003 fixture 9/9, adapter + goldens + semantic-to-observation 19/19, three consecutive runs each; `example:domainforge` passes. Projections now record `binding: "@godspeedai/domainforge@0.17.0"`. Historical projections archived under 0.16.0 keep their recorded binding; resolution is by source digest, so they remain resolvable.
 
+## Addendum (2026-10-01): pin moved to 0.18.2
+
+`@godspeedai/domainforge` 0.18.2 differs from 0.18.1 only in the native binary; `index.js` and `index.d.ts` are byte-identical. Phase 0 fixture 9/9 ×3, adapter + goldens + semantic-to-observation 20/20 ×3, `example:domainforge` passes. One observable change: Policy `expression` strings render as `forall f in flows: …` where 0.18.1 produced `ForAll(f in flows: …)`; the golden projection was regenerated through the adapter and the diff is exactly that field plus the `binding` string. Diagnostics remain message-only under one `GenericFailure` code (DEBT-002 stays open). Evidence: `.agents/evidence/2026-10-01-domainforge-0.18.2.md`.
+
 ## Addendum (2026-09-26): pin moved to 0.18.1, DEBT-003 closed
 
 The operator published `@godspeedai/domainforge` 0.18.1 (0.18.0 added the DEBT-003 read accessors; 0.18.1 unified the release process; neither changed the SEA surface the adapter consumes). All nine new accessors (`allPolicies`, `allMetrics`, `allMappings`, `allProjections`, `allDimensions`, `allUnits`, `allPatterns`, `allConceptChanges`, `allEntityInstances`) exist as functions. The staged adapter mapping needed no code change — only the pin, the `BINDING` constant, and the regenerated golden fixture. `just verify` and `just gates` pass 78/78, including the byte-identical golden projection across two loads and the architecture test forbidding implicit capabilities. Policy stays a read-only referenced constraint: `bindCapabilities` rejects Policy ids. `External` remains unmapped because SEA has no grammar, AST, or Graph declaration for it (verified: no `external` in the DomainForge parser, graph, or grammar).

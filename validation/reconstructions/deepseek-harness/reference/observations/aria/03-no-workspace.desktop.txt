@@ -1,0 +1,19 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions": No sessions yet
+- button "Settings"
+- banner
+- text: Into the Unknown Preview
+- button "Choose workspace"
+- button "Standard mode"
+- textbox "Choose workspace"
+- button "Add files or run commands" [disabled]
+- button "Send message" [disabled]

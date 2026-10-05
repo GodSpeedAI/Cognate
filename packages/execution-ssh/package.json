@@ -1,0 +1,18 @@
+{
+  "name": "@cognate/execution-ssh",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SSH host as an execution world: SFTP filesystem and remote exec over ssh2, with mandatory host-key verification, ProxyJump and clean disposal. Same contracts as every other provider.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fixture": "./src/fixture.ts"
+  },
+  "dependencies": {
+    "@cognate/execution": "workspace:*",
+    "ssh2": "1.17.0"
+  },
+  "devDependencies": {
+    "@types/ssh2": "^1.15.6"
+  }
+}

@@ -34,6 +34,18 @@ describe("AG-UI reconnect (§24)", () => {
     expect(resync.events.find((e) => e.type === "STATE_SNAPSHOT")!.snapshot).toEqual({ refund: { amount: 3, status: "awaiting-approval" } });
   });
 
+  test("full resync of a completed run passes historical waits and restores the final result", async () => {
+    env = await setup();
+    const first = await post(env.url, { messages: [{ id: "m1", role: "user", content: "refund" }] });
+    const approval = (first.events.find((e) => e.type === "RUN_FINISHED")!.result as { continuations: { id: string }[] }).continuations[0]!.id;
+    const resumed = await post(env.url, { runId: "r-2", forwardedProps: { cognate: { resolve: { continuationId: approval, action: "resume", input: { approved: true } } } } });
+    const frontend = resumed.events.find((e) => e.type === "TOOL_CALL_START" && e.toolCallName === "map.focus")!;
+    await post(env.url, { runId: "r-3", messages: [{ id: "tool-result", role: "tool", toolCallId: frontend.toolCallId, content: "{}" }] });
+    const restored = await post(env.url, { runId: "r-4" });
+    expect(types(restored.events)).toContain("RUN_FINISHED");
+    expect(restored.events.at(-1)).toMatchObject({ type: "RUN_FINISHED", result: { status: "completed" } });
+  });
+
   test("disconnecting does not cancel the durable run", async () => {
     env = await setup();
     await post(env.url, { messages: [{ id: "m1", role: "user", content: "refund" }] }, { stopAfter: 2 });

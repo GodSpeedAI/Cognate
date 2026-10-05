@@ -1,0 +1,53 @@
+- button "New session"
+- button "Collapse sidebar"
+- button "New session": New Session
+- navigation "Global panels":
+  - button "Plugins"
+- text: Workspaces
+- button "Search sessions"
+- textbox "Search session names"
+- button "View options"
+- button "Add workspace"
+- tree "Sessions":
+  - treeitem "ws-cap-tools2" [expanded]
+  - treeitem "Plan awaiting review [[scenario:plan]] make a plan" [selected]
+  - treeitem "Waiting for approval [[scenario:approval]] run something risk"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:approval]] run something risk now"
+  - treeitem "[[scenario:multi]] do the multi-step tas now"
+- button "Settings"
+- banner:
+  - navigation "Session hierarchy": "[[scenario:plan]] make a plan"
+  - button "Open in Files"
+  - button "More ways to open"
+  - button "More actions"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: plan Plan mode on. Use /plan off to leave. [[scenario:plan]] make a plan 00:25
+- button "Copy"
+- status: Deep diving...
+- button "Deep diving for 2s" [disabled] [expanded]
+- button "Calling tools · exit_plan_mode"
+- region "Approve this plan and leave plan mode?":
+  - text: Plan review
+  - button "Open plan in sidebar": View full plan
+  - heading "Update greeting" [level=3]
+  - paragraph: Read src/greet.ts
+  - status
+  - button "Request changes"
+  - button "Approve"
+- tablist:
+  - tab "Update greeting Close" [selected]:
+    - text: Update greeting
+    - button "Close"
+  - button "New tab"
+  - button "Split" [disabled]
+  - button "Fullscreen"
+  - button "Collapse right sidebar"
+- region "Update greeting":
+  - heading "Update greeting" [level=1]
+  - list:
+    - listitem: Read src/greet.ts
+    - listitem: Change "Hello" to "Howdy"
+    - listitem: Report the change

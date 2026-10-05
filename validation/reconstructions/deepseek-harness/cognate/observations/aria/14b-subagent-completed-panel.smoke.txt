@@ -1,0 +1,50 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "deepseek-harness-smoke-ws.SVUNU8 [[scenario:delegate]] delegate this now now /plan make a plan now [[scenario:plan]] now [[scenario:approval]] run something risky now [[scenario:approval]] run something risky now [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: deepseek-harness-smoke-ws.SVUNU8
+      - treeitem "[[scenario:delegate]] delegate this now now" [selected]
+      - treeitem "/plan make a plan now [[scenario:plan]] now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:approval]] run something risky now"
+      - treeitem "[[scenario:multi]] do the multi-step task now now"
+      - treeitem "[[scenario:plain]] hello there now"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": "[[scenario:delegate]] delegate this now"
+  - button "1 subagent" [expanded]
+  - tree "Subagent sessions":
+    - treeitem "Open Summarize project status in sidebar": Summarize project status · Summarize the current state of the fixtu · continuable · completed 0 tok / 0s
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - paragraph: "[[scenario:delegate]] delegate this now"
+  - button "Copy"
+  - text: 02:09 PM
+  - status: Worked
+  - button "Took 1s" [disabled]
+  - paragraph: "Tool result: started subagent 537f8ad2-611a-4356-b41d-328614855ecb"
+  - button "Copy"
+  - button "Good response" [disabled]
+  - button "Bad response" [disabled]
+  - button "Branch into a new conversation" [disabled]
+  - text: Usage 0 tok 02:09 PM
+  - textbox "Message or run a task, / commands, @ files or sessions"
+  - button "Add files or run commands" [disabled]
+  - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
+  - button "Select model, current mock-model-1" [disabled]: mock-model-1
+  - button "Send message" [disabled]
+  - text: 1 turns 2 steps · 0 tok/s 0% of context used

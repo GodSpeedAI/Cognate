@@ -1,0 +1,44 @@
+- complementary:
+  - text: Cognate Local Build
+  - button "Collapse sidebar"
+  - button "New session": New Session
+  - navigation "Global panels":
+    - button "Plugins" [disabled]
+  - text: Workspaces
+  - button "Search sessions" [disabled]
+  - button "View options" [disabled]
+  - button "Add workspace" [disabled]
+  - tree "Sessions":
+    - treeitem "r7w [[scenario:multi]] do the multi-step task now now [[scenario:plain]] hello there now" [expanded]:
+      - text: r7w
+      - treeitem "[[scenario:multi]] do the multi-step task now now" [selected]
+      - treeitem "[[scenario:plain]] hello there now"
+  - button "Settings"
+- main:
+  - navigation "Session hierarchy": "[[scenario:multi]] do the multi-step task now"
+  - text: Standard mode
+  - button "Open in Files" [disabled]
+  - button "More ways to open" [disabled]
+  - button "More actions" [disabled]: …
+  - button "Open right sidebar" [disabled]
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory" [disabled]
+  - paragraph: "[[scenario:multi]] do the multi-step task now"
+  - button "Copy"
+  - text: 06:29 PM
+  - status: Worked
+  - button "Took 14s" [disabled]
+  - paragraph: Read greet.ts, confirmed a clean tree, then updated the greeting from "Hello" to "Howdy".
+  - 'button "View changes to src/greet.ts: Edited greet.ts +1 -1"': Edited greet.ts +1 -1
+  - button "Copy"
+  - button "Good response" [disabled]
+  - button "Bad response" [disabled]
+  - button "Branch into a new conversation" [disabled]
+  - text: Usage 0 tok 06:29 PM
+  - textbox "Message or run a task, / commands, @ files or sessions"
+  - button "Add files or run commands" [disabled]
+  - 'button "Access mode, current: Workspace Write" [disabled]': Workspace Write
+  - button "Select model, current mock-model-1" [disabled]: mock-model-1
+  - button "Send message" [disabled]
+  - text: 1 turns 4 steps · 0 tok/s 0% of context used

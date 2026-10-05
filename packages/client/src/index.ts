@@ -2,7 +2,7 @@
 // All exposed state is DERIVED from durable events -- nothing here is authoritative, everything can be rebuilt
 // by replaying the tenant's event stream from position 0. No React import (framework-neutral).
 import type { Json, StoredEvent } from "@cognate/events";
-import { applyStateUpdate, type Caller, type ContinuationView, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@cognate/runtime-api";
+import { applyStateUpdate, type Caller, type ContinuationView, type RemoteCapabilityOffer, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@cognate/runtime-api";
 
 /** A minimal observable value, framework-neutral (React bindings adapt it with useSyncExternalStore). */
 export interface Readable<T> {
@@ -16,7 +16,7 @@ export type ConnectionStatus = "connecting" | "live" | "reconnecting" | "closed"
 export interface RunState {
   readonly runId: string;
   readonly status: RunView["status"] | "unknown";
-  /** Concatenated `message.delta` text in stream order. */
+  /** Concatenated durable assistant text deltas in stream order. */
   readonly text: string;
   /** Shared state object built from `state.changed` events: `{ patch: JsonPatch }` or `{ snapshot: Json }` payloads. */
   readonly state: Json;
@@ -28,6 +28,13 @@ export interface RunState {
   readonly position: number;
 }
 
+/** Durable state shared by every run in one caller-authorized thread. */
+export interface ThreadSharedState {
+  readonly state: Json;
+  /** Last folded per-thread state event sequence. */
+  readonly version: number;
+}
+
 export interface ClientOptions {
   readonly service: RuntimeService;
   readonly caller: Caller;
@@ -36,6 +43,7 @@ export interface ClientOptions {
 }
 
 export type FrontendHandler = (input: Json, context: { readonly runId: string; readonly continuationId: string }) => Json | Promise<Json>;
+export type RemoteCapabilityOfferInput = Omit<RemoteCapabilityOffer, "id" | "scopeId" | "expiresAt"> & { readonly ttlMs?: number };
 
 export interface CognateClient {
   readonly status: Readable<ConnectionStatus>;
@@ -45,16 +53,22 @@ export interface CognateClient {
   updateState(runId: string, update: StateUpdate, options?: { readonly idempotencyKey?: string; readonly expectedVersion?: number }): Promise<{ readonly state: Json; readonly version: number }>;
   /** Live, reconnecting, derived state of one run. */
   run(runId: string): Readable<RunState>;
+  /** Live thread state folded from the canonical snapshot and durable thread events. */
+  threadSharedState(threadId: string): Readable<ThreadSharedState>;
+  /** Write thread state as the caller; runs in the thread observe the durable update. */
+  updateThreadSharedState(threadId: string, update: StateUpdate, options?: { readonly idempotencyKey?: string; readonly expectedVersion?: number }): Promise<{ readonly state: Json; readonly version: number }>;
   /** Subscribe to tenant events from a position with automatic resume after disconnect; no gaps, no duplicates. */
   subscribe(options: { readonly afterPosition?: number; readonly runId?: string }, listener: (event: StoredEvent) => void): () => void;
-  /** A public projection, refreshed when events commit. */
-  projection(name: string): Readable<readonly { readonly key: string; readonly value: Json }[] | undefined>;
+  /** A public projection, refreshed when events commit; refresh() re-reads on demand. */
+  projection(name: string): Readable<readonly { readonly key: string; readonly value: Json }[] | undefined> & { readonly refresh: () => void };
   resolveContinuation(continuationId: string, action: "resume" | "cancel", input?: Json, options?: { readonly expectedVersion?: number; readonly reason?: string }): Promise<ContinuationView>;
   /**
    * Serve a frontend capability: open `frontend_capability` continuations naming it are executed locally and
    * resolved with `{ ok, value | error }`. Returns an unregister function.
    */
   provideCapability(capability: string, handler: FrontendHandler): () => void;
+  /** Publish a handler's contract for one agent while this client surface is mounted. */
+  offerCapability(offer: RemoteCapabilityOfferInput, handler: FrontendHandler): Promise<() => Promise<void>>;
   /** Perform a semantic action through the runtime's authorized capability path. */
   invoke(capability: string, input: Json): Promise<Json>;
   artifact(artifactId: string, representation?: string): Promise<{ readonly name: string; readonly mediaType: string; readonly bytes: Uint8Array }>;
@@ -184,6 +198,13 @@ class RunStore implements Readable<RunState> {
         this.publish();
         return;
       }
+      case "run.invocation.progress": {
+        if (event.metadata?.capability !== "model.generate" || payloadField<string>(event, "type") !== "text") return;
+        const text = payloadField<string>(event, "text");
+        if (typeof text === "string") this.text += text;
+        this.publish();
+        return;
+      }
       case "state.changed": {
         // Same fold semantics as the runtime and `foldState`: a snapshot replaces, a patch applies to the
         // current state, and a patch that does not apply is skipped rather than aborting the client's view
@@ -255,6 +276,104 @@ class RunStore implements Readable<RunState> {
   }
 }
 
+class ThreadSharedStateStore implements Readable<ThreadSharedState> {
+  private value: ThreadSharedState = { state: null, version: 0 };
+  private readonly listeners = new Set<(value: ThreadSharedState) => void>();
+  private hydrated = false;
+  private readonly pending: StoredEvent[] = [];
+  private readonly unsubscribe: () => void;
+
+  constructor(
+    private readonly threadId: string,
+    private readonly service: RuntimeService,
+    private readonly caller: Caller,
+    subscribe: (listener: (event: StoredEvent) => void) => () => void,
+  ) {
+    // Subscribe before reading the snapshot. Events arriving while the read is in flight are folded
+    // only when newer than that snapshot's per-thread version, closing the read/subscribe race.
+    this.unsubscribe = subscribe((event) => {
+      if (!this.isThreadEvent(event)) return;
+      if (!this.hydrated) this.pending.push(event);
+      else this.apply(event);
+    });
+    void this.hydrate();
+  }
+
+  get(): ThreadSharedState {
+    return this.value;
+  }
+
+  subscribe(listener: (value: ThreadSharedState) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  close(): void {
+    this.unsubscribe();
+    this.listeners.clear();
+  }
+
+  accept(result: ThreadSharedState): void {
+    if (result.version < this.value.version) return;
+    this.value = result;
+    this.publish();
+  }
+
+  private async hydrate(): Promise<void> {
+    try {
+      const snapshot = await this.service.readSharedState(this.caller, { threadId: this.threadId });
+      if (snapshot.version > this.value.version) this.value = snapshot;
+      this.hydrated = true;
+      for (const event of this.pending) this.apply(event);
+      this.pending.length = 0;
+      this.publish();
+    } catch {
+      // Leave the current derived value available. The next matching durable event can still advance it.
+      this.hydrated = true;
+      this.pending.length = 0;
+    }
+  }
+
+  private isThreadEvent(event: StoredEvent): boolean {
+    return event.eventType === "state.changed" && event.correlationId === this.threadId && metaField<string>(event, "scope") === "thread";
+  }
+
+  private apply(event: StoredEvent): void {
+    if (event.streamSequence <= this.value.version) return;
+    if (event.streamSequence !== this.value.version + 1) {
+      // A per-thread sequence gap means this projection needs a fresh canonical snapshot.
+      void this.refresh();
+      return;
+    }
+    try {
+      const snapshot = payloadField<Json>(event, "snapshot");
+      const patch = payloadField<StateUpdate extends { readonly patch: infer P } ? P : never>(event, "patch");
+      const state = snapshot !== undefined
+        ? applyStateUpdate(this.value.state, { snapshot })
+        : patch !== undefined
+          ? applyStateUpdate(this.value.state, { patch })
+          : this.value.state;
+      this.value = { state, version: event.streamSequence };
+      this.publish();
+    } catch (error) {
+      if (!(error instanceof StatePatchError)) throw error;
+      void this.refresh();
+    }
+  }
+
+  private async refresh(): Promise<void> {
+    try {
+      this.accept(await this.service.readSharedState(this.caller, { threadId: this.threadId }));
+    } catch {
+      // The durable event remains available for replay if the snapshot read is temporarily unavailable.
+    }
+  }
+
+  private publish(): void {
+    for (const listener of this.listeners) listener(this.value);
+  }
+}
+
 class ProjectionStore implements Readable<readonly { readonly key: string; readonly value: Json }[] | undefined> {
   private readonly listeners = new Set<(value: readonly { readonly key: string; readonly value: Json }[] | undefined) => void>();
   private value: readonly { readonly key: string; readonly value: Json }[] | undefined;
@@ -280,10 +399,15 @@ class ProjectionStore implements Readable<readonly { readonly key: string; reado
   }
 
   scheduleRefresh(): void {
-    void this.refresh();
+    void this.readNow();
   }
 
-  private async refresh(): Promise<void> {
+  /** Re-reads the projection now. The fold can complete just after the event that scheduled the last read, and a waiting run commits no further events, so consumers re-read on durable state changes. */
+  refresh(): void {
+    void this.readNow();
+  }
+
+  private async readNow(): Promise<void> {
     const gen = ++this.gen;
     let value: readonly { readonly key: string; readonly value: Json }[];
     try {
@@ -305,8 +429,11 @@ interface Subscriber {
 
 interface CapabilityEntry {
   readonly capability: string;
+  readonly offerId?: string;
+  readonly leaseId?: string;
   handler: FrontendHandler;
   unregistered: boolean;
+  renewal?: ReturnType<typeof setInterval>;
 }
 
 /** Owns the single reconnecting event stream that every derived Readable is built from. */
@@ -317,9 +444,11 @@ class Engine {
   private closed = false;
   private readonly controller = new AbortController();
   private readonly runStores = new Map<string, RunStore>();
+  private readonly threadStores = new Map<string, ThreadSharedStateStore>();
   private readonly projectionStores = new Map<string, ProjectionStore>();
   private readonly subscribers = new Set<Subscriber>();
   private readonly capabilities = new Set<CapabilityEntry>();
+  private readonly remoteOfferIds = new Set<string>();
   private readonly resolvedFrontend = new Set<string>();
   private readonly inFlightFrontend = new Set<string>();
   private readonly loopDone: Promise<void>;
@@ -358,10 +487,22 @@ class Engine {
   close(): void {
     this.closed = true;
     this.controller.abort();
+    for (const store of this.threadStores.values()) store.close();
+    this.threadStores.clear();
+    for (const entry of this.capabilities) {
+      entry.unregistered = true;
+      if (entry.renewal) clearInterval(entry.renewal);
+    }
+    this.capabilities.clear();
   }
 
   async waitClosed(): Promise<void> {
     await this.loopDone;
+  }
+
+  async revokeRemoteOffers(): Promise<void> {
+    await Promise.allSettled([...this.remoteOfferIds].map((offerId) => this.service.revokeRemoteOffer(this.caller, { offerId })));
+    this.remoteOfferIds.clear();
   }
 
   private dispatch(event: StoredEvent): void {
@@ -404,6 +545,15 @@ class Engine {
     return store;
   }
 
+  getThreadStore(threadId: string): ThreadSharedStateStore {
+    let store = this.threadStores.get(threadId);
+    if (!store) {
+      store = new ThreadSharedStateStore(threadId, this.service, this.caller, (listener) => this.subscribe({}, listener));
+      this.threadStores.set(threadId, store);
+    }
+    return store;
+  }
+
   getProjectionStore(name: string): ProjectionStore {
     let store = this.projectionStores.get(name);
     if (!store) {
@@ -423,6 +573,35 @@ class Engine {
     };
   }
 
+  async offerCapability(offer: RemoteCapabilityOfferInput, handler: FrontendHandler): Promise<() => Promise<void>> {
+    const request = {
+      leaseId: offer.leaseId,
+      agent: offer.agent,
+      contract: offer.contract,
+      description: offer.description,
+      inputSchema: offer.inputSchema,
+      ...(offer.outputSchema === undefined ? {} : { outputSchema: offer.outputSchema }),
+      ttlMs: offer.ttlMs ?? 30_000,
+    };
+    const published = await this.service.publishRemoteOffer(this.caller, request);
+    const entry: CapabilityEntry = { capability: published.contract.id, offerId: published.id, leaseId: published.leaseId, handler, unregistered: false };
+    // Unary transports cannot observe a tab crash. Renewing before expiry makes the lease a
+    // bounded liveness claim; clean disposal still revokes immediately.
+    entry.renewal = setInterval(() => {
+      if (!entry.unregistered) void this.service.publishRemoteOffer(this.caller, request).catch(() => {});
+    }, Math.max(1, Math.floor(request.ttlMs / 2)));
+    this.capabilities.add(entry);
+    this.remoteOfferIds.add(published.id);
+    void this.scanCapabilities();
+    return async () => {
+      entry.unregistered = true;
+      if (entry.renewal) clearInterval(entry.renewal);
+      this.capabilities.delete(entry);
+      this.remoteOfferIds.delete(published.id);
+      await this.service.revokeRemoteOffer(this.caller, { offerId: published.id }).catch(() => {});
+    };
+  }
+
   private async scanCapabilities(): Promise<void> {
     if (this.capabilities.size === 0) return;
     let list: ContinuationView[];
@@ -432,11 +611,15 @@ class Engine {
       return;
     }
     for (const continuation of list) {
-      const condition = continuation.condition as { readonly kind?: string; readonly capability?: string } | null;
+      const condition = continuation.condition as { readonly kind?: string; readonly capability?: string; readonly offerId?: string; readonly leaseId?: string } | null;
       if (!condition || condition.kind !== "frontend_capability") continue;
       if (this.resolvedFrontend.has(continuation.id) || this.inFlightFrontend.has(continuation.id)) continue;
       for (const entry of this.capabilities) {
         if (entry.unregistered || entry.capability !== condition.capability) continue;
+        // A lease-bound continuation can only be handled by the exact offering registration.
+        // The legacy unscoped handler remains valid only for legacy continuations with no offer id.
+        if (condition.offerId !== undefined && (entry.offerId !== condition.offerId || entry.leaseId !== condition.leaseId)) continue;
+        if (condition.offerId === undefined && entry.offerId !== undefined) continue;
         this.inFlightFrontend.add(continuation.id);
         void this.executeCapability(entry, continuation);
         break;
@@ -500,6 +683,21 @@ export function createClient(options: ClientOptions): CognateClient {
       });
     },
 
+    threadSharedState(threadId) {
+      return engine.getThreadStore(threadId);
+    },
+
+    async updateThreadSharedState(threadId, update, updateOptions) {
+      const result = await service.updateSharedState(caller, {
+        threadId,
+        update,
+        idempotencyKey: updateOptions?.idempotencyKey ?? crypto.randomUUID(),
+        ...(updateOptions?.expectedVersion !== undefined ? { expectedVersion: updateOptions.expectedVersion } : {}),
+      });
+      engine.getThreadStore(threadId).accept(result);
+      return result;
+    },
+
     run(runId) {
       return engine.getRunStore(runId);
     },
@@ -511,7 +709,6 @@ export function createClient(options: ClientOptions): CognateClient {
     projection(name) {
       return engine.getProjectionStore(name);
     },
-
     async resolveContinuation(continuationId, action, input, resolveOptions) {
       const result = await service.resolveContinuation(caller, {
         continuationId,
@@ -528,6 +725,10 @@ export function createClient(options: ClientOptions): CognateClient {
       return engine.provideCapability(capability, handler);
     },
 
+    async offerCapability(offer, handler) {
+      return engine.offerCapability(offer, handler);
+    },
+
     async invoke(capability, input) {
       return service.invoke(caller, { capability, input, idempotencyKey: crypto.randomUUID() });
     },
@@ -540,6 +741,7 @@ export function createClient(options: ClientOptions): CognateClient {
     async close() {
       engine.close();
       await engine.waitClosed();
+      await engine.revokeRemoteOffers();
     },
   };
 }

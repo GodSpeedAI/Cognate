@@ -11,3 +11,11 @@ coverage/
 # Playwright run artifacts
 test-results/
 playwright-report/
+
+# Runtime logs & process records
+*.log
+!**/tests/**/*.log
+.harness-pids.json
+
+# Copilot reconstruction capture server runtime data
+validation/reconstructions/copilot/capture/.data/
