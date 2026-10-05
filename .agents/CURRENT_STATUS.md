@@ -1,22 +1,22 @@
 # Current status
 
-**Status revision:** 36
+**Status revision:** 37
 
-**Stage:** CEP/world_ref migration Stage 8: execution, RealityTrace, evidence, settlement
+**Stage:** CEP/world_ref migration Stage 10: world transitions
 
-**Summary:** A governed run's execution trace, evidence packet and settlement now cross to SEA-Forge as CEP envelopes. Evidence is an append-only ledger fact; settlement criteria are bound into the allow decision by hash; only an allow operation can settle. RealityTrace's own settlement stays a separate fact from SEA-Forge's.
+**Summary:** Cognate can ask SEA-Forge to move work between two immutable semantic worlds and read the recorded moves back. It never picks a world: an allow only means SEA-Forge recorded the move, and a move across a semantic change always needs a human approval.
 
 **Verified:**
-- bun run typecheck clean; just verify 78/78 on 3 of 3 serial runs
-- just sea-forge-live: 22 pass, 0 fail, including the end-to-end governed-settlement test against a real sxr verify
-- sea-rs just test 1170 passed, 0 failed at the Stage 8 commit
+- bun run typecheck clean; just verify 78/78
+- sea-forge-authority unit tests: 16 pass with CEP_REPO (cep's validator accepts a transition request)
+- Live against the real sea-forge-server with DomainForge-derived world refs: sea-forge-live 12 pass; just sea-forge-live 33 pass, 0 fail
 
 **Limits:**
-- Only sxr verify records an exit code; other evidence sources have no derived direction
-- AK-006 had one unexplained gate failure that did not reproduce
-- The full bun test suite fails 68 to 78 tests in this environment; cause not investigated
+- Nothing moves Cognate's pinned world, in-flight runs or continuations; they stay in the old world
+- Compatibility is the sender's claim unless the two semantic closures are equal
+- AK-006 flake and the environment-dependent full-suite failures remain uninvestigated
 
-**Next:** Stage 9: remaining boundaries (Context Kernel, Gauntlet, SWE_SEED, GodSpeed Agent); Cognate itself is unchanged by Stage 9
+**Next:** Stage 11
 
 **Evidence:**
-- .agents/evidence/2026-10-05-stage8-settlement.md
+- .agents/evidence/2026-10-05-stage10-transitions.md

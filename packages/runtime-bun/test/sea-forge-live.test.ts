@@ -12,9 +12,16 @@ import { exchange } from "../src/sea-forge-authority.ts";
 
 const BIN = process.env.SEA_FORGE_SERVER_BIN;
 const SRC = '@namespace "t"\nentity "Tank" { key id: uuid }\n';
+// Same logical file name in each directory: a world's identity includes its logical URIs.
+const EDITED = '// reviewed\n@namespace "t"\nentity "Tank" { key id: uuid }\n';
+const CHANGED = '@namespace "t"\nentity "Tank" { key id: uuid }\nentity "Pump" { key id: uuid }\n';
 const POLICY = [
   'version: "0.1"',
   "rules:",
+  "  - name: moves",
+  "    verdict: allow",
+  "    actor_role: service",
+  "    operation_kind: world_transition",
   "  - name: allow-actions",
   "    verdict: allow",
   "    actor_role: service",
@@ -59,12 +66,18 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
   let socket = "";
   let server: ReturnType<typeof Bun.spawn> | undefined;
   let world = "";
+  let worldEdited = "";
+  let worldChanged = "";
 
   beforeAll(async () => {
     root = mkdtempSync(join(tmpdir(), "cg-live-"));
     socket = join(tmpdir(), `cg-live-${process.pid}-${Math.random().toString(36).slice(2, 8)}.sock`);
     mkdirSync(join(root, "worlds"));
     writeFileSync(join(root, "worlds/demo.sea"), SRC);
+    for (const [dir, src] of [["worlds-edited", EDITED], ["worlds-changed", CHANGED]] as const) {
+      mkdirSync(join(root, dir));
+      writeFileSync(join(root, dir, "demo.sea"), src);
+    }
     writeFileSync(join(root, "sea-forge-policy.yaml"), POLICY);
     writeFileSync(
       join(root, "server.yaml"),
@@ -72,13 +85,20 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
         socket_path: socket,
         root,
         identity: { bindings: [{ uid: process.getuid!(), actor_id: "cognate-service", roles: ["service"] }, { uid: process.getuid!(), actor_id: "op-alice", roles: ["operator"] }] },
-        cep_authority: { enabled: true, policy: "sea-forge-policy.yaml", worlds: [{ name: "demo", base: "worlds", entry: "demo.sea", files: ["demo.sea"] }] },
+        cep_authority: { enabled: true, policy: "sea-forge-policy.yaml", worlds: ["worlds", "worlds-edited", "worlds-changed"].map((base) => ({ name: "demo", base, entry: "demo.sea", files: ["demo.sea"] })) },
       }),
     );
     // The world_ref comes from DomainForge itself; SEA-Forge must independently arrive at the same one.
     const cli = Bun.spawnSync(["domainforge", "envelope", "--emit", "cep", "--world-name", "demo", "demo.sea"], { cwd: join(root, "worlds") });
     expect(cli.exitCode, cli.stderr.toString()).toBe(0);
     world = JSON.parse(cli.stdout.toString()).scope.world_ref;
+    const refOf = (dir: string) => {
+      const out = Bun.spawnSync(["domainforge", "envelope", "--emit", "cep", "--world-name", "demo", "demo.sea"], { cwd: join(root, dir) });
+      expect(out.exitCode, out.stderr.toString()).toBe(0);
+      return JSON.parse(out.stdout.toString()).scope.world_ref as string;
+    };
+    worldEdited = refOf("worlds-edited");
+    worldChanged = refOf("worlds-changed");
     server = Bun.spawn([BIN!], { env: { ...process.env, SEA_FORGE_ROOT: root, SEA_FORGE_SOCKET: socket }, stdout: "ignore", stderr: "ignore" });
     for (let i = 0; i < 500 && !existsSync(socket); i++) await Bun.sleep(10);
     expect(existsSync(socket)).toBe(true);
@@ -229,5 +249,47 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
     } finally {
       await rt.close();
     }
+  });
+
+  describe("world transitions (Stage 10)", () => {
+    const authority = () => new SeaForgeAuthority({ socketPath: socket, timeoutMs: 3_000 });
+    const call = (frame: Record<string, unknown>) => exchange(socket, frame, 3_000, 256 * 1024) as Promise<Record<string, any>>;
+    const move = (target: string, kind: "source_edit_only" | "semantic_change") => ({ sourceWorldRef: world, targetWorldRef: target, kind, reason: "adopt the reviewed model", caller: alice });
+
+    test("DomainForge names three different worlds, and a comment edit is one of them", () => {
+      expect(new Set([world, worldEdited, worldChanged]).size).toBe(3);
+    });
+
+    test("a meaning-preserving move is allowed; a semantic change escalates until a human approves it", async () => {
+      const a = authority();
+      expect(await a.listTransitions()).toEqual([]);
+
+      expect(await a.requestWorldTransition(move(worldEdited, "source_edit_only"))).toMatchObject({ disposition: "allow" });
+
+      const asked = await a.requestWorldTransition(move(worldChanged, "semantic_change"));
+      expect(asked.disposition).toBe("escalate");
+      const approvalId = asked.escalation!.approvalId;
+      expect((await a.listTransitions()).map((t) => t.targetWorldRef)).toEqual([worldEdited]);
+
+      // The requester's own identity cannot approve; a different operator can.
+      expect((await call({ verb: "authority_approval", approval_id: approvalId, resolution: "approved", request_id: "t-self", actor: { actor_id: "cognate-service", role: "service" } })).ok).not.toBe(true);
+      const resolved = await call({ verb: "authority_approval", approval_id: approvalId, resolution: "approved", request_id: "t-ok", actor: { actor_id: "op-alice", role: "operator" } });
+      expect(resolved.state).toBe("approved");
+
+      // The retry names the approval; the client links it back to the escalated request.
+      const allowed = await a.requestWorldTransition(move(worldChanged, "semantic_change"), { approvalId });
+      expect(allowed.disposition).toBe("allow");
+
+      const moves = await a.listTransitions();
+      expect(moves).toHaveLength(2);
+      expect(moves[0]).toMatchObject({ sourceWorldRef: world, targetWorldRef: worldEdited, semanticClosureEqual: true, compatibility: "compatible" });
+      expect(moves[1]).toMatchObject({ targetWorldRef: worldChanged, semanticClosureEqual: false, approvalId });
+    });
+
+    test("an unregistered target is refused, not allowed", async () => {
+      const decision = await authority().requestWorldTransition(move(`world:demo@sha256:${"e".repeat(64)}`, "semantic_change"));
+      expect(decision.disposition).toBe("unknown");
+      expect(decision.reason).toContain("cep_transition_refused");
+    });
   });
 });
