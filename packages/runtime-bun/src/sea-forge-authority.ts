@@ -37,7 +37,10 @@ function describe(operation: GovernedOperation): { kind: "action" | "capability"
 
 /** The CEP `authority_request` envelope for one operation (profile godspeed.authority_request). */
 export function buildAuthorityRequest(operation: GovernedOperation, worldRef: string, now: Date = new Date(), approval?: ApprovalReference): { envelope: Obj; operationId: string } {
-  const d = describe(operation);
+  return buildEnvelope(describe(operation), worldRef, now, approval);
+}
+
+function buildEnvelope(d: ReturnType<typeof describe>, worldRef: string, now: Date, approval?: ApprovalReference): { envelope: Obj; operationId: string } {
   const operationId = `op-${randomUUID()}`;
   const at = now.toISOString().replace(/\.\d{3}Z$/, "Z");
   const provenanceId = `prov-${operationId}`;
@@ -78,6 +81,59 @@ export function buildAuthorityRequest(operation: GovernedOperation, worldRef: st
     },
   };
   return { envelope, operationId };
+}
+
+/**
+ * A request to move work from one immutable semantic world to another (migration Stage 10).
+ *
+ * Cognate never chooses a world: both refs are given by whoever calls, and an allow only means SEA-Forge
+ * recorded the move. Cognate's pinned world changes by reconfiguration after the move appears in
+ * `SeaForgeAuthority.listTransitions()`, never as a side effect of asking.
+ */
+export interface WorldTransitionRequest {
+  /** World the work is pinned to today (a `world:<name>@sha256:<digest>`; an alias is not accepted). */
+  readonly sourceWorldRef: string;
+  readonly targetWorldRef: string;
+  readonly kind: "semantic_change" | "source_edit_only" | "compiler_upgrade" | "migration";
+  readonly reason: string;
+  /** The sender's claim. SEA-Forge cannot verify it unless the semantic closures are equal, and records `unknown` without one. */
+  readonly compatibility?: "compatible" | "backward_compatible" | "breaking" | "unknown";
+  readonly caller: { readonly tenant: string; readonly actor: { readonly id: string } };
+  readonly semanticDiffRef?: string;
+  readonly migrationRef?: string;
+  readonly evidenceRefs?: readonly string[];
+}
+
+/** The `authority_request` for one world transition. The approval is bound to the TARGET, via `resource_id`. */
+export function buildTransitionRequest(request: WorldTransitionRequest, now: Date = new Date(), approval?: ApprovalReference): { envelope: Obj; operationId: string } {
+  const built = buildEnvelope({ kind: "action", name: "transition", resource: request.targetWorldRef, subject: `actor:${request.caller.tenant}/${request.caller.actor.id}`, correlation: "" }, request.sourceWorldRef, now, approval);
+  const extensions = built.envelope.extensions as Obj;
+  const base = extensions[REQUEST_PROFILE] as Obj;
+  extensions[REQUEST_PROFILE] = { ...base, operation_kind: "world_transition", operation_name: "transition", resource_id: request.targetWorldRef };
+  extensions["godspeed.world_transition"] = {
+    target_world_ref: request.targetWorldRef,
+    transition_kind: request.kind,
+    reason: request.reason,
+    ...(request.compatibility ? { compatibility: request.compatibility } : {}),
+    ...(request.semanticDiffRef ? { semantic_diff_ref: request.semanticDiffRef } : {}),
+    ...(request.migrationRef ? { migration_ref: request.migrationRef } : {}),
+    ...(request.evidenceRefs?.length ? { evidence_refs: [...request.evidenceRefs] } : {}),
+  };
+  built.envelope.transformations = [{ transformation_id: `tr-${built.operationId}`, transformation_type: "world_transition" }];
+  built.envelope.references = [{ ref_id: `ref-${built.operationId}`, ref_type: "world_ref", target_uri_or_id: request.targetWorldRef, availability_status: "available", integrity_status: "verifiable" }];
+  return built;
+}
+
+/** One move SEA-Forge allowed and recorded, as read back from its ledger. */
+export interface RecordedTransition {
+  readonly operationId: string;
+  readonly decisionId: string;
+  readonly approvalId?: string;
+  readonly sourceWorldRef: string;
+  readonly targetWorldRef: string;
+  readonly kind: string;
+  readonly compatibility: string;
+  readonly semanticClosureEqual: boolean;
 }
 
 const unknown = (reason: string): GovernanceDecision => ({ disposition: "unknown", reason });
@@ -236,6 +292,47 @@ export class SeaForgeAuthority implements GovernanceAuthority {
       return unknown(`sea-forge unreachable: ${error instanceof Error ? error.message : String(error)}`);
     }
     return interpretDecision(response, sent, worldRef, approval);
+  }
+
+  /**
+   * Ask SEA-Forge to move work from one world to another. The answer is the usual governed disposition: a move
+   * across a semantic change comes back `escalate` whatever policy says, and only an approved retry is allowed.
+   * Nothing changes in Cognate on an allow; read the move back with `listTransitions`.
+   */
+  async requestWorldTransition(request: WorldTransitionRequest, approval?: ApprovalReference): Promise<GovernanceDecision> {
+    const sent = buildTransitionRequest(request, new Date(), approval);
+    let response: unknown;
+    try {
+      response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor }, this.timeoutMs, this.maxBytes);
+    } catch (error) {
+      return unknown(`sea-forge unreachable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return interpretDecision(response, sent, request.sourceWorldRef, approval);
+  }
+
+  /** Every move SEA-Forge allowed, oldest first. Malformed rows are dropped, never guessed at; failure is an empty list. */
+  async listTransitions(): Promise<RecordedTransition[]> {
+    let response: unknown;
+    try {
+      response = await exchange(this.options.socketPath, { verb: "authority_transitions" }, this.timeoutMs, this.maxBytes);
+    } catch {
+      return [];
+    }
+    const rows = isObj(response) && response.ok === true && Array.isArray(response.transitions) ? response.transitions : [];
+    const out: RecordedTransition[] = [];
+    for (const row of rows) {
+      if (!isObj(row) || !isObj(row.record)) continue;
+      const rec = row.record;
+      const operationId = str(row.operation_id);
+      const decisionId = str(row.decision_id);
+      const source = str(rec.source_world_ref);
+      const target = str(rec.target_world_ref);
+      const kind = str(rec.transition_kind);
+      const compatibility = str(rec.compatibility);
+      if (!operationId || !decisionId || !source || !target || !kind || !compatibility || typeof rec.semantic_closure_equal !== "boolean" || source === target) continue;
+      out.push({ operationId, decisionId, ...(str(row.approval_id) ? { approvalId: str(row.approval_id)! } : {}), sourceWorldRef: source, targetWorldRef: target, kind, compatibility, semanticClosureEqual: rec.semantic_closure_equal });
+    }
+    return out;
   }
 
   /**

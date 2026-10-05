@@ -6,7 +6,7 @@ import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-a
 import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
 
-export { SeaForgeAuthority, buildAuthorityRequest, interpretDecision, interpretSettlement, type EvidenceReceipt, type SeaForgeAuthorityOptions, type SettlementReceipt } from "./sea-forge-authority.ts";
+export { SeaForgeAuthority, buildAuthorityRequest, buildTransitionRequest, interpretDecision, interpretSettlement, type EvidenceReceipt, type RecordedTransition, type SeaForgeAuthorityOptions, type SettlementReceipt, type WorldTransitionRequest } from "./sea-forge-authority.ts";
 export { ENV_ACTOR, ENV_MODE, ENV_SOCKET, ENV_WORLD, governanceFromEnv } from "./governance-env.ts";
 export { Governor, isWorldRef, parseTimeoutSeconds, timeoutSecsEnforcer, validateGovernance } from "./governed-operation.ts";
 export type { ApprovalReference, AuthorityReference, ApprovalState, CapabilityHooks, ConstraintEnforcer, GovernanceEscalation, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";

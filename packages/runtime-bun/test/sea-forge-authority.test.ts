@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildAuthorityRequest, createRuntime, type GovernedOperation, interpretDecision, SeaForgeAuthority } from "../src/index.ts";
+import { buildAuthorityRequest, buildTransitionRequest, createRuntime, type GovernedOperation, interpretDecision, SeaForgeAuthority } from "../src/index.ts";
 
 const WORLD = `world:demo@sha256:${"a".repeat(64)}`;
 const alice = { tenant: "tenant-a", actor: { id: "alice", kind: "user" as const } };
@@ -159,6 +159,57 @@ describe("SeaForgeAuthority", () => {
       await runtime.close();
     }
   });
+
+  describe("world transitions", () => {
+    const TARGET = `world:demo@sha256:${"b".repeat(64)}`;
+    const move = { sourceWorldRef: WORLD, targetWorldRef: TARGET, kind: "semantic_change" as const, reason: "adopt the reviewed model", caller: alice };
+
+    test("the request pins the SOURCE world and binds its approval to the TARGET", () => {
+      const { envelope, operationId } = buildTransitionRequest(move, new Date("2026-10-05T12:00:00.123Z"));
+      expect((envelope.scope as Obj).world_ref).toBe(WORLD);
+      const ext = envelope.extensions as Obj;
+      expect(ext["godspeed.authority_request"]).toMatchObject({ operation_id: operationId, operation_kind: "world_transition", operation_name: "transition", resource_id: TARGET });
+      expect(ext["godspeed.world_transition"]).toEqual({ target_world_ref: TARGET, transition_kind: "semantic_change", reason: "adopt the reviewed model" });
+    });
+
+    test("optional claims travel only when given", () => {
+      const { envelope } = buildTransitionRequest({ ...move, compatibility: "breaking", semanticDiffRef: "diff-1", evidenceRefs: ["ev-1"] });
+      expect((envelope.extensions as Obj)["godspeed.world_transition"]).toMatchObject({ compatibility: "breaking", semantic_diff_ref: "diff-1", evidence_refs: ["ev-1"] });
+    });
+
+    test("an escalate is preserved: a move across a semantic change is not an allow", async () => {
+      const { path } = fake((request) => JSON.stringify(decisionFor(request, "escalate", { approval_id: "apr-op-x", approval_expires_at: "2099-01-01T00:00:00Z" })));
+      const decision = await new SeaForgeAuthority({ socketPath: path }).requestWorldTransition(move);
+      expect(decision).toMatchObject({ disposition: "escalate", escalation: { approvalId: "apr-op-x" } });
+    });
+
+    test("the answer must be for the source world, or it is unknown", async () => {
+      const { path } = fake((request) => JSON.stringify(decisionFor(request, "allow", {}, { scope: { world_ref: TARGET } })));
+      const decision = await new SeaForgeAuthority({ socketPath: path }).requestWorldTransition(move);
+      expect(decision.disposition).toBe("unknown");
+    });
+
+    test("an unreachable SEA-Forge is unknown, never an allow", async () => {
+      const decision = await new SeaForgeAuthority({ socketPath: join(tmpdir(), "no-such.sock"), timeoutMs: 200 }).requestWorldTransition(move);
+      expect(decision.disposition).toBe("unknown");
+    });
+
+    test("recorded moves are read back; malformed rows and non-moves are dropped", async () => {
+      const row = (over: Obj = {}) => ({ operation_id: "op-1", decision_id: "auth_1", approval_id: null, record: { source_world_ref: WORLD, target_world_ref: TARGET, transition_kind: "source_edit_only", reason: "r", compatibility: "compatible", semantic_closure_equal: true }, ...over });
+      const { path, seen } = fake(() => JSON.stringify({ ok: true, transitions: [row(), row({ approval_id: "apr-op-2", operation_id: "op-2" }), row({ record: { source_world_ref: WORLD, target_world_ref: WORLD, transition_kind: "migration", compatibility: "unknown", semantic_closure_equal: false } }), { nonsense: true }, row({ decision_id: undefined })] }));
+      const moves = await new SeaForgeAuthority({ socketPath: path }).listTransitions();
+      expect(seen[0]).toMatchObject({ verb: "authority_transitions" });
+      expect(moves.map((m) => m.operationId)).toEqual(["op-1", "op-2"]);
+      expect(moves[1]).toMatchObject({ approvalId: "apr-op-2", sourceWorldRef: WORLD, targetWorldRef: TARGET, semanticClosureEqual: true });
+      expect(moves[0]!.approvalId).toBeUndefined();
+    });
+
+    test("a failing SEA-Forge lists nothing rather than guessing", async () => {
+      const { path } = fake(() => JSON.stringify({ ok: false, error_class: "cep_authority_internal" }));
+      expect(await new SeaForgeAuthority({ socketPath: path }).listTransitions()).toEqual([]);
+      expect(await new SeaForgeAuthority({ socketPath: join(tmpdir(), "no-such.sock"), timeoutMs: 200 }).listTransitions()).toEqual([]);
+    });
+  });
 });
 
 // Profile conformance by the CEP repository's own validator. Gated on CEP_REPO (a checkout of
@@ -171,5 +222,13 @@ describe.skipIf(!process.env.CEP_REPO)("authority_request conforms to the CEP pr
     const out = Bun.spawnSync(["uv", "run", "--project", process.env.CEP_REPO!, "python", "-c", script], { stdin: new TextEncoder().encode(JSON.stringify(envelopes)) });
     expect(out.exitCode, out.stderr.toString()).toBe(0);
     expect(JSON.parse(out.stdout.toString())).toEqual([[], []]);
+  });
+
+  test("a world transition request validates", () => {
+    const envelope = buildTransitionRequest({ sourceWorldRef: WORLD, targetWorldRef: `world:demo@sha256:${"b".repeat(64)}`, kind: "semantic_change", reason: "adopt the reviewed model", compatibility: "unknown", caller: alice }).envelope;
+    const script = "import json,sys; from cep.godspeed import validate_profile, verify_semantics; e=json.load(sys.stdin); print(json.dumps(validate_profile(e,'authority_request')+verify_semantics(e,'authority_request')))";
+    const out = Bun.spawnSync(["uv", "run", "--project", process.env.CEP_REPO!, "python", "-c", script], { stdin: new TextEncoder().encode(JSON.stringify(envelope)) });
+    expect(out.exitCode, out.stderr.toString()).toBe(0);
+    expect(JSON.parse(out.stdout.toString())).toEqual([]);
   });
 });
