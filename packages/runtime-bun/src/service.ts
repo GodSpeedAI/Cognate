@@ -2,10 +2,10 @@
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@cognate/continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@cognate/events";
-import { applyStateUpdate, type Caller, type ContinuationView, foldState, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@cognate/runtime-api";
+import { applyStateUpdate, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@cognate/runtime-api";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
-import { foldRun, isTerminal, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
+import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 const PAGE = 500;
 
@@ -360,6 +360,83 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         }
       }
       throw new ServiceError("unavailable", `too much contention updating state for thread ${request.threadId}`);
+    },
+
+    async observe(caller: Caller, request: ObservationInput): Promise<ObservationView> {
+      const worldId = request.subject.worldId;
+      const resource = request.subject.resource;
+      await authorize(caller, "observation.record", `${worldId ?? "-"}:${resource}`);
+      const streamId = observationStream(caller.tenant, worldId, resource);
+      // Observation identity is stable for the idempotency scope+key: a replay returns the same id and the
+      // recorded result (no second event). No clock/randomness enters the id, so replay is deterministic.
+      const idemScope = `${caller.tenant}:${caller.actor.id}:observation.record`;
+      const observationId = `obs_${fingerprint({ scope: idemScope, key: request.idempotencyKey })}`;
+      const attribution = {
+        kind: request.attribution?.kind ?? ("unattributed" as const),
+        confidence: request.attribution?.confidence ?? ("observed" as const),
+      };
+      const correlationId = request.attribution?.correlationId ?? observationId;
+      // Causation is cited ONLY when attribution kind is "caused"; otherwise it stays null (unknown, never invented).
+      const causationId = request.attribution?.kind === "caused" ? (request.attribution.causationEventId ?? null) : null;
+      const recordedAt = new Date().toISOString();
+      const view: ObservationView = {
+        observationId,
+        eventId: observationId,
+        kind: request.kind,
+        subject: request.subject,
+        observedAt: request.observedAt,
+        recordedAt,
+        attribution: { ...attribution, correlationId, causationEventId: causationId },
+      };
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const events = await store.readStream(streamId);
+        const currentVersion = events.length;
+        try {
+          const outcome = await store.commit({
+            idempotency: {
+              scope: idemScope,
+              key: request.idempotencyKey,
+              fingerprint: fingerprint(toJson({ kind: request.kind, subject: request.subject, facts: request.facts, attribution: request.attribution ?? null, observedAt: request.observedAt })),
+            },
+            appends: [{
+              streamId,
+              expectedVersion: currentVersion,
+              events: [{
+                eventType: "observation.recorded",
+                schemaVersion: 1,
+                occurredAt: request.observedAt,
+                tenant: caller.tenant,
+                correlationId,
+                causationId,
+                runId: null,
+                scopeId: core.scopeId,
+                eventId: observationId,
+                payload: toJson({ kind: request.kind, subject: request.subject, facts: request.facts, evidence: request.evidence ?? null, attribution }),
+                metadata: {
+                  source: "observation",
+                  observer: request.source.observer,
+                  provider: request.source.provider ?? null,
+                  method: request.source.method ?? null,
+                  worldId: worldId ?? null,
+                  recordedBy: caller.actor.id,
+                  attribution: attribution.kind,
+                  confidence: attribution.confidence,
+                },
+              }],
+            }],
+            result: toJson(view),
+          });
+          return outcome.result as unknown as ObservationView;
+        } catch (error) {
+          if (error instanceof ConcurrencyError) {
+            if (attempt >= 4) break;
+            continue; // contention on this subject's stream: re-read and retry
+          }
+          if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
+          throw error;
+        }
+      }
+      throw new ServiceError("unavailable", `too much contention recording observations for ${worldId ?? "-"}:${resource}`);
     },
 
     async publishRemoteOffer(caller, request) {

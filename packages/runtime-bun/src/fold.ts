@@ -13,6 +13,12 @@ export const runStream = (runId: string) => `run-${runId}`;
 export const runStateStream = (runId: string) => `run-state-${runId}`;
 /** Tenant-qualified durable state shared by every run whose correlation id is this thread id. */
 export const threadStateStream = (tenant: string, threadId: string) => `thread-state:${encodeURIComponent(tenant)}:${encodeURIComponent(threadId)}`;
+/**
+ * Observations about one world-scoped resource. Keyed by (tenant, worldId, resource) so equal resource strings in
+ * different execution worlds are distinct streams — the Phase-2 resource identity invariant at the stream level.
+ */
+export const observationStream = (tenant: string, worldId: string | undefined, resource: string) =>
+  `observation:${encodeURIComponent(tenant)}:${encodeURIComponent(worldId ?? "-")}:${encodeURIComponent(resource)}`;
 
 export type Meta = { readonly [key: string]: Json };
 
