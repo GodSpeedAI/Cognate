@@ -6,8 +6,9 @@ import type { AgentDefinition, Caller, RuntimeService } from "@cognate/runtime-a
 import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
 
+export { SeaForgeAuthority, buildAuthorityRequest, interpretDecision, type SeaForgeAuthorityOptions } from "./sea-forge-authority.ts";
 export { Governor, isWorldRef, validateGovernance } from "./governed-operation.ts";
-export type { Disposition, GovernanceAuthority, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
+export type { ConstraintEnforcer, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
