@@ -9,7 +9,7 @@ import { startRuntime } from "./runtime.ts";
 export { SeaForgeAuthority, buildAuthorityRequest, interpretDecision, type SeaForgeAuthorityOptions } from "./sea-forge-authority.ts";
 export { ENV_ACTOR, ENV_MODE, ENV_SOCKET, ENV_WORLD, governanceFromEnv } from "./governance-env.ts";
 export { Governor, isWorldRef, parseTimeoutSeconds, timeoutSecsEnforcer, validateGovernance } from "./governed-operation.ts";
-export type { ConstraintEnforcer, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
+export type { ApprovalReference, ApprovalState, CapabilityHooks, ConstraintEnforcer, GovernanceEscalation, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
@@ -77,6 +77,12 @@ export interface Runtime {
   rebuildCognition(): Promise<void>;
   /** Erase an event payload under retention/privacy policy; derived views and the cognitive index drop it (spec §32). */
   erase(eventId: string, reason: string, actor: Principal): Promise<void>;
+  /**
+   * One pass over runs waiting on a governance approval: ask the authority where each approval stands, resume
+   * the approved ones and cancel the rejected or expired ones. A resume only triggers revalidation; the
+   * authority decides again when the run retries. Returns how many waits it acted on.
+   */
+  pollApprovals(): Promise<number>;
   /** Wait until background work queued so far has been processed (tests and graceful shutdown). */
   idle(timeoutMs?: number): Promise<void>;
   close(): Promise<void>;

@@ -2,7 +2,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Json } from "@cognate/events";
 import { type InvocationResult, isUnavailable } from "@cognate/kernel-api";
-import { type Governor, parseTimeoutSeconds } from "./governed-operation.ts";
+import { type GovernanceEscalation, type Governor, parseTimeoutSeconds } from "./governed-operation.ts";
 import type { Component, ComponentHandle, InvocationContext, InvocationFailure, Kernel, Policy, PolicyDecision, SemanticRef } from "@cognate/kernel-api";
 import { messageOf, toJson } from "./fold.ts";
 
@@ -17,10 +17,16 @@ export interface InvocationOutcome {
   readonly value: Json;
   /** JSON form of the typed failure, e.g. `{ kind: "denied", reason }`. For "failed" kind, includes `name` (error constructor name) and `details` (error's enumerable properties as string/number/boolean/null). */
   readonly failure: { readonly kind: InvocationFailure["kind"]; readonly [key: string]: Json } | null;
+  /** Present when the call was refused because a human approval could satisfy it; the provider did not run. */
+  readonly escalation?: GovernanceEscalation;
 }
 
 interface Slot {
   decision?: PolicyDecision;
+  /** The approval being relied on, when this call revalidates an approved escalation. */
+  approval?: { readonly approvalId: string };
+  /** Set by the policy wrapper when authorization escalated to a human approval. */
+  escalation?: GovernanceEscalation;
   /** Puts a governed deadline in force for this call (set by `invoke`, called by the policy wrapper). */
   arm?: (milliseconds: number) => void;
 }
@@ -39,9 +45,15 @@ export class Invoker {
   readonly policy: Policy = {
     authorize: async (request) => {
       const slot = this.slots.getStore();
-      const decision = await this.governor.governCapability(request, (applied) => {
-        const seconds = applied.map((c) => (c.type === "timeout_secs" ? parseTimeoutSeconds(c.value) : undefined)).filter((n): n is number => n !== undefined);
-        if (seconds.length && slot?.arm) slot.arm(Math.min(...seconds) * 1000);
+      const decision = await this.governor.governCapability(request, {
+        ...(slot?.approval ? { approval: slot.approval } : {}),
+        applied: (applied) => {
+          const seconds = applied.map((c) => (c.type === "timeout_secs" ? parseTimeoutSeconds(c.value) : undefined)).filter((n): n is number => n !== undefined);
+          if (seconds.length && slot?.arm) slot.arm(Math.min(...seconds) * 1000);
+        },
+        escalated: (escalation) => {
+          if (slot) slot.escalation = escalation;
+        },
       });
       if (slot) slot.decision = decision;
       return decision;
@@ -58,12 +70,12 @@ export class Invoker {
     await Promise.all(this.mounted.map(({ handle }) => handle.waitFor("ACTIVE", 10_000).catch(() => {})));
   }
 
-  async invoke(request: { readonly capability: string; readonly version?: string; readonly input: Json; readonly tenant: string; readonly context: InvocationContext }): Promise<InvocationOutcome> {
+  async invoke(request: { readonly capability: string; readonly version?: string; readonly input: Json; readonly tenant: string; readonly context: InvocationContext; readonly approval?: { readonly approvalId: string } }): Promise<InvocationOutcome> {
     const lease = this.kernel!.resolve(request.version ? { capability: request.capability, version: request.version } : { capability: request.capability });
     const base = { capability: request.capability, providerId: null, componentId: null, fiberId: null, decision: null, semanticRef: null, value: null };
     if (isUnavailable(lease)) return { ...base, ok: false, failure: { kind: "unavailable", reason: lease.reason } };
 
-    const slot: Slot = {};
+    const slot: Slot = request.approval ? { approval: request.approval } : {};
     // The call gets its own signal so a governed deadline (decided during authorization, after the call has
     // started) can abort the provider; the caller's signal still aborts it too.
     const controller = new AbortController();
@@ -85,7 +97,7 @@ export class Invoker {
     invocation.catch(() => {});
     const result = await Promise.race([invocation, governedDeadline]).finally(() => clearTimeout(timer));
     const provider = this.providerOf(lease.providerId, request.capability);
-    const common = { ...base, providerId: lease.providerId, ...provider, semanticRef: lease.contract.semanticRef ?? null };
+    const common = { ...base, providerId: lease.providerId, ...provider, semanticRef: lease.contract.semanticRef ?? null, ...(slot.escalation ? { escalation: slot.escalation } : {}) };
     if (result.ok) return { ...common, decision: slot.decision ?? null, ok: true, value: toJson(result.value), failure: null };
     const failure = result.failure;
     const decision = failure.kind === "denied" ? failure.decision : (slot.decision ?? null);

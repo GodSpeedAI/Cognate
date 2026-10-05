@@ -1,24 +1,24 @@
 # Current status
 
-**Status revision:** 34
+**Status revision:** 35
 
-**Stage:** CEP/world_ref migration Stage 6 debt closed: governed timeout_secs enforcement, harness governance wiring, flaky CG-PRF-002 fixed
+**Stage:** CEP/world_ref migration Stage 7: governance escalation, durable continuation, revalidated resume
 
-**Summary:** Closed the Stage 6 debt. (1) timeoutSecsEnforcer is real: the Invoker arms its own deadline from the applied timeout_secs constraint, aborts the provider's signal and fails the call with deadline_exceeded; the enforcer refuses actions, where no deadline can be applied, and values outside 1..3600 whole seconds. (2) governanceFromEnv wires governance into the harness profile as an explicit opt-in (COGNATE_GOVERNANCE, COGNATE_SEA_FORGE_SOCKET, COGNATE_WORLD_REF); a wrong or partial environment throws instead of weakening. (3) just sea-forge-live runs the live loop against a real sea-forge-server and fails, never skips, when its prerequisites are missing. (4) CG-PRF-002 flake fixed: React's scheduler fired after happy-dom was unregistered ('window is not defined'); the test now unmounts and drains before unregistering. Per-subject policy and the world-registry cache landed in sea-rs.
+**Summary:** An escalated capability call inside a run now waits durably instead of failing. The escalation is recorded once (a replay never opens a second approval), the run waits on a governance-approval continuation that expires with the approval window, and any resume only triggers revalidation: SEA-Forge re-evaluates policy and checks the approval is approved, unexpired, unused and for exactly this operation. A rejected, expired or used approval closes the wait and fails the run; the provider never runs before an allow. Runtime.pollApprovals() (optionally timed via governance.approvalPollMs) resumes approved waits idempotently. Escalated actions (startRun and similar) are still refused, naming the approval.
 
 **Verified:**
-- bun test packages/runtime-bun profiles/harness: 96 pass, 0 fail (8 skipped without live prerequisites); with SEA_FORGE_SERVER_BIN and CEP_REPO: just sea-forge-live 14 pass, 0 skipped
-- Live through the real server: per-subject rule bounds bob's capability calls to timeout_secs 1; a slow provider was aborted with deadline_exceeded in under 4s; alice's capability calls stay gated; actions under a timeout constraint are refused
-- CG-PRF-002: failed 5 of 18 parallel runs before the fix, 0 of 30 after; just verify 78/78 on 19 of 20 serial runs after the fix (the one failure was AK-006, see limits)
-- tsc -p tsconfig.json exit 0
+- bun test packages/runtime-bun: 94 pass, 0 fail (+7 scripted-authority escalation tests); just sea-forge-live: 17 pass, 0 skipped (9 live against a real sea-forge-server including approval by a different identity, single use, a refused unapproved poke, rejection)
+- just verify 78/78 on 3 of 3 serial runs; tsc exit 0
+- Live: requester's own identity cannot approve; an authorized different identity can; a hand-made resume without approval is revalidated and refused at SEA-Forge, the run fails closed
 
 **Limits:**
-- One serial just verify run failed AK-006 (RealityTrace characterization, runs a real sxr binary against temp homes) and did not reproduce in 23 further serial runs; cause unknown, likely contention with concurrent processes. Not investigated further.
-- Full-suite failure count varies by environment (77, 78, then 68 stable across two runs); failing tests are AG-UI interop, E2E, J-* journeys and archived validation/reconstructions copies, none in code changed here
-- Only timeout_secs has an enforcer; other SEA-Forge boundary dimensions (workspace, artifacts_root, env_keys, sandbox_class, max_manager_iterations) are refused until enforcers exist
-- Escalation is still refused; durable continuation is Stage 7
+- Escalated actions (startRun, continuation resume, etc.) are refused rather than waited on
+- Crash window: if the process dies after the approval is consumed but before the invocation is recorded, the replay is refused (single use); the provider may have run once. At-most-once authority, not exactly-once effect
+- pollApprovals is manual unless governance.approvalPollMs is set; nothing sets it by default
+- Cognate approvals live in a separate ledger stream and do not appear in SEA-Forge's workbench approval inbox
+- AK-006 flake (one unexplained failure earlier) and the environment-dependent full-suite failures remain uninvestigated
 
-**Next:** Stage 7: escalation and durable continuation (escalate -> approval -> revalidated resume)
+**Next:** Stage 8: execution -> RealityTrace -> evidence -> settlement
 
 **Evidence:**
-- .agents/evidence/2026-10-05-stage6-debt-closure.md
+- .agents/evidence/2026-10-05-stage7-escalation.md

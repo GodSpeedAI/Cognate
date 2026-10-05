@@ -8,6 +8,7 @@ import { join } from "node:path";
 import type { AgentDefinition } from "@cognate/runtime-api";
 import type { Component } from "@cognate/kernel-api";
 import { createRuntime, SeaForgeAuthority, timeoutSecsEnforcer } from "../src/index.ts";
+import { exchange } from "../src/sea-forge-authority.ts";
 
 const BIN = process.env.SEA_FORGE_SERVER_BIN;
 const SRC = '@namespace "t"\nentity "Tank" { key id: uuid }\n';
@@ -26,6 +27,10 @@ const POLICY = [
   "    disposition: boundary",
   "    boundary_constraints:",
   '      timeout_secs: ["1"]',
+  "  - name: approvers",
+  "    verdict: allow",
+  "    actor_role: operator",
+  "    operation_kind: approval_resolution",
   "  - name: gate-capabilities",
   "    verdict: allow",
   "    actor_role: service",
@@ -66,7 +71,7 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
       JSON.stringify({
         socket_path: socket,
         root,
-        identity: { bindings: [{ uid: process.getuid!(), actor_id: "cognate-service", roles: ["service"] }] },
+        identity: { bindings: [{ uid: process.getuid!(), actor_id: "cognate-service", roles: ["service"] }, { uid: process.getuid!(), actor_id: "op-alice", roles: ["operator"] }] },
         cep_authority: { enabled: true, policy: "sea-forge-policy.yaml", worlds: [{ name: "demo", base: "worlds", entry: "demo.sea", files: ["demo.sea"] }] },
       }),
     );
@@ -128,6 +133,75 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
     } finally {
       await rt.close();
     }
+  });
+
+  describe("escalation to a human approval, end to end", () => {
+    const call = (frame: Record<string, unknown>) => exchange(socket, frame, 3_000, 256 * 1024) as Promise<Record<string, any>>;
+    const resolve = (approvalId: string, resolution: "approved" | "rejected", actor = { actor_id: "op-alice", role: "operator" }) =>
+      call({ verb: "authority_approval", approval_id: approvalId, resolution, request_id: `res-${approvalId}-${resolution}-${actor.actor_id}`, actor });
+    const pending = async (rt: Awaited<ReturnType<typeof open>>, runId: string) => (await rt.service.listContinuations(alice, { runId, status: "OPEN" }))[0]!;
+    const state = (rt: Awaited<ReturnType<typeof open>>, runId: string) => rt.service.getRun(alice, { runId }).then((r) => r.status);
+    const until = async <T,>(read: () => Promise<T>, ok: (v: T) => boolean, what: string): Promise<T> => {
+      const end = Date.now() + 8_000;
+      for (;;) {
+        const v = await read();
+        if (ok(v)) return v;
+        if (Date.now() > end) throw new Error(`timed out: ${what}`);
+        await Bun.sleep(20);
+      }
+    };
+
+    test("wait -> approved by someone else -> resume -> revalidated -> provider runs once; the approval is single-use", async () => {
+      const rt = await open(world);
+      try {
+        const run = await rt.service.startRun(alice, { agent: invoker.id, input: {}, idempotencyKey: "esc-1" });
+        await until(() => state(rt, run.runId), (s) => s === "waiting", "run waits on approval");
+        const wait = await pending(rt, run.runId);
+        const approvalId = (wait.condition as { approvalId: string }).approvalId;
+        expect(approvalId).toMatch(/^apr-op-/);
+
+        // Still pending at SEA-Forge: polling changes nothing.
+        expect(await rt.pollApprovals()).toBe(0);
+        // The requester's own identity cannot approve; an authorized different identity can.
+        const selfApprove = await resolve(approvalId, "approved", { actor_id: "cognate-service", role: "service" });
+        expect(selfApprove.error_class).toBe("cep_approval_refused");
+        expect((await resolve(approvalId, "approved")).ok).toBe(true);
+
+        expect(await rt.pollApprovals()).toBe(1);
+        await until(() => state(rt, run.runId), (s) => s === "completed", "run completes after revalidation");
+        const final = await call({ verb: "authority_approvals" });
+        expect(final.approvals.find((a: any) => a.approval_id === approvalId).state).toBe("used");
+      } finally {
+        await rt.close();
+      }
+    });
+
+    test("an unapproved poke cannot get through: resuming by hand is revalidated and refused", async () => {
+      const rt = await open(world);
+      try {
+        const run = await rt.service.startRun(alice, { agent: invoker.id, input: {}, idempotencyKey: "esc-2" });
+        await until(() => state(rt, run.runId), (s) => s === "waiting", "waits");
+        const wait = await pending(rt, run.runId);
+        await rt.service.resolveContinuation(alice, { continuationId: wait.id, action: "resume", input: { approved: true }, idempotencyKey: "poke-1" });
+        await until(() => state(rt, run.runId), (s) => s === "failed", "run fails closed at SEA-Forge");
+      } finally {
+        await rt.close();
+      }
+    });
+
+    test("a rejected approval fails the run", async () => {
+      const rt = await open(world);
+      try {
+        const run = await rt.service.startRun(alice, { agent: invoker.id, input: {}, idempotencyKey: "esc-3" });
+        await until(() => state(rt, run.runId), (s) => s === "waiting", "waits");
+        const approvalId = ((await pending(rt, run.runId)).condition as { approvalId: string }).approvalId;
+        expect((await resolve(approvalId, "rejected")).ok).toBe(true);
+        expect(await rt.pollApprovals()).toBe(1);
+        await until(() => state(rt, run.runId), (s) => s === "failed", "run fails");
+      } finally {
+        await rt.close();
+      }
+    });
   });
 
   test("a world SEA-Forge has not registered is refused", async () => {
