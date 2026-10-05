@@ -123,6 +123,7 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       const stepId = `emit:${++counters.emit}`;
       if (find(stepId)) return;
       if (eventType.startsWith("run.")) throw new Error(`emit: event type ${eventType} is reserved for the runtime`);
+      if (eventType.startsWith("observation.")) throw new Error(`emit: event type ${eventType} is reserved for observation ingestion (RuntimeService.observe) — observations are never run emissions`);
       await append({ eventType, payload: toJson(payload), metadata: { stepId } });
     },
 
