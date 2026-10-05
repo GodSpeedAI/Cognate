@@ -286,6 +286,25 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
       expect(moves[1]).toMatchObject({ targetWorldRef: worldChanged, semanticClosureEqual: false, approvalId });
     });
 
+    test("earlier work reaches across a move only by citing the allowed transition (M-46)", async () => {
+      const a = authority();
+      const op = { kind: "action", action: "run.start", caller: alice, resource: "agent.echo" } as const;
+      // Work decided in the original world stays pinned there.
+      const earlier = await a.decide(op, world);
+      expect(earlier.disposition).toBe("allow");
+      const lineage = [earlier.authority!.requestEnvelopeId];
+      const licence = (await a.listTransitions()).find((t) => t.sourceWorldRef === world && t.targetWorldRef === worldEdited)!;
+
+      // Carrying it into the new world with no licence is refused by the real server...
+      const bare = await a.decide(op, worldEdited, undefined, { lineage, transitionLedgerEntry: "01NOTATRANSITION" });
+      expect(bare.disposition).toBe("unknown");
+      expect(bare.reason).toContain("cep_transition_refused");
+      // ...and allowed once it cites the recorded move, which names its ledger entry.
+      expect(licence.ledgerEntry.length).toBeGreaterThan(10);
+      const carried = await a.decide(op, worldEdited, undefined, { lineage, transitionLedgerEntry: licence.ledgerEntry });
+      expect(carried.disposition).toBe("allow");
+    });
+
     test("an unregistered target is refused, not allowed", async () => {
       const decision = await authority().requestWorldTransition(move(`world:demo@sha256:${"e".repeat(64)}`, "semantic_change"));
       expect(decision.disposition).toBe("unknown");

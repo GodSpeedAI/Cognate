@@ -36,11 +36,23 @@ function describe(operation: GovernedOperation): { kind: "action" | "capability"
 }
 
 /** The CEP `authority_request` envelope for one operation (profile godspeed.authority_request). */
-export function buildAuthorityRequest(operation: GovernedOperation, worldRef: string, now: Date = new Date(), approval?: ApprovalReference): { envelope: Obj; operationId: string } {
-  return buildEnvelope(describe(operation), worldRef, now, approval);
+export function buildAuthorityRequest(operation: GovernedOperation, worldRef: string, now: Date = new Date(), approval?: ApprovalReference, carry?: CarriedWork): { envelope: Obj; operationId: string } {
+  return buildEnvelope(describe(operation), worldRef, now, approval, carry);
 }
 
-function buildEnvelope(d: ReturnType<typeof describe>, worldRef: string, now: Date, approval?: ApprovalReference): { envelope: Obj; operationId: string } {
+/**
+ * Work decided in an earlier world that this request carries forward. SEA-Forge refuses a lineage reaching across
+ * worlds unless it cites the allowed transition that moved it (`ledgerEntry` from `listTransitions()`); work already
+ * decided stays pinned to its world and is never re-pinned.
+ */
+export interface CarriedWork {
+  /** The request envelope ids of the earlier work. */
+  readonly lineage: readonly string[];
+  /** `RecordedTransition.ledgerEntry` of the move from that work's world to this request's world. */
+  readonly transitionLedgerEntry: string;
+}
+
+function buildEnvelope(d: ReturnType<typeof describe>, worldRef: string, now: Date, approval?: ApprovalReference, carry?: CarriedWork): { envelope: Obj; operationId: string } {
   const operationId = `op-${randomUUID()}`;
   const at = now.toISOString().replace(/\.\d{3}Z$/, "Z");
   const provenanceId = `prov-${operationId}`;
@@ -69,7 +81,7 @@ function buildEnvelope(d: ReturnType<typeof describe>, worldRef: string, now: Da
     provenance_refs: [provenanceId],
     validation_status: "valid",
     // A revalidation links back to the request that escalated; the approval itself is bound server-side.
-    lineage_refs: approval ? [`env-authority_request-${approval.approvalId.replace(/^apr-/, "")}`] : [],
+    lineage_refs: [...(approval ? [`env-authority_request-${approval.approvalId.replace(/^apr-/, "")}`] : []), ...(carry ? carry.lineage : [])],
     provenance: [{ provenance_id: provenanceId, source_system_refs: ["cognate"], producer_refs: ["cognate"], production_method: "governed_operation", created_at: at }],
     authority: [{ authority_id: `auth-${operationId}`, subject_actor_ref: d.subject }],
     transformations: [{ transformation_id: `tr-${operationId}`, transformation_type: d.kind === "capability" ? "capability_invocation" : "action_invocation" }],
@@ -77,7 +89,7 @@ function buildEnvelope(d: ReturnType<typeof describe>, worldRef: string, now: Da
     states: [{ state_id: `st-${operationId}`, state_type: "declared_state", subject_ref: `operation:${operationId}` }],
     extensions: {
       "cep.profile": { profile_id: REQUEST_PROFILE, profile_version: PROFILE_VERSION },
-      [REQUEST_PROFILE]: { operation_id: operationId, correlation_id: d.correlation || operationId, operation_kind: d.kind, operation_name: d.name, resource_id: d.resource, ...(approval ? { approval_id: approval.approvalId } : {}) },
+      [REQUEST_PROFILE]: { operation_id: operationId, correlation_id: d.correlation || operationId, operation_kind: d.kind, operation_name: d.name, resource_id: d.resource, ...(approval ? { approval_id: approval.approvalId } : {}), ...(carry ? { transition_ref: carry.transitionLedgerEntry } : {}) },
     },
   };
   return { envelope, operationId };
@@ -128,6 +140,8 @@ export function buildTransitionRequest(request: WorldTransitionRequest, now: Dat
 export interface RecordedTransition {
   readonly operationId: string;
   readonly decisionId: string;
+  /** The ledger entry of the allow; what a request cites (`CarriedWork`) to carry earlier work across the move. */
+  readonly ledgerEntry: string;
   readonly approvalId?: string;
   readonly sourceWorldRef: string;
   readonly targetWorldRef: string;
@@ -283,8 +297,8 @@ export class SeaForgeAuthority implements GovernanceAuthority {
     this.maxBytes = options.maxResponseBytes ?? 256 * 1024;
   }
 
-  async decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference): Promise<GovernanceDecision> {
-    const sent = buildAuthorityRequest(operation, worldRef, new Date(), approval);
+  async decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference, carry?: CarriedWork): Promise<GovernanceDecision> {
+    const sent = buildAuthorityRequest(operation, worldRef, new Date(), approval, carry);
     let response: unknown;
     try {
       response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor }, this.timeoutMs, this.maxBytes);
@@ -325,12 +339,13 @@ export class SeaForgeAuthority implements GovernanceAuthority {
       const rec = row.record;
       const operationId = str(row.operation_id);
       const decisionId = str(row.decision_id);
+      const ledgerEntry = str(row.ledger_entry);
       const source = str(rec.source_world_ref);
       const target = str(rec.target_world_ref);
       const kind = str(rec.transition_kind);
       const compatibility = str(rec.compatibility);
-      if (!operationId || !decisionId || !source || !target || !kind || !compatibility || typeof rec.semantic_closure_equal !== "boolean" || source === target) continue;
-      out.push({ operationId, decisionId, ...(str(row.approval_id) ? { approvalId: str(row.approval_id)! } : {}), sourceWorldRef: source, targetWorldRef: target, kind, compatibility, semanticClosureEqual: rec.semantic_closure_equal });
+      if (!operationId || !decisionId || !ledgerEntry || !source || !target || !kind || !compatibility || typeof rec.semantic_closure_equal !== "boolean" || source === target) continue;
+      out.push({ operationId, decisionId, ledgerEntry, ...(str(row.approval_id) ? { approvalId: str(row.approval_id)! } : {}), sourceWorldRef: source, targetWorldRef: target, kind, compatibility, semanticClosureEqual: rec.semantic_closure_equal });
     }
     return out;
   }
