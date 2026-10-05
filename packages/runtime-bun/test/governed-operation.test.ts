@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Component } from "@cognate/kernel-api";
 import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime, type GovernanceAuthority, type GovernanceDecision, type GovernedOperation, type Runtime } from "../src/index.ts";
+import { createRuntime, type ConstraintEnforcer, type GovernanceAuthority, type GovernanceDecision, type GovernedOperation, type Runtime } from "../src/index.ts";
 
 let keyCounter = 0;
 const nextKey = () => `k${++keyCounter}`;
@@ -70,7 +70,7 @@ describe("GovernedOperation choke point", () => {
 
   test("a non-allow disposition refuses the action", async () => {
     for (const disposition of ["deny", "escalate", "unknown", "constrained_allow", "boundary", "degraded"] as const) {
-      const rt = await open({ mode: "sea-forge", worldRef: WORLD, authority: authority(() => ({ disposition, reason: `because ${disposition}`, policyBasis: "p" })) });
+      const rt = await open({ mode: "sea-forge", worldRef: WORLD, authority: authority(() => ({ disposition, reason: `because ${disposition}`, policyBasis: ["p"] })) });
       await expect(rt.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
       await rt.close();
       runtime = undefined;
@@ -98,6 +98,52 @@ describe("GovernedOperation choke point", () => {
     runtime = undefined;
     const garbage = await open({ mode: "sea-forge", worldRef: WORLD, authority: authority(() => ({ disposition: "yes" as unknown as GovernanceDecision["disposition"], reason: "" })) });
     await expect(garbage.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
+  });
+
+  test("a constrained disposition is allowed only when every constraint is enforced for the operation", async () => {
+    const seen: string[] = [];
+    const timeout: ConstraintEnforcer = { apply: (constraint) => (seen.push(`${constraint.type}=${constraint.value}`), true) };
+    const bounded = (disposition: "boundary" | "constrained_allow" | "degraded") => authority(() => ({ disposition, reason: "bounded", policyBasis: ["p"], constraints: [{ type: "timeout_secs", value: "30" }], compensatingControls: ["audit"] }));
+    // no enforcer: refused
+    const none = await open({ mode: "sea-forge", worldRef: WORLD, authority: bounded("boundary") });
+    await expect(none.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
+    await none.close();
+    // enforcer for the constraint: allowed, and the constraint was actually applied
+    const ok = await open({ mode: "sea-forge", worldRef: WORLD, authority: bounded("boundary"), enforcers: { timeout_secs: timeout } });
+    await ok.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() });
+    expect(seen).toContain("timeout_secs=30");
+    await ok.close();
+    // degraded also needs its compensating control enforced
+    const missingControl = await open({ mode: "sea-forge", worldRef: WORLD, authority: bounded("degraded"), enforcers: { timeout_secs: timeout } });
+    await expect(missingControl.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
+    await missingControl.close();
+    const full = await open({ mode: "sea-forge", worldRef: WORLD, authority: bounded("degraded"), enforcers: { timeout_secs: timeout, "control:audit": { apply: () => true } } });
+    await full.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() });
+    await full.close();
+    runtime = undefined;
+  });
+
+  test("an enforcer that cannot enforce, throws, or answers truthy-but-not-true refuses", async () => {
+    const decide = authority(() => ({ disposition: "boundary", reason: "b", policyBasis: ["p"], constraints: [{ type: "timeout_secs", value: "30" }] }));
+    for (const apply of [() => false, () => { throw new Error("no"); }, () => "yes" as unknown as boolean]) {
+      const rt = await open({ mode: "sea-forge", worldRef: WORLD, authority: decide, enforcers: { timeout_secs: { apply } } });
+      await expect(rt.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
+      await rt.close();
+      runtime = undefined;
+    }
+  });
+
+  test("a constrained disposition missing its constraints or basis is refused even with enforcers", async () => {
+    const enforcers = { timeout_secs: { apply: () => true } };
+    for (const decision of [
+      { disposition: "boundary" as const, reason: "b", policyBasis: ["p"] },
+      { disposition: "boundary" as const, reason: "b", constraints: [{ type: "timeout_secs", value: "1" }] },
+    ]) {
+      const rt = await open({ mode: "sea-forge", worldRef: WORLD, authority: authority(() => decision), enforcers });
+      await expect(rt.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
+      await rt.close();
+      runtime = undefined;
+    }
   });
 
   test("misconfiguration fails at construction, never at first use", async () => {
