@@ -195,13 +195,21 @@ describe("SeaForgeAuthority", () => {
     });
 
     test("recorded moves are read back; malformed rows and non-moves are dropped", async () => {
-      const row = (over: Obj = {}) => ({ operation_id: "op-1", decision_id: "auth_1", approval_id: null, record: { source_world_ref: WORLD, target_world_ref: TARGET, transition_kind: "source_edit_only", reason: "r", compatibility: "compatible", semantic_closure_equal: true }, ...over });
+      const row = (over: Obj = {}) => ({ operation_id: "op-1", decision_id: "auth_1", ledger_entry: "01LEDGER1", approval_id: null, record: { source_world_ref: WORLD, target_world_ref: TARGET, transition_kind: "source_edit_only", reason: "r", compatibility: "compatible", semantic_closure_equal: true }, ...over });
       const { path, seen } = fake(() => JSON.stringify({ ok: true, transitions: [row(), row({ approval_id: "apr-op-2", operation_id: "op-2" }), row({ record: { source_world_ref: WORLD, target_world_ref: WORLD, transition_kind: "migration", compatibility: "unknown", semantic_closure_equal: false } }), { nonsense: true }, row({ decision_id: undefined })] }));
       const moves = await new SeaForgeAuthority({ socketPath: path }).listTransitions();
       expect(seen[0]).toMatchObject({ verb: "authority_transitions" });
       expect(moves.map((m) => m.operationId)).toEqual(["op-1", "op-2"]);
       expect(moves[1]).toMatchObject({ approvalId: "apr-op-2", sourceWorldRef: WORLD, targetWorldRef: TARGET, semanticClosureEqual: true });
       expect(moves[0]!.approvalId).toBeUndefined();
+      expect(moves[0]!.ledgerEntry).toBe("01LEDGER1");
+    });
+
+    test("carrying earlier work across a move cites its lineage and the move's ledger entry", () => {
+      const { envelope } = buildAuthorityRequest(action, TARGET, new Date(), undefined, { lineage: ["env-authority_request-op-old"], transitionLedgerEntry: "01LEDGER1" });
+      expect(envelope.lineage_refs).toEqual(["env-authority_request-op-old"]);
+      expect((envelope.extensions as Obj)["godspeed.authority_request"]).toMatchObject({ transition_ref: "01LEDGER1" });
+      expect(buildAuthorityRequest(action, TARGET).envelope.lineage_refs).toEqual([]);
     });
 
     test("a failing SEA-Forge lists nothing rather than guessing", async () => {
