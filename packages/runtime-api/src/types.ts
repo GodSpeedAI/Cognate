@@ -162,6 +162,58 @@ export interface RemoteCapabilityOffer {
   readonly expiresAt: number;
 }
 
+/**
+ * The resource an observation is about. Identity is the pair (worldId, resource): equal resource
+ * strings in different execution worlds are different things and are never merged.
+ */
+export interface ObservationSubject {
+  readonly worldId?: string;
+  /** Resource key within the world (path, `port/<n>`, `process/<pid>`, …). */
+  readonly resource: string;
+  readonly kind?: string;
+}
+
+/**
+ * How a noticed fact relates to action/execution. Observation is never intent. Causation is cited
+ * only when `kind === "caused"`; otherwise it is left unknown and never invented.
+ */
+export interface ObservationAttribution {
+  readonly kind: "unattributed" | "correlated" | "caused";
+  readonly correlationId?: string;
+  /** The event id of the execution believed to have caused the fact (only when `kind === "caused"`). */
+  readonly causationEventId?: string;
+  readonly confidence?: "observed" | "inferred" | "unknown";
+}
+
+/** A fact noticed about reality, to be recorded as a semantic observation (not an action/run). */
+export interface ObservationInput {
+  readonly kind: string;
+  readonly subject: ObservationSubject;
+  readonly facts: Json;
+  readonly source: { readonly observer: string; readonly provider?: string; readonly method?: string };
+  readonly evidence?: Json;
+  readonly attribution?: ObservationAttribution;
+  /** Source-claimed time (ISO-8601). Provenance only; never ordering authority. */
+  readonly observedAt: string;
+  readonly idempotencyKey: string;
+}
+
+/** The durable record of one observation. `runId` is null: an observation is not part of a run. */
+export interface ObservationView {
+  readonly observationId: string;
+  readonly eventId: string;
+  readonly kind: string;
+  readonly subject: ObservationSubject;
+  readonly observedAt: string;
+  readonly recordedAt: string;
+  readonly attribution: {
+    readonly kind: "unattributed" | "correlated" | "caused";
+    readonly confidence: "observed" | "inferred" | "unknown";
+    readonly correlationId: string | null;
+    readonly causationEventId: string | null;
+  };
+}
+
 export interface RuntimeService {
   /** `state` seeds the run's shared state (a caller-sourced `state.changed` snapshot committed with `run.started`). */
   startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json }): Promise<RunView>;
@@ -206,6 +258,16 @@ export interface RuntimeService {
     caller: Caller,
     request: { readonly threadId: string; readonly update: StateUpdate; readonly idempotencyKey: string; readonly expectedVersion?: number },
   ): Promise<{ readonly state: Json; readonly version: number }>;
+  /**
+   * Record a semantic observation: a fact noticed about reality, NOT an action or a run. Appends a run-less
+   * `observation.recorded` event with observation provenance (`metadata.source:"observation"`). Causation is cited
+   * only when `attribution.kind === "caused"` (`causationId` set); otherwise it stays null — an observed fact with
+   * unknown causation is represented truthfully, never invented. Authorized as `observation.record`; idempotent by
+   * key (a replay returns the recorded observation without a second event). World-scoped: the subject resource is
+   * the pair (worldId, resource). This is an in-process, mechanism-layer door in v0 — not exposed over the public
+   * Connect surface.
+   */
+  observe(caller: Caller, request: ObservationInput): Promise<ObservationView>;
   /** Publish or renew a caller-owned, lease-bound remote capability offer. */
   publishRemoteOffer(caller: Caller, request: { readonly leaseId: string; readonly agent: string; readonly contract: RemoteCapabilityOffer["contract"]; readonly description: string; readonly inputSchema: Json; readonly outputSchema?: Json; readonly ttlMs: number }): Promise<RemoteCapabilityOffer>;
   /** Current offers visible to this caller for planning the named agent. */

@@ -689,6 +689,11 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
         return { state: valueToJson(response.state), version: Number(response.version) };
       } catch (e) { throwServiceError(e); }
     },
+    async observe(_caller, _request) {
+      // Observation ingestion is an in-process, mechanism-layer door in v0 — deliberately not exposed over the
+      // public Connect surface (it is a provider/observer privilege, not a remote-caller capability).
+      throw new ServiceError("failed_precondition", "observation ingestion is an in-process door; not available over the remote Connect surface");
+    },
     async publishRemoteOffer(caller, request) {
       try {
         const offer = await client.publishRemoteOffer({ leaseId: request.leaseId, agent: request.agent, capability: request.contract.id, contractVersion: request.contract.version, attributes: jsonToValue(request.contract.attributes ?? {}), description: request.description, inputSchema: jsonToValue(request.inputSchema), outputSchema: request.outputSchema === undefined ? undefined : jsonToValue(request.outputSchema), ttlMs: BigInt(request.ttlMs) }, { headers: headersFor(caller) });
