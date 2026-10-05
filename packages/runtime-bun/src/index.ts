@@ -7,7 +7,8 @@ import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
 
 export { SeaForgeAuthority, buildAuthorityRequest, interpretDecision, type SeaForgeAuthorityOptions } from "./sea-forge-authority.ts";
-export { Governor, isWorldRef, validateGovernance } from "./governed-operation.ts";
+export { ENV_ACTOR, ENV_MODE, ENV_SOCKET, ENV_WORLD, governanceFromEnv } from "./governance-env.ts";
+export { Governor, isWorldRef, parseTimeoutSeconds, timeoutSecsEnforcer, validateGovernance } from "./governed-operation.ts";
 export type { ConstraintEnforcer, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
 
 export interface ActionPolicy {

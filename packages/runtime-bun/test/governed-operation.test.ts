@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Component } from "@cognate/kernel-api";
 import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime, type ConstraintEnforcer, type GovernanceAuthority, type GovernanceDecision, type GovernedOperation, type Runtime } from "../src/index.ts";
+import { createRuntime, timeoutSecsEnforcer, type ConstraintEnforcer, type GovernanceAuthority, type GovernanceDecision, type GovernedOperation, type Runtime } from "../src/index.ts";
 
 let keyCounter = 0;
 const nextKey = () => `k${++keyCounter}`;
@@ -144,6 +144,58 @@ describe("GovernedOperation choke point", () => {
       await rt.close();
       runtime = undefined;
     }
+  });
+
+  describe("timeout_secs is enforced for capability invocations", () => {
+    let sawAbort = false;
+    const slow: Component = {
+      id: "slow-provider",
+      provides: [{ id: "tool.slow", version: "1.0.0" }],
+      activate: (fiber) =>
+        fiber.provide({ id: "tool.slow", version: "1.0.0" }, (_input, ctx) =>
+          new Promise((resolve) => {
+            const done = setTimeout(() => resolve({ finished: true }), 6_000);
+            ctx.signal.addEventListener("abort", () => ((sawAbort = true), clearTimeout(done), resolve({ aborted: true })), { once: true });
+          }),
+        ),
+    };
+    const callsSlow: AgentDefinition = { id: "agent.slow", version: "1.0.0", async run(_input, ctx) { return { output: await ctx.invoke("tool.slow", {}) }; } };
+    const bounded = (seconds: string) => authority(() => ({ disposition: "boundary", reason: "bounded", policyBasis: ["p"], constraints: [{ type: "timeout_secs", value: seconds }] }));
+    const openBounded = async (seconds: string) => {
+      runtime = await createRuntime({ store: ":memory:", policy: allowKernel, actions: allowLocal, agents: [echo, invoker, callsSlow], components: [tool, slow], governance: { mode: "sea-forge", worldRef: WORLD, authority: bounded(seconds), enforcers: { timeout_secs: timeoutSecsEnforcer } } });
+      return runtime;
+    };
+
+    test("a call that outlives its governed deadline is aborted and fails with deadline_exceeded", async () => {
+      sawAbort = false;
+      const rt = await openBounded("1");
+      // Bounded authority also constrains the run.start action, which a deadline cannot honor, so the
+      // action path is refused; invoke the capability directly through the service.
+      const started = Date.now();
+      await expect(rt.service.invoke(alice, { capability: "tool.slow", input: {} })).rejects.toMatchObject({ code: "deadline_exceeded" });
+      expect(Date.now() - started).toBeLessThan(4_000);
+      await Bun.sleep(50);
+      expect(sawAbort).toBe(true);
+    });
+
+    test("a fast call under the same constraint completes normally", async () => {
+      const rt = await openBounded("30");
+      expect(await rt.service.invoke(alice, { capability: "tool.ping", input: {} })).toEqual({ pong: true });
+    });
+
+    test("actions cannot honor a deadline, so a timeout_secs constraint refuses them", async () => {
+      const rt = await openBounded("30");
+      await expect(rt.service.startRun(alice, { agent: echo.id, input: {}, idempotencyKey: nextKey() })).rejects.toMatchObject({ code: "permission_denied" });
+    });
+
+    test("invalid or absurd timeout values are not enforceable", async () => {
+      for (const value of ["0", "-1", "1.5", "abc", "3601", "", "1e3", " 5"]) {
+        const rt = await openBounded(value);
+        await expect(rt.service.invoke(alice, { capability: "tool.ping", input: {} }), value).rejects.toMatchObject({ code: "permission_denied" });
+        await rt.close();
+        runtime = undefined;
+      }
+    });
   });
 
   test("misconfiguration fails at construction, never at first use", async () => {

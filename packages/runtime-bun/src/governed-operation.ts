@@ -157,12 +157,39 @@ export class Governor {
     return { allow: true, mode, disposition: decision.disposition, reason: decision.reason, applied, ...ref };
   }
 
-  /** Kernel-policy facade: the same decision, shaped as the kernel expects. */
-  async governCapability(request: AuthorizationRequest): Promise<PolicyDecision> {
+  /**
+   * Kernel-policy facade: the same decision, shaped as the kernel expects. `onApplied` receives the
+   * constraints that were enforced before the allow, so the invoker can put them in force for the call.
+   */
+  async governCapability(request: AuthorizationRequest, onApplied?: (applied: readonly GovernanceConstraint[]) => void): Promise<PolicyDecision> {
     const result = await this.govern({ kind: "capability", request });
+    if (result.allow && result.applied?.length) onApplied?.(result.applied);
     return { allow: result.allow, policyId: result.mode === "sea-forge" ? "sea-forge" : "local", reason: result.reason };
   }
 }
 
 const KNOWN: ReadonlySet<string> = new Set<Disposition>(["allow", "deny", "escalate", "unknown", "constrained_allow", "boundary", "degraded"]);
 const CONSTRAINED: ReadonlySet<string> = new Set<Disposition>(["constrained_allow", "boundary", "degraded"]);
+
+/** Largest timeout an authority may impose; a longer one is not a meaningful bound. */
+export const MAX_TIMEOUT_SECONDS = 3600;
+
+/**
+ * Enforcer for the `timeout_secs` constraint. It reports "enforced" only for capability invocations, because
+ * only the Invoker puts a deadline in force (it reads the applied constraint, aborts the provider's signal and
+ * fails the call with `deadline_exceeded`). An action has no such deadline, so the constraint cannot be honored
+ * there and the operation is refused. Register it under `enforcers: { timeout_secs: timeoutSecsEnforcer }`.
+ */
+export const timeoutSecsEnforcer: ConstraintEnforcer = {
+  apply(constraint, operation) {
+    if (operation.kind !== "capability") return false;
+    return parseTimeoutSeconds(constraint.value) !== undefined;
+  },
+};
+
+/** A whole number of seconds in 1..=MAX_TIMEOUT_SECONDS, else undefined. */
+export function parseTimeoutSeconds(value: string): number | undefined {
+  if (!/^[1-9][0-9]{0,3}$/.test(value)) return undefined;
+  const seconds = Number(value);
+  return seconds <= MAX_TIMEOUT_SECONDS ? seconds : undefined;
+}

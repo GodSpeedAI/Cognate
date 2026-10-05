@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentDefinition } from "@cognate/runtime-api";
 import type { Component } from "@cognate/kernel-api";
-import { createRuntime, SeaForgeAuthority } from "../src/index.ts";
+import { createRuntime, SeaForgeAuthority, timeoutSecsEnforcer } from "../src/index.ts";
 
 const BIN = process.env.SEA_FORGE_SERVER_BIN;
 const SRC = '@namespace "t"\nentity "Tank" { key id: uuid }\n';
@@ -18,6 +18,14 @@ const POLICY = [
   "    verdict: allow",
   "    actor_role: service",
   "    operation_kind: cognate_action",
+  "  - name: bob-bounded",
+  "    verdict: allow",
+  "    actor_role: service",
+  "    operation_kind: cognate_capability",
+  '    subjects: ["actor:tenant-a/bob"]',
+  "    disposition: boundary",
+  "    boundary_constraints:",
+  '      timeout_secs: ["1"]',
   "  - name: gate-capabilities",
   "    verdict: allow",
   "    actor_role: service",
@@ -27,6 +35,16 @@ const POLICY = [
 ].join("\n");
 
 const alice = { tenant: "tenant-a", actor: { id: "alice", kind: "user" as const } };
+const bob = { tenant: "tenant-a", actor: { id: "bob", kind: "user" as const } };
+const slow: Component = {
+  id: "slow-provider",
+  provides: [{ id: "tool.slow", version: "1.0.0" }],
+  activate: (fiber) =>
+    fiber.provide({ id: "tool.slow", version: "1.0.0" }, (_input, ctx) => new Promise((resolve) => {
+      const done = setTimeout(() => resolve({ finished: true }), 6_000);
+      ctx.signal.addEventListener("abort", () => (clearTimeout(done), resolve({ aborted: true })), { once: true });
+    })),
+};
 const echo: AgentDefinition = { id: "agent.echo", version: "1.0.0", async run(input) { return { output: input }; } };
 const invoker: AgentDefinition = { id: "agent.invoker", version: "1.0.0", async run(_input, ctx) { return { output: await ctx.invoke("tool.ping", {}) }; } };
 const tool: Component = { id: "tool-provider", provides: [{ id: "tool.ping", version: "1.0.0" }], activate: (fiber) => fiber.provide({ id: "tool.ping", version: "1.0.0" }, () => ({ pong: true })) };
@@ -73,8 +91,8 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
       policy: { authorize: () => ({ allow: true, policyId: "p", reason: "ok" }) },
       actions: { authorize: () => ({ allow: true, reason: "ok" }) },
       agents: [echo, invoker],
-      components: [tool],
-      governance: { mode: "sea-forge", worldRef, authority: new SeaForgeAuthority({ socketPath, timeoutMs: 3_000 }) },
+      components: [tool, slow],
+      governance: { mode: "sea-forge", worldRef, authority: new SeaForgeAuthority({ socketPath, timeoutMs: 3_000 }), enforcers: { timeout_secs: timeoutSecsEnforcer } },
     });
 
   test("DomainForge's world_ref is the world SEA-Forge governs (no 'unknown world')", async () => {
@@ -94,6 +112,19 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
       const run = await rt.service.startRun(alice, { agent: invoker.id, input: {}, idempotencyKey: "live-2" });
       await rt.idle();
       expect((await rt.service.getRun(alice, { runId: run.runId })).status).not.toBe("completed");
+    } finally {
+      await rt.close();
+    }
+  });
+
+  test("per-subject policy through the real server: bob's capability calls are bounded to 1s, alice's stay gated", async () => {
+    const rt = await open(world);
+    try {
+      expect(await rt.service.invoke(bob, { capability: "tool.ping", input: {} })).toEqual({ pong: true });
+      const started = Date.now();
+      await expect(rt.service.invoke(bob, { capability: "tool.slow", input: {} })).rejects.toMatchObject({ code: "deadline_exceeded" });
+      expect(Date.now() - started).toBeLessThan(4_000);
+      await expect(rt.service.invoke(alice, { capability: "tool.ping", input: {} })).rejects.toMatchObject({ code: "permission_denied" });
     } finally {
       await rt.close();
     }

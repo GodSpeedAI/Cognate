@@ -50,6 +50,21 @@ setup-openssh:
 remote-workspaces-live:
     bun scripts/remote-workspaces-live.ts
 
+# Live CEP authority loop: real sea-forge-server + DomainForge CLI + CEP validators. Fails, never skips.
+# Needs SEA_FORGE_SERVER_BIN (built in sea-rs: cargo build -p sea-forge-server), `domainforge` on PATH, and CEP_REPO.
+sea-forge-live:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fail() { echo "sea-forge-live: $1" >&2; exit 1; }
+    [ -n "${SEA_FORGE_SERVER_BIN:-}" ] && [ -x "$SEA_FORGE_SERVER_BIN" ] || fail "SEA_FORGE_SERVER_BIN must name an executable sea-forge-server"
+    [ -n "${CEP_REPO:-}" ] && [ -d "$CEP_REPO" ] || fail "CEP_REPO must name a canonical-evaluation-protocol checkout"
+    command -v domainforge >/dev/null || fail "the domainforge CLI must be on PATH"
+    command -v uv >/dev/null || fail "uv is required to run the CEP validators"
+    out=$(bun test packages/runtime-bun/test/sea-forge-live.test.ts packages/runtime-bun/test/sea-forge-authority.test.ts 2>&1) && status=0 || status=$?
+    echo "$out" | tail -8
+    [ "$status" -eq 0 ] || fail "tests failed"
+    if echo "$out" | grep -Eq '^ *[1-9][0-9]* skip'; then fail "tests were skipped; a skip is not a pass"; fi
+
 # Launch the DeepSeek reconstruction harness (mock model on :4010, workspace, and Cognate Console on :3180)
 harness-up *args:
     bun scripts/harness.ts up {{args}}

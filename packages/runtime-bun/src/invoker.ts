@@ -1,8 +1,8 @@
 // Capability invocation through the kernel, with the caller's tenant and the policy decision captured per call.
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Json } from "@cognate/events";
-import { isUnavailable } from "@cognate/kernel-api";
-import type { Governor } from "./governed-operation.ts";
+import { type InvocationResult, isUnavailable } from "@cognate/kernel-api";
+import { type Governor, parseTimeoutSeconds } from "./governed-operation.ts";
 import type { Component, ComponentHandle, InvocationContext, InvocationFailure, Kernel, Policy, PolicyDecision, SemanticRef } from "@cognate/kernel-api";
 import { messageOf, toJson } from "./fold.ts";
 
@@ -21,6 +21,8 @@ export interface InvocationOutcome {
 
 interface Slot {
   decision?: PolicyDecision;
+  /** Puts a governed deadline in force for this call (set by `invoke`, called by the policy wrapper). */
+  arm?: (milliseconds: number) => void;
 }
 
 export class Invoker {
@@ -37,7 +39,10 @@ export class Invoker {
   readonly policy: Policy = {
     authorize: async (request) => {
       const slot = this.slots.getStore();
-      const decision = await this.governor.governCapability(request);
+      const decision = await this.governor.governCapability(request, (applied) => {
+        const seconds = applied.map((c) => (c.type === "timeout_secs" ? parseTimeoutSeconds(c.value) : undefined)).filter((n): n is number => n !== undefined);
+        if (seconds.length && slot?.arm) slot.arm(Math.min(...seconds) * 1000);
+      });
       if (slot) slot.decision = decision;
       return decision;
     },
@@ -59,7 +64,26 @@ export class Invoker {
     if (isUnavailable(lease)) return { ...base, ok: false, failure: { kind: "unavailable", reason: lease.reason } };
 
     const slot: Slot = {};
-    const result = await this.slots.run(slot, () => lease.invoke(request.input, { ...request.context, tenant: request.tenant }));
+    // The call gets its own signal so a governed deadline (decided during authorization, after the call has
+    // started) can abort the provider; the caller's signal still aborts it too.
+    const controller = new AbortController();
+    const upstream = request.context.signal;
+    if (upstream) {
+      if (upstream.aborted) controller.abort(upstream.reason);
+      else upstream.addEventListener("abort", () => controller.abort(upstream.reason), { once: true });
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const governedDeadline = new Promise<InvocationResult<unknown>>((resolve) => {
+      slot.arm = (milliseconds) => {
+        timer = setTimeout(() => {
+          controller.abort(new Error("governed timeout_secs exceeded"));
+          resolve({ ok: false, failure: { kind: "deadline_exceeded" } });
+        }, milliseconds);
+      };
+    });
+    const invocation = this.slots.run(slot, () => lease.invoke(request.input, { ...request.context, tenant: request.tenant, signal: controller.signal }));
+    invocation.catch(() => {});
+    const result = await Promise.race([invocation, governedDeadline]).finally(() => clearTimeout(timer));
     const provider = this.providerOf(lease.providerId, request.capability);
     const common = { ...base, providerId: lease.providerId, ...provider, semanticRef: lease.contract.semanticRef ?? null };
     if (result.ok) return { ...common, decision: slot.decision ?? null, ok: true, value: toJson(result.value), failure: null };
