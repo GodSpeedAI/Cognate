@@ -145,14 +145,41 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
           guard();
           await append({ eventType: "run.invocation.progress", payload: toJson(payload), metadata: { stepId, capability, attempt, seq: seq++ } });
         };
-        const outcome = await core.invoker.invoke({
-          capability,
-          ...(options?.version ? { version: options.version } : {}),
-          input: toJson(input),
-          tenant: view.tenant,
-          context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal, progress },
-        });
+        const call = (approval?: { readonly approvalId: string }) =>
+          core.invoker.invoke({
+            capability,
+            ...(options?.version ? { version: options.version } : {}),
+            input: toJson(input),
+            tenant: view.tenant,
+            ...(approval ? { approval } : {}),
+            context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal, progress },
+          });
+        // Governance escalation (migration Stage 7). The decision to wait is recorded once, so a replay of
+        // this step reuses it rather than asking the authority again (which would open a second approval).
+        // The wait is a durable continuation; whoever resumes it, the resume only triggers a *revalidation*
+        // with the authority, which alone decides whether the call may proceed.
+        const gateStep = `${stepId}:governance`;
+        const recordedGate = find(gateStep, "run.governance.escalated");
+        let approvalId = recordedGate ? field<string>(meta(recordedGate), "approvalId") : undefined;
+        let expiresAt = recordedGate ? field<number>(meta(recordedGate), "expiresAt") : undefined;
+        let outcome = approvalId ? undefined : await call();
         guard();
+        if (outcome?.escalation) {
+          approvalId = outcome.escalation.approvalId;
+          expiresAt = outcome.escalation.expiresAt;
+          await append({ eventType: "run.governance.escalated", payload: { capability, approvalId }, metadata: { stepId: gateStep, capability, approvalId, expiresAt: expiresAt ?? null } });
+        }
+        if (approvalId) {
+          await context.waitFor(`governance:${stepId}`, {
+            type: "governance-approval",
+            condition: { kind: "governance_approval", approvalId },
+            payload: { capability, approvalId },
+            ...(typeof expiresAt === "number" ? { expiresAt } : {}),
+          });
+          outcome = await call({ approvalId });
+          guard();
+        }
+        if (!outcome) throw new Error("invoke: no outcome");
         done = await append({
           eventType: "run.invocation",
           // Input and result live in the erasable payload (spec §32); routing facts stay in metadata.

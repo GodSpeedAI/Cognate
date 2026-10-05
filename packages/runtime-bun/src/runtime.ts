@@ -141,6 +141,37 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
 
   const names = [...(options.projections ?? []).map((p) => p.projection.name), ...(cognitionRunner ? [COGNITION_PROJECTION.name] : [])];
 
+  async function pollApprovals(): Promise<number> {
+    const authority = options.governance?.authority;
+    if (!authority?.approvalState) return 0;
+    const SYSTEM_ACTOR = system;
+    let acted = 0;
+    for (const record of await continuations.list({ status: "OPEN" })) {
+      if (record.type !== "governance-approval") continue;
+      const approvalId = (record.condition as { approvalId?: unknown } | null)?.approvalId;
+      if (typeof approvalId !== "string") continue;
+      const state = await authority.approvalState(approvalId);
+      if (state === "approved") {
+        // Idempotent per approval: a second pass (or a second runtime) cannot resume it twice.
+        const outcome = await continuations.resume(record.id, { actor: SYSTEM_ACTOR, idempotencyKey: `governance-resume:${approvalId}`, input: { approvalId, state } });
+        if (outcome.kind === "transitioned") acted++;
+      } else if (state === "rejected" || state === "expired" || state === "used") {
+        const outcome = await continuations.cancel(record.id, { actor: SYSTEM_ACTOR, idempotencyKey: `governance-close:${approvalId}`, reason: `approval ${approvalId} is ${state}` });
+        if (outcome.kind === "transitioned") {
+          acted++;
+          void execute(record.runId).catch(() => {});
+        }
+      }
+    }
+    if (acted) kick();
+    return acted;
+  }
+
+  let approvalTimer: ReturnType<typeof setInterval> | undefined;
+  if ((options.governance?.approvalPollMs ?? 0) > 0 && options.governance?.authority?.approvalState) {
+    approvalTimer = setInterval(() => void pollApprovals().catch(() => {}), options.governance.approvalPollMs);
+  }
+
   async function quiescent(): Promise<boolean> {
     if (ticking || pending.size > 0 || chains.size > 0) return false;
     const now = Date.now();
@@ -175,6 +206,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       await store.erasePayload(eventId, reason, actor.id);
     },
 
+    pollApprovals,
+
     async idle(timeoutMs = 10_000) {
       const deadline = Date.now() + timeoutMs;
       for (;;) {
@@ -190,6 +223,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      if (approvalTimer) clearInterval(approvalTimer);
       await ticking;
       await Promise.allSettled([...chains.values()]);
       for (const runner of runners) await runner.stop();

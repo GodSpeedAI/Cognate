@@ -4,7 +4,7 @@
 // NDJSON protocol (`authority_request` verb), and accepts only a response that is demonstrably the decision
 // for *this* request in *this* world. Anything else is `unknown`, which the Governor refuses.
 import { randomUUID } from "node:crypto";
-import type { GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernedOperation } from "./governed-operation.ts";
+import type { ApprovalReference, ApprovalState, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernedOperation } from "./governed-operation.ts";
 
 export interface SeaForgeAuthorityOptions {
   /** Path of the SEA-Forge cell's `server.sock`. */
@@ -36,7 +36,7 @@ function describe(operation: GovernedOperation): { kind: "action" | "capability"
 }
 
 /** The CEP `authority_request` envelope for one operation (profile godspeed.authority_request). */
-export function buildAuthorityRequest(operation: GovernedOperation, worldRef: string, now: Date = new Date()): { envelope: Obj; operationId: string } {
+export function buildAuthorityRequest(operation: GovernedOperation, worldRef: string, now: Date = new Date(), approval?: ApprovalReference): { envelope: Obj; operationId: string } {
   const d = describe(operation);
   const operationId = `op-${randomUUID()}`;
   const at = now.toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -65,7 +65,8 @@ export function buildAuthorityRequest(operation: GovernedOperation, worldRef: st
     omission_status: "marked",
     provenance_refs: [provenanceId],
     validation_status: "valid",
-    lineage_refs: [],
+    // A revalidation links back to the request that escalated; the approval itself is bound server-side.
+    lineage_refs: approval ? [`env-authority_request-${approval.approvalId.replace(/^apr-/, "")}`] : [],
     provenance: [{ provenance_id: provenanceId, source_system_refs: ["cognate"], producer_refs: ["cognate"], production_method: "governed_operation", created_at: at }],
     authority: [{ authority_id: `auth-${operationId}`, subject_actor_ref: d.subject }],
     transformations: [{ transformation_id: `tr-${operationId}`, transformation_type: d.kind === "capability" ? "capability_invocation" : "action_invocation" }],
@@ -73,7 +74,7 @@ export function buildAuthorityRequest(operation: GovernedOperation, worldRef: st
     states: [{ state_id: `st-${operationId}`, state_type: "declared_state", subject_ref: `operation:${operationId}` }],
     extensions: {
       "cep.profile": { profile_id: REQUEST_PROFILE, profile_version: PROFILE_VERSION },
-      [REQUEST_PROFILE]: { operation_id: operationId, correlation_id: d.correlation || operationId, operation_kind: d.kind, operation_name: d.name, resource_id: d.resource },
+      [REQUEST_PROFILE]: { operation_id: operationId, correlation_id: d.correlation || operationId, operation_kind: d.kind, operation_name: d.name, resource_id: d.resource, ...(approval ? { approval_id: approval.approvalId } : {}) },
     },
   };
   return { envelope, operationId };
@@ -85,7 +86,7 @@ const unknown = (reason: string): GovernanceDecision => ({ disposition: "unknown
  * Accept a response only if it is a well-formed authority_decision for exactly this request and world.
  * Never throws; every defect is an `unknown` disposition.
  */
-export function interpretDecision(response: unknown, sent: { envelope: Obj; operationId: string }, worldRef: string): GovernanceDecision {
+export function interpretDecision(response: unknown, sent: { envelope: Obj; operationId: string }, worldRef: string, approval?: ApprovalReference): GovernanceDecision {
   if (!isObj(response)) return unknown("authority response is not an object");
   if (response.ok !== true) return unknown(`authority refused: ${str(response.error_class) ?? "error"}: ${str(response.error) ?? "no detail"}`);
   const envelope = response.envelope;
@@ -103,8 +104,17 @@ export function interpretDecision(response: unknown, sent: { envelope: Obj; oper
   const decision = str(ext.decision);
   if (!decision || !DECISIONS.has(decision)) return unknown("decision is not a recognized disposition");
 
+  // The approval a decision names must be the one we relied on; an escalation names the one to wait for.
+  const namedApproval = str(ext.approval_id);
+  if (approval && namedApproval !== undefined && namedApproval !== approval.approvalId) return unknown("decision names a different approval than the one relied on");
+  if (approval && decision === "allow" && ext.approval_used === true && namedApproval !== approval.approvalId) return unknown("approved allow does not name the approval relied on");
+
   const decisionRef = str(ext.ledger_entry) ?? str(ext.decision_id);
   const base = { reason: `sea-forge decided ${decision}${str(ext.decision_id) ? ` (${str(ext.decision_id)})` : ""}`, ...(decisionRef ? { decisionRef } : {}) };
+  if (decision === "escalate" && namedApproval) {
+    const expires = str(ext.approval_expires_at) ? Date.parse(str(ext.approval_expires_at)!) : Number.NaN;
+    return { disposition: "escalate", ...base, escalation: { approvalId: namedApproval, ...(Number.isFinite(expires) ? { expiresAt: expires } : {}) } };
+  }
   if (!CONSTRAINED.has(decision)) return { disposition: decision as GovernanceDecision["disposition"], ...base };
 
   const policyBasis = strings(ext.policy_basis);
@@ -182,14 +192,27 @@ export class SeaForgeAuthority implements GovernanceAuthority {
     this.maxBytes = options.maxResponseBytes ?? 256 * 1024;
   }
 
-  async decide(operation: GovernedOperation, worldRef: string): Promise<GovernanceDecision> {
-    const sent = buildAuthorityRequest(operation, worldRef);
+  async decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference): Promise<GovernanceDecision> {
+    const sent = buildAuthorityRequest(operation, worldRef, new Date(), approval);
     let response: unknown;
     try {
       response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor }, this.timeoutMs, this.maxBytes);
     } catch (error) {
       return unknown(`sea-forge unreachable: ${error instanceof Error ? error.message : String(error)}`);
     }
-    return interpretDecision(response, sent, worldRef);
+    return interpretDecision(response, sent, worldRef, approval);
+  }
+
+  /** Where an escalation stands. Only used to decide when to try again; an `approved` here never allows anything. */
+  async approvalState(approvalId: string): Promise<ApprovalState> {
+    try {
+      const response = await exchange(this.options.socketPath, { verb: "authority_approvals" }, this.timeoutMs, this.maxBytes);
+      const approvals = isObj(response) && Array.isArray(response.approvals) ? response.approvals : [];
+      const found = approvals.find((a) => isObj(a) && a.approval_id === approvalId);
+      const state = isObj(found) ? str(found.state) : undefined;
+      return state === "pending" || state === "approved" || state === "rejected" || state === "expired" || state === "used" ? state : "unknown";
+    } catch {
+      return "unknown";
+    }
   }
 }

@@ -35,6 +35,20 @@ export interface ConstraintEnforcer {
   apply(constraint: GovernanceConstraint, operation: GovernedOperation): boolean | Promise<boolean>;
 }
 
+/** An escalation that a human can approve: the approval to wait for and when its window closes. */
+export interface GovernanceEscalation {
+  readonly approvalId: string;
+  /** Epoch ms, when the authority said the approval window closes. */
+  readonly expiresAt?: number;
+}
+
+/** Revalidation after an escalation was approved: the approval being relied on. */
+export interface ApprovalReference {
+  readonly approvalId: string;
+}
+
+export type ApprovalState = "pending" | "approved" | "rejected" | "expired" | "used" | "unknown";
+
 export interface GovernanceDecision {
   readonly disposition: Disposition;
   readonly reason: string;
@@ -45,11 +59,16 @@ export interface GovernanceDecision {
   readonly compensatingControls?: readonly string[];
   /** Reference to the authority's decision record, when one exists. */
   readonly decisionRef?: string;
+  /** Present on an `escalate` that a human approval can satisfy. */
+  readonly escalation?: GovernanceEscalation;
 }
 
 /** What SEA-Forge implements (Stage 6 supplies the CEP-backed implementation). */
 export interface GovernanceAuthority {
-  decide(operation: GovernedOperation, worldRef: string): GovernanceDecision | Promise<GovernanceDecision>;
+  /** `approval` is set only when revalidating an operation whose escalation has since been approved. */
+  decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference): GovernanceDecision | Promise<GovernanceDecision>;
+  /** Where an escalation stands, if the authority can say. Used only to know when to try again; never to allow. */
+  approvalState?(approvalId: string): Promise<ApprovalState>;
 }
 
 export interface GovernanceOptions {
@@ -62,6 +81,8 @@ export interface GovernanceOptions {
    * default, so constrained dispositions are refused until a host registers the means to honor them.
    */
   readonly enforcers?: Readonly<Record<string, ConstraintEnforcer>>;
+  /** When set (>0) and the authority can report approval state, poll for approved escalations this often. */
+  readonly approvalPollMs?: number;
 }
 
 export interface GovernedResult {
@@ -72,6 +93,8 @@ export interface GovernedResult {
   readonly decisionRef?: string;
   /** Constraints that were enforced before this operation was allowed (empty for plain allow). */
   readonly applied?: readonly GovernanceConstraint[];
+  /** Present when the operation was refused because a human approval could satisfy it. */
+  readonly escalation?: GovernanceEscalation;
 }
 
 const WORLD_REF = /^world:[a-z0-9]+(?:-[a-z0-9]+)*@sha256:[0-9a-f]{64}$/;
@@ -89,6 +112,14 @@ export function validateGovernance(options: GovernanceOptions): void {
   }
 }
 
+/** What the invoker needs to observe about one capability authorization. */
+export interface CapabilityHooks {
+  /** Set when revalidating an approved escalation. */
+  readonly approval?: ApprovalReference;
+  readonly applied?: (applied: readonly GovernanceConstraint[]) => void;
+  readonly escalated?: (escalation: GovernanceEscalation) => void;
+}
+
 export class Governor {
   constructor(
     private readonly local: ActionPolicy,
@@ -103,7 +134,7 @@ export class Governor {
   }
 
   /** Decide one operation. Never throws for a refusal; throws only on programmer error. */
-  async govern(operation: GovernedOperation): Promise<GovernedResult> {
+  async govern(operation: GovernedOperation, approval?: ApprovalReference): Promise<GovernedResult> {
     const mode = this.options.mode;
     const localDecision = await this.localDecision(operation);
     if (!localDecision.allow) return { allow: false, mode, disposition: "deny", reason: localDecision.reason };
@@ -111,7 +142,7 @@ export class Governor {
 
     let decision: GovernanceDecision;
     try {
-      decision = await this.options.authority!.decide(operation, this.options.worldRef!);
+      decision = await this.options.authority!.decide(operation, this.options.worldRef!, approval);
     } catch (error) {
       // An authority that cannot answer is not an authority that said yes.
       return { allow: false, mode, disposition: "unknown", reason: `governance authority unavailable: ${error instanceof Error ? error.message : String(error)}` };
@@ -129,6 +160,9 @@ export class Governor {
     const ref = decision.decisionRef === undefined ? {} : { decisionRef: decision.decisionRef };
     const refuse = (disposition: Disposition, reason: string): GovernedResult => ({ allow: false, mode, disposition, reason, ...ref });
     if (decision.disposition === "allow") return { allow: true, mode, disposition: "allow", reason: decision.reason, ...ref };
+    if (decision.disposition === "escalate" && decision.escalation) {
+      return { ...refuse("escalate", `${decision.reason}; awaiting approval ${decision.escalation.approvalId}`), escalation: decision.escalation };
+    }
     if (!CONSTRAINED.has(decision.disposition)) return refuse(decision.disposition, decision.reason);
 
     // A constrained disposition is an allow only if every constraint is genuinely enforced for this operation.
@@ -161,9 +195,10 @@ export class Governor {
    * Kernel-policy facade: the same decision, shaped as the kernel expects. `onApplied` receives the
    * constraints that were enforced before the allow, so the invoker can put them in force for the call.
    */
-  async governCapability(request: AuthorizationRequest, onApplied?: (applied: readonly GovernanceConstraint[]) => void): Promise<PolicyDecision> {
-    const result = await this.govern({ kind: "capability", request });
-    if (result.allow && result.applied?.length) onApplied?.(result.applied);
+  async governCapability(request: AuthorizationRequest, hooks: CapabilityHooks = {}): Promise<PolicyDecision> {
+    const result = await this.govern({ kind: "capability", request }, hooks.approval);
+    if (result.allow && result.applied?.length) hooks.applied?.(result.applied);
+    if (!result.allow && result.escalation) hooks.escalated?.(result.escalation);
     return { allow: result.allow, policyId: result.mode === "sea-forge" ? "sea-forge" : "local", reason: result.reason };
   }
 }
