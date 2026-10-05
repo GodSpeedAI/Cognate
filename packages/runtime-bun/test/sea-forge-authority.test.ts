@@ -16,6 +16,7 @@ function decisionFor(request: Obj, decision: string, extra: Obj = {}, envelopeEx
   return {
     ok: true,
     envelope: {
+      envelope_id: `env-authority_decision-${ext.operation_id}`,
       envelope_kind: "authority_decision",
       scope: { world_ref: request.envelope.scope.world_ref },
       lineage_refs: [request.envelope.envelope_id],
@@ -71,6 +72,8 @@ describe("SeaForgeAuthority", () => {
     const { path, seen } = fake((request) => JSON.stringify(decisionFor(request, "allow")));
     const decision = await new SeaForgeAuthority({ socketPath: path }).decide(action, WORLD);
     expect(decision).toMatchObject({ disposition: "allow", decisionRef: "01ENTRY" });
+    // The decision names itself, so a later trace, evidence packet and settlement can hang from it.
+    expect(decision.authority).toMatchObject({ worldRef: WORLD, decisionEnvelopeId: expect.stringMatching(/^env-authority_decision-op-/), requestEnvelopeId: expect.stringMatching(/^env-authority_request-op-/) });
     expect(seen[0]).toMatchObject({ verb: "authority_request", actor: { actor_id: "cognate-service", role: "service" } });
     expect(seen[0]!.request_id).toBe(seen[0]!.envelope.extensions["godspeed.authority_request"].operation_id);
   });

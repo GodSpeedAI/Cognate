@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Json } from "@cognate/events";
+import type { SxrEvidenceRow } from "./godspeed.ts";
 import type { DeliveryReceipt, Observation, ObservationPort } from "./types.ts";
 
 export interface SxrCliOptions {
@@ -71,7 +72,14 @@ function requireOk(result: SxrResult, description: string): any {
  */
 export function createSxrCliPort(
   options: SxrCliOptions,
-): ObservationPort & { prepare(question: { readonly title: string }): Promise<SxrWorkflow>; readCorrelation(targetRef: string): Promise<Json | null> } {
+): ObservationPort & {
+  prepare(question: { readonly title: string }): Promise<SxrWorkflow>;
+  readCorrelation(targetRef: string): Promise<Json | null>;
+  /** Ask RealityTrace to derive evidence from one recorded observation (its own derivation; may be `unknown`). */
+  deriveEvidence(sxrObservationId: string, evidenceType?: string): Promise<{ readonly evidenceId: string; readonly targetRef: string }>;
+  /** RealityTrace's recorded question and evidence for the prepared run, as recorded. */
+  readEvidence(): Promise<{ readonly question: Record<string, unknown>; readonly rows: readonly SxrEvidenceRow[] }>;
+} {
   const env: Record<string, string | undefined> = { ...process.env, ...options.env };
   let workflow: SxrWorkflow | undefined;
 
@@ -120,7 +128,9 @@ export function createSxrCliPort(
       }
 
       const extensions = JSON.stringify({ cognate: correlationOf(observation) });
-      const ingest = await sxr(["ingest", "--run", workflow.runId, "--verifier", verifier, "--stdin-format", "json", "--extensions", extensions, "--json"], JSON.stringify(observation));
+      // A governed operation hands RealityTrace its CEP execution_trace to record; otherwise the bare observation.
+      const content = observation.trace ?? stripTrace(observation);
+      const ingest = await sxr(["ingest", "--run", workflow.runId, "--verifier", verifier, "--stdin-format", "json", "--extensions", extensions, "--json"], JSON.stringify(content));
       if (ingest.exitCode !== 0) {
         throw new Error(`realitytrace: sxr ingest failed (exit ${ingest.exitCode}): ${ingest.stderr || ingest.stdout}`);
       }
@@ -129,6 +139,26 @@ export function createSxrCliPort(
       const targetRef = `${receipt.ledger_position.ledger_id}:${receipt.ledger_position.append_ordinal}`;
       const status: "accepted" | "duplicate" = receipt.already_committed ? "duplicate" : "accepted";
       return { status, observationId: observation.observationId, targetRef, detail: receipt as Json };
+    },
+
+    async deriveEvidence(sxrObservationId, evidenceType) {
+      if (!workflow) throw new Error("realitytrace: sxr-cli port used before prepare()");
+      const args = ["evidence", "create", "--run", workflow.runId, "--observation", sxrObservationId, "--derive", ...(evidenceType ? ["--evidence-type", evidenceType] : []), "--json"];
+      const created = requireOk(await sxr(args), "evidence create");
+      return { evidenceId: String(created.evidence_id), targetRef: `${created.ledger_position.ledger_id}:${created.ledger_position.append_ordinal}` };
+    },
+
+    async readEvidence() {
+      if (!workflow) throw new Error("realitytrace: sxr-cli port used before prepare()");
+      const rows = requireOk(await sxr(["ledger", "export", "--repo", workflow.repoId]), "ledger export") as { ledger_id: string; append_ordinal: number; record_kind: string; payload: any }[];
+      const questionRow = rows.find((r) => r.record_kind === "question.declared" && r.payload.questions?.[0]?.question_id === workflow!.questionId);
+      if (!questionRow) throw new Error(`realitytrace: question ${workflow.questionId} is not in the ledger`);
+      const evidence: SxrEvidenceRow[] = [];
+      for (const row of rows) {
+        if (row.record_kind !== "evidence.created") continue;
+        for (const item of row.payload.evidence ?? []) evidence.push({ evidence: item, position: { ledger_id: row.ledger_id, append_ordinal: row.append_ordinal } });
+      }
+      return { question: questionRow.payload.questions[0], rows: evidence };
     },
 
     async readCorrelation(targetRef) {
@@ -141,6 +171,12 @@ export function createSxrCliPort(
       return row?.payload.extensions?.cognate ?? null;
     },
   };
+}
+
+/** The observation without its trace (the trace is delivered as the content instead, never alongside it). */
+function stripTrace(observation: Observation): Observation {
+  const { trace: _trace, ...rest } = observation;
+  return rest;
 }
 
 /** Cognate's correlation fields for `extensions.cognate`; undefined optional fields are omitted. */
