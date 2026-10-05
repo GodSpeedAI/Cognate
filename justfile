@@ -51,7 +51,8 @@ remote-workspaces-live:
     bun scripts/remote-workspaces-live.ts
 
 # Live CEP authority loop: real sea-forge-server + DomainForge CLI + CEP validators. Fails, never skips.
-# Needs SEA_FORGE_SERVER_BIN (built in sea-rs: cargo build -p sea-forge-server), `domainforge` on PATH, and CEP_REPO.
+# Needs SEA_FORGE_SERVER_BIN (built in sea-rs: cargo build -p sea-forge-server), `domainforge` on PATH, CEP_REPO,
+# the pinned RealityTrace binary (`just setup-realitytrace`, or SXR_BIN) and cargo (its verifier runs `cargo test`).
 sea-forge-live:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -60,7 +61,10 @@ sea-forge-live:
     [ -n "${CEP_REPO:-}" ] && [ -d "$CEP_REPO" ] || fail "CEP_REPO must name a canonical-evaluation-protocol checkout"
     command -v domainforge >/dev/null || fail "the domainforge CLI must be on PATH"
     command -v uv >/dev/null || fail "uv is required to run the CEP validators"
-    out=$(bun test packages/runtime-bun/test/sea-forge-live.test.ts packages/runtime-bun/test/sea-forge-authority.test.ts 2>&1) && status=0 || status=$?
+    command -v cargo >/dev/null || fail "cargo is required: RealityTrace's verifier runs cargo test"
+    sxr_bin="${SXR_BIN:-.tmp/realitytrace/bin/realitytrace}"
+    [ -x "$sxr_bin" ] || fail "RealityTrace binary not found at $sxr_bin (run just setup-realitytrace, or set SXR_BIN)"
+    out=$(bun test packages/runtime-bun/test/sea-forge-live.test.ts packages/runtime-bun/test/sea-forge-authority.test.ts tests/integration/governed-settlement.live.test.ts 2>&1) && status=0 || status=$?
     echo "$out" | tail -8
     [ "$status" -eq 0 ] || fail "tests failed"
     if echo "$out" | grep -Eq '^ *[1-9][0-9]* skip'; then fail "tests were skipped; a skip is not a pass"; fi

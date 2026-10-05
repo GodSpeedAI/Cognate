@@ -3,8 +3,8 @@
 // Builds a CEP `authority_request` for one GovernedOperation, sends it to SEA-Forge over its Unix-socket
 // NDJSON protocol (`authority_request` verb), and accepts only a response that is demonstrably the decision
 // for *this* request in *this* world. Anything else is `unknown`, which the Governor refuses.
-import { randomUUID } from "node:crypto";
-import type { ApprovalReference, ApprovalState, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernedOperation } from "./governed-operation.ts";
+import { createHash, randomUUID } from "node:crypto";
+import type { ApprovalReference, ApprovalState, AuthorityReference, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernedOperation } from "./governed-operation.ts";
 
 export interface SeaForgeAuthorityOptions {
   /** Path of the SEA-Forge cell's `server.sock`. */
@@ -110,7 +110,12 @@ export function interpretDecision(response: unknown, sent: { envelope: Obj; oper
   if (approval && decision === "allow" && ext.approval_used === true && namedApproval !== approval.approvalId) return unknown("approved allow does not name the approval relied on");
 
   const decisionRef = str(ext.ledger_entry) ?? str(ext.decision_id);
-  const base = { reason: `sea-forge decided ${decision}${str(ext.decision_id) ? ` (${str(ext.decision_id)})` : ""}`, ...(decisionRef ? { decisionRef } : {}) };
+  const decisionEnvelopeId = str(envelope.envelope_id);
+  if (decision === "allow" && !decisionEnvelopeId) return unknown("allow decision carries no envelope id");
+  const authority: AuthorityReference | undefined = decisionEnvelopeId
+    ? { operationId: sent.operationId, requestEnvelopeId: String(sent.envelope.envelope_id), decisionEnvelopeId, worldRef, ...(decisionRef ? { decisionRef } : {}) }
+    : undefined;
+  const base = { reason: `sea-forge decided ${decision}${str(ext.decision_id) ? ` (${str(ext.decision_id)})` : ""}`, ...(decisionRef ? { decisionRef } : {}), ...(authority ? { authority } : {}) };
   if (decision === "escalate" && namedApproval) {
     const expires = str(ext.approval_expires_at) ? Date.parse(str(ext.approval_expires_at)!) : Number.NaN;
     return { disposition: "escalate", ...base, escalation: { approvalId: namedApproval, ...(Number.isFinite(expires) ? { expiresAt: expires } : {}) } };
@@ -181,6 +186,36 @@ export function exchange(socketPath: string, request: unknown, timeoutMs: number
   });
 }
 
+export type EvidenceReceipt =
+  | { readonly ok: true; readonly operationId: string; readonly envelopeId: string; readonly items: number; readonly ledgerEntry: string }
+  | { readonly ok: false; readonly errorClass: string; readonly error: string };
+
+/** SEA-Forge's governed acceptance of an operation. Never derived from execution or from RealityTrace's own judgment. */
+export type SettlementReceipt =
+  | { readonly ok: true; readonly status: "settled" | "unsettled" | "rejected"; readonly final: boolean; readonly replayed: boolean; readonly envelope: Obj; readonly ledgerEntry: string }
+  | { readonly ok: false; readonly errorClass: string; readonly error: string };
+
+/** Accept a settlement response only if it is demonstrably the settlement of this operation in this world. */
+export function interpretSettlement(response: unknown, operationId: string, worldRef: string): SettlementReceipt {
+  const refuse = (error: string): SettlementReceipt => ({ ok: false, errorClass: "invalid_settlement", error });
+  if (!isObj(response)) return { ok: false, errorClass: "malformed_response", error: "response is not an object" };
+  if (response.ok !== true) return { ok: false, errorClass: str(response.error_class) ?? "error", error: str(response.error) ?? "no detail" };
+  const envelope = response.envelope;
+  if (!isObj(envelope) || envelope.envelope_kind !== "settlement_packet") return refuse("response carries no settlement_packet");
+  const extensions = isObj(envelope.extensions) ? envelope.extensions : {};
+  const profile = isObj(extensions["cep.profile"]) ? extensions["cep.profile"] : {};
+  if (profile.profile_id !== "godspeed.settlement_packet" || profile.profile_version !== PROFILE_VERSION) return refuse("response declares the wrong profile");
+  const scope = isObj(envelope.scope) ? envelope.scope : {};
+  if (scope.world_ref !== worldRef) return refuse("settlement is for a different world");
+  const ext = extensions["godspeed.settlement_packet"];
+  if (!isObj(ext) || ext.operation_id !== operationId) return refuse("settlement is for a different operation");
+  const status = response.status;
+  if (status !== "settled" && status !== "unsettled" && status !== "rejected") return refuse("settlement status is not recognized");
+  // The packet and the summary must agree: a summary cannot be upgraded past what the packet says.
+  if (ext.overall_status !== status) return refuse("settlement summary disagrees with its packet");
+  return { ok: true, status, final: response.final === true, replayed: response.replayed === true, envelope, ledgerEntry: String(response.ledger_entry) };
+}
+
 export class SeaForgeAuthority implements GovernanceAuthority {
   private readonly actor: { actor_id: string; role: string };
   private readonly timeoutMs: number;
@@ -201,6 +236,42 @@ export class SeaForgeAuthority implements GovernanceAuthority {
       return unknown(`sea-forge unreachable: ${error instanceof Error ? error.message : String(error)}`);
     }
     return interpretDecision(response, sent, worldRef, approval);
+  }
+
+  /**
+   * Submit a GodSpeed `evidence_packet` (built from RealityTrace's recorded evidence) for an operation SEA-Forge
+   * allowed. Recording evidence settles nothing.
+   */
+  async submitEvidence(packet: Obj): Promise<EvidenceReceipt> {
+    // SEA-Forge binds a request id to its first payload. Deriving the id from the payload hash as well means a
+    // replay of the same packet dedupes, while a different (e.g. tampered) packet under the same envelope id
+    // can neither reuse nor poison the id of the genuine one.
+    const requestId = `evidence:${String(packet.envelope_id)}:${createHash("sha256").update(JSON.stringify(packet)).digest("hex").slice(0, 16)}`;
+    let response: unknown;
+    try {
+      response = await exchange(this.options.socketPath, { verb: "authority_evidence", envelope: packet, request_id: requestId, actor: this.actor }, this.timeoutMs, this.maxBytes);
+    } catch (error) {
+      return { ok: false, errorClass: "unreachable", error: error instanceof Error ? error.message : String(error) };
+    }
+    if (!isObj(response)) return { ok: false, errorClass: "malformed_response", error: "response is not an object" };
+    if (response.ok !== true) return { ok: false, errorClass: str(response.error_class) ?? "error", error: str(response.error) ?? "no detail" };
+    return { ok: true, operationId: String(response.operation_id), envelopeId: String(response.envelope_id), items: Number(response.items), ledgerEntry: String(response.ledger_entry) };
+  }
+
+  /**
+   * Ask SEA-Forge to settle an operation from the evidence it holds. The answer is accepted only if it is a
+   * settlement_packet for this operation and world; anything else is refused. `unsettled` is a normal answer.
+   */
+  async settle(operationId: string, worldRef: string): Promise<SettlementReceipt> {
+    // One request id per (operation, call): settlement replays are SEA-Forge's to recognise, not ours to cache.
+    const requestId = `settle:${operationId}:${randomUUID()}`;
+    let response: unknown;
+    try {
+      response = await exchange(this.options.socketPath, { verb: "authority_settle", operation_id: operationId, request_id: requestId, actor: this.actor }, this.timeoutMs, this.maxBytes);
+    } catch (error) {
+      return { ok: false, errorClass: "unreachable", error: error instanceof Error ? error.message : String(error) };
+    }
+    return interpretSettlement(response, operationId, worldRef);
   }
 
   /** Where an escalation stands. Only used to decide when to try again; an `approved` here never allows anything. */

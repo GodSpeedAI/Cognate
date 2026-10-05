@@ -35,6 +35,19 @@ export interface ConstraintEnforcer {
   apply(constraint: GovernanceConstraint, operation: GovernedOperation): boolean | Promise<boolean>;
 }
 
+/**
+ * Which authority decision allowed an operation. It travels in the recorded decision metadata so everything
+ * downstream (the execution trace, the evidence, the settlement) can name the decision it hangs from.
+ */
+export interface AuthorityReference {
+  readonly operationId: string;
+  readonly requestEnvelopeId: string;
+  readonly decisionEnvelopeId: string;
+  readonly worldRef: string;
+  /** The authority's own record of the decision (e.g. a ledger entry), when it gave one. */
+  readonly decisionRef?: string;
+}
+
 /** An escalation that a human can approve: the approval to wait for and when its window closes. */
 export interface GovernanceEscalation {
   readonly approvalId: string;
@@ -61,6 +74,8 @@ export interface GovernanceDecision {
   readonly decisionRef?: string;
   /** Present on an `escalate` that a human approval can satisfy. */
   readonly escalation?: GovernanceEscalation;
+  /** Which decision this was, when the authority identifies it. */
+  readonly authority?: AuthorityReference;
 }
 
 /** What SEA-Forge implements (Stage 6 supplies the CEP-backed implementation). */
@@ -95,6 +110,8 @@ export interface GovernedResult {
   readonly applied?: readonly GovernanceConstraint[];
   /** Present when the operation was refused because a human approval could satisfy it. */
   readonly escalation?: GovernanceEscalation;
+  /** The decision that allowed (or refused) this, for downstream trace, evidence and settlement. */
+  readonly authority?: AuthorityReference;
 }
 
 const WORLD_REF = /^world:[a-z0-9]+(?:-[a-z0-9]+)*@sha256:[0-9a-f]{64}$/;
@@ -157,7 +174,7 @@ export class Governor {
 
   private async interpret(mode: GovernanceMode, decision: GovernanceDecision, operation: GovernedOperation): Promise<GovernedResult> {
     if (!decision || !KNOWN.has(decision.disposition)) return { allow: false, mode, disposition: "unknown", reason: "governance authority returned an unrecognized disposition" };
-    const ref = decision.decisionRef === undefined ? {} : { decisionRef: decision.decisionRef };
+    const ref = { ...(decision.decisionRef === undefined ? {} : { decisionRef: decision.decisionRef }), ...(decision.authority ? { authority: decision.authority } : {}) };
     const refuse = (disposition: Disposition, reason: string): GovernedResult => ({ allow: false, mode, disposition, reason, ...ref });
     if (decision.disposition === "allow") return { allow: true, mode, disposition: "allow", reason: decision.reason, ...ref };
     if (decision.disposition === "escalate" && decision.escalation) {
@@ -199,7 +216,8 @@ export class Governor {
     const result = await this.govern({ kind: "capability", request }, hooks.approval);
     if (result.allow && result.applied?.length) hooks.applied?.(result.applied);
     if (!result.allow && result.escalation) hooks.escalated?.(result.escalation);
-    return { allow: result.allow, policyId: result.mode === "sea-forge" ? "sea-forge" : "local", reason: result.reason };
+    // `authority` rides in the recorded decision (run.invocation metadata), so a later trace can name it.
+    return { allow: result.allow, policyId: result.mode === "sea-forge" ? "sea-forge" : "local", reason: result.reason, ...(result.authority ? { authority: result.authority } : {}) } as PolicyDecision;
   }
 }
 
