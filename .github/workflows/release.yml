@@ -1,0 +1,92 @@
+# Release automation: Release Please (manifest mode) + npm trusted publishing.
+#
+# One workflow handles both halves because events created by GITHUB_TOKEN do
+# not trigger other workflows: when a release PR merges, this run's
+# release-please step creates the GitHub releases/tags and the publish job
+# runs in the SAME run, gated on its outputs.
+#
+#  - release-please job: opens/updates one combined release PR for all
+#    packages (release-please-config.json), then — when releases are created —
+#    reports which paths were released via `paths_released`.
+#  - publish job: per released path, resolves workspace:* ranges
+#    (scripts/prepare-npm-package.mjs), guards against re-publishing an
+#    existing version, and publishes with the npm CLI's OIDC credentials
+#    (id-token: write). No npm token secret is involved.
+#
+# First-run bootstrap: npm trusted publishers cannot be configured for
+# packages that do not exist yet. Publish 0.1.0 once from a logged-in
+# session, then add the trusted publisher per package on npmjs.com
+# (repo GodSpeedAI/Cognate, workflow release.yml, environment release).
+# This repository is PRIVATE: npm provenance attestations are not generated.
+
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    name: release-please (manifest)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      paths_released: ${{ steps.release.outputs.paths_released }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    name: publish ${{ matrix.path }}
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    runs-on: ubuntu-latest
+    environment: release
+    # Serializes publications across runs; a queued publish is never cancelled
+    # mid-`npm publish`, and failed runs are safe to re-run (see guard below).
+    concurrency:
+      group: npm-publish
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        path: ${{ fromJSON(needs.release-please.outputs.paths_released) }}
+      max-parallel: 1
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Resolve workspace dependency ranges
+        run: node scripts/prepare-npm-package.mjs "${{ matrix.path }}"
+      - name: Skip packages already on the registry (idempotent recovery)
+        id: guard
+        run: |
+          name=$(node -p "require('./${{ matrix.path }}/package.json').name")
+          version=$(node -p "require('./${{ matrix.path }}/package.json').version")
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$name@$version is already published — skipping"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "$name@$version is new — publishing"
+          fi
+      - name: Publish to npm (OIDC trusted publishing)
+        if: steps.guard.outputs.published == 'false'
+        working-directory: ${{ matrix.path }}
+        run: npm publish --access public
