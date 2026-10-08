@@ -1,9 +1,9 @@
 // Durable run execution by deterministic replay (ADR-0011, spec §11, §12).
 // Each execution re-reads the run stream, re-enters the agent from the top, and answers every
 // RunContext call that already has a recorded result from the stream instead of repeating it.
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, type StoredEvent } from "@cognate/events";
-import type { Principal, SemanticRef } from "@cognate/kernel-api";
-import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@cognate/runtime-api";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, type StoredEvent } from "@godspeedai/events";
+import type { Principal, SemanticRef } from "@godspeedai/kernel-api";
+import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@godspeedai/runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
 import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 

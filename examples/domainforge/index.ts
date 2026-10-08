@@ -1,6 +1,6 @@
 // Example: domainforge — a DomainForge model becomes read-only semantic objects, then an explicit capability binding.
 // Docs: docs/semantics.md (ADR-0002; spec §19: no implicit capabilities from a semantic projection).
-import { bindCapabilities, loadSemanticProjection, mappingTable, serializeProjection } from "@cognate/domainforge";
+import { bindCapabilities, loadSemanticProjection, mappingTable, serializeProjection } from "@godspeedai/cognate-domainforge";
 
 const source = `
 Entity "Warehouse" in logistics

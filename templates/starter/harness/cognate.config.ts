@@ -1,4 +1,4 @@
-import type { CognateConfig } from "@cognate/cli";
+import type { CognateConfig } from "@godspeedai/cli";
 
 export default {
   profile: "harness",

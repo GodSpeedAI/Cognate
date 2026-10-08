@@ -86,8 +86,8 @@ describe("Phase 13 §1: no @copilotkit/* or copilotkit dependency", () => {
   test("repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit", () => {
     const lock = loadLockfile();
     const closure = dependencyClosure(lock, COPILOT_WORKSPACE_KEY);
-    // The closure must actually be walked: it contains the app's @cognate/* workspace deps.
-    expect([...closure.keys()].filter((name) => name.startsWith("@cognate/")).length).toBeGreaterThan(5);
+    // The closure must actually be walked: it contains the app's @godspeedai/* workspace deps.
+    expect([...closure.keys()].filter((name) => name.startsWith("@godspeedai/")).length).toBeGreaterThan(5);
     const offenders = [...closure.entries()]
       .filter(([name]) => FORBIDDEN_DEP_NAME.test(name))
       .map(([name, via]) => `${name} (reached via ${via})`);

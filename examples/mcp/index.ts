@@ -1,8 +1,8 @@
 // Example: mcp — runtime capabilities exposed as MCP tools, authorized per caller.
 // Docs: docs/protocols.md (ADR-0010; spec §6, §32: MCP tools are ordinary capabilities behind runtime policy).
 import { resolve } from "node:path";
-import { createMcpServer } from "@cognate/mcp";
-import { createRuntime } from "@cognate/runtime-bun";
+import { createMcpServer } from "@godspeedai/mcp";
+import { createRuntime } from "@godspeedai/runtime-bun";
 
 // @modelcontextprotocol/sdk isn't hoisted to the repo root; resolve it relative to packages/mcp, the same
 // pattern the package's own stdio test uses for scripts outside the workspace root.

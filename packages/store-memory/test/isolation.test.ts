@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { event } from "@cognate/events/conformance";
+import { event } from "@godspeedai/events/conformance";
 import { createMemoryStore } from "../src/index.ts";
 
 // The store must never let a caller's mutation of a returned object reach internal state:

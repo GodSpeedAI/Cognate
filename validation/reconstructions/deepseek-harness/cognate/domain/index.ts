@@ -7,8 +7,8 @@
 // remains the single source of truth for the IDM; this module is the one place that knows its path.
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { bindCapabilities, loadSemanticProjection, type CapabilityBinding, type SemanticProjection } from "@cognate/domainforge";
-import type { CapabilityContract } from "@cognate/kernel-api";
+import { bindCapabilities, loadSemanticProjection, type CapabilityBinding, type SemanticProjection } from "@godspeedai/cognate-domainforge";
+import type { CapabilityContract } from "@godspeedai/kernel-api";
 
 const INTERACTION_MODEL_URL = new URL("../.sea/interaction/interaction-model.sea", import.meta.url);
 
@@ -112,7 +112,7 @@ export function bindTranche9(domain: Domain) {
 /**
  * T10 addition: `Subagent` (`subagent.start`, this app's own capability the `subagent` tool's
  * fire-and-forget delegation invokes directly — see `src/capabilities/subagentStart.ts` for why the
- * packaged `@cognate/profile-harness` one is not reused).
+ * packaged `@godspeedai/profile-harness` one is not reused).
  */
 export function tranche10Bindings(domain: Domain): readonly CapabilityBinding[] {
   return [{ semanticId: domain.semanticId("Subagent"), capability: { id: "subagent.start", version: "1.0.0" } }];
@@ -181,7 +181,7 @@ export function bindUsage3(domain: Domain) {
 /**
  * Remote Workspaces (T4): the execution-world family, anchored on the `ExecutionWorld` and
  * `WorldConnection` entities the T1 model already declares. `process.exec` stands for the framework
- * `filesystem.*` / `process.exec` family (one semantic anchor, published by `@cognate/execution`);
+ * `filesystem.*` / `process.exec` family (one semantic anchor, published by `@godspeedai/execution`);
  * the `execution.world.*` capabilities are this app's runtime management of worlds. Pure reads of
  * state (a world list) are not capabilities and are not bound.
  */

@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { useCognate, useProjection } from "@cognate/react";
+import { useCognate, useProjection } from "@godspeedai/react";
 import { ChatSurface } from "../ChatSurface.tsx";
 import { SharedStateSurface } from "../SharedStateSurface.tsx";
 import { JOURNEY_J_AGENT } from "../constants.ts";

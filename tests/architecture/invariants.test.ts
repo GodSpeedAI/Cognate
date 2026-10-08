@@ -34,7 +34,7 @@ test("§3.2/§3.3: DomainForge and RealityTrace are consumed as pinned releases 
   for (const { path, json } of manifests) {
     for (const section of ["dependencies", "devDependencies", "optionalDependencies", "overrides"]) {
       for (const [name, spec] of Object.entries(json[section] ?? {})) {
-        if (/domainforge|realitytrace|sxr/i.test(name) && !name.startsWith("@cognate/") && !/^\d+\.\d+\.\d+$/.test(spec)) offenders.push(`${path} ${name}@${spec}`);
+        if (/domainforge|realitytrace|sxr/i.test(name) && !name.startsWith("@godspeedai/") && !/^\d+\.\d+\.\d+$/.test(spec)) offenders.push(`${path} ${name}@${spec}`);
         if (/^(file|link):/.test(spec) && /domainforge|realitytrace|sxr/i.test(spec)) offenders.push(`${path} ${name}@${spec}`);
       }
     }

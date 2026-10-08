@@ -1,7 +1,7 @@
 // Example: autonomous-harness — the reference harness looping model → tool → model to completion.
 // Docs: docs/architecture.md (spec §29.2: the Harness reference profile: model providers, tool registry, agent loop).
-import { createHarness, providerComponent, toolComponent } from "@cognate/profile-harness";
-import { localProvider } from "@cognate/provider-local";
+import { createHarness, providerComponent, toolComponent } from "@godspeedai/profile-harness";
+import { localProvider } from "@godspeedai/provider-local";
 
 // A scripted local model: call the `add` tool once, then answer from its result.
 const model = localProvider({

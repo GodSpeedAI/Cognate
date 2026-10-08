@@ -1,6 +1,6 @@
 // Model provider contract (spec §26). Plain types: no LLM SDK is required by the kernel or this package.
-import type { Json } from "@cognate/events";
-import type { CapabilityContract } from "@cognate/kernel-api";
+import type { Json } from "@godspeedai/events";
+import type { CapabilityContract } from "@godspeedai/kernel-api";
 
 export type ModelRole = "system" | "user" | "assistant" | "tool";
 

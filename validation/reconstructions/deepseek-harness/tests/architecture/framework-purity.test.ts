@@ -57,7 +57,7 @@ describe("Phase 8 §4: no reference-specific primitive in the framework", () => 
       { symbol: "InvocationOutcome.failure.name", finding: /F3/ },
       { symbol: "InvocationOutcome.failure.details", finding: /F3/ },
       // kernel-api/src/types.ts also exports a local `Json` type alias, structurally identical to
-      // @cognate/events' Json, added only to avoid a package-graph cycle (spec §28) — it carries no
+      // @godspeedai/events' Json, added only to avoid a package-graph cycle (spec §28) — it carries no
       // reference-specific meaning and backs the `progress` field above (G1).
       { symbol: "kernel-api Json (structural alias)", finding: /G1/ },
     ];

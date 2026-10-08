@@ -1,6 +1,6 @@
 // The starter test: confirms the domain model parses. Extend or replace this as the app grows.
 import { describe, expect, test } from "bun:test";
-import { loadSemanticProjection } from "@cognate/domainforge";
+import { loadSemanticProjection } from "@godspeedai/cognate-domainforge";
 
 describe("starter domain model", () => {
   test("domain/example.sea parses into semantic objects", async () => {

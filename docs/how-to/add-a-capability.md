@@ -23,7 +23,7 @@ requirement, and every **required** attribute equal. Extra attributes on the con
 
 ```ts
 // src/capabilities/billing.ts
-import type { CapabilityContract, Component } from "@cognate/kernel-api";
+import type { CapabilityContract, Component } from "@godspeedai/kernel-api";
 
 const contract: CapabilityContract = {
   id: "billing.quote",
@@ -87,7 +87,7 @@ resolves names in order and reports anything it cannot include in `unresolved`.
 `denyAll` is the default: every invocation is refused unless a rule allows it. Pick one:
 
 ```ts
-import { allowCapabilities, rulePolicy, denyAll } from "@cognate/kernel-api";
+import { allowCapabilities, rulePolicy, denyAll } from "@godspeedai/kernel-api";
 
 policy: allowCapabilities("my-app", ["billing.quote"])          // any actor, these ids
 policy: rulePolicy("my-app", [                                    // first match wins

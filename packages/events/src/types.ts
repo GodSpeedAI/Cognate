@@ -1,5 +1,5 @@
 // Durable state plane contract (spec §7.3, §10, §11, §13). Stores implement `DurableStore`.
-import type { SemanticRef } from "@cognate/kernel-api";
+import type { SemanticRef } from "@godspeedai/kernel-api";
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 

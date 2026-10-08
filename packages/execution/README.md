@@ -1,4 +1,4 @@
-# @cognate/execution — execution worlds
+# @godspeedai/execution — execution worlds
 
 A `Workspace` says *what* a user is working on. An **Execution World** says *where* its files are
 read and its commands run. Higher-level tools (`read`, `edit`, `bash`, `run_code`, and anything
@@ -36,7 +36,7 @@ capabilities resolve `unavailable` — a clean failure, never a silent local fal
 
 ## Testing
 
-`@cognate/execution/conformance` exports `executionWorldConformance({ name, create })`; each
+`@godspeedai/execution/conformance` exports `executionWorldConformance({ name, create })`; each
 provider's test file calls it. It asserts, for any provider: containment rejects escapes, a
 missing file is `undefined` not a throw, read/write round-trip, `version` changes with content,
 `exec` reports stdout/stderr/exit code, a timeout is `timedOut: true`, an abort cancels, and

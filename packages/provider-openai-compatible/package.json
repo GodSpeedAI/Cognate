@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/provider-openai-compatible",
+  "name": "@godspeedai/provider-openai-compatible",
   "version": "0.1.0",
   "description": "ModelProvider for OpenAI-compatible chat completion endpoints (llama.cpp, vLLM, Ollama's /v1, hosted APIs) over fetch; no SDK.",
   "type": "module",
@@ -22,11 +22,11 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/capabilities": "workspace:*",
-    "@cognate/events": "workspace:*",
-    "@cognate/kernel-api": "workspace:*"
+    "@godspeedai/capabilities": "workspace:*",
+    "@godspeedai/events": "workspace:*",
+    "@godspeedai/kernel-api": "workspace:*"
   },
   "devDependencies": {
-    "@cognate/provider-local": "workspace:*"
+    "@godspeedai/provider-local": "workspace:*"
   }
 }

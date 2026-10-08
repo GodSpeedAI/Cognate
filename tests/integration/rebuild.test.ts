@@ -4,10 +4,10 @@ import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { event } from "@cognate/events/conformance";
-import type { StoredEvent } from "@cognate/events";
-import { ProjectionRunner, type Projection } from "@cognate/projections";
-import { openSqliteStore } from "@cognate/store-sqlite";
+import { event } from "@godspeedai/events/conformance";
+import type { StoredEvent } from "@godspeedai/events";
+import { ProjectionRunner, type Projection } from "@godspeedai/projections";
+import { openSqliteStore } from "@godspeedai/store-sqlite";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-rebuild-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

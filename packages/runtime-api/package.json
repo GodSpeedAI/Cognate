@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/runtime-api",
+  "name": "@godspeedai/runtime-api",
   "version": "0.1.0",
   "description": "Transport-independent runtime service contract, agent authoring surface, and service conformance kit (ADR-0011).",
   "type": "module",
@@ -23,7 +23,7 @@
     "./conformance": "./src/conformance.ts"
   },
   "dependencies": {
-    "@cognate/events": "workspace:*",
-    "@cognate/kernel-api": "workspace:*"
+    "@godspeedai/events": "workspace:*",
+    "@godspeedai/kernel-api": "workspace:*"
   }
 }

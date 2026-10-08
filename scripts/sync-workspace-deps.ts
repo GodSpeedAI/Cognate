@@ -11,7 +11,7 @@ for (const base of ["packages", "profiles"]) {
   }
 }
 const dev = { ...pkg.devDependencies };
-for (const key of Object.keys(dev)) if (key.startsWith("@cognate/") && !names.includes(key)) delete dev[key];
+for (const key of Object.keys(dev)) if (key.startsWith("@godspeedai/") && !names.includes(key)) delete dev[key];
 for (const name of names.sort()) dev[name] = "workspace:*";
 pkg.devDependencies = Object.fromEntries(Object.entries(dev).sort(([a], [b]) => a.localeCompare(b)));
 await Bun.write("package.json", `${JSON.stringify(pkg, null, 2)}\n`);

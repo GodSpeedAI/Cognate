@@ -1,5 +1,5 @@
-import type { Json, StoredEvent } from "@cognate/events";
-import type { Projection, ProjectionState, ProjectionWrite } from "@cognate/projections";
+import type { Json, StoredEvent } from "@godspeedai/events";
+import type { Projection, ProjectionState, ProjectionWrite } from "@godspeedai/projections";
 import type { CognitiveEntry, CognitiveIndex, Embedder } from "./types.ts";
 
 /** What to index for one event: text to embed plus entry fields (without the embedding). */

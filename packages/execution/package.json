@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/execution",
+  "name": "@godspeedai/execution",
   "version": "0.1.0",
   "description": "Framework-owned execution-world contracts: filesystem and process ports, replaceable providers, and the filesystem.*/process.* capability component. No transport or library types.",
   "type": "module",
@@ -23,9 +23,9 @@
     "./conformance": "./src/conformance.ts"
   },
   "dependencies": {
-    "@cognate/kernel-api": "workspace:*"
+    "@godspeedai/kernel-api": "workspace:*"
   },
   "devDependencies": {
-    "@cognate/kernel-cordis": "workspace:*"
+    "@godspeedai/kernel-cordis": "workspace:*"
   }
 }

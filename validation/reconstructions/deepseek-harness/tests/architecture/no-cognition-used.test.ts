@@ -1,4 +1,4 @@
-// Phase 8, criterion 9: RuVector-rebuild criterion. APP uses no @cognate/cognitive-* package, so the
+// Phase 8, criterion 9: RuVector-rebuild criterion. APP uses no @godspeedai/cognitive-* package, so the
 // "RuVector can be deleted and rebuilt without changing deterministic behavior" criterion is
 // vacuously satisfied — there is no cognitive index in this reconstruction to rebuild. This test
 // asserts the premise (no cognition dependency/usage) rather than adding cognition just to exercise
@@ -28,14 +28,14 @@ function walk(dir: string): string[] {
 }
 
 describe("Phase 8 §9: RuVector-rebuild criterion is vacuous (no cognition used)", () => {
-  test("APP's package.json declares no @cognate/cognitive-* dependency", () => {
+  test("APP's package.json declares no @godspeedai/cognitive-* dependency", () => {
     const manifest = JSON.parse(readFileSync(join(APP, "package.json"), "utf8"));
     const deps = { ...manifest.dependencies, ...manifest.devDependencies, ...manifest.peerDependencies };
-    const cognitionDeps = Object.keys(deps).filter((k) => k.startsWith("@cognate/cognitive-"));
+    const cognitionDeps = Object.keys(deps).filter((k) => k.startsWith("@godspeedai/cognitive-"));
     expect(cognitionDeps).toEqual([]);
   });
 
-  test("no APP source or test file imports @cognate/cognitive-*", () => {
+  test("no APP source or test file imports @godspeedai/cognitive-*", () => {
     const files = [...walk(join(APP, "src")), ...walk(join(APP, "domain")), ...walk(join(APP, "test"))];
     const offenders: string[] = [];
     const re = /["']@cognate\/cognitive-[\w-]*["']/g;

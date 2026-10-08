@@ -1,4 +1,4 @@
-# @cognate/store-memory
+# @godspeedai/store-memory
 
 An in-memory `DurableStore` (spec §10, §11, §13) with the same observable
 semantics as the SQLite store: atomic multi-part commits, optimistic
@@ -9,7 +9,7 @@ State lives only in process memory — nothing survives a restart. Use it for
 tests and ephemeral runtimes, not as a production store.
 
 ```ts
-import { createMemoryStore } from "@cognate/store-memory";
+import { createMemoryStore } from "@godspeedai/store-memory";
 
 const store = createMemoryStore();
 await store.commit({ appends: [{ streamId: "s", expectedVersion: 0, events: [...] }] });

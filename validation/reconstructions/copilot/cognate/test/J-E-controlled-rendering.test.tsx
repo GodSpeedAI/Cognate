@@ -5,11 +5,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createElement } from "react";
-import { createClient, type CognateClient } from "@cognate/client";
-import { CognateProvider } from "@cognate/react";
-import { alice } from "@cognate/runtime-api/conformance";
-import type { Json, StoredEvent } from "@cognate/events";
-import type { ProjectionState, ProjectionWrite } from "@cognate/projections";
+import { createClient, type CognateClient } from "@godspeedai/client";
+import { CognateProvider } from "@godspeedai/react";
+import { alice } from "@godspeedai/runtime-api/conformance";
+import type { Json, StoredEvent } from "@godspeedai/events";
+import type { ProjectionState, ProjectionWrite } from "@godspeedai/projections";
 import { CONTROLLED_RENDER_COMPONENT, controlledRenderProjection, createRemainingJourneysApp, JOURNEY_E_AGENT } from "../src/remaining-journeys.ts";
 import { ControlledRenderingSurface } from "../src/ui/RemainingSurfaces.tsx";
 

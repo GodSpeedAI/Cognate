@@ -161,7 +161,7 @@ Cognate applications can recall relevant:
 
 RuVector provides the reference cognitive implementation.
 
-RVF provides portable and branchable cognition through the `@cognate/cognitive-rvf` adapter, with Cognate-owned integrity manifests because RVF 0.3.4 does not verify files on open ([ADR-0006](docs/decisions/ADR-0006-portable-cognition-rvf.md)).
+RVF provides portable and branchable cognition through the `@godspeedai/cognitive-rvf` adapter, with Cognate-owned integrity manifests because RVF 0.3.4 does not verify files on open ([ADR-0006](docs/decisions/ADR-0006-portable-cognition-rvf.md)).
 
 ### Governed systems
 
@@ -593,7 +593,7 @@ An RVF can carry cognitive state such as:
 * lineage;
 * witness information.
 
-Cognition can be snapshotted, exported with a Cognate integrity manifest, imported, and branched through `@cognate/cognitive-rvf` (runnable: `bun run example:rvf-branching`):
+Cognition can be snapshotted, exported with a Cognate integrity manifest, imported, and branched through `@godspeedai/cognitive-rvf` (runnable: `bun run example:rvf-branching`):
 
 ```ts
 const index = await createRvfIndex({ path: "./cognition.rvf", dimension: 384 });
@@ -1067,7 +1067,7 @@ They are different compositions of the same substrate.
 # Build Your Own Profile
 
 ```ts
-import { defineProfile } from "@cognate/profile";
+import { defineProfile } from "@godspeedai/profile";
 
 export default defineProfile({
   name: "research-workbench",
@@ -1096,43 +1096,43 @@ They do not create privileged runtime features.
 Cognate is a modular workspace. Every package below exists in `packages/` with its own README and AGENTS guide; none is published to a registry yet ([DEBT-016](.agents/DEBT.md)).
 
 ```text
-@cognate/kernel-api
-@cognate/kernel-cordis
-@cognate/runtime-bun
-@cognate/profile
-@cognate/cli
+@godspeedai/kernel-api
+@godspeedai/kernel-cordis
+@godspeedai/runtime-bun
+@godspeedai/profile
+@godspeedai/cli
 
-@cognate/events
-@cognate/capabilities
-@cognate/continuations
-@cognate/projections
-@cognate/artifacts
+@godspeedai/events
+@godspeedai/capabilities
+@godspeedai/continuations
+@godspeedai/projections
+@godspeedai/artifacts
 
-@cognate/store-memory
-@cognate/store-sqlite
+@godspeedai/store-memory
+@godspeedai/store-sqlite
 
-@cognate/cognitive-api
-@cognate/cognitive-memory
-@cognate/cognitive-ruvector
-@cognate/cognitive-rvf
+@godspeedai/cognitive-api
+@godspeedai/cognitive-memory
+@godspeedai/cognitive-ruvector
+@godspeedai/cognitive-rvf
 
-@cognate/proto
-@cognate/protocol-connect
-@cognate/protocol-connect-bun
+@godspeedai/proto
+@godspeedai/protocol-connect
+@godspeedai/protocol-connect-bun
 
-@cognate/client
-@cognate/react
-@cognate/ui-astryx
+@godspeedai/client
+@godspeedai/react
+@godspeedai/ui-astryx
 
-@cognate/ag-ui
-@cognate/mcp
-@cognate/a2a
+@godspeedai/ag-ui
+@godspeedai/mcp
+@godspeedai/a2a
 
-@cognate/domainforge
-@cognate/realitytrace
+@godspeedai/domainforge
+@godspeedai/realitytrace
 
-@cognate/provider-openai-compatible
-@cognate/provider-local
+@godspeedai/provider-openai-compatible
+@godspeedai/provider-local
 ```
 
 You do not install everything to use Cognate.

@@ -1,9 +1,9 @@
 // cognitiveIndexer: feeds a CognitiveIndex from durable events via ProjectionRunner; rebuildable; erasure-aware (spec §11, §32).
 import { describe, expect, test } from "bun:test";
-import type { Json, StoredEvent } from "@cognate/events";
-import { createMemoryStore } from "@cognate/store-memory";
-import { ProjectionRunner } from "@cognate/projections";
-import { createMemoryIndex, hashingEmbedder } from "@cognate/cognitive-memory";
+import type { Json, StoredEvent } from "@godspeedai/events";
+import { createMemoryStore } from "@godspeedai/store-memory";
+import { ProjectionRunner } from "@godspeedai/projections";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
 import { cognitiveIndexer, type IndexDocument } from "../src/indexer.ts";
 
 function extract(event: StoredEvent): readonly IndexDocument[] {

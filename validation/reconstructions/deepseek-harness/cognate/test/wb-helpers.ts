@@ -2,7 +2,7 @@
 // derived `workbench` projection, and wait on durable state (never on sleeps alone).
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { StoredEvent } from "@cognate/events";
+import type { StoredEvent } from "@godspeedai/events";
 import { LOCAL_OPERATOR, type AppServer } from "../src/server.ts";
 import type { AcceptanceCriterion, TaskContract } from "../src/workbench/types.ts";
 import type { TaskRecord } from "../src/workbench/state.ts";

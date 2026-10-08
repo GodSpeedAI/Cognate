@@ -1,6 +1,6 @@
-# @cognate/ui-astryx
+# @godspeedai/ui-astryx
 
-Reference Astryx surfaces over `@cognate/react` (spec §25.3). A renderer, not the ontology — see §3.8.
+Reference Astryx surfaces over `@godspeedai/react` (spec §25.3). A renderer, not the ontology — see §3.8.
 
 ## Surfaces
 
@@ -16,4 +16,4 @@ Astryx ships pre-compiled CSS (no StyleX build step, ADR-0009). `stylesheetPaths
 
 ## Replaceability
 
-Only `@cognate/react` hooks and `@cognate/runtime-api` types are imported beyond Astryx itself — no `@cognate/client` internals. Astryx types never leak past this package's exports (§3.8, §40.F), so swapping the design system touches only `packages/ui-astryx`.
+Only `@godspeedai/react` hooks and `@godspeedai/runtime-api` types are imported beyond Astryx itself — no `@godspeedai/client` internals. Astryx types never leak past this package's exports (§3.8, §40.F), so swapping the design system touches only `packages/ui-astryx`.

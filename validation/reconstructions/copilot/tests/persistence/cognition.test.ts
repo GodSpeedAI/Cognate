@@ -19,12 +19,12 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { hashingEmbedder } from "@cognate/cognitive-memory";
-import { createRuVectorIndex } from "@cognate/cognitive-ruvector";
-import { allowCapabilities } from "@cognate/kernel-api";
-import { alice, bob, mallory } from "@cognate/runtime-api/conformance";
-import type { AgentDefinition, Caller, Json } from "@cognate/runtime-api";
-import { createRuntime, type Runtime } from "@cognate/runtime-bun";
+import { hashingEmbedder } from "@godspeedai/cognitive-memory";
+import { createRuVectorIndex } from "@godspeedai/cognitive-ruvector";
+import { allowCapabilities } from "@godspeedai/kernel-api";
+import { alice, bob, mallory } from "@godspeedai/runtime-api/conformance";
+import type { AgentDefinition, Caller, Json } from "@godspeedai/runtime-api";
+import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
 import {
   createRemainingJourneysApp,
   JOURNEY_K_AGENT,

@@ -1,7 +1,7 @@
 // Example: multi-agent — a parent agent durably spawns and awaits a child run (subagents).
 // Docs: docs/architecture.md (spec §29.2: the harness's `subagent.start` component and `spawnSubagent`).
-import { createHarness, LOCAL_OPERATOR, spawnSubagent } from "@cognate/profile-harness";
-import type { AgentDefinition } from "@cognate/runtime-api";
+import { createHarness, LOCAL_OPERATOR, spawnSubagent } from "@godspeedai/profile-harness";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
 
 const childAgent: AgentDefinition = {
   id: "agent.child",

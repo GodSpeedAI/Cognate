@@ -1,7 +1,7 @@
 // CG-RT-001 (spec §20): committed-outbox observation delivery; receipts are not evidence; failures never roll back history.
 import { afterEach, describe, expect, test } from "bun:test";
-import { event } from "@cognate/events/conformance";
-import type { DurableStore } from "@cognate/events";
+import { event } from "@godspeedai/events/conformance";
+import type { DurableStore } from "@godspeedai/events";
 import { storeCases } from "../../../tests/support/stores.ts";
 import { ObservationDelivery, observationIntent, OBSERVATION_TOPIC, type Observation, type ObservationPort } from "../src/index.ts";
 

@@ -3,15 +3,15 @@
 // this run is started (those handlers call `RuntimeService.startRun`, which is not recorded as an
 // event itself, then this run durably records the resulting domain event). The run body only emits
 // — no I/O, no randomness, replay-safe by construction.
-import type { AgentDefinition } from "@cognate/runtime-api";
-import type { Json } from "@cognate/events";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/events";
 import type { SettingsPatch } from "../settings.ts";
 import { WORKBENCH_EVENTS } from "../workbench/types.ts";
 
 export type AgentConfigInput =
   | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
   /** `root` is provider-owned and opaque above the execution-world boundary; `executionWorldId`
-   *  names where that root lives (see `@cognate/execution`). */
+   *  names where that root lives (see `@godspeedai/execution`). */
   | { readonly kind: "workspace.added"; readonly workspaceId: string; readonly root: string; readonly title: string; readonly executionWorldId: string }
   | { readonly kind: "workspace.selected"; readonly workspaceId: string }
   /** Usage pass U3: the sidebar's per-workspace Rename action (reference-behavior-matrix.md §12). */

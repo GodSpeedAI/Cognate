@@ -1,6 +1,6 @@
 // CG-COG-005: an unavailable index degrades to deterministic behaviour unless cognition is required (spec §31.3).
 import { describe, expect, test } from "bun:test";
-import { hashingEmbedder } from "@cognate/cognitive-memory";
+import { hashingEmbedder } from "@godspeedai/cognitive-memory";
 import { CognitionUnavailableError, createRecall, type CognitiveIndex } from "../src/index.ts";
 
 const broken: CognitiveIndex = {

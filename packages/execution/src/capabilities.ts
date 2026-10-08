@@ -4,7 +4,7 @@
 // The capability component owns no filesystem and no process. It resolves a world and delegates —
 // which is exactly why removing a provider makes these capabilities fail cleanly instead of
 // silently doing the work locally.
-import type { CapabilityContract, Component, SemanticRef } from "@cognate/kernel-api";
+import type { CapabilityContract, Component, SemanticRef } from "@godspeedai/kernel-api";
 import type { ExecutionWorldRegistry } from "./registry.ts";
 import { WorldUnavailableError } from "./types.ts";
 import type { DirEntry, ExecResult, FileStat } from "./types.ts";

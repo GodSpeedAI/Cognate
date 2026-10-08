@@ -2,8 +2,8 @@
 // agent's `run()` (that would record the raw secret in a `run.invocation` event payload) — callers
 // invoke it directly through `RuntimeService.invoke` / `client.invoke`, which is NOT recorded as an
 // event (see cognate-api.md §4/§5). The value never appears in any event, projection, or log line.
-import type { SemanticRef } from "@cognate/kernel-api";
-import type { Component } from "@cognate/kernel-api";
+import type { SemanticRef } from "@godspeedai/kernel-api";
+import type { Component } from "@godspeedai/kernel-api";
 import type { SecretStore } from "../secrets.ts";
 
 export interface SecretPutInput {

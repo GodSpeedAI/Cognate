@@ -1,10 +1,10 @@
-# @cognate/kernel-api
+# @godspeedai/kernel-api
 
 Framework-owned kernel contract (spec §8, §8.5, §9.1, §32): `Kernel`, `Scope`, `Component`, `FiberContext`, `CapabilityLease`, `Effects`, `Policy`.
-No engine type appears here; engines (e.g. `@cognate/kernel-cordis`) implement `KernelFactory`.
+No engine type appears here; engines (e.g. `@godspeedai/kernel-cordis`) implement `KernelFactory`.
 
-- `@cognate/kernel-api` — types, `isCompatible` (deterministic eligibility), policies (`denyAll` default), typed errors.
-- `@cognate/kernel-api/conformance` — the executable contract. Every engine runs all six suites unchanged.
+- `@godspeedai/kernel-api` — types, `isCompatible` (deterministic eligibility), policies (`denyAll` default), typed errors.
+- `@godspeedai/kernel-api/conformance` — the executable contract. Every engine runs all six suites unchanged.
 
 Semantics that the suites pin down:
 - resolution never consults policy; every invocation does (default deny) and emits an `invocation` audit event;

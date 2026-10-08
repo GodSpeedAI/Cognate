@@ -1,6 +1,6 @@
 // Dependency-free cognitive contract (spec §14–16). No RuVector type may appear here.
-import type { Json } from "@cognate/events";
-import type { Principal, SemanticRef } from "@cognate/kernel-api";
+import type { Json } from "@godspeedai/events";
+import type { Principal, SemanticRef } from "@godspeedai/kernel-api";
 
 export type CognitiveFlag = "vector_search" | "graph_traversal" | "temporal_search" | "causal_search" | "adaptive_ranking" | "snapshot" | "branch" | "witness";
 

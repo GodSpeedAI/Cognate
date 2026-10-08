@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/cognitive-api",
+  "name": "@godspeedai/cognitive-api",
   "version": "0.1.0",
   "description": "Dependency-free CognitiveIndex contract, retrieval pipeline, indexing projection, and conformance kit (spec §14–16).",
   "type": "module",
@@ -23,12 +23,12 @@
     "./conformance": "./src/conformance.ts"
   },
   "dependencies": {
-    "@cognate/events": "workspace:*",
-    "@cognate/kernel-api": "workspace:*",
-    "@cognate/projections": "workspace:*"
+    "@godspeedai/events": "workspace:*",
+    "@godspeedai/kernel-api": "workspace:*",
+    "@godspeedai/projections": "workspace:*"
   },
   "devDependencies": {
-    "@cognate/store-memory": "workspace:*",
-    "@cognate/cognitive-memory": "workspace:*"
+    "@godspeedai/store-memory": "workspace:*",
+    "@godspeedai/cognitive-memory": "workspace:*"
   }
 }

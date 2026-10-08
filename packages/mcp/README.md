@@ -1,4 +1,4 @@
-# @cognate/mcp
+# @godspeedai/mcp
 
 Exposes runtime capabilities as MCP tools (`@modelcontextprotocol/sdk` 1.30.1).
 

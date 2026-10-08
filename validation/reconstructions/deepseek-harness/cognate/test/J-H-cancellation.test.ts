@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import type { StoredEvent } from "@cognate/events";
+import type { StoredEvent } from "@godspeedai/events";
 import { LOCAL_OPERATOR, type AppServer } from "../src/server.ts";
 import { aimockChatRequests, bootApp, bootAimock, withTempHome } from "./helpers.ts";
 

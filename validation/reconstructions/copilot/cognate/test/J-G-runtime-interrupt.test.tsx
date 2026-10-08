@@ -5,9 +5,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createElement } from "react";
-import { createClient, type CognateClient } from "@cognate/client";
-import { CognateProvider } from "@cognate/react";
-import { alice } from "@cognate/runtime-api/conformance";
+import { createClient, type CognateClient } from "@godspeedai/client";
+import { CognateProvider } from "@godspeedai/react";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import { createRemainingJourneysApp, JOURNEY_G_AGENT } from "../src/remaining-journeys.ts";
 import { RuntimeInterruptSurface } from "../src/ui/RemainingSurfaces.tsx";
 

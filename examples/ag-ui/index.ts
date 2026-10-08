@@ -1,8 +1,8 @@
 // Example: ag-ui — a run projected as a schema-shaped AG-UI SSE event stream over HTTP.
 // Docs: docs/protocols.md (ADR-0008; spec §24: outbound AG-UI mapping over durable run events).
-import { createAgUiHandler } from "@cognate/ag-ui";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
+import { createAgUiHandler } from "@godspeedai/ag-ui";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
 
 const agent: AgentDefinition = {
   id: "agent.copilot",

@@ -1,5 +1,5 @@
-import type { CognitiveEntry, CognitiveFlag, CognitiveIndex, SimilarQuery } from "@cognate/cognitive-api";
-import type { DurableStore, Json } from "@cognate/events";
+import type { CognitiveEntry, CognitiveFlag, CognitiveIndex, SimilarQuery } from "@godspeedai/cognitive-api";
+import type { DurableStore, Json } from "@godspeedai/events";
 import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

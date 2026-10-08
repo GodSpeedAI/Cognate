@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { useCognate, useConnectionStatus, useRun } from "@cognate/react";
+import { useCognate, useConnectionStatus, useRun } from "@godspeedai/react";
 import { ChatSurface } from "../ChatSurface.tsx";
 import { SharedStateSurface } from "../SharedStateSurface.tsx";
 import { RemoteCapabilitySurface } from "./RemoteCapabilitySurface.tsx";
