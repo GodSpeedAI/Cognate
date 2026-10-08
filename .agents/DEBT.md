@@ -122,11 +122,12 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Exit criterion:** Event-driven wake-ups (commit listeners, timers for next expiry) with bounded concurrent execution, plus a load test recording throughput and latency.
 
 ## DEBT-016 — Cognate packages are not published to a registry
-**Status:** Open
+**Status:** Open (release-ready; blocked on npm namespace account access, 2026-10-08)
 **Requirement(s):** CG-CLI-001
 **Observed:** All `@cognate/*` packages are private workspace packages with internal `workspace:*` dependencies; `bunx cognate create` from npm (README Quick Start) cannot work. `cognate create --source <checkout>` packs the packages (`bun pm pack`) into the generated app and pins them with `overrides`.
-**Consequence:** The Quick Start requires a local checkout. Versions are `0.0.0`; no release, changelog, or provenance process exists.
-**Exit criterion:** A release process publishes versioned packages (with provenance) and `bunx cognate create my-app` works from a clean machine.
+2026-10-08: all 35 packages now carry public npm metadata (Apache-2.0, `files`, `engines`, `repository`, `publishConfig`), Release Please runs in manifest mode (`release.yml`, `linked-versions` lockstep) and cut 0.1.0 (35 tags + GitHub releases); `scripts/prepare-npm-package.mjs` resolves `workspace:*` at publish time and the tarballs pass a clean-room install + consumer smoke against a local registry (`.agents/evidence/2026-10-08-release-0.1.0-prep.md`). Publication itself is blocked: the npm user `cognate` owns the `@cognate` scope and the current session (`sprime01`) cannot publish it (404, verified once).
+**Consequence:** The Quick Start requires a local checkout. Versions on npm do not exist yet; the release process exists but its publish step is gated on the `NPM_TRUSTED_PUBLISHING_READY` repository variable until trusted publishers can be configured (requires the packages to exist on npm).
+**Exit criterion:** A release process publishes versioned packages (with provenance) and `bunx cognate create my-app` works from a clean machine. Provenance is unavailable from this private repository per npm docs — the provenance half of the criterion needs a public source repository or an explicit decision to accept attestations without provenance.
 
 ## DEBT-017 — Bun 1.4.0 `toMatchObject` mutates the received object
 **Status:** Open (worked around in tests)
