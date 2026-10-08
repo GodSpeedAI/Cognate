@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { Json } from "@cognate/events";
 import { useCognate, useContinuations, useProjection } from "@cognate/react";
+import { ComposerBar } from "./workbench/ComposerBar.tsx";
+import { WorkbenchView, useBindableTasks } from "./workbench/Workbench.tsx";
+import { captureSnapshot, resolveAttention, withReferent, type FocusRef } from "../workbench/focus.ts";
 import { renderMarkdown } from "./markdown.ts";
 import { CognitiveFrame, SurfaceView } from "./CognitiveFrame.tsx";
 import { SshWorkspaceForm, WorldBanner, WslWorkspaceForm, useExecutionWorlds } from "./RemoteWorkspaceForm.tsx";
@@ -2581,6 +2584,26 @@ function verboseStepLabel(entry: ToolEntry): string {
   return entry.tool;
 }
 
+/** Reality over narrative: a call the task's authority refused is always shown, whatever the
+ *  Work details verbosity, because the agent's own summary may say otherwise. */
+function AuthorityNotice({ steps }: { readonly steps?: readonly ToolEntry[] }) {
+  const blocked = (steps ?? []).filter((e) => e.status === "failed" && /blocked by authority/.test(e.error ?? ""));
+  if (blocked.length === 0) return null;
+  return (
+    <div className="authority-notice" role="alert">
+      <strong>Blocked by the task&apos;s authority</strong>
+      <ul>
+        {blocked.map((e) => (
+          <li key={e.toolCallId}>
+            <span className="authority-notice-tool">{e.tool}</span> {(e.error ?? "").replace(/^Error: blocked by authority \(([^)]*)\): /, "$1: ")}
+          </li>
+        ))}
+      </ul>
+      <p>The blocked change was not made. Check the agent&apos;s summary against what actually happened.</p>
+    </div>
+  );
+}
+
 function MessageBubble({
   message,
   elapsedSeconds,
@@ -2672,6 +2695,7 @@ function MessageBubble({
       )}
       <div className="message-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
       <CodeBlocks containerRef={bodyRef} />
+      <AuthorityNotice steps={message.steps} />
       {message.editSummary && onOpenReview && (
         <EditDiff summary={message.editSummary} turnNumber={turnNumber ?? 1} onOpenReview={onOpenReview} />
       )}
@@ -3497,6 +3521,17 @@ function HeroLanding({
   );
 }
 
+
+function WorkbenchIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+      <rect x="2" y="2.5" width="12" height="3.5" rx="1" />
+      <rect x="2" y="8.5" width="5" height="5" rx="1" />
+      <rect x="9" y="8.5" width="5" height="5" rx="1" />
+    </svg>
+  );
+}
+
 export function App() {
   const client = useCognate();
   const workspaces = useWorkspaces();
@@ -3561,6 +3596,25 @@ export function App() {
   // column for the plugin manager (the reference's panel replaces the session surface, per the
   // 25b checkpoint's aria tree).
   const [pluginsPanelOpen, setPluginsPanelOpen] = useState(false);
+  // Workbench: the cockpit view (tasks, workflows, capabilities, automations) and the task the
+  // conversation is bound to (scopes authority, attributes usage).
+  const [workbenchOpen, setWorkbenchOpen] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | undefined>(undefined);
+  // Focus (ported from gs-term): the person's explicit selection in the Workbench. "this" is resolved
+  // by fixed precedence and FROZEN at send time, so it cannot drift while the agent works.
+  const [focusSelection, setFocusSelection] = useState<FocusRef | undefined>(undefined);
+  const bindableTasks = useBindableTasks(currentWorkspaceId);
+  const attentionNow = useMemo(() => {
+    const bound = bindableTasks.find((t) => t.id === activeTaskId);
+    return {
+      workspaceId: currentWorkspaceId ?? "",
+      ...(focusSelection ? { selection: focusSelection } : {}),
+      ...(bound ? { activeRun: { kind: "task" as const, id: bound.id, workspaceId: bound.workspaceId, label: bound.title } } : {}),
+      pinned: [] as readonly FocusRef[],
+    };
+  }, [currentWorkspaceId, focusSelection, bindableTasks, activeTaskId]);
+  const resolvedAttention = useMemo(() => resolveAttention(attentionNow), [attentionNow]);
+  const messageWithFocus = useCallback((message: string) => withReferent(message, captureSnapshot(crypto.randomUUID(), attentionNow, new Date().toISOString())), [attentionNow]);
   // Usage pass U4 (§15): per-session agent preset (the header selector) — the value the composer
   // sends as `AgentCodingInput.preset` on this session's NEXT turn; the `sessions` projection folds
   // the last run's preset back into the row's `mode` badge field.
@@ -3799,12 +3853,13 @@ export function App() {
       runStartedAtRef.current = Date.now();
       const view = await client.startRun(
         "agent.coding",
-        { sessionId, workspaceId: currentWorkspaceId, message, mode, preset, ...(activeCaseId ? { caseId: activeCaseId } : {}) } as unknown as Json,
-        { idempotencyKey: crypto.randomUUID(), correlationId: `session:${sessionId}` },
+        { sessionId, workspaceId: currentWorkspaceId, message: messageWithFocus(message), mode, preset, ...(activeCaseId ? { caseId: activeCaseId } : {}), ...(activeTaskId ? { taskId: activeTaskId } : {}) } as unknown as Json,
+        // The run's shared state is seeded with an empty steering list: "Steer now" appends to it.
+        { idempotencyKey: crypto.randomUUID(), correlationId: `session:${sessionId}`, state: { steer: [] } as unknown as Json },
       );
       setActiveRunId(view.runId);
     },
-    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on, accessModeOverrides, pendingAccessMode, settings.permission, presetOverrides, settings.preset, activeCaseId],
+    [client, currentWorkspaceId, activeSessionId, rememberSession, planState?.on, accessModeOverrides, pendingAccessMode, settings.permission, presetOverrides, settings.preset, activeCaseId, activeTaskId, messageWithFocus],
   );
 
   const stop = useCallback(async () => {
@@ -3824,14 +3879,19 @@ export function App() {
   const busySubmit = useCallback(
     (message: string, behavior: SendBehavior) => {
       if (behavior === "steer") {
-        if (activeRunId) void client.cancelRun(activeRunId, "user-cancelled").then(() => send(message));
-        else void send(message);
+        if (activeRunId && activeSessionId) {
+          // Steer now (V-004): the message joins the ACTIVE trajectory at the agent's next step
+          // boundary through the run's shared state. It does not cancel and restart the run.
+          const at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          setTranscript((prev) => [...prev, { role: "user", content: message, at }, { role: "system" as const, content: "steering · sent to the running agent; it applies at the next step." }]);
+          void client.updateState(activeRunId, { patch: [{ op: "add", path: "/steer/-", value: { id: crypto.randomUUID(), text: messageWithFocus(message) } }] } as never, { idempotencyKey: crypto.randomUUID() });
+        } else void send(message);
       } else {
         queuedRef.current = message;
         setQueuedMessage(message);
       }
     },
-    [activeRunId, client, send],
+    [activeRunId, activeSessionId, client, send, messageWithFocus],
   );
   const cancelQueued = useCallback(() => {
     queuedRef.current = undefined;
@@ -3931,6 +3991,17 @@ export function App() {
             >
               <PluginIcon />
               Plugins
+            </button>
+            <button
+              type="button"
+              className={workbenchOpen ? "global-panel-btn active" : "global-panel-btn"}
+              aria-label="Workbench"
+              aria-pressed={workbenchOpen}
+              disabled={!currentWorkspaceId}
+              onClick={() => setWorkbenchOpen((v) => !v)}
+            >
+              <WorkbenchIcon />
+              Workbench
             </button>
           </nav>
         )}
@@ -4155,9 +4226,34 @@ export function App() {
       <main className="center-column">
         {pluginsPanelOpen ? (
           <PluginsPanel onClose={() => setPluginsPanelOpen(false)} />
+        ) : workbenchOpen && currentWorkspaceId ? (
+          <WorkbenchView
+            workspaceId={currentWorkspaceId}
+            workspaceLabel={workspaces.find((w) => w.id === currentWorkspaceId)?.title || currentWorkspaceId}
+            {...(activeTaskId ? { activeTaskId } : {})}
+            onWorkOnTask={(taskId) => {
+              setActiveTaskId(taskId);
+              setWorkbenchOpen(false);
+            }}
+            onFocus={setFocusSelection}
+            onClose={() => setWorkbenchOpen(false)}
+          />
         ) : !currentWorkspaceId ? (
           <WorkspaceChooser />
         ) : showHero ? (
+          <>
+            <ComposerBar
+              workspaceId={currentWorkspaceId}
+              {...(activeTaskId ? { taskId: activeTaskId } : {})}
+              onTaskChange={setActiveTaskId}
+              onOpenWorkbench={() => setWorkbenchOpen(true)}
+              state="idle"
+              steps={0}
+              elapsedSeconds={0}
+              approvalsPending={0}
+              {...(resolvedAttention.referent ? { referent: { ref: resolvedAttention.referent, level: resolvedAttention.level } } : {})}
+              onClearFocus={() => setFocusSelection(undefined)}
+            />
           <HeroLanding
             workspaceLabel={currentWorkspace?.title || currentWorkspace?.id || ""}
             modeLabel={AGENT_PRESET_LABELS[settings.preset]}
@@ -4170,7 +4266,8 @@ export function App() {
             workspaces={workspaces}
             onSwitchWorkspace={(ws) => void newSessionIn(ws)}
             onAddWorkspace={() => setAddWorkspaceOpen(true)}
-          />
+            />
+          </>
         ) : (
           <>
             <header className="session-header">
@@ -4257,6 +4354,21 @@ export function App() {
               ) : null;
             })()}
             {planState && planState.todos.length > 0 && <TodoWidget todos={planState.todos} />}
+            {currentWorkspaceId && (
+              <ComposerBar
+                workspaceId={currentWorkspaceId}
+                {...(activeSessionId ? { sessionId: activeSessionId } : {})}
+                {...(activeTaskId ? { taskId: activeTaskId } : {})}
+                onTaskChange={setActiveTaskId}
+                onOpenWorkbench={() => setWorkbenchOpen(true)}
+                state={pendingApproval || planReviewContinuation ? "waiting" : streaming.status === "streaming" ? "running" : "idle"}
+                steps={toolEntries.length + 1}
+                elapsedSeconds={elapsedSeconds}
+                approvalsPending={pendingApproval ? 1 : 0}
+                {...(resolvedAttention.referent ? { referent: { ref: resolvedAttention.referent, level: resolvedAttention.level } } : {})}
+                onClearFocus={() => setFocusSelection(undefined)}
+              />
+            )}
             {pendingApproval ? (
               <ApprovalBar entry={pendingApproval} onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)} />
             ) : planReviewContinuation ? (

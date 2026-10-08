@@ -201,3 +201,46 @@ export function bindExecutionWorlds(domain: Domain) {
   const [family, connect, disconnect, probe, check] = contracts as [(typeof contracts)[number], (typeof contracts)[number], (typeof contracts)[number], (typeof contracts)[number], (typeof contracts)[number]];
   return { family: family.semanticRef, connect: connect.semanticRef, disconnect: disconnect.semanticRef, probe: probe.semanticRef, check: check.semanticRef };
 }
+
+/**
+ * Workbench layer (Unified Harness Experience Model v2): every `WORKBENCH_CAPABILITY_IDS` entry is
+ * anchored on one of the workbench Entities the IDM extension declares. `authority.check` is the
+ * only capability the tool loop invokes; `workbench.seed` is infrastructure (loads the catalog) and
+ * is anchored on `SkillCapability`. Explicit, like every binding here — nothing is inferred.
+ */
+export const WORKBENCH_ANCHORS: Readonly<Record<string, string>> = {
+  "task.create": "Task",
+  "task.status.change": "Task",
+  "task.contract.update": "TaskContract",
+  "task.review.request": "ReviewGate",
+  "task.review.decide": "ReviewGate",
+  "worker.return": "ReviewGate",
+  "evidence.record": "EvidenceLedger",
+  "authority.check": "ProtectedEvidence",
+  "authority.elevate": "ProtectedEvidence",
+  "workflow.define": "Workflow",
+  "workflow.instantiate": "Workflow",
+  "workflow.node.advance": "Workflow",
+  "skill.register": "SkillCapability",
+  "workbench.seed": "SkillCapability",
+  "skill.bind": "CapabilityImplementation",
+  "skill.lifecycle.advance": "CapabilityImplementation",
+  "automation.create": "Automation",
+  "automation.advance": "Automation",
+  "usage.record": "UsageLedger",
+  "parallelism.plan": "ParallelPlan",
+  "steer.enqueue": "SteeringInbox",
+  "steer.pending": "SteeringInbox",
+  "feedback.record": "GroundedFeedback",
+};
+
+export function workbenchBindings(domain: Domain): readonly CapabilityBinding[] {
+  return Object.entries(WORKBENCH_ANCHORS).map(([id, entity]) => ({ semanticId: domain.semanticId(entity), capability: { id, version: "1.0.0" } }));
+}
+
+export function bindWorkbench(domain: Domain): Readonly<Record<string, CapabilityContract["semanticRef"]>> {
+  const bindings = workbenchBindings(domain);
+  const contracts = bindCapabilities(domain.projection, bindings);
+  if (contracts.length !== bindings.length) throw new Error(`domain: expected ${bindings.length} workbench contracts, got ${contracts.length}`);
+  return Object.fromEntries(contracts.map((c) => [c.id, c.semanticRef]));
+}

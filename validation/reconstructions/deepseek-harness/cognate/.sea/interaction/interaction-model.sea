@@ -40,6 +40,39 @@ Entity "ExecutionWorld"
 
 Entity "WorldConnection"
 
+// Workbench layer (Unified Harness Experience Model v2). `Task` is the economic and governance
+// unit, not a message. `Workflow` owns the dependency and acceptance structure; tasks are
+// workflow-node executions; capabilities are stable, implementations and executors replaceable.
+Entity "Task"
+
+Entity "TaskContract"
+
+Entity "Workflow"
+
+Entity "SkillCapability"
+
+Entity "CapabilityImplementation"
+
+Entity "ProtectedEvidence"
+
+Entity "EvidenceLedger"
+
+Entity "ReviewGate"
+
+Entity "Automation"
+
+Entity "SteeringInbox"
+
+Entity "GroundedFeedback"
+
+Entity "ParallelPlan"
+
+Entity "UsageLedger"
+
+// Focus (adapted from the operator's gs-term): what "this" means is resolved by a fixed precedence and
+// frozen when a message is sent, so a referent never silently changes while an agent works.
+Entity "AttentionFocus"
+
 Resource "ModelConfig" units
 
 Resource "WorkspaceSelection" units
@@ -76,6 +109,31 @@ Resource "FilesystemOperation" units
 
 Resource "ProcessExecution" units
 
+// Workbench resources.
+Resource "TaskContractRecord" units
+
+Resource "ProtectionDecision" units
+
+Resource "WorkflowProgress" units
+
+Resource "CapabilityLifecycleRecord" units
+
+Resource "EvidenceRecord" units
+
+Resource "ReviewDecision" units
+
+Resource "AutomationOutcome" units
+
+Resource "SteerMessage" units
+
+Resource "ChangeContract" units
+
+Resource "ParallelismVerdict" units
+
+Resource "UsageProvenance" units
+
+Resource "FocusSnapshot" units
+
 Role "Approver"
 
 Role "Operator"
@@ -83,6 +141,9 @@ Role "Operator"
 // The principal that owns the remote machine a workspace executes on. Authority over a world is
 // distinct from authority over a workspace's contents (see the security invariants in the plan).
 Role "HostAuthority"
+
+// The human who decides a ReviewGate. Distinct from the Operator (agent) and from approval of a single tool call.
+Role "Reviewer"
 
 Relation "ApprovalAuthorization"
     subject: "Approver"
@@ -95,6 +156,12 @@ Relation "ExecutionAuthorization"
     predicate: "authorizes"
     object: "Operator"
     via: flow "ProcessExecution"
+
+Relation "ReviewAuthorization"
+    subject: "Reviewer"
+    predicate: "authorizes"
+    object: "Operator"
+    via: flow "ReviewDecision"
 
 Flow "ModelConfig" from "User" to "ModelProvider" quantity 1
 
@@ -133,6 +200,31 @@ Flow "ProcessExecution" from "Tool" to "ExecutionWorld" quantity 1
 Flow "ConnectionEvidence" from "WorldConnection" to "ExecutionWorld" quantity 1
 
 Flow "RemoteOperationEvidence" from "Tool" to "WorkspaceRecord" quantity 1
+
+// Workbench flows.
+Flow "TaskContractRecord" from "User" to "Task" quantity 1
+
+Flow "ProtectionDecision" from "ProtectedEvidence" to "Tool" quantity 1
+
+Flow "WorkflowProgress" from "Task" to "Workflow" quantity 1
+
+Flow "CapabilityLifecycleRecord" from "CapabilityImplementation" to "SkillCapability" quantity 1
+
+Flow "EvidenceRecord" from "OperatorAgent" to "EvidenceLedger" quantity 1
+
+Flow "ReviewDecision" from "User" to "ReviewGate" quantity 1
+
+Flow "AutomationOutcome" from "Automation" to "EvidenceLedger" quantity 1
+
+Flow "SteerMessage" from "User" to "SteeringInbox" quantity 1
+
+Flow "ChangeContract" from "User" to "GroundedFeedback" quantity 1
+
+Flow "ParallelismVerdict" from "Workflow" to "ParallelPlan" quantity 1
+
+Flow "UsageProvenance" from "OperatorAgent" to "UsageLedger" quantity 1
+
+Flow "FocusSnapshot" from "User" to "AttentionFocus" quantity 1
 
 Instance j_a_first_use of "CanonicalJourney" {
     actor: "User",
@@ -398,6 +490,150 @@ Instance j_rw_switch of "CanonicalJourney" {
     settlement: "After switching, the same tool definitions operate on the newly selected world; switching back restores the previous world's behaviour; no tool or agent implementation changed",
     steps: "user selects the remote workspace -> the same read/edit/bash tools now execute remotely -> user selects the local workspace again -> the same tools execute locally again",
     variants: "switch to remote; switch back to local; switch to a third world"
+}
+
+// Workbench journeys (declared by .agents/plans/unified_harness_experience_model_v2.md).
+Instance j_wb_task_contract of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "task.create, task.contract.update",
+    evidence_class: "declared",
+    initiating_condition: "A task is about to run and its contract (Context | Goal | Skills | Authority | Executors | Budget | Invariants | Acceptance) is not yet complete",
+    journey_id: "J-WB-task-contract",
+    precondition: "The task is bound to an explicit workspace (workspace existence is not task scope)",
+    purpose: "Make the task contract visible and complete before execution begins",
+    settlement: "The harness can name the workspace, goal, authority, capabilities, executors, budget, invariants and acceptance criteria of the task, and refuses to start a task whose contract has missing fields",
+    steps: "user creates a task -> the contract chips show set/missing per field -> user fills fields -> task.contract.update records the contract -> the task becomes READY only when no field is missing",
+    variants: "incomplete contract (start refused, missing fields named); workspace unbound; contract edited while RUNNING (rejected)"
+}
+
+Instance j_wb_protected_evidence of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "tool.edit, tool.bash, authority.elevate",
+    evidence_class: "declared",
+    initiating_condition: "The agent attempts to write or delete a path declared as protected evidence (source data, tests)",
+    journey_id: "J-WB-protected-evidence",
+    precondition: "The task contract's authority declares protected paths",
+    purpose: "Make protected evidence structurally immutable, not prompt prose",
+    settlement: "The write is blocked with an attributable reason unless the Reviewer explicitly elevated that exact path; the protected file is byte-identical afterwards",
+    steps: "agent calls edit/bash against a protected path -> the authority plane denies with rule protected-evidence -> the tool result tells the model why -> a human may elevate that one path",
+    variants: "edit denied; shell mutation of a protected path denied; elevated path proceeds to the ordinary write/approval rule; non-protected path unaffected"
+}
+
+Instance j_wb_workflow of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "workflow.define, workflow.instantiate, workflow.node.advance, skill.bind",
+    evidence_class: "declared",
+    initiating_condition: "A purposeful body of work has more than one stage and the stages have dependencies",
+    journey_id: "J-WB-workflow",
+    precondition: "A workflow definition validates (acyclic, known nodes, evidence only on needs edges)",
+    purpose: "Give work a durable dependency and acceptance structure independent of the tools that execute it",
+    settlement: "The workflow answers what stage is current, what became possible, what capability is next, which branches are parallel and what evidence closes a stage; swapping an implementation binding leaves the journey contract and acceptance criteria unchanged",
+    steps: "user defines or picks a workflow -> instantiates it for a workspace -> nodes advance only when needs-edges are satisfied with closed evidence -> binding a different implementation changes only setup",
+    variants: "cycle or unknown node rejected; node done without its evidence does not unlock successors; failed node routes to its failure edge and is retryable without restarting upstream; compatible vs incompatible substitution"
+}
+
+Instance j_wb_capability_lifecycle of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "skill.register, skill.bind, skill.lifecycle.advance",
+    evidence_class: "declared",
+    initiating_condition: "A capability implementation is generated, found or proposed",
+    journey_id: "J-WB-capability-lifecycle",
+    precondition: "The capability contract exists in the catalog",
+    purpose: "Keep build, install, grant, enable and verify as distinct states",
+    settlement: "A capability cannot be invoked until ENABLED and is not trusted until VERIFIED; skipping a state is refused with the missing step named",
+    steps: "user registers an implementation -> reviews provenance -> install -> grant authority -> enable -> exercise -> verify -> the capability becomes AVAILABLE",
+    variants: "skip refused; overlapping primary decision surfaces reported as a conflict; verifier silently becoming an LLM refused on substitution"
+}
+
+Instance j_wb_review_gate of "CanonicalJourney" {
+    actor: "Reviewer",
+    capabilities: "evidence.record, worker.return, task.review.request, task.review.decide",
+    evidence_class: "declared",
+    initiating_condition: "A worker or task claims it is complete",
+    journey_id: "J-WB-review-gate",
+    precondition: "The task contract lists acceptance criteria; evidence entries exist or are pending",
+    purpose: "Separate produced, tested, ready for review and accepted, so a worker saying done is never acceptance",
+    settlement: "The task reaches READY_FOR_REVIEW only with changed files, tests, evidence and remaining work declared and every required non-human criterion closed (including independent checks); ACCEPTED only by a human Reviewer decision",
+    steps: "worker returns changed/tested/evidence/remaining -> the ledger is evaluated -> review is requested -> the Reviewer sees intent, invariants, changes, evidence and remaining -> accept or request rework",
+    variants: "return contract incomplete (blockers listed); tests pass but an independent check is open (blocked); reviewer requests rework (REWORK, evidence reopened); an agent attempting to accept (refused: human only)"
+}
+
+Instance j_wb_automation of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "automation.create, automation.advance",
+    evidence_class: "declared",
+    initiating_condition: "An accepted manual workflow should recur",
+    journey_id: "J-WB-automation",
+    precondition: "The workflow has been accepted at least once",
+    purpose: "Operationalize accepted work without confusing dispatch with completion",
+    settlement: "A delivery receipt means only DISPATCHED; the run is COMPLETE only after outputs exist and every acceptance item is closed; the execution substrate states whether quitting the app stops the run",
+    steps: "user schedules the workflow with inputs and a substrate -> a run is dispatched -> running -> produced -> verified against acceptance -> complete",
+    variants: "dispatched but never produced; produced but acceptance open (stays PRODUCED); failure at any edge is terminal and attributable"
+}
+
+Instance j_wb_parallelism of "CanonicalJourney" {
+    actor: "OperatorAgent",
+    capabilities: "parallelism.plan",
+    evidence_class: "declared",
+    initiating_condition: "Work is decomposed into units that could run concurrently",
+    journey_id: "J-WB-parallelism",
+    precondition: "Each unit declares owned files, reads, shared tokens, shared rules and dependencies",
+    purpose: "Recommend concurrency from the dependency graph rather than a worker count",
+    settlement: "Independent units get separate ownership and a Parallel-safe verdict; units sharing a stylesheet, tokens or rules are kept sequential or architect-owned with the shared resource named",
+    steps: "units are declared -> pair overlaps are assessed -> groups and architect-owned resources are returned",
+    variants: "file overlap; shared design tokens; shared business rule; dependency order; concurrency limit splitting groups"
+}
+
+Instance j_wb_economics of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "usage.record",
+    evidence_class: "declared",
+    initiating_condition: "A task is running or has finished",
+    journey_id: "J-WB-economics",
+    precondition: "Model, tool and verification calls are recorded against the task",
+    purpose: "Make cost and provenance visible per task trajectory, not per prompt",
+    settlement: "The user can see executor, provider, billing route, usage, concurrency and budget state for the task; unknown cost is shown as unknown, never as zero",
+    steps: "usage events are recorded per call -> rolled up per task -> compared with the budget -> shown in the runtime strip",
+    variants: "budget warn at 80 percent; exceeded; cost unavailable from the provider; deterministic work never routed to an LLM"
+}
+
+Instance j_wb_steering of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "steer.enqueue",
+    evidence_class: "declared",
+    initiating_condition: "A run is active and the user wants to redirect or add work",
+    journey_id: "J-WB-steering",
+    precondition: "A run is in progress for the task",
+    purpose: "Make steering a permanent execution primitive: Queue next, Steer now, Stop",
+    settlement: "Steer now changes the active trajectory at the next step boundary and is consumed exactly once; Queue next starts after the current run finishes",
+    steps: "user sends steer-now -> the active run injects it at its next step boundary -> user sends queue-next -> it runs after the current turn",
+    variants: "steer consumed once; queue-next ordering is FIFO; stop cancels the run; steering with no active run becomes a normal message"
+}
+
+Instance j_wb_grounded_feedback of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "feedback.record",
+    evidence_class: "declared",
+    initiating_condition: "A running or completed UI needs a bounded correction",
+    journey_id: "J-WB-grounded-feedback",
+    precondition: "A target element or component is identified",
+    purpose: "Turn feedback into a native change contract, not prompt prose, and keep focus from silently changing scope",
+    settlement: "The correction names target, preserve constraints, requested change and verification viewport; a repair touching files outside the target is flagged; a focused metric always shows its reference scope",
+    steps: "user selects an element -> attaches screenshot reference, viewport, preserve and change -> the contract is recorded -> repair is checked against the scope -> verification reruns at the viewport",
+    variants: "missing preserve constraints refused; out-of-scope file touched; focus equal to reference scope refused"
+}
+
+Instance j_wb_focus of "CanonicalJourney" {
+    actor: "User",
+    capabilities: "none: attention is client state, resolved by workbench/focus.ts and frozen into the run input",
+    evidence_class: "proposed",
+    initiating_condition: "The person refers to something with a word like this or it while a task is in view or bound to the conversation",
+    journey_id: "J-WB-focus",
+    precondition: "A task or workflow stage is selected, or the conversation is bound to a task",
+    purpose: "Give this one deterministic, visible and resettable meaning so changing focus never silently changes semantic scope",
+    settlement: "The agent receives the referent chosen by fixed precedence (explicit selection, keyboard focus, active run, pinned focus, workspace) as a frozen focus line, only when the message refers to something; the person can see what this means and clear an explicit selection",
+    steps: "person selects a task or stage -> the composer bar states what this means and why -> the person sends a message that says this -> the referent is frozen into the run input -> clearing the selection falls back to the bound task",
+    variants: "explicit selection; fallback to the bound task; nothing in focus; a message that refers to nothing carries no focus line; a selection in another workspace is ignored"
 }
 
 Policy every_canonical_flow_recorded as:

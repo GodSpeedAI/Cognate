@@ -21,6 +21,8 @@ import {
 import { PathEscapeError } from "../capabilities/tools.ts";
 import type { ToolBashResult, ToolEditResult, ToolReadResult, ToolRunCodeResult } from "../capabilities/tools.ts";
 import type { PlanState, TodoItem } from "../projections/plans.ts";
+import { steeringReflection } from "../workbench/steering.ts";
+import type { InboxMessage } from "../workbench/types.ts";
 
 export const AGENT_CODING = "agent.coding";
 
@@ -60,6 +62,18 @@ export interface AgentCodingInput {
   readonly preset?: string;
   /** The cognitive Case this turn serves, when one is open (carried into mediation + evidence). */
   readonly caseId?: string;
+  /** Workbench: the task this turn serves. Scopes the authority plane (`authority.check`) and
+   *  attributes usage; absent keeps the app-wide protected-evidence rules only. */
+  readonly taskId?: string;
+}
+
+interface AuthorityVerdict {
+  readonly outcome: "allow" | "approval" | "deny";
+  readonly rule: string;
+  readonly reason: string;
+  readonly path?: string;
+  readonly pattern?: string;
+  readonly taskId?: string;
 }
 
 const MAX_TOOL_STEPS = 20;
@@ -252,6 +266,7 @@ async function invokeTool(
   workspace: { readonly root: string; readonly executionWorldId: string },
   call: ToolCall,
   readFiles: Set<string>,
+  taskId?: string,
 ): Promise<string> {
   const args = (call.arguments ?? {}) as Record<string, unknown>;
 
@@ -282,6 +297,9 @@ async function invokeTool(
   try {
     const result = (await ctx.invoke(`tool.${call.name}`, { workspaceRoot: workspace.root, executionWorldId: workspace.executionWorldId, ...args } as unknown as Json)) as unknown as Json;
     if (call.name === "read") readFiles.add(String(args.file_path ?? ""));
+    if (taskId && (call.name === "edit" || call.name === "bash")) {
+      await ctx.emit("workbench.task.activity", { taskId, ...(call.name === "edit" ? { changed: String(args.file_path ?? "") } : { command: String(args.command ?? "").slice(0, 300) }) } as unknown as Json);
+    }
     const text = formatToolResult(call.name, result);
     await ctx.emit("tool.call.completed", { sessionId, toolCallId: call.id, tool: call.name, result });
     return text;
@@ -296,7 +314,7 @@ export const agentCodingAgent: AgentDefinition = {
   id: AGENT_CODING,
   version: "1.0.0",
   async run(input, ctx) {
-    const { sessionId, workspaceId, message, mode, preset, caseId } = input as unknown as AgentCodingInput;
+    const { sessionId, workspaceId, message, mode, preset, caseId, taskId } = input as unknown as AgentCodingInput;
     // Usage pass U4 (§15): the preset scopes this turn's tool catalog; an absent preset (direct API
     // runs) keeps the full TOOL_DEFS list.
     const turnTools = [...toolsForPreset(preset, TOOL_DEFS), ...(caseId ? UI_TOOL_DEFS : [])];
@@ -334,9 +352,46 @@ export const agentCodingAgent: AgentDefinition = {
     const messages: ModelMessage[] = [...history, { role: "user", content: message }];
     const readFiles = new Set<string>();
 
+    // Steering (V-004): a `steer-now` message changes the ACTIVE trajectory at the next step
+    // boundary. The inbox lives in the durable `workbench` projection; reading it is a recorded
+    // `ctx.invoke`, so replay sees the same messages at the same step.
+    // Two durable channels feed it. (1) The run's shared state: a person steering a LIVE run writes
+    // `/steer` through `updateState`, which never waits on the executor (a capability that recorded an
+    // event would queue behind this very run: runs execute serially). (2) The `workbench` inbox, for
+    // steer-now messages enqueued before the run started. Both reads are recorded steps, so replay sees
+    // the same messages at the same boundary; `seen` makes consumption exactly-once.
+    const seen = new Set<string>();
+    let stateReads = 0;
+    const drainSteering = async (): Promise<boolean> => {
+      const fresh: InboxMessage[] = [];
+      const shared = (await ctx.state(`steer:${stateReads++}`)) as unknown as { readonly steer?: readonly { readonly id?: string; readonly text?: string }[] } | null;
+      for (const m of shared?.steer ?? []) {
+        if (m && typeof m.id === "string" && typeof m.text === "string" && m.text.trim() && !seen.has(m.id)) fresh.push({ id: m.id, mode: "steer-now", text: m.text });
+      }
+      const pending = (await ctx.invoke("steer.pending", { sessionId } as unknown as Json)) as unknown as { readonly steer: readonly InboxMessage[] };
+      for (const m of pending.steer) if (!seen.has(m.id)) fresh.push(m);
+      if (fresh.length === 0) return false;
+      for (const m of fresh) seen.add(m.id);
+      await ctx.emit("workbench.steer.consumed", { sessionId, ids: fresh.map((m) => m.id) } as unknown as Json);
+      messages.push({ role: "user", content: steeringReflection(fresh) });
+      return true;
+    };
+
     for (let step = 0; step < MAX_TOOL_STEPS; step++) {
+      if (step > 0) await drainSteering();
       const response = await invokeModelGenerate(ctx, step, messages, turnTools);
+      if (response.usage) {
+        await ctx.emit("workbench.usage.recorded", {
+          sessionId,
+          record: { taskId: taskId ?? "", kind: "model", executor: `model:${response.model}`, provider: "openai-compatible", inputTokens: response.usage.inputTokens, outputTokens: response.usage.outputTokens },
+        } as unknown as Json);
+      }
       if (response.toolCalls.length === 0) {
+        // A steer that arrived while the final answer was generating still redirects this run.
+        messages.push({ role: "assistant", content: response.message.content ?? "" });
+        if (await drainSteering()) continue;
+        messages.pop();
+        if (taskId) await ctx.emit("workbench.task.status.changed", { taskId, finished: true } as unknown as Json);
         await ctx.emit("message.completed", { sessionId, workspaceId, text: response.message.content });
         return { text: response.message.content };
       }
@@ -361,7 +416,26 @@ export const agentCodingAgent: AgentDefinition = {
           messages.push({ role: "tool", content: unknownTool, toolCallId: call.id });
           continue;
         }
+        // Authority plane (V-003): protected evidence is enforced structurally here, before the tool
+        // can run, not left to prompt prose. `authority.check` is a recorded invocation.
+        let taskApproval = false;
+        if (call.name === "edit" || call.name === "bash") {
+          const verdict = (await ctx.invoke("authority.check", { workspaceId, ...(taskId ? { taskId } : {}), tool: call.name, args } as unknown as Json)) as unknown as AuthorityVerdict;
+          if (verdict.outcome === "deny") {
+            if (verdict.rule.startsWith("protected-evidence")) {
+              await ctx.emit("workbench.protection.blocked", { workspaceId, tool: call.name, path: verdict.path ?? "", pattern: verdict.pattern ?? "", reason: verdict.reason, sessionId, ...(verdict.taskId ? { taskId: verdict.taskId } : {}) } as unknown as Json);
+            }
+            const blocked = `Error: blocked by authority (${verdict.rule}): ${verdict.reason}`;
+            await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: blocked });
+            messages.push({ role: "tool", content: blocked, toolCallId: call.id });
+            continue;
+          }
+          taskApproval = verdict.outcome === "approval";
+        }
         let approvalDecision = approvalGate({ tool: call.name, args, mode });
+        if (taskApproval && !approvalDecision.required) {
+          approvalDecision = { required: true, permission: call.name === "edit" ? "workspace-write" : "shell", justification: "the task contract requires approval for this operation" };
+        }
         // RiskPreflight (cognitive proof): a destructive shell operation is mediated — Sentinel over
         // RiskPreflight over any lower-trust mods — and, when authority is needed, the semantic
         // preflight Surface rides on the same durable approval continuation as any other gate.
@@ -460,10 +534,10 @@ export const agentCodingAgent: AgentDefinition = {
             resultText = approvalDeniedToolResult(permission);
             await ctx.emit("tool.call.failed", { sessionId, toolCallId: call.id, tool: call.name, error: resultText });
           } else {
-            resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles);
+            resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles, taskId);
           }
         } else {
-          resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles);
+          resultText = await invokeTool(ctx, sessionId, workspace, call, readFiles, taskId);
         }
         messages.push({ role: "tool", content: resultText, toolCallId: call.id });
         if (caseId && ["edit", "bash", "run_code"].includes(call.name) && !resultText.startsWith("Error:")) changedThisStep = true;

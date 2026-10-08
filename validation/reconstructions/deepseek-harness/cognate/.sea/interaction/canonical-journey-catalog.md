@@ -392,3 +392,142 @@ Each entry mirrors its `Instance ... of "CanonicalJourney"` in `interaction-mode
   switching back restores the previous behaviour; no tool/agent implementation changed.
 - **Variants**: switch to remote; back to local; to a third world.
 
+
+
+---
+
+# Workbench layer journeys (Unified Harness Experience Model v2)
+
+Declared by `.agents/plans/unified_harness_experience_model_v2.md`; implemented per `WORKBENCH-PLAN.md`. Each is tested by `test/J-WB-*.test.ts` and, for the cockpit, `test/E2E-workbench.test.ts`. Evidence class: declared (the plan states them); implementation behaviour is recorded in `WORKBENCH-DEVIATIONS.md`.
+
+## J-WB-task-contract (`j_wb_task_contract`)
+
+- **Purpose**: Make the task contract visible and complete before execution begins.
+- **Actor/role**: User.
+- **Initiating condition**: A task is about to run and its contract (Context | Goal | Skills | Authority | Executors | Budget | Invariants | Acceptance) is not yet complete.
+- **Preconditions**: The task is bound to an explicit workspace (workspace existence is not task scope).
+- **Steps**: user creates a task -> the contract chips show set/missing per field -> user fills fields -> task.contract.update records the contract -> the task becomes READY only when no field is missing.
+- **Capabilities/actions**: `task.create`, `task.contract.update`.
+- **Settlement criteria**: The harness can name the workspace, goal, authority, capabilities, executors, budget, invariants and acceptance criteria of the task, and refuses to start a task whose contract has missing fields.
+- **Failure/recovery and variants**: incomplete contract (start refused, missing fields named); workspace unbound; contract edited while RUNNING (rejected).
+- **Evidence class**: declared.
+
+## J-WB-protected-evidence (`j_wb_protected_evidence`)
+
+- **Purpose**: Make protected evidence structurally immutable, not prompt prose.
+- **Actor/role**: OperatorAgent.
+- **Initiating condition**: The agent attempts to write or delete a path declared as protected evidence (source data, tests).
+- **Preconditions**: The task contract's authority declares protected paths.
+- **Steps**: agent calls edit/bash against a protected path -> the authority plane denies with rule protected-evidence -> the tool result tells the model why -> a human may elevate that one path.
+- **Capabilities/actions**: `tool.edit`, `tool.bash`, `authority.elevate`.
+- **Settlement criteria**: The write is blocked with an attributable reason unless the Reviewer explicitly elevated that exact path; the protected file is byte-identical afterwards.
+- **Failure/recovery and variants**: edit denied; shell mutation of a protected path denied; elevated path proceeds to the ordinary write/approval rule; non-protected path unaffected.
+- **Evidence class**: declared.
+
+## J-WB-workflow (`j_wb_workflow`)
+
+- **Purpose**: Give work a durable dependency and acceptance structure independent of the tools that execute it.
+- **Actor/role**: User.
+- **Initiating condition**: A purposeful body of work has more than one stage and the stages have dependencies.
+- **Preconditions**: A workflow definition validates (acyclic, known nodes, evidence only on needs edges).
+- **Steps**: user defines or picks a workflow -> instantiates it for a workspace -> nodes advance only when needs-edges are satisfied with closed evidence -> binding a different implementation changes only setup.
+- **Capabilities/actions**: `workflow.define`, `workflow.instantiate`, `workflow.node.advance`, `skill.bind`.
+- **Settlement criteria**: The workflow answers what stage is current, what became possible, what capability is next, which branches are parallel and what evidence closes a stage; swapping an implementation binding leaves the journey contract and acceptance criteria unchanged.
+- **Failure/recovery and variants**: cycle or unknown node rejected; node done without its evidence does not unlock successors; failed node routes to its failure edge and is retryable without restarting upstream; compatible vs incompatible substitution.
+- **Evidence class**: declared.
+
+## J-WB-capability-lifecycle (`j_wb_capability_lifecycle`)
+
+- **Purpose**: Keep build, install, grant, enable and verify as distinct states.
+- **Actor/role**: User.
+- **Initiating condition**: A capability implementation is generated, found or proposed.
+- **Preconditions**: The capability contract exists in the catalog.
+- **Steps**: user registers an implementation -> reviews provenance -> install -> grant authority -> enable -> exercise -> verify -> the capability becomes AVAILABLE.
+- **Capabilities/actions**: `skill.register`, `skill.bind`, `skill.lifecycle.advance`.
+- **Settlement criteria**: A capability cannot be invoked until ENABLED and is not trusted until VERIFIED; skipping a state is refused with the missing step named.
+- **Failure/recovery and variants**: skip refused; overlapping primary decision surfaces reported as a conflict; verifier silently becoming an LLM refused on substitution.
+- **Evidence class**: declared.
+
+## J-WB-review-gate (`j_wb_review_gate`)
+
+- **Purpose**: Separate produced, tested, ready for review and accepted, so a worker saying done is never acceptance.
+- **Actor/role**: Reviewer.
+- **Initiating condition**: A worker or task claims it is complete.
+- **Preconditions**: The task contract lists acceptance criteria; evidence entries exist or are pending.
+- **Steps**: worker returns changed/tested/evidence/remaining -> the ledger is evaluated -> review is requested -> the Reviewer sees intent, invariants, changes, evidence and remaining -> accept or request rework.
+- **Capabilities/actions**: `evidence.record`, `worker.return`, `task.review.request`, `task.review.decide`.
+- **Settlement criteria**: The task reaches READY_FOR_REVIEW only with changed files, tests, evidence and remaining work declared and every required non-human criterion closed (including independent checks); ACCEPTED only by a human Reviewer decision.
+- **Failure/recovery and variants**: return contract incomplete (blockers listed); tests pass but an independent check is open (blocked); reviewer requests rework (REWORK, evidence reopened); an agent attempting to accept (refused: human only).
+- **Evidence class**: declared.
+
+## J-WB-automation (`j_wb_automation`)
+
+- **Purpose**: Operationalize accepted work without confusing dispatch with completion.
+- **Actor/role**: User.
+- **Initiating condition**: An accepted manual workflow should recur.
+- **Preconditions**: The workflow has been accepted at least once.
+- **Steps**: user schedules the workflow with inputs and a substrate -> a run is dispatched -> running -> produced -> verified against acceptance -> complete.
+- **Capabilities/actions**: `automation.create`, `automation.advance`.
+- **Settlement criteria**: A delivery receipt means only DISPATCHED; the run is COMPLETE only after outputs exist and every acceptance item is closed; the execution substrate states whether quitting the app stops the run.
+- **Failure/recovery and variants**: dispatched but never produced; produced but acceptance open (stays PRODUCED); failure at any edge is terminal and attributable.
+- **Evidence class**: declared.
+
+## J-WB-parallelism (`j_wb_parallelism`)
+
+- **Purpose**: Recommend concurrency from the dependency graph rather than a worker count.
+- **Actor/role**: OperatorAgent.
+- **Initiating condition**: Work is decomposed into units that could run concurrently.
+- **Preconditions**: Each unit declares owned files, reads, shared tokens, shared rules and dependencies.
+- **Steps**: units are declared -> pair overlaps are assessed -> groups and architect-owned resources are returned.
+- **Capabilities/actions**: `parallelism.plan`.
+- **Settlement criteria**: Independent units get separate ownership and a Parallel-safe verdict; units sharing a stylesheet, tokens or rules are kept sequential or architect-owned with the shared resource named.
+- **Failure/recovery and variants**: file overlap; shared design tokens; shared business rule; dependency order; concurrency limit splitting groups.
+- **Evidence class**: declared.
+
+## J-WB-economics (`j_wb_economics`)
+
+- **Purpose**: Make cost and provenance visible per task trajectory, not per prompt.
+- **Actor/role**: User.
+- **Initiating condition**: A task is running or has finished.
+- **Preconditions**: Model, tool and verification calls are recorded against the task.
+- **Steps**: usage events are recorded per call -> rolled up per task -> compared with the budget -> shown in the runtime strip.
+- **Capabilities/actions**: `usage.record`.
+- **Settlement criteria**: The user can see executor, provider, billing route, usage, concurrency and budget state for the task; unknown cost is shown as unknown, never as zero.
+- **Failure/recovery and variants**: budget warn at 80 percent; exceeded; cost unavailable from the provider; deterministic work never routed to an LLM.
+- **Evidence class**: declared.
+
+## J-WB-steering (`j_wb_steering`)
+
+- **Purpose**: Make steering a permanent execution primitive: Queue next, Steer now, Stop.
+- **Actor/role**: User.
+- **Initiating condition**: A run is active and the user wants to redirect or add work.
+- **Preconditions**: A run is in progress for the task.
+- **Steps**: user sends steer-now -> the active run injects it at its next step boundary -> user sends queue-next -> it runs after the current turn.
+- **Capabilities/actions**: `steer.enqueue`.
+- **Settlement criteria**: Steer now changes the active trajectory at the next step boundary and is consumed exactly once; Queue next starts after the current run finishes.
+- **Failure/recovery and variants**: steer consumed once; queue-next ordering is FIFO; stop cancels the run; steering with no active run becomes a normal message.
+- **Evidence class**: declared.
+
+## J-WB-grounded-feedback (`j_wb_grounded_feedback`)
+
+- **Purpose**: Turn feedback into a native change contract, not prompt prose, and keep focus from silently changing scope.
+- **Actor/role**: User.
+- **Initiating condition**: A running or completed UI needs a bounded correction.
+- **Preconditions**: A target element or component is identified.
+- **Steps**: user selects an element -> attaches screenshot reference, viewport, preserve and change -> the contract is recorded -> repair is checked against the scope -> verification reruns at the viewport.
+- **Capabilities/actions**: `feedback.record`.
+- **Settlement criteria**: The correction names target, preserve constraints, requested change and verification viewport; a repair touching files outside the target is flagged; a focused metric always shows its reference scope.
+- **Failure/recovery and variants**: missing preserve constraints refused; out-of-scope file touched; focus equal to reference scope refused.
+- **Evidence class**: declared.
+
+## J-WB-focus (`j_wb_focus`)
+
+- **Purpose**: Give "this" one deterministic, visible and resettable meaning so changing focus never silently changes semantic scope.
+- **Actor/role**: User.
+- **Initiating condition**: The person refers to something with a word like this or it while a task is in view or bound to the conversation.
+- **Preconditions**: A task or workflow stage is selected, or the conversation is bound to a task.
+- **Steps**: person selects a task or stage -> the composer bar states what this means and why -> the person sends a message that says this -> the referent is frozen into the run input -> clearing the selection falls back to the bound task.
+- **Capabilities/actions**: none. Attention is client state resolved by `src/workbench/focus.ts` (adapted from the operator's gs-term) and frozen into the run input.
+- **Settlement criteria**: The agent receives the referent chosen by fixed precedence (explicit selection, keyboard focus, active run, pinned focus, workspace) as a frozen focus line, only when the message refers to something; the person can see what this means and clear an explicit selection.
+- **Failure/recovery and variants**: explicit selection; fallback to the bound task; nothing in focus; a message that refers to nothing carries no focus line; a selection in another workspace is ignored.
+- **Evidence class**: proposed. Tested by `test/E2E-workbench.test.ts` and `test/workbench-focus.test.ts`.
