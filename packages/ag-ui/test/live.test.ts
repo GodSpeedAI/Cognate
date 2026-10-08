@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { createRuntime } from "@cognate/runtime-bun";
+import { createRuntime } from "@godspeedai/runtime-bun";
 import { createAgUiHandler } from "../src/index.ts";
 
 test("AG-UI sends committed text while the run is still executing", async () => {

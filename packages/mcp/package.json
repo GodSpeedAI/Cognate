@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/mcp",
+  "name": "@godspeedai/mcp",
   "version": "0.1.0",
   "description": "MCP adapter: exposes runtime capabilities as MCP tools through the runtime's authorization path.",
   "type": "module",
@@ -22,12 +22,12 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/events": "workspace:*",
-    "@cognate/runtime-api": "workspace:*",
+    "@godspeedai/events": "workspace:*",
+    "@godspeedai/runtime-api": "workspace:*",
     "@modelcontextprotocol/sdk": "1.30.1",
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@cognate/runtime-bun": "workspace:*"
+    "@godspeedai/runtime-bun": "workspace:*"
   }
 }

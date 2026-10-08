@@ -14,7 +14,7 @@ that concern.
 | ADR | Decision | Status as written | Current |
 |---|---|---|---|
 | [ADR-0001](ADR-0001-kernel-engine-cordis.md) | Cordis as the reference composition engine, behind `kernel-api` | Accepted-with-mitigations | `kernel-cordis` implements the contract; [DEBT-005](../../.agents/DEBT.md) tracks the mitigated gaps |
-| [ADR-0002](ADR-0002-semantic-binding-domainforge.md) | Bind semantics through a version-pinned DomainForge adapter | Proposed (Phase 0 characterization complete) | `@cognate/domainforge` is implemented; `CG-SEM-001`/`002` pass |
+| [ADR-0002](ADR-0002-semantic-binding-domainforge.md) | Bind semantics through a version-pinned DomainForge adapter | Proposed (Phase 0 characterization complete) | `@godspeedai/domainforge` is implemented; `CG-SEM-001`/`002` pass |
 | [ADR-0003](ADR-0003-wire-connect-protobuf.md) | Protobuf schema + Connect as the RPC pair | Accepted for Phase 0 | `proto`, `protocol-connect`, `protocol-connect-bun` are implemented; [DEBT-004](../../.agents/DEBT.md) on streaming |
 | [ADR-0004](ADR-0004-cognition-ruvector.md) | RuVector as the reference `CognitiveIndex`, scoped to `vector_search` | Accepted (partial capability) | `cognitive-ruvector` is implemented with that scope; [DEBT-007](../../.agents/DEBT.md) |
 | [ADR-0005](ADR-0005-adaptive-ranking-sona.md) | **Reject** SONA as the adaptive ranker | Accepted — SONA rejected | The ranker is Cognate-owned UCB1; [DEBT-008](../../.agents/DEBT.md) closed, `AK-008` implemented |

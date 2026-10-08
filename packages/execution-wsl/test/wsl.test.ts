@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { PathEscapeError, WorldUnavailableError } from "@cognate/execution";
-import { executionWorldConformance } from "@cognate/execution/conformance";
+import { PathEscapeError, WorldUnavailableError } from "@godspeedai/execution";
+import { executionWorldConformance } from "@godspeedai/execution/conformance";
 import { wslExecutionWorld } from "../src/index.ts";
 
 // Hermetic: `sh -s` stands in for `wsl.exe -d <distro> -e sh -s` (both read the script on stdin),

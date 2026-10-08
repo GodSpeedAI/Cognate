@@ -4,9 +4,9 @@ import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { event } from "@cognate/events/conformance";
-import { createMemoryStore } from "@cognate/store-memory";
-import { openSqliteStore } from "@cognate/store-sqlite";
+import { event } from "@godspeedai/events/conformance";
+import { createMemoryStore } from "@godspeedai/store-memory";
+import { openSqliteStore } from "@godspeedai/store-sqlite";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-append-only-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

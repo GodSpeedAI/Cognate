@@ -1,4 +1,4 @@
-# @cognate/cli
+# @godspeedai/cli
 
 `cognate create` and `cognate dev` (spec §37 Phase 10).
 
@@ -9,7 +9,7 @@ cd my-app && bun install && bun dev
 
 `create` copies `templates/starter` (profile-specific layout: `domain/`,
 `src/{agents,capabilities,components,projections,ui}`, `cognate.config.ts`,
-`package.json`), then vendors every `@cognate/*` package the profile needs
+`package.json`), then vendors every `@godspeedai/*` package the profile needs
 from `--source` with `bun pm pack` into `.cognate/vendor/`, pinning each with
 a `file:` dependency and a matching `package.json` `overrides` entry so
 `workspace:*` inside the packed tarballs resolves outside the workspace
@@ -18,7 +18,7 @@ extras (`unsupported: <name> (<reason>)`) and never adds them to imports or
 `package.json`.
 
 `dev` (run from the generated app) loads `cognate.config.ts`, parses
-`domain/*.sea` via `@cognate/domainforge`, creates the profile's app on
+`domain/*.sea` via `@godspeedai/domainforge`, creates the profile's app on
 `.cognate/app.sqlite` (state survives restart), and serves one `Bun.serve`:
 `GET /health`, the Connect `RuntimeService` at `/cognate.v1.RuntimeService/*`
 (dev-only `Bearer <tenant>:<user>` auth), `/agui` (copilot only), and `/` — an

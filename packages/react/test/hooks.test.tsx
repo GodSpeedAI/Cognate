@@ -4,11 +4,11 @@
 import { GlobalRegistrator } from "./setup-dom.ts";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { act, cleanup, render, waitFor } from "@testing-library/react";
-import { createClient } from "@cognate/client";
-import { type AgentDefinition, invokeFrontend } from "@cognate/runtime-api";
-import { alice } from "@cognate/runtime-api/conformance";
-import { createRuntime, type Runtime } from "@cognate/runtime-bun";
-import type { Projection } from "@cognate/projections";
+import { createClient } from "@godspeedai/client";
+import { type AgentDefinition, invokeFrontend } from "@godspeedai/runtime-api";
+import { alice } from "@godspeedai/runtime-api/conformance";
+import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import type { Projection } from "@godspeedai/projections";
 import { useState } from "react";
 import { CognateProvider, useAgent, useArtifact, useCapability, useContinuations, useProjection, useRemoteCapability, useRemoteCapabilityHistory, useSharedState, useThreadSharedState } from "../src/index.tsx";
 

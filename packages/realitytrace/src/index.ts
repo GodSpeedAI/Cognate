@@ -1,7 +1,7 @@
 export type * from "./types.ts";
 export * from "./godspeed.ts";
-import type { DurableStore, Json, OutboxIntent, StoredEvent } from "@cognate/events";
-import { OutboxDispatcher } from "@cognate/events";
+import type { DurableStore, Json, OutboxIntent, StoredEvent } from "@godspeedai/events";
+import { OutboxDispatcher } from "@godspeedai/events";
 import type { Observation, ObservationPort, ObservationStatus } from "./types.ts";
 
 export const OBSERVATION_TOPIC = "observation.deliver";

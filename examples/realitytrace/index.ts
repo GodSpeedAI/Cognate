@@ -1,8 +1,8 @@
 // Example: realitytrace — committed-outbox observation delivery; receipts are recorded, never evidence.
 // Docs: docs/evidence.md (ADR-0007; spec §20: observation delivery survives target failures without rollback).
-import { event } from "@cognate/events/conformance";
-import { createMemoryStore } from "@cognate/store-memory";
-import { ObservationDelivery, observationIntent, OBSERVATION_TOPIC, type Observation, type ObservationPort } from "@cognate/realitytrace";
+import { event } from "@godspeedai/events/conformance";
+import { createMemoryStore } from "@godspeedai/store-memory";
+import { ObservationDelivery, observationIntent, OBSERVATION_TOPIC, type Observation, type ObservationPort } from "@godspeedai/realitytrace";
 
 /** An in-memory observation target standing in for an external ledger (SxrCliPort, when SXR_BIN is configured). */
 function memoryPort(): ObservationPort & { readonly seen: Observation[] } {

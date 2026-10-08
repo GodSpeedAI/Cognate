@@ -4,7 +4,7 @@
 // "current" row). Absence of a row is what makes the first-run dialog pair (critic round-1 P0-1)
 // reappear on a fresh `COGNATE_HARNESS_HOME` — durable per-home state, same mechanism as every other
 // "seen"/"configured" flag in this app (`model-config`, `workspaces`).
-import type { Projection } from "@cognate/projections";
+import type { Projection } from "@godspeedai/projections";
 
 export const onboardingProjection: Projection = {
   name: "onboarding",

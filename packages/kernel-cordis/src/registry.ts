@@ -6,8 +6,8 @@
 // entry here is only ever created from inside a fiber's committed `ctx.provide()` call and torn
 // down through that same fiber's Cordis effect (see fiber.ts), so the registry is a read model
 // over state whose lifetime Cordis still owns.
-import { isCompatible } from "@cognate/kernel-api";
-import type { CapabilityContract, CapabilityHandler, Requirement } from "@cognate/kernel-api";
+import { isCompatible } from "@godspeedai/kernel-api";
+import type { CapabilityContract, CapabilityHandler, Requirement } from "@godspeedai/kernel-api";
 
 export interface Publication {
   readonly contract: CapabilityContract;

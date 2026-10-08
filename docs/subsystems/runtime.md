@@ -24,7 +24,7 @@ covers composition, ownership, and the contract's edges.
 
 - It does not define capabilities or lifecycles — that is [the kernel](kernel.md).
 - It does not define the store — that is [durable state](durable-state.md).
-- It does not serve HTTP. `@cognate/protocol-connect` and `protocol-connect-bun` do, over a
+- It does not serve HTTP. `@godspeedai/protocol-connect` and `protocol-connect-bun` do, over a
   contract this package owns.
 - It does not implement cognition; it wires `cognitive-api` and degrades cleanly when absent.
 

@@ -1,4 +1,4 @@
-# @cognate/execution-wsl — a WSL distribution as an execution world
+# @godspeedai/execution-wsl — a WSL distribution as an execution world
 
 `wslExecutionWorld({ worldId, distro, user? })` is an `ExecutionWorldProvider` over `wsl.exe`. Roots
 are POSIX paths *inside the distribution*; no Windows path ever enters the contract.
@@ -24,7 +24,7 @@ come back between unique markers):
   which WSL would otherwise idle-shut-down.
 - Failure is never silent and never local: a missing `wsl.exe`, an unreachable distro, or a disposed
   world raises `WorldUnavailableError`.
-- Files are built from one command primitive (`commandFileSystem` in `@cognate/execution`), so the same
+- Files are built from one command primitive (`commandFileSystem` in `@godspeedai/execution`), so the same
   shape fits containers.
 
 ## Testing

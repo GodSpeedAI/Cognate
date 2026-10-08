@@ -1,9 +1,9 @@
 // Example: capability-hot-swap — a capability provider is replaced live, with no downtime for callers.
 // Docs: docs/concepts.md (spec §8.3, §35: components can be mounted and disposed while the kernel runs).
-import { allowCapabilities } from "@cognate/kernel-api";
-import { providerComponent } from "@cognate/profile-harness";
-import { localProvider } from "@cognate/provider-local";
-import { createRuntime } from "@cognate/runtime-bun";
+import { allowCapabilities } from "@godspeedai/kernel-api";
+import { providerComponent } from "@godspeedai/profile-harness";
+import { localProvider } from "@godspeedai/provider-local";
+import { createRuntime } from "@godspeedai/runtime-bun";
 
 const alice = { actor: { id: "alice", kind: "user" as const }, tenant: "tenant-a" };
 const request = { messages: [{ role: "user" as const, content: "hello" }] };

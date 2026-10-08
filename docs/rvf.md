@@ -27,9 +27,9 @@ Anything that fails verification outright (bad JSON, missing files, an integrity
 
 Export records a durable source event checkpoint and the cognitive index generation processed through it; if indexing is behind, export waits, records an explicit partial checkpoint, or fails — it never labels a mixed-time image complete.
 
-## Reference implementation: `@cognate/cognitive-rvf`
+## Reference implementation: `@godspeedai/cognitive-rvf`
 
-[`@cognate/cognitive-rvf`](../packages/cognitive-rvf/README.md) implements this against `@ruvector/rvf@0.3.4` (pinned exact), and is `implemented` for `CG-RVF-001` per [`requirements/ledger.yaml`](../requirements/ledger.yaml) — but only because of adapter-side mitigations layered over real gaps in the upstream package, tracked as [DEBT-006](../.agents/DEBT.md).
+[`@godspeedai/cognitive-rvf`](../packages/cognitive-rvf/README.md) implements this against `@ruvector/rvf@0.3.4` (pinned exact), and is `implemented` for `CG-RVF-001` per [`requirements/ledger.yaml`](../requirements/ledger.yaml) — but only because of adapter-side mitigations layered over real gaps in the upstream package, tracked as [DEBT-006](../.agents/DEBT.md).
 
 ### DEBT-006 mitigations
 

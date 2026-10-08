@@ -1,9 +1,9 @@
 // CG-PRJ-003 (spec §34.2): the same authoritative events and projection version replay to equivalent state.
 import { expect, test } from "bun:test";
 import fc from "fast-check";
-import { event } from "@cognate/events/conformance";
-import type { DurableStore } from "@cognate/events";
-import { ProjectionRunner, type Projection } from "@cognate/projections";
+import { event } from "@godspeedai/events/conformance";
+import type { DurableStore } from "@godspeedai/events";
+import { ProjectionRunner, type Projection } from "@godspeedai/projections";
 import { storeCases } from "../support/stores.ts";
 
 const balances: Projection = {

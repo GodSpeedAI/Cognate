@@ -9,10 +9,10 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Component } from "@cognate/kernel-api";
-import { createSxrCliPort, evidencePacketEnvelope, governedTraceFor, ObservationDelivery, observationIntent, type SxrEvidenceRow } from "@cognate/realitytrace";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime, SeaForgeAuthority, type Runtime, type PendingEvent } from "@cognate/runtime-bun";
+import type { Component } from "@godspeedai/kernel-api";
+import { createSxrCliPort, evidencePacketEnvelope, governedTraceFor, ObservationDelivery, observationIntent, type SxrEvidenceRow } from "@godspeedai/realitytrace";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime, SeaForgeAuthority, type Runtime, type PendingEvent } from "@godspeedai/runtime-bun";
 
 // `sxr verify` really compiles and runs `cargo test`; the default 5s is not enough on a cold build.
 setDefaultTimeout(240_000);

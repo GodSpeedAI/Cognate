@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { Component } from "@cognate/kernel-api";
-import type { AgentDefinition } from "@cognate/runtime-api";
+import type { Component } from "@godspeedai/kernel-api";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
 import { type ApprovalReference, type ApprovalState, createRuntime, type GovernanceAuthority, type GovernanceDecision, type GovernedOperation, type Runtime } from "../src/index.ts";
 
 const WORLD = `world:demo@sha256:${"a".repeat(64)}`;

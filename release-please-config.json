@@ -24,7 +24,7 @@
         "cognitive-ruvector",
         "cognitive-rvf",
         "continuations",
-        "domainforge",
+        "cognate-domainforge",
         "events",
         "execution",
         "execution-ssh",

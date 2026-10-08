@@ -1,4 +1,4 @@
-# @cognate/realitytrace
+# @godspeedai/realitytrace
 
 Optional observation adapter (spec §20): committed-outbox delivery of
 Framework observations to RealityTrace (SXR), plus the SXR CLI port.

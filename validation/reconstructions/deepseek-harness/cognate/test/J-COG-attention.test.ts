@@ -9,9 +9,9 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
 import { bootAimock, withTempHome } from "./helpers.ts";
-import { createClient } from "@cognate/client";
-import { connectTransport, devToken } from "@cognate/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@cognate/protocol-connect";
+import { createClient } from "@godspeedai/client";
+import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
 
 const clientFor = (app: AppServer) => createClient({ service: createRemoteRuntimeService(connectTransport(app.url), () => devToken(LOCAL_OPERATOR)), caller: LOCAL_OPERATOR });
 const events = async (app: AppServer) => { const out: { position: number; eventType: string; payload: any }[] = []; for await (const e of app.runtime.service.events(LOCAL_OPERATOR, {})) out.push({ position: e.position, eventType: e.eventType, payload: e.payload }); return out; };

@@ -1,4 +1,4 @@
-# @cognate/runtime-bun
+# @godspeedai/runtime-bun
 
 Bun reference runtime implementing `RuntimeService` (ADR-0011) in-process.
 

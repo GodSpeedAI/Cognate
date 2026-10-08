@@ -1,7 +1,7 @@
 // Authoritative DurableStore on bun:sqlite (spec §13). Single-process writer; see README.md.
 import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
-import { ConcurrencyError, RecordConflictError, IdempotencyMismatchError, CheckpointConflictError, NotFoundError, validateNewEvent } from "@cognate/events";
+import { ConcurrencyError, RecordConflictError, IdempotencyMismatchError, CheckpointConflictError, NotFoundError, validateNewEvent } from "@godspeedai/events";
 import type {
   DurableStore,
   NewEvent,
@@ -16,7 +16,7 @@ import type {
   ProjectionCheckpoint,
   ProjectionCommit,
   Json,
-} from "@cognate/events";
+} from "@godspeedai/events";
 import { migrate } from "./schema.ts";
 
 export interface SqliteStoreOptions {

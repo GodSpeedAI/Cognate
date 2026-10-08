@@ -1,9 +1,9 @@
 // Example: connect — the same RuntimeService kit served and consumed over Connect RPC.
 // Docs: docs/protocols.md (ADR-0003; spec §22: transport-independent RuntimeService over Connect).
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
-import { connectTransport, devToken, devTokenAuthenticator, serveRuntime } from "@cognate/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@cognate/protocol-connect";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
+import { connectTransport, devToken, devTokenAuthenticator, serveRuntime } from "@godspeedai/protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
 
 const echoAgent: AgentDefinition = {
   id: "agent.echo",

@@ -115,7 +115,7 @@ found:
 ## Addendum (2026-09-25): UCB1 replaces SONA
 
 The operator chose not to wait for an adaptive library. `createOutcomeRanker`
-in `@cognate/capabilities` is now UCB1 (Auer, Cesa-Bianchi & Fischer, 2002)
+in `@godspeedai/capabilities` is now UCB1 (Auer, Cesa-Bianchi & Fischer, 2002)
 over the eligible providers: `successRate + sqrt(2 ln N / n)`, untried providers
 first, ties in provider-id order. It replaced a greedy Laplace-smoothed success
 rate that never re-tried a provider that failed early.

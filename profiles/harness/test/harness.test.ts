@@ -1,10 +1,10 @@
 // CG-PRF-003 (spec §29.2, §35, §40.K): Harness behaviours as a composition of existing primitives.
 import { afterEach, describe, expect, test } from "bun:test";
-import type { ModelRequest } from "@cognate/capabilities";
-import { resolveProfile } from "@cognate/profile";
-import { localProvider } from "@cognate/provider-local";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { alice } from "@cognate/runtime-api/conformance";
+import type { ModelRequest } from "@godspeedai/capabilities";
+import { resolveProfile } from "@godspeedai/profile";
+import { localProvider } from "@godspeedai/provider-local";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import { createHarness, harnessProfile, harnessRegistry, LOOP_AGENT, providerComponent, skillComponent, spawnSubagent, storageComponent, toolComponent, type Harness } from "../src/index.ts";
 
 /** A model that calls the first offered tool whose name appears in the user message, then answers with the result. */

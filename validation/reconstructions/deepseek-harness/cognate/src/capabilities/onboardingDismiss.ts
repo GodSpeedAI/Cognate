@@ -6,8 +6,8 @@
 // either step) is exactly what makes the dialog pair reappear, matching the reference's per-`DSH_HOME`
 // persistence.
 import { randomUUID } from "node:crypto";
-import type { Component, SemanticRef } from "@cognate/kernel-api";
-import type { Caller, RuntimeService } from "@cognate/runtime-api";
+import type { Component, SemanticRef } from "@godspeedai/kernel-api";
+import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 
 export type OnboardingStep = "notice" | "apikey";

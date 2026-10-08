@@ -1,6 +1,6 @@
 // Public projection `model-config`: folds `model.configured` events. Never carries the secret —
 // the event payload it folds never contained one (see agentConfig.ts / modelConfigure.ts).
-import type { Projection } from "@cognate/projections";
+import type { Projection } from "@godspeedai/projections";
 
 export const modelConfigProjection: Projection = {
   name: "model-config",

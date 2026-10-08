@@ -3,7 +3,7 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { alice } from "@cognate/runtime-api/conformance";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import { type Event, post, setup, types, valid } from "./support.ts";
 
 const cursorOf = (events: Event[]) => Math.max(...events.map((e) => (e.rawEvent as { cognate?: { position: number } } | undefined)?.cognate?.position ?? 0));

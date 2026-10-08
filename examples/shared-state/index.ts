@@ -1,9 +1,9 @@
 // Example: shared-state — an agent publishes application state that the client derives via JSON Patch.
 // Docs: docs/concepts.md, docs/ui.md (spec §12 `state.changed` events; RunState.state is derived, not stored).
-import { createClient } from "@cognate/client";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
-import { alice } from "@cognate/runtime-api/conformance";
+import { createClient } from "@godspeedai/client";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
+import { alice } from "@godspeedai/runtime-api/conformance";
 
 const agent: AgentDefinition = {
   id: "agent.order",

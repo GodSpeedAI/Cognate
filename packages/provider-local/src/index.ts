@@ -1,4 +1,4 @@
-import type { ModelDelta, ModelProvider, ModelRequest, ModelResponse } from "@cognate/capabilities";
+import type { ModelDelta, ModelProvider, ModelRequest, ModelResponse } from "@godspeedai/capabilities";
 
 export interface LocalRule {
   /** Matches when the last user message contains this text (case-insensitive), or always when omitted. */

@@ -1,4 +1,4 @@
-# AGENTS.md — @cognate/continuations
+# AGENTS.md — @godspeedai/continuations
 
 - Every transition is exactly one `store.commit` (record CAS + event + idempotency + outbox). Never split these.
 - On `RecordConflictError`/`ConcurrencyError`, re-read and re-check status; do not blindly retry the same write.

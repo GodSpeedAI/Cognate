@@ -7,9 +7,9 @@ application, and without letting a design system leak into the framework's contr
 
 ## Responsibilities
 
-- A headless, transport-agnostic client over any `RuntimeService` (`@cognate/client`).
-- React 19 bindings over that client (`@cognate/react`).
-- A reference renderer built on Astryx (`@cognate/ui-astryx`).
+- A headless, transport-agnostic client over any `RuntimeService` (`@godspeedai/client`).
+- React 19 bindings over that client (`@godspeedai/react`).
+- A reference renderer built on Astryx (`@godspeedai/ui-astryx`).
 
 ## Non-responsibilities
 
@@ -26,13 +26,13 @@ application, and without letting a design system leak into the framework's contr
 RuntimeService (in-process or over any transport)
       │
       ▼
-@cognate/client      — no React import, framework-neutral
+@godspeedai/client      — no React import, framework-neutral
       │
       ▼
-@cognate/react       — useSyncExternalStore bindings
+@godspeedai/react       — useSyncExternalStore bindings
       │
       ▼
-@cognate/ui-astryx   — reference surfaces
+@godspeedai/ui-astryx   — reference surfaces
 ```
 
 Dependencies are strictly downward: `ui-astryx → react → client`; `client` never imports React or
@@ -99,11 +99,11 @@ session: the durable run continues regardless of whether any client is connected
 
 ## Extension points
 
-- **A new surface** — build on `@cognate/client` directly. It is framework-neutral on purpose;
+- **A new surface** — build on `@godspeedai/client` directly. It is framework-neutral on purpose;
   Svelte, Vue, a CLI, or a native app are all legitimate consumers.
 - **A frontend capability** — `client.provideCapability(name, handler)`, or `useCapability` in
   React. Scoped to the component's lifetime.
-- **A new design system** — implement the same surfaces over `@cognate/react`. Astryx is a
+- **A new design system** — implement the same surfaces over `@godspeedai/react`. Astryx is a
   reference, not a contract (acceptance criterion F).
 - **A custom run/projection view** — `useRun` / `useProjection` give the derived data; render
   whatever you like.

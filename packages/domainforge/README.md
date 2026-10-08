@@ -1,4 +1,4 @@
-# @cognate/domainforge
+@godspeedai/cognate-domainforge
 
 Version-pinned adapter from `@godspeedai/domainforge@0.19.0`'s `Graph` output
 to Cognate's `SemanticRef`s and a read-only `SemanticProjection` (spec §7.1,

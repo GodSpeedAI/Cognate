@@ -3,9 +3,9 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { devTokenAuthenticator, serveRuntime } from "@cognate/protocol-connect-bun";
-import { kitAgents } from "@cognate/runtime-api/conformance";
-import { createRuntime } from "@cognate/runtime-bun";
+import { devTokenAuthenticator, serveRuntime } from "@godspeedai/protocol-connect-bun";
+import { kitAgents } from "@godspeedai/runtime-api/conformance";
+import { createRuntime } from "@godspeedai/runtime-bun";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-2p-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

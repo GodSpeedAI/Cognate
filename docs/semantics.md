@@ -20,9 +20,9 @@ interface SemanticRef {
 
 Identity is pinned to source revision: a rename or namespace change mints a **new** identity rather than silently reinterpreting the old one (`CG-SEM-002`).
 
-## Adapter: `@cognate/domainforge`
+## Adapter: `@godspeedai/domainforge`
 
-[`@cognate/domainforge`](../packages/domainforge/README.md) binds `@godspeedai/domainforge` 0.18.2's `Graph.parse(source)` API ([ADR-0002](decisions/ADR-0002-semantic-binding-domainforge.md)). Entity and Resource `id` getters are content-derived (`namespace::name`) and stable across re-parses, so the adapter uses them directly as `SemanticRef` identity components.
+[`@godspeedai/domainforge`](../packages/domainforge/README.md) binds `@godspeedai/domainforge` 0.18.2's `Graph.parse(source)` API ([ADR-0002](decisions/ADR-0002-semantic-binding-domainforge.md)). Entity and Resource `id` getters are content-derived (`namespace::name`) and stable across re-parses, so the adapter uses them directly as `SemanticRef` identity components.
 
 ### Mapping table (spec §19)
 

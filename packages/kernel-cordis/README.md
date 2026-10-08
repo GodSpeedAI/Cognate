@@ -1,6 +1,6 @@
-# @cognate/kernel-cordis
+# @godspeedai/kernel-cordis
 
-Cordis-backed implementation of `@cognate/kernel-api`. Only this package imports `cordis`; no
+Cordis-backed implementation of `@godspeedai/kernel-api`. Only this package imports `cordis`; no
 Cordis type crosses an exported signature (spec §3.4). See `docs/decisions/ADR-0001-kernel-engine-cordis.md`.
 
 ## Mapping

@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/runtime-bun",
+  "name": "@godspeedai/runtime-bun",
   "version": "0.1.0",
   "description": "Bun reference runtime: composes kernel, durable store, runs, continuations, commitments, artifacts, and cognition behind RuntimeService.",
   "type": "module",
@@ -22,19 +22,19 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/artifacts": "workspace:*",
-    "@cognate/capabilities": "workspace:*",
-    "@cognate/cognitive-api": "workspace:*",
-    "@cognate/continuations": "workspace:*",
-    "@cognate/events": "workspace:*",
-    "@cognate/kernel-api": "workspace:*",
-    "@cognate/kernel-cordis": "workspace:*",
-    "@cognate/projections": "workspace:*",
-    "@cognate/runtime-api": "workspace:*",
-    "@cognate/store-memory": "workspace:*",
-    "@cognate/store-sqlite": "workspace:*"
+    "@godspeedai/artifacts": "workspace:*",
+    "@godspeedai/capabilities": "workspace:*",
+    "@godspeedai/cognitive-api": "workspace:*",
+    "@godspeedai/continuations": "workspace:*",
+    "@godspeedai/events": "workspace:*",
+    "@godspeedai/kernel-api": "workspace:*",
+    "@godspeedai/kernel-cordis": "workspace:*",
+    "@godspeedai/projections": "workspace:*",
+    "@godspeedai/runtime-api": "workspace:*",
+    "@godspeedai/store-memory": "workspace:*",
+    "@godspeedai/store-sqlite": "workspace:*"
   },
   "devDependencies": {
-    "@cognate/cognitive-memory": "workspace:*"
+    "@godspeedai/cognitive-memory": "workspace:*"
   }
 }

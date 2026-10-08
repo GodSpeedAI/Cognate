@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/cognitive-memory",
+  "name": "@godspeedai/cognitive-memory",
   "version": "0.1.0",
   "description": "In-process exact-cosine CognitiveIndex and a deterministic hashing embedder; the fallback implementation for core cognition.",
   "type": "module",
@@ -22,6 +22,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/cognitive-api": "workspace:*"
+    "@godspeedai/cognitive-api": "workspace:*"
   }
 }

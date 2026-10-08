@@ -1,4 +1,4 @@
-# @cognate/profile-harness
+# @godspeedai/profile-harness
 
 Reference Harness profile (spec §29.2, §35, §40.K): a pure composition of existing kernel/runtime
 primitives. No kernel additions — every behaviour below is a `Component`, an `AgentDefinition`, or
@@ -17,6 +17,6 @@ plain durable-store/service calls.
 | `subagents` | `spawnSubagent` → `ctx.invoke("subagent.start", ...)` (a component calling `runtime.service.startRun` as `system`) + `ctx.waitFor` resolved from `runtime.store.onCommitted` |
 
 `createHarness` mounts `storage`, `sandbox`, and `subagent.start` as ordinary components on the
-existing `@cognate/runtime-bun` kernel; providers/tools/skills are mounted the same way by callers.
+existing `@godspeedai/runtime-bun` kernel; providers/tools/skills are mounted the same way by callers.
 Policy (`Policy`) and action authorization (`ActionPolicy`) are both allow-all by default — this is a
 reference/demo harness, not a multi-tenant deployment; see `createHarness` for the exact rules.

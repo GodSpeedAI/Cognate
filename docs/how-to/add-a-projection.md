@@ -11,8 +11,8 @@ currently look like" without giving up the event log as the only truth.
 ## 1. Write the projection
 
 ```ts
-import type { Projection, ProjectionState, ProjectionWrite } from "@cognate/events";
-import type { StoredEvent } from "@cognate/events";
+import type { Projection, ProjectionState, ProjectionWrite } from "@godspeedai/events";
+import type { StoredEvent } from "@godspeedai/events";
 
 export const orderSummary: Projection = {
   name: "orders",

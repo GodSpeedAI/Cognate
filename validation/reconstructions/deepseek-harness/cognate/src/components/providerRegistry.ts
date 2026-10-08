@@ -1,8 +1,8 @@
 // Builds a live `ModelProvider` from saved (non-secret) config plus the secret store, and hot-swaps
 // the mounted `model.generate` component: dispose the old fiber, mount the new one. No restart.
-import type { ModelProvider } from "@cognate/capabilities";
-import type { ComponentHandle, Kernel, SemanticRef } from "@cognate/kernel-api";
-import { openAICompatible } from "@cognate/provider-openai-compatible";
+import type { ModelProvider } from "@godspeedai/capabilities";
+import type { ComponentHandle, Kernel, SemanticRef } from "@godspeedai/kernel-api";
+import { openAICompatible } from "@godspeedai/provider-openai-compatible";
 import { streamingProviderComponent } from "./modelProvider.ts";
 import type { SecretStore } from "../secrets.ts";
 

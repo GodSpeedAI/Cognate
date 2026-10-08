@@ -1,11 +1,11 @@
 // CG-RT-003 (spec §37 Phase 5): DomainForge → SemanticRef → runtime execution → committed event → queued observation.
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { bindCapabilities, loadSemanticProjection } from "@cognate/domainforge";
-import { ObservationDelivery, observationIntent, type Observation, type ObservationPort } from "@cognate/realitytrace";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { alice } from "@cognate/runtime-api/conformance";
-import { createRuntime } from "@cognate/runtime-bun";
+import { bindCapabilities, loadSemanticProjection } from "@godspeedai/cognate-domainforge";
+import { ObservationDelivery, observationIntent, type Observation, type ObservationPort } from "@godspeedai/realitytrace";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { alice } from "@godspeedai/runtime-api/conformance";
+import { createRuntime } from "@godspeedai/runtime-bun";
 
 test("a semantic object is correlated through execution, a durable event, and a delivered observation", async () => {
   const loaded = loadSemanticProjection(readFileSync("packages/domainforge/test/fixtures/basic.sea", "utf8"), { uri: "file:///domain/basic.sea" });

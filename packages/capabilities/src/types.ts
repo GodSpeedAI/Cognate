@@ -1,5 +1,5 @@
-import type { Json } from "@cognate/events";
-import type { CapabilityContract, Principal, Requirement } from "@cognate/kernel-api";
+import type { Json } from "@godspeedai/events";
+import type { CapabilityContract, Principal, Requirement } from "@godspeedai/kernel-api";
 
 export interface Candidate {
   readonly providerId: string;

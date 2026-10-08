@@ -6,7 +6,7 @@ import {
   NotFoundError,
   RecordConflictError,
   validateNewEvent,
-} from "@cognate/events";
+} from "@godspeedai/events";
 import type {
   CommitOutcome,
   CommitRequest,
@@ -19,7 +19,7 @@ import type {
   ProjectionCommit,
   StoredEvent,
   StoredRecord,
-} from "@cognate/events";
+} from "@godspeedai/events";
 
 function clone<T>(value: T): T {
   return value === undefined ? value : structuredClone(value);

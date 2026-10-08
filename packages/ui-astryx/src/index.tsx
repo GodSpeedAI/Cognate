@@ -1,9 +1,9 @@
-// Reference Astryx surfaces over @cognate/react (spec §25.3). A renderer, not the ontology (§3.8):
-// no @cognate/client internals are imported here beyond types, and Astryx types never leak past this file.
+// Reference Astryx surfaces over @godspeedai/react (spec §25.3). A renderer, not the ontology (§3.8):
+// no @godspeedai/client internals are imported here beyond types, and Astryx types never leak past this file.
 import { Button, Card, CodeBlock, Heading, Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow, Text, TextInput, Theme } from "@astryxdesign/core";
 import { neutralTheme } from "@astryxdesign/theme-neutral";
-import { useAgent, useArtifact, useCognate, useContinuations, useRun } from "@cognate/react";
-import type { ContinuationView } from "@cognate/runtime-api";
+import { useAgent, useArtifact, useCognate, useContinuations, useRun } from "@godspeedai/react";
+import type { ContinuationView } from "@godspeedai/runtime-api";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 export type ThemeMode = "light" | "dark";

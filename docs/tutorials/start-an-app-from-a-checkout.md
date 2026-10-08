@@ -15,7 +15,7 @@ cd /path/to/cognate
 bun cognate/packages/cli/src/bin.ts create my-app --profile copilot --source .
 ```
 
-`--source .` is required and is not a workaround: the CLI packs the `@cognate/*` packages your
+`--source .` is required and is not a workaround: the CLI packs the `@godspeedai/*` packages your
 profile needs out of the checkout and vendors them into `my-app/.cognate/vendor/`, pinning each
 as a `file:` dependency with a matching `overrides` entry.
 

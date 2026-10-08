@@ -1,7 +1,7 @@
 // CG-CON-001: continuation lifecycle with exactly one terminal transition under races (spec §12).
 import { afterEach, describe, expect, test } from "bun:test";
-import type { DurableStore } from "@cognate/events";
-import type { Principal } from "@cognate/kernel-api";
+import type { DurableStore } from "@godspeedai/events";
+import type { Principal } from "@godspeedai/kernel-api";
 import { storeCases } from "../../../tests/support/stores.ts";
 import { ContinuationService, type ContinuationPolicy, type OpenContinuation, type ResumeHandler } from "../src/index.ts";
 

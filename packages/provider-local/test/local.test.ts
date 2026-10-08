@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { modelContract } from "@cognate/capabilities";
+import { modelContract } from "@godspeedai/capabilities";
 import { localProvider } from "../src/index.ts";
 
 test("local provider publishes an honest capability contract", () => {

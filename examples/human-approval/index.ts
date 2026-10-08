@@ -1,9 +1,9 @@
 // Example: human-approval — an agent suspends on a durable continuation until a human resolves it.
 // Docs: docs/concepts.md (spec §12: RunContext.waitFor / continuations as durable suspension points).
-import { createClient } from "@cognate/client";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
-import { alice } from "@cognate/runtime-api/conformance";
+import { createClient } from "@godspeedai/client";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
+import { alice } from "@godspeedai/runtime-api/conformance";
 
 const refundAgent: AgentDefinition = {
   id: "agent.refund",

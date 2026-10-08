@@ -1,7 +1,7 @@
 // Runtime service conformance kit (ADR-0011). Runs unchanged in-process and over every transport.
 import { afterEach, describe, expect, test } from "bun:test";
-import type { Json, StoredEvent } from "@cognate/events";
-import type { Principal } from "@cognate/kernel-api";
+import type { Json, StoredEvent } from "@godspeedai/events";
+import type { Principal } from "@godspeedai/kernel-api";
 import { type AgentDefinition, type Caller, type RunStatus, type RuntimeService, ServiceError } from "./types.ts";
 
 export const alice: Caller = { actor: { id: "alice", kind: "user" }, tenant: "tenant-a" };

@@ -1,4 +1,4 @@
-# @cognate/artifacts
+# @godspeedai/artifacts
 
 `ArtifactService` (spec §13.1) gives durable, content-addressed, access-controlled artifacts.
 

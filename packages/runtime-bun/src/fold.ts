@@ -1,7 +1,7 @@
 // Run state is a fold over the run stream (spec §10, §32): nothing returned to callers is a stored copy,
 // so erasing an event payload removes its content from every view derived here.
-import type { Json, StoredEvent } from "@cognate/events";
-import type { RunView } from "@cognate/runtime-api";
+import type { Json, StoredEvent } from "@godspeedai/events";
+import type { RunView } from "@godspeedai/runtime-api";
 
 export const RUN_EXECUTE_TOPIC = "run.execute";
 export const RESUME_HANDLER = { id: "run.resume", version: "1" } as const;

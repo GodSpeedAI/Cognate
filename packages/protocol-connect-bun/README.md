@@ -1,4 +1,4 @@
-# @cognate/protocol-connect-bun
+# @godspeedai/protocol-connect-bun
 
 Serves the Connect runtime service on `Bun.serve` and provides a fetch transport.
 

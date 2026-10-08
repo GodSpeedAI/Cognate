@@ -1,4 +1,4 @@
-# AGENTS.md — @cognate/realitytrace
+# AGENTS.md — @godspeedai/realitytrace
 
 - Never modify the read-only SXR checkout; the binary is pinned (DEBT-010).
 - `sxr ingest` mints its own `observation_id`; never trust it over

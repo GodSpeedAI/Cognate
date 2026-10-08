@@ -2,9 +2,9 @@
 // the supplied eligible set, explores providers with few observations, replays durable feedback deterministically,
 // and falls back to deterministic ordering when unavailable.
 import { describe, expect, test } from "bun:test";
-import type { DurableStore } from "@cognate/events";
-import { ProjectionRunner } from "@cognate/projections";
-import { createMemoryStore } from "@cognate/store-memory";
+import type { DurableStore } from "@godspeedai/events";
+import { ProjectionRunner } from "@godspeedai/projections";
+import { createMemoryStore } from "@godspeedai/store-memory";
 import { compatibilityRule, createOutcomeRanker, createSelector, outcomeProjection, recordOutcome, recordSelection, type Candidate, type EligibilityRule, type SelectionRequest } from "../src/index.ts";
 
 const ctx = { tenant: "tenant-a", scopeId: "root", correlationId: "corr", runId: "run" };

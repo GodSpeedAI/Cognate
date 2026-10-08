@@ -1,4 +1,4 @@
-# @cognate/cognitive-rvf
+# @godspeedai/cognitive-rvf
 
 RVF-backed `CognitiveIndex` (spec §18; DEBT-006 mitigations, all verified against `@ruvector/rvf` 0.3.4).
 

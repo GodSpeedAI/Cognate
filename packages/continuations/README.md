@@ -1,4 +1,4 @@
-# @cognate/continuations
+# @godspeedai/continuations
 
 Durable continuations and external commitments (spec §9.3, §12).
 

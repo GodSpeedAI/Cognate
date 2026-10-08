@@ -6,7 +6,7 @@ export interface PackageNode {
   readonly name: string;
   readonly dir: string;
   readonly declared: ReadonlySet<string>;
-  /** Bare specifiers imported from src/ (not tests), e.g. `@cognate/events`, `cordis`, `react`. */
+  /** Bare specifiers imported from src/ (not tests), e.g. `@godspeedai/events`, `cordis`, `react`. */
   readonly imports: ReadonlySet<string>;
 }
 
@@ -51,7 +51,7 @@ export function loadGraph(root = "."): PackageNode[] {
   return nodes;
 }
 
-/** Internal (@cognate/*) edges from source imports. */
+/** Internal (@godspeedai/*) edges from source imports. */
 export function internalEdges(nodes: readonly PackageNode[]): [string, string][] {
   const names = new Set(nodes.map((node) => node.name));
   return nodes.flatMap((node) => [...node.imports].filter((dep) => names.has(dep) && dep !== node.name).map((dep) => [node.name, dep] as [string, string]));

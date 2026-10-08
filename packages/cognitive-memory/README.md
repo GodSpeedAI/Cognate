@@ -1,4 +1,4 @@
-# @cognate/cognitive-memory
+# @godspeedai/cognitive-memory
 
 Reference `CognitiveIndex` implementation: exact cosine similarity over an in-memory map,
 plus a deterministic hashing embedder for tests and offline fallback.
@@ -11,4 +11,4 @@ plus a deterministic hashing embedder for tests and offline fallback.
 - `hashingEmbedder(dimension)` — lowercases, tokenizes on non-alphanumerics, feature-hashes
   tokens into `dimension` signed buckets (FNV-1a), L2-normalizes. Empty text → zero vector.
 
-Passes `cognitiveIndexConformance` from `@cognate/cognitive-api/conformance`.
+Passes `cognitiveIndexConformance` from `@godspeedai/cognitive-api/conformance`.

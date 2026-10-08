@@ -3,9 +3,9 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createMemoryIndex, hashingEmbedder } from "@cognate/cognitive-memory";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { alice } from "@cognate/runtime-api/conformance";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import { createRuntime } from "../src/index.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-cog-"));

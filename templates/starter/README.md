@@ -14,7 +14,7 @@ my-app/
 └── package.json
 ```
 
-`cognate create` then vendors the `@cognate/*` packages the profile needs
+`cognate create` then vendors the `@godspeedai/*` packages the profile needs
 (`bun pm pack` from `--source` into `.cognate/vendor/`) and pins them in
 `package.json` via `file:` dependencies and `overrides` (DEBT-016).
 

@@ -1,9 +1,9 @@
 // Example: artifact-workbench — an agent produces a durable, content-addressed artifact and reads it back.
 // Docs: docs/architecture.md (spec §13.1: artifacts have authoritative records and content-addressed bytes).
-import { createClient } from "@cognate/client";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
-import { alice } from "@cognate/runtime-api/conformance";
+import { createClient } from "@godspeedai/client";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
+import { alice } from "@godspeedai/runtime-api/conformance";
 
 const agent: AgentDefinition = {
   id: "agent.report",

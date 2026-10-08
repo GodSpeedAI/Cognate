@@ -56,8 +56,8 @@ Output: `unsupported: <name> (<reason>)` lines, then
 `created <dir> (vendored <n> package(s))`.
 
 Behavior: copies `templates/starter/common` then `templates/starter/<profile>`; computes the
-transitive `@cognate/*` closure from the profile roots
-(`@cognate/cli`, `@cognate/profile-<profile>`, `@cognate/domainforge`, `@cognate/provider-local`);
+transitive `@godspeedai/*` closure from the profile roots
+(`@godspeedai/cli`, `@godspeedai/profile-<profile>`, `@godspeedai/domainforge`, `@godspeedai/provider-local`);
 `bun pm pack`s each into `.cognate/vendor/`; rewrites `package.json` so each closure member is a
 `file:./.cognate/vendor/<tarball>` dependency **and** an `overrides` entry.
 

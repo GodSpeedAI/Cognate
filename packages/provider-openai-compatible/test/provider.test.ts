@@ -1,7 +1,7 @@
 // CG-PRV-001 (spec §26): OpenAI-compatible provider over fetch against a local HTTP stub; features as capability attributes.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { modelContract, ModelProviderError, type ModelDelta } from "@cognate/capabilities";
-import { localProvider } from "@cognate/provider-local";
+import { modelContract, ModelProviderError, type ModelDelta } from "@godspeedai/capabilities";
+import { localProvider } from "@godspeedai/provider-local";
 import { modelComponent, openAICompatible } from "../src/index.ts";
 
 const SECRET = "sk-test-cognate-9f8e7d";

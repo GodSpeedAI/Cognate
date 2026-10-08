@@ -1,4 +1,4 @@
-# @cognate/provider-openai-compatible
+# @godspeedai/provider-openai-compatible
 
 `ModelProvider` (spec §26) over any OpenAI-compatible `/chat/completions`
 endpoint (llama.cpp, vLLM, Ollama's `/v1`, hosted APIs), using `fetch`

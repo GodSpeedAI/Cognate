@@ -1,4 +1,4 @@
-import { CheckpointConflictError, type DurableStore, type Json, type StoredEvent } from "@cognate/events";
+import { CheckpointConflictError, type DurableStore, type Json, type StoredEvent } from "@godspeedai/events";
 import type { CatchUpResult, Projection, ProjectionState } from "./types.ts";
 
 export interface ProjectionRunnerOptions {

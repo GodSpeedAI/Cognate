@@ -1,7 +1,7 @@
 // CG-AGUI-002 follow-ups (FU-1/FU-3): a generic AG-UI client completes a remote-offer wait by
 // replying to the projected tool call, and run-level CUSTOM payloads are self-sufficient.
 import { afterEach, describe, expect, test } from "bun:test";
-import { alice } from "@cognate/runtime-api/conformance";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import { type Event, post, setup, types, valid } from "./support.ts";
 
 const finished = (events: Event[]) => events.at(-1) as Event & { result: { status: string; continuations: { id: string; type: string; version: number }[]; output?: unknown } };

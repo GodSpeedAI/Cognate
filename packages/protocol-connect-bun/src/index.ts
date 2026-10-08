@@ -4,8 +4,8 @@ import { createConnectRouter } from "@connectrpc/connect";
 import type { ConnectRouter, ConnectRouterOptions, Transport } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import { registerRuntimeService } from "@cognate/protocol-connect";
-import type { Caller, RuntimeService } from "@cognate/runtime-api";
+import { registerRuntimeService } from "@godspeedai/protocol-connect";
+import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
 
 export interface ServeOptions {
   readonly service: RuntimeService;

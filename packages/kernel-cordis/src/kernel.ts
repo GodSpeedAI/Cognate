@@ -1,8 +1,8 @@
 // Framework-owned kernel, backed by Cordis. This is the only file besides scope.ts/fiber.ts that
 // touches the `cordis` package; nothing here appears in any exported signature (spec §3.4).
 import { Context } from "cordis";
-import { ScopeClosedError } from "@cognate/kernel-api";
-import type { CapabilityLease, Component, ComponentHandle, Kernel, KernelEvent, KernelOptions, Requirement, Scope, Unavailable } from "@cognate/kernel-api";
+import { ScopeClosedError } from "@godspeedai/kernel-api";
+import type { CapabilityLease, Component, ComponentHandle, Kernel, KernelEvent, KernelOptions, Requirement, Scope, Unavailable } from "@godspeedai/kernel-api";
 import { FiberUnit } from "./fiber.ts";
 import { createLease } from "./lease.ts";
 import { CapabilityRegistry } from "./registry.ts";

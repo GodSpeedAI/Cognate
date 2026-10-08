@@ -8,9 +8,9 @@ import { chromium, type Page } from "playwright-core";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
 import { userToyMod } from "../src/cognitive/sentinel.ts";
 import { bootAimock, withTempHome } from "./helpers.ts";
-import { createClient } from "@cognate/client";
-import { connectTransport, devToken } from "@cognate/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@cognate/protocol-connect";
+import { createClient } from "@godspeedai/client";
+import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
 
 const clientFor = (app: AppServer) => createClient({ service: createRemoteRuntimeService(connectTransport(app.url), () => devToken(LOCAL_OPERATOR)), caller: LOCAL_OPERATOR });
 type Client = ReturnType<typeof clientFor>;

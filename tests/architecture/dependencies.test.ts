@@ -7,26 +7,26 @@ const byName = new Map(nodes.map((node) => [node.name, node]));
 
 /** §28 forbidden edges, plus the implied ones for every framework-owned contract package. */
 const FORBIDDEN: Record<string, readonly string[]> = {
-  "@cognate/kernel-api": ["cordis", "@ruvector/core", "ruvector", "react", "react-dom", "@astryxdesign/core", "@ag-ui/core", "@godspeedai/domainforge", "@cognate/realitytrace", "@cognate/domainforge", "@cognate/ag-ui", "@cognate/react", "@cognate/ui-astryx"],
-  "@cognate/events": ["@ruvector/core", "ruvector", "cordis", "react"],
-  "@cognate/cognitive-api": ["@ruvector/core", "ruvector", "@ruvector/rvf", "cordis"],
-  "@cognate/client": ["react", "react-dom", "@astryxdesign/core", "@cognate/react", "@cognate/ui-astryx"],
-  "@cognate/react": ["@astryxdesign/core", "@astryxdesign/theme-neutral", "@cognate/ui-astryx"],
+  "@godspeedai/kernel-api": ["cordis", "@ruvector/core", "ruvector", "react", "react-dom", "@astryxdesign/core", "@ag-ui/core", "@godspeedai/domainforge", "@godspeedai/realitytrace", "@godspeedai/domainforge", "@godspeedai/ag-ui", "@godspeedai/react", "@godspeedai/ui-astryx"],
+  "@godspeedai/events": ["@ruvector/core", "ruvector", "cordis", "react"],
+  "@godspeedai/cognitive-api": ["@ruvector/core", "ruvector", "@ruvector/rvf", "cordis"],
+  "@godspeedai/client": ["react", "react-dom", "@astryxdesign/core", "@godspeedai/react", "@godspeedai/ui-astryx"],
+  "@godspeedai/react": ["@astryxdesign/core", "@astryxdesign/theme-neutral", "@godspeedai/ui-astryx"],
 };
 
 /** Third-party engines each owned by exactly one adapter package (spec §3.4, §39: no leaking implementation types). */
 const OWNERS: Record<string, readonly string[]> = {
-  cordis: ["@cognate/kernel-cordis"],
-  "@ruvector/core": ["@cognate/cognitive-ruvector"],
-  ruvector: ["@cognate/cognitive-ruvector"],
-  "@ruvector/rvf": ["@cognate/cognitive-rvf"],
-  "@godspeedai/domainforge": ["@cognate/domainforge"],
-  "@ag-ui/core": ["@cognate/ag-ui"],
-  "@astryxdesign/core": ["@cognate/ui-astryx"],
-  "@astryxdesign/theme-neutral": ["@cognate/ui-astryx"],
-  "@connectrpc/connect": ["@cognate/protocol-connect", "@cognate/protocol-connect-bun", "@cognate/proto"],
-  "@connectrpc/connect-web": ["@cognate/protocol-connect", "@cognate/protocol-connect-bun"],
-  "@modelcontextprotocol/sdk": ["@cognate/mcp"],
+  cordis: ["@godspeedai/kernel-cordis"],
+  "@ruvector/core": ["@godspeedai/cognitive-ruvector"],
+  ruvector: ["@godspeedai/cognitive-ruvector"],
+  "@ruvector/rvf": ["@godspeedai/cognitive-rvf"],
+  "@godspeedai/domainforge": ["@godspeedai/cognate-domainforge"],
+  "@ag-ui/core": ["@godspeedai/ag-ui"],
+  "@astryxdesign/core": ["@godspeedai/ui-astryx"],
+  "@astryxdesign/theme-neutral": ["@godspeedai/ui-astryx"],
+  "@connectrpc/connect": ["@godspeedai/protocol-connect", "@godspeedai/protocol-connect-bun", "@godspeedai/proto"],
+  "@connectrpc/connect-web": ["@godspeedai/protocol-connect", "@godspeedai/protocol-connect-bun"],
+  "@modelcontextprotocol/sdk": ["@godspeedai/mcp"],
 };
 
 describe("package topology (§28)", () => {
@@ -49,7 +49,7 @@ describe("package topology (§28)", () => {
     for (const node of nodes) {
       for (const dep of node.imports) {
         const owners = OWNERS[dep];
-        if (owners && !owners.includes(node.name) && !node.name.startsWith("@cognate/profile-")) violations.push(`${node.name} imports ${dep}`);
+        if (owners && !owners.includes(node.name) && !node.name.startsWith("@godspeedai/profile-")) violations.push(`${node.name} imports ${dep}`);
       }
     }
     expect(violations).toEqual([]);
@@ -66,7 +66,7 @@ describe("package topology (§28)", () => {
   });
 
   test("bareName strips subpaths and ignores relative and runtime specifiers", () => {
-    expect(bareName("@cognate/events/conformance")).toBe("@cognate/events");
+    expect(bareName("@godspeedai/events/conformance")).toBe("@godspeedai/events");
     expect(bareName("cordis/logger")).toBe("cordis");
     expect(bareName("./x")).toBeUndefined();
     expect(bareName("bun:sqlite")).toBeUndefined();

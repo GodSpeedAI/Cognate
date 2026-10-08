@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
-import { CognateProvider, useRemoteCapability, useRemoteCapabilityHistory } from "@cognate/react";
-import type { CognateClient, RemoteCapabilityOfferInput } from "@cognate/client";
+import { CognateProvider, useRemoteCapability, useRemoteCapabilityHistory } from "@godspeedai/react";
+import type { CognateClient, RemoteCapabilityOfferInput } from "@godspeedai/client";
 import { JOURNEY_B_AGENT } from "../constants.ts";
 import { Disclosure, StateTag } from "./primitives.tsx";
 

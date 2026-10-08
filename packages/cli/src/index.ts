@@ -1,6 +1,6 @@
 // CG-CLI-001 (spec §37 Phase 10): `cognate create` (starter generation with profiles) and `cognate dev`
 // (runtime + Connect + AG-UI + UI server). Packages are not published to a registry (DEBT-016): `create`
-// vendors the `@cognate/*` packages a profile needs from `--source` with `bun pm pack` and pins them with
+// vendors the `@godspeedai/*` packages a profile needs from `--source` with `bun pm pack` and pins them with
 // `file:` dependencies plus a package.json `overrides` map, so `workspace:*` inside the packed tarballs
 // resolves outside the workspace.
 import { createHash } from "node:crypto";
@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { RuntimeService } from "@cognate/runtime-api";
+import type { RuntimeService } from "@godspeedai/runtime-api";
 
 export interface CreateOptions {
   readonly dir: string;
@@ -28,13 +28,13 @@ export interface CreateReport {
 
 /** `--with` names the starter cannot yet wire up, with a specific reason where one is known. */
 const KNOWN_UNSUPPORTED: Readonly<Record<string, string>> = {
-  sona: "SONA was rejected as a ranker (ADR-0005); adaptive ranking is built in via @cognate/capabilities createOutcomeRanker (UCB1)",
+  sona: "SONA was rejected as a ranker (ADR-0005); adaptive ranking is built in via @godspeedai/capabilities createOutcomeRanker (UCB1)",
 };
 
-/** Root `@cognate/*` package names a generated app's own package.json depends on, per profile. */
+/** Root `@godspeedai/*` package names a generated app's own package.json depends on, per profile. */
 const PROFILE_ROOTS: Readonly<Record<CreateOptions["profile"], readonly string[]>> = {
-  copilot: ["@cognate/cli", "@cognate/profile-copilot", "@cognate/domainforge", "@cognate/provider-local"],
-  harness: ["@cognate/cli", "@cognate/profile-harness", "@cognate/domainforge", "@cognate/provider-local"],
+  copilot: ["@godspeedai/cli", "@godspeedai/profile-copilot", "@godspeedai/cognate-domainforge", "@godspeedai/provider-local"],
+  harness: ["@godspeedai/cli", "@godspeedai/profile-harness", "@godspeedai/cognate-domainforge", "@godspeedai/provider-local"],
 };
 
 async function copyDir(srcDir: string, destDir: string): Promise<void> {
@@ -42,7 +42,7 @@ async function copyDir(srcDir: string, destDir: string): Promise<void> {
   await cp(srcDir, destDir, { recursive: true });
 }
 
-/** Maps every `@cognate/*` package name in `--source` to its directory, by reading each package.json. */
+/** Maps every `@godspeedai/*` package name in `--source` to its directory, by reading each package.json. */
 async function indexCognatePackages(source: string): Promise<Map<string, string>> {
   const byName = new Map<string, string>();
   for (const group of ["packages", "profiles"]) {
@@ -60,7 +60,7 @@ async function indexCognatePackages(source: string): Promise<Map<string, string>
   return byName;
 }
 
-/** BFS over `@cognate/*` `dependencies` edges from `roots`, returning every reachable package name (roots included). */
+/** BFS over `@godspeedai/*` `dependencies` edges from `roots`, returning every reachable package name (roots included). */
 async function transitiveClosure(roots: readonly string[], byName: ReadonlyMap<string, string>): Promise<string[]> {
   const seen = new Set<string>();
   const queue = [...roots];
@@ -72,7 +72,9 @@ async function transitiveClosure(roots: readonly string[], byName: ReadonlyMap<s
     seen.add(name);
     const manifest = JSON.parse(await readFile(join(pkgDir, "package.json"), "utf8")) as { readonly dependencies?: Readonly<Record<string, string>> };
     for (const dep of Object.keys(manifest.dependencies ?? {})) {
-      if (dep.startsWith("@cognate/") && !seen.has(dep)) queue.push(dep);
+      // Only workspace packages are vendored; the adapter's pinned external
+      // dependency (@godspeedai/domainforge) resolves from the registry.
+      if (dep.startsWith("@godspeedai/") && !seen.has(dep) && byName.has(dep)) queue.push(dep);
     }
   }
   return [...seen];
@@ -143,11 +145,11 @@ export interface DevServer {
 const BROWSER_ENTRY = `
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@cognate/client";
-import { CognateProvider } from "@cognate/react";
-import { CognateShell, ChatPanel } from "@cognate/ui-astryx";
-import { connectTransport, devToken } from "@cognate/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@cognate/protocol-connect";
+import { createClient } from "@godspeedai/client";
+import { CognateProvider } from "@godspeedai/react";
+import { CognateShell, ChatPanel } from "@godspeedai/ui-astryx";
+import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
 
 const caller = { tenant: "local", actor: { id: "dev", kind: "user" } };
 const transport = connectTransport(window.location.origin);
@@ -194,7 +196,7 @@ export async function dev(options: { readonly dir: string; readonly port: number
   if (!existsSync(configPath)) throw new Error(`cognate dev: no cognate.config.ts in ${dir}`);
   const { default: config } = (await import(pathToFileURL(configPath).href)) as { default: CognateConfig };
 
-  const { loadSemanticProjection } = await import("@cognate/domainforge");
+  const { loadSemanticProjection } = await import("@godspeedai/cognate-domainforge");
   const domainDir = join(dir, "domain");
   const seaFiles = existsSync(domainDir) ? (await readdir(domainDir)).filter((name) => name.endsWith(".sea")) : [];
   const objects: { readonly id: string; readonly kind: string; readonly name: string }[] = [];
@@ -218,8 +220,8 @@ export async function dev(options: { readonly dir: string; readonly port: number
   let closeApp: () => Promise<void>;
 
   if (config.profile === "copilot") {
-    const { createCopilotApp, COPILOT_AGENT, copilotRegistry } = await import("@cognate/profile-copilot");
-    const { localProvider } = await import("@cognate/provider-local");
+    const { createCopilotApp, COPILOT_AGENT, copilotRegistry } = await import("@godspeedai/profile-copilot");
+    const { localProvider } = await import("@godspeedai/provider-local");
     const app = await createCopilotApp({
       store: storePath,
       model: localProvider({ id: "starter", rules: [{ respond: () => ({ message: { role: "assistant", content: "Hello from the Cognate starter." }, toolCalls: [], finishReason: "stop" }) }] }),
@@ -231,8 +233,8 @@ export async function dev(options: { readonly dir: string; readonly port: number
     runtimeService = app.runtime.service;
     closeApp = () => app.close();
   } else {
-    const { createHarness, LOOP_AGENT, harnessRegistry, providerComponent } = await import("@cognate/profile-harness");
-    const { localProvider } = await import("@cognate/provider-local");
+    const { createHarness, LOOP_AGENT, harnessRegistry, providerComponent } = await import("@godspeedai/profile-harness");
+    const { localProvider } = await import("@godspeedai/provider-local");
     const harness = await createHarness({ store: storePath, instructions: config.instructions });
     await harness.mount(providerComponent(localProvider({ id: "starter" })));
     agents = [LOOP_AGENT];
@@ -241,14 +243,14 @@ export async function dev(options: { readonly dir: string; readonly port: number
     closeApp = () => harness.close();
   }
 
-  const { serveRuntime, devTokenAuthenticator } = await import("@cognate/protocol-connect-bun");
+  const { serveRuntime, devTokenAuthenticator } = await import("@godspeedai/protocol-connect-bun");
   // Dev-only auth: `Bearer <tenant>:<principalId>` (see devTokenAuthenticator); never for production use.
   const internal = serveRuntime({ service: runtimeService, authenticate: devTokenAuthenticator, port: 0, hostname: "127.0.0.1" });
 
   let bundleJs: string | undefined;
   let cssPaths: readonly string[] = [];
   if (config.profile === "copilot") {
-    const { stylesheetPaths } = await import("@cognate/ui-astryx/styles");
+    const { stylesheetPaths } = await import("@godspeedai/ui-astryx/styles");
     cssPaths = stylesheetPaths();
     const entryPath = join(dir, ".cognate", "entry.tsx");
     await writeFile(entryPath, BROWSER_ENTRY);
