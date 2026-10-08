@@ -27,3 +27,16 @@ AST parsed successfully: interaction-model.sea
 Namespace: deepseek-harness.interaction
 Version: 1.0.0
 Declarations: 80
+
+=== Workbench extension (2026-10-05): domainforge validate / parse on the extended model ===
+Validation succeeded: 0 violations total
+Graph parsed successfully: interaction-model.sea
+Entities: 31
+Resources: 30
+Flows: 30
+Roles: 4
+Relations: 3
+Resource instances: 0
+Entity instances: 31
+Policies: 1
+Patterns: 0

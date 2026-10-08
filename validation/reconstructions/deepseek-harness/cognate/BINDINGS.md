@@ -96,3 +96,29 @@ objects, digest logged at startup).
   review is a `ctx.waitFor("plan-review:<toolCallId>", ...)` durable continuation, the same pattern
   as `tool-approval` but a distinct `type` (different payload/outcome shape — a plan heading/markdown
   to review, not a permission to allow/deny). See `src/domain/planGate.ts` and README.md.
+
+## Workbench layer
+
+Anchors for the unified-harness-experience-model-v2 tranche (`domain/index.ts`: `WORKBENCH_ANCHORS`,
+`bindWorkbench`). All explicit; nothing is inferred. Events are the truth, the public `workbench`
+projection is derived (`src/projections/workbench.ts`, folded by the pure `src/workbench/reducer.ts`).
+
+| Entity | Capabilities |
+|---|---|
+| `Task` | `task.create`, `task.status.change` |
+| `TaskContract` | `task.contract.update` |
+| `ReviewGate` | `task.review.request`, `task.review.decide` (person only), `worker.return` |
+| `EvidenceLedger` | `evidence.record` |
+| `ProtectedEvidence` | `authority.check` (called by `agent.coding`), `authority.elevate` (person only) |
+| `Workflow` | `workflow.define`, `workflow.instantiate`, `workflow.node.advance` |
+| `SkillCapability` | `skill.register`, `workbench.seed` (infrastructure: loads the starter catalog) |
+| `CapabilityImplementation` | `skill.bind`, `skill.lifecycle.advance` (grant steps are person only) |
+| `Automation` | `automation.create`, `automation.advance` |
+| `UsageLedger` | `usage.record` |
+| `ParallelPlan` | `parallelism.plan` |
+| `SteeringInbox` | `steer.enqueue`, `steer.pending` |
+| `GroundedFeedback` | `feedback.record` |
+
+Deliberately unbound: `AttentionFocus` (client-side attention, resolved by `src/workbench/focus.ts` and frozen
+into the run input). Human-only capabilities check `HandlerContext.actor.kind === "user"`: an agent run invokes
+capabilities as a non-user principal, so it cannot accept its own work or elevate a protected path.

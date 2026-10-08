@@ -5,6 +5,23 @@ execution and approvals: configure a model, choose a workspace, run a session, w
 the agent read/edit/run inside the workspace, and gate a privileged escalation behind a human
 decision. Model: `.sea/interaction/`. Method: `.agents/skills/building-with-cognate/SKILL.md`.
 
+## Workbench (unified harness experience model v2)
+
+The app also hosts the *Capability-Native Agent Workbench* described in
+`.agents/plans/unified_harness_experience_model_v2.md`: tasks with an explicit contract
+(Context, Goal, Skills, Authority, Executors, Budget, Invariants, Acceptance), a workflow graph and a Skill OS
+(contract, implementation, executor), an evidence ledger and review gate, protected evidence enforced in the
+tool loop, automations that separate dispatched from complete, steering of a live run, and one deterministic
+meaning for "this". Open it from the sidebar's **Workbench** button.
+
+- Status per validation trace, gaps and framework proposals: `WORKBENCH-DEVIATIONS.md`. Plan: `WORKBENCH-PLAN.md`.
+- Model: 11 `J-WB-*` journeys in `.sea/interaction/` (validated with `domainforge validate`). Bindings: `BINDINGS.md`.
+- Code: pure domain modules in `src/workbench/`; capabilities in `src/capabilities/workbench.ts`; public
+  projection `workbench`; cockpit in `src/ui/workbench/` (rules in `src/ui/workbench/UX.md`).
+- Tests: `test/workbench-*.test.ts` (units), `test/ui-*.test.tsx` (components), `test/J-WB-*.test.ts` (journeys on
+  the real runtime), `test/E2E-workbench.test.ts` (real Chromium; screenshots in `screenshots/workbench/`).
+- Donors consulted (none is a dependency): `../primitive-provenance.md` §4, `../donor-manifest.json`.
+
 ## Remote Workspaces (SSH / WSL)
 
 A workspace is `(executionWorldId, root)`: the model-facing tools, the agent loop, sessions, plans and

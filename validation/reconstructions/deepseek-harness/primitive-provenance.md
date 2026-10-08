@@ -164,3 +164,26 @@ secrets in events.
 **No special-case/escape-hatch hits were found that make any feature depend on a bypass.** Every row
 in §1's table is correctly `Special case? No` — the audit found nothing that should flip any of them
 to `Yes`.
+
+
+## 4. External donors (workbench tranche, 2026-10-05)
+
+Machine-readable record: `donor-manifest.json` (same folder). Shallow clones live in `.tmp/ref/` (gitignored)
+and can be deleted: nothing imports them, and the architecture tests (`tests/architecture/no-reference-imports`,
+`no-copied-source`) guard that. Ported logic is re-implemented in TypeScript and carries an attribution header
+(donor, path, commit). Licences: MIT, Apache-2.0, or operator-owned.
+
+| Donor | Licence | Commit | Use | Cognate files |
+|---|---|---|---|---|
+| `Hexagon/croner` | MIT | `713ee72` | ported-logic | `src/workbench/automation.ts` |
+| `micromatch/picomatch` | MIT | `9fab7bf` | ported-logic | `src/workbench/glob.ts` |
+| `openai/codex` | Apache-2.0 | `7aa8f51` | ported-logic | `src/workbench/shellSafety.ts` |
+| `anomalyco/opencode` | MIT | `7723920` | ported-logic | `src/workbench/shellSafety.ts` |
+| `aaif-goose/goose` | Apache-2.0 | `104ddde` | reviewed-only | none |
+| `dagrejs/dagre` | MIT | `32e7f30` | reviewed-only | none |
+| `deepseek-ai/deepseek-harness` | see reference-manifest.json | `477b4f4` | pattern-only | `src/workbench/workflow.ts`, `src/workbench/steering.ts` |
+| `operator:gs-term` | none declared (operator-owned) | `working` | adapted | `src/workbench/focus.ts` |
+
+Deliberate differences from donors are recorded next to each port (`glob.ts`: dotfiles matchable by `*`;
+`shellSafety.ts`: no Windows analysis, extra SQL and device-redirect fallbacks; `automation.ts`: strictly-after
+semantics and an explicit gap rule). Where a donor was reviewed and nothing was taken, the manifest says so.
