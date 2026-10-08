@@ -15,7 +15,7 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@cognate/ui-astryx/styles";
 
-import { bindExecutionWorlds, bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
+import { bindExecutionWorlds, bindWorkbench, bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
@@ -36,6 +36,8 @@ import { onboardingDismissComponent } from "./capabilities/onboardingDismiss.ts"
 import { settingsChangeComponent } from "./capabilities/settingsChange.ts";
 import { observationCapabilityComponent, observationOutboxFor, wireObservations, defaultSxrBin, type ObservationWiring } from "./observations.ts";
 import { workspaceManageComponent } from "./capabilities/workspaceManage.ts";
+import { workbenchComponent, WORKBENCH_CAPABILITY_IDS } from "./capabilities/workbench.ts";
+import { workbenchProjection } from "./projections/workbench.ts";
 import { ProviderRegistry } from "./components/providerRegistry.ts";
 import { modelConfigProjection } from "./projections/modelConfig.ts";
 import { cognitiveProjection } from "./projections/cognitive.ts";
@@ -95,6 +97,7 @@ const GRANTED_CAPABILITIES = [
   "settings.changePlugin",
   "observation.status",
   "observation.record",
+  ...WORKBENCH_CAPABILITY_IDS,
 ];
 
 function buildPolicy(): Policy {
@@ -174,6 +177,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const usage2 = bindUsage2(domain);
   const usage3 = bindUsage3(domain);
   const worldBindings = bindExecutionWorlds(domain);
+  const workbenchRefs = bindWorkbench(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -207,6 +211,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       onboardingDismissComponent({ getService, systemCaller: SYSTEM_CALLER }),
       settingsChangeComponent({ getService, systemCaller: SYSTEM_CALLER, semanticRefs: usage2.settingsChange }),
       workspaceManageComponent({ getService, systemCaller: SYSTEM_CALLER, semanticRefs: usage3 }),
+      workbenchComponent({ getService, systemCaller: SYSTEM_CALLER, semanticRefs: workbenchRefs }),
     ],
     projections: [
       { projection: modelConfigProjection, public: true },
@@ -219,6 +224,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
       { projection: onboardingProjection, public: true },
       { projection: settingsProjection, public: true },
       { projection: sessionTraceProjection, public: true },
+      { projection: workbenchProjection, public: true },
     ],
     system: SYSTEM_CALLER.actor,
   });
@@ -342,7 +348,14 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const bundleJs = await build.outputs[0]!.text();
   const cssPaths = stylesheetPaths();
   const appCssPath = fileURLToPath(new URL("./ui/app.css", import.meta.url));
-  const appCss = existsSync(appCssPath) ? await Bun.file(appCssPath).text() : "";
+  // The workbench cockpit's styles are layered after app.css: shared primitives first, then each
+  // component's layout-only sheet (the server concatenates; components never import CSS).
+  const WORKBENCH_CSS = ["base", "contract", "tasks", "review", "skills", "workflow", "automation", "cockpit"];
+  const cssParts: string[] = [];
+  for (const file of [appCssPath, ...WORKBENCH_CSS.map((n) => fileURLToPath(new URL(`./ui/workbench/${n}.css`, import.meta.url)))]) {
+    if (existsSync(file)) cssParts.push(await Bun.file(file).text());
+  }
+  const appCss = cssParts.join("\n");
 
   const server = Bun.serve({
     port: options.port,

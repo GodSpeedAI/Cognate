@@ -6,6 +6,7 @@
 import type { AgentDefinition } from "@cognate/runtime-api";
 import type { Json } from "@cognate/events";
 import type { SettingsPatch } from "../settings.ts";
+import { WORKBENCH_EVENTS } from "../workbench/types.ts";
 
 export type AgentConfigInput =
   | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
@@ -24,6 +25,8 @@ export type AgentConfigInput =
   | { readonly kind: "execution.world.connected"; readonly worldId: string; readonly worldKind: string; readonly label: string; readonly metadata: Readonly<Record<string, string>>; readonly connection: Json }
   | { readonly kind: "execution.world.disconnected"; readonly worldId: string }
   | { readonly kind: "onboarding.dismissed"; readonly step: "notice" | "apikey" }
+  /** Workbench layer: an ordered batch of `workbench.*` events a validated capability decided to record. */
+  | { readonly kind: "workbench.recorded"; readonly events: readonly { readonly type: string; readonly payload: Json }[] }
   | ({ readonly kind: "settings.changed" } & SettingsPatch);
 
 export const AGENT_CONFIG = "agent.config";
@@ -64,6 +67,14 @@ export const agentConfigAgent: AgentDefinition = {
       case "execution.world.disconnected": {
         const { kind, ...payload } = command;
         await ctx.emit(kind, payload as unknown as Json);
+        return { ok: true };
+      }
+      case "workbench.recorded": {
+        // Only workbench events may be minted this way; the capability layer already validated them.
+        for (const event of command.events) {
+          if (!(WORKBENCH_EVENTS as readonly string[]).includes(event.type)) throw new Error(`agent.config: ${event.type} is not a workbench event`);
+          await ctx.emit(event.type, event.payload);
+        }
         return { ok: true };
       }
       case "onboarding.dismissed": {

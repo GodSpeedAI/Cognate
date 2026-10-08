@@ -185,3 +185,12 @@ One test file per canonical journey, named after the journey id: `J-A-first-use.
 `J-C-tool-execution.test.ts`, `J-D-approval.test.ts` (both approve and deny branches in one file,
 per the spec's "second branch" instruction), `J-E-plan.test.ts`, `J-F-delegation.test.ts`,
 `J-G-persistence.test.ts`, `J-H-cancellation.test.ts` (cancel + injected-error branches).
+
+## Workbench layer (unified harness experience model v2)
+
+Source: `.agents/plans/unified_harness_experience_model_v2.md`. Tranche plan: `WORKBENCH-PLAN.md`; honest
+status per validation trace: `WORKBENCH-DEVIATIONS.md`. The IDM gained 14 Entities, 12 Resources/Flows, the
+`Reviewer` role, a `ReviewAuthorization` relation and 11 journeys (`J-WB-*`). Bindings are explicit and live
+in `domain/index.ts` (`WORKBENCH_ANCHORS`): 23 capabilities anchored on 13 entities. `AttentionFocus` has no
+capability on purpose (client state). Test files follow the journey ids: `test/J-WB-<journey>.test.ts` plus
+`test/E2E-workbench.test.ts` for the browser.
