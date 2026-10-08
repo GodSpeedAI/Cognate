@@ -1,9 +1,28 @@
 {
   "name": "@cognate/domainforge",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Version-pinned adapter from DomainForge Graph output to Cognate SemanticRefs and read-only semantic projections (spec §7.1, §19).",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/kernel-api": "workspace:*", "@godspeedai/domainforge": "0.19.0" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/domainforge"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/kernel-api": "workspace:*",
+    "@godspeedai/domainforge": "0.19.0"
+  }
 }

@@ -1,9 +1,23 @@
 {
   "name": "@cognate/kernel-api",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Framework-owned kernel contract: contexts, scopes, capabilities, components, fibers, effects. No engine types.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/kernel-api"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./conformance": "./src/conformance/index.ts"

@@ -1,10 +1,26 @@
 {
   "name": "@cognate/protocol-connect",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Maps RuntimeService to the generated Connect service (server routes and a remote client). Transport-agnostic.",
-  "exports": { ".": "./src/index.ts" },
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/protocol-connect"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
     "@bufbuild/protobuf": "2.15.0",
     "@cognate/events": "workspace:*",
@@ -13,5 +29,8 @@
     "@cognate/runtime-api": "workspace:*",
     "@connectrpc/connect": "2.2.0"
   },
-  "devDependencies": { "@cognate/protocol-connect-bun": "workspace:*", "@cognate/runtime-bun": "workspace:*" }
+  "devDependencies": {
+    "@cognate/protocol-connect-bun": "workspace:*",
+    "@cognate/runtime-bun": "workspace:*"
+  }
 }

@@ -1,9 +1,23 @@
 {
   "name": "@cognate/execution",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Framework-owned execution-world contracts: filesystem and process ports, replaceable providers, and the filesystem.*/process.* capability component. No transport or library types.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/execution"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./conformance": "./src/conformance.ts"

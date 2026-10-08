@@ -1,9 +1,23 @@
 {
   "name": "@cognate/execution-ssh",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "SSH host as an execution world: SFTP filesystem and remote exec over ssh2, with mandatory host-key verification, ProxyJump and clean disposal. Same contracts as every other provider.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/execution-ssh"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./fixture": "./src/fixture.ts"
