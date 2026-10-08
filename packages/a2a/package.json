@@ -1,10 +1,32 @@
 {
   "name": "@cognate/a2a",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "A2A adapter: publishes a runtime agent as an A2A agent; continuations map to input-required tasks.",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@a2a-js/sdk": "1.2.1", "@cognate/events": "workspace:*", "@cognate/runtime-api": "workspace:*" },
-  "devDependencies": { "@cognate/runtime-bun": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/a2a"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@a2a-js/sdk": "1.2.1",
+    "@cognate/events": "workspace:*",
+    "@cognate/runtime-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cognate/runtime-bun": "workspace:*"
+  }
 }

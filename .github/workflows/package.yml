@@ -1,0 +1,87 @@
+# Packaging verification: every PR that touches published packages gets its
+# tarballs packed, inspected, and (once the first release exists) installed
+# into a clean external project that has no access to this monorepo.
+#
+# This repository is private, so the clean-room install runs against the
+# public npm registry only when @cognate/cli exists there; before the first
+# release the step reports that no published version exists yet, and the
+# tarball-content checks still gate every PR. Publishing happens through
+# release.yml (Release Please + OIDC), never from this workflow.
+
+name: package
+
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+      - "profiles/**"
+      - "scripts/prepare-npm-package.mjs"
+      - "scripts/inspect-npm-tarballs.mjs"
+      - "release-please-config.json"
+      - ".release-please-manifest.json"
+      - ".github/workflows/package.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - "profiles/**"
+      - "scripts/prepare-npm-package.mjs"
+      - "scripts/inspect-npm-tarballs.mjs"
+      - "release-please-config.json"
+      - ".release-please-manifest.json"
+      - ".github/workflows/package.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROBE_PACKAGE: "@cognate/cli"
+
+jobs:
+  pack-and-install:
+    name: pack + clean-room install
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Pack every package with resolved workspace ranges
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/pack
+          for d in packages/* profiles/*; do
+            node scripts/prepare-npm-package.mjs "$d"
+            (cd "$d" && npm pack --pack-destination "$GITHUB_WORKSPACE/.tmp/pack")
+            git checkout -- "$d/package.json"
+          done
+          ls -la .tmp/pack
+      - name: Inspect tarballs as a consumer would receive them
+        run: node scripts/inspect-npm-tarballs.mjs .tmp/pack/*.tgz
+      - name: Clean-room install from the npm registry (Bun, no monorepo)
+        run: |
+          set -euo pipefail
+          if ! npm view "$PROBE_PACKAGE" version >/dev/null 2>&1; then
+            echo "$PROBE_PACKAGE is not on the npm registry yet — the registry"
+            echo "clean-room activates automatically after the first release."
+            exit 0
+          fi
+          version=$(npm view "$PROBE_PACKAGE" version)
+          echo "clean-room: installing $PROBE_PACKAGE@$version"
+          rm -rf .tmp/clean-room && mkdir -p .tmp/clean-room
+          cd .tmp/clean-room
+          echo '{"name":"cognate-clean-room","private":true}' > package.json
+          bun add "$PROBE_PACKAGE@$version"
+          cp "$GITHUB_WORKSPACE/scripts/clean-room-smoke.ts" smoke.ts
+          bun smoke.ts
+          # CLI bin: prints usage and exits 1 when called without a command.
+          ./node_modules/.bin/cognate 2>&1 | grep -q "usage: cognate"
+          echo "clean-room install + smoke OK for $PROBE_PACKAGE@$version"

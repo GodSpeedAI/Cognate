@@ -1,9 +1,27 @@
 {
   "name": "@cognate/cognitive-memory",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "In-process exact-cosine CognitiveIndex and a deterministic hashing embedder; the fallback implementation for core cognition.",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/cognitive-api": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/cognitive-memory"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/cognitive-api": "workspace:*"
+  }
 }

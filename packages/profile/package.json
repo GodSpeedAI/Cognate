@@ -1,9 +1,27 @@
 {
   "name": "@cognate/profile",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "defineProfile: reusable application compositions that select and configure components without new kernel concepts (spec §29).",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/kernel-api": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/profile"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/kernel-api": "workspace:*"
+  }
 }

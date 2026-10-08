@@ -1,9 +1,23 @@
 {
   "name": "@cognate/profile-copilot",
   "version": "0.0.0",
-  "private": true,
+  "description": "Copilot reference profile: a composition of runtime, runs, continuations, frontend capabilities, state and artifact projections, AG-UI, React, and Astryx (spec §29.1). No kernel additions.",
   "type": "module",
-  "description": "Copilot reference profile: a composition of runtime, runs, continuations, frontend capabilities, state and artifact projections, AG-UI, React, and Astryx (spec \u00a729.1). No kernel additions.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "profiles/copilot"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.tsx"
   },
@@ -21,10 +35,6 @@
     "@cognate/runtime-bun": "workspace:*",
     "@cognate/ui-astryx": "workspace:*"
   },
-  "peerDependencies": {
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
-  },
   "devDependencies": {
     "@ag-ui/core": "1.0.0",
     "@cognate/provider-local": "workspace:*",
@@ -34,5 +44,9 @@
     "react-dom": "19.3.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.2.2"
+  },
+  "peerDependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

@@ -1,12 +1,28 @@
 {
   "name": "@cognate/events",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Event envelope, durable store port, and the store conformance kit.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/events"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./conformance": "./src/conformance.ts"
   },
-  "dependencies": { "@cognate/kernel-api": "workspace:*" }
+  "dependencies": {
+    "@cognate/kernel-api": "workspace:*"
+  }
 }

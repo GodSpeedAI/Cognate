@@ -1,9 +1,27 @@
 {
   "name": "@cognate/execution-wsl",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "WSL distribution as an execution world: filesystem and process ports over `wsl.exe -e sh -s`. Same contracts as every other provider.",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/execution": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/execution-wsl"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/execution": "workspace:*"
+  }
 }

@@ -1,9 +1,29 @@
 {
   "name": "@cognate/runtime-api",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Transport-independent runtime service contract, agent authoring surface, and service conformance kit (ADR-0011).",
-  "exports": { ".": "./src/index.ts", "./conformance": "./src/conformance.ts" },
-  "dependencies": { "@cognate/events": "workspace:*", "@cognate/kernel-api": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/runtime-api"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./conformance": "./src/conformance.ts"
+  },
+  "dependencies": {
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*"
+  }
 }

@@ -1,10 +1,32 @@
 {
   "name": "@cognate/continuations",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Durable continuations and external commitments on the durable store (spec §9.3, §12).",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/events": "workspace:*", "@cognate/kernel-api": "workspace:*" },
-  "devDependencies": { "@cognate/store-memory": "workspace:*", "@cognate/store-sqlite": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/continuations"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/events": "workspace:*",
+    "@cognate/kernel-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cognate/store-memory": "workspace:*",
+    "@cognate/store-sqlite": "workspace:*"
+  }
 }

@@ -1,11 +1,29 @@
 {
   "name": "@cognate/cli",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "`cognate create` (starter generation with profiles) and `cognate dev` (runtime + Connect + AG-UI + UI server) (spec §37 Phase 10).",
-  "bin": { "cognate": "./src/bin.ts" },
-  "exports": { ".": "./src/index.ts" },
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/cli"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "cognate": "./src/bin.ts"
+  },
   "dependencies": {
     "@cognate/client": "workspace:*",
     "@cognate/domainforge": "workspace:*",

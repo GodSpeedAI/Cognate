@@ -1,10 +1,26 @@
 {
   "name": "@cognate/profile-harness",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Harness reference profile: model providers, tool registry, agent loop, sessions, storage, skills, scheduler, sandbox, replaceable services, subagents (spec §29.2). No kernel additions.",
-  "exports": { ".": "./src/index.ts" },
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "profiles/harness"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
     "@cognate/capabilities": "workspace:*",
     "@cognate/events": "workspace:*",
@@ -14,5 +30,7 @@
     "@cognate/runtime-api": "workspace:*",
     "@cognate/runtime-bun": "workspace:*"
   },
-  "devDependencies": { "@cognate/provider-local": "workspace:*" }
+  "devDependencies": {
+    "@cognate/provider-local": "workspace:*"
+  }
 }

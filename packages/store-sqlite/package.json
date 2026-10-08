@@ -1,9 +1,27 @@
 {
   "name": "@cognate/store-sqlite",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Authoritative DurableStore on bun:sqlite (spec §13).",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@cognate/events": "workspace:*" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/store-sqlite"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@cognate/events": "workspace:*"
+  }
 }

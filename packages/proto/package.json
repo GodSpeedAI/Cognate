@@ -1,11 +1,34 @@
 {
   "name": "@cognate/proto",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Generated TypeScript bindings for the canonical proto/ sources. Generated files are never edited by hand (spec §21).",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "generate": "bun scripts/generate.ts" },
-  "dependencies": { "@bufbuild/protobuf": "2.15.0" },
-  "devDependencies": { "@bufbuild/buf": "1.73.0", "@bufbuild/protoc-gen-es": "2.15.0" }
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/proto"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "bun scripts/generate.ts"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.15.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "1.73.0",
+    "@bufbuild/protoc-gen-es": "2.15.0"
+  }
 }
