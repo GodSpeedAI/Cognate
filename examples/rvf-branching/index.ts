@@ -3,7 +3,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createRvfIndex } from "@cognate/cognitive-rvf";
+import { createRvfIndex } from "@godspeedai/cognitive-rvf";
 
 const entry = (id: string, vector: number[]) => ({
   id,

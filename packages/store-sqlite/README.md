@@ -1,4 +1,4 @@
-# @cognate/store-sqlite
+# @godspeedai/store-sqlite
 
 Authoritative `DurableStore` on `bun:sqlite` (spec §13).
 

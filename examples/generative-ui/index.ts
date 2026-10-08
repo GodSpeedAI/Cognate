@@ -1,10 +1,10 @@
 // Example: generative-ui — an agent emits `ui.render` events that a component registry renders to HTML.
 // Docs: docs/ui.md (ADR-0009; spec §12: `ui.render {component, props}` is a generative UI projection).
 import { resolve } from "node:path";
-import { createClient } from "@cognate/client";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
-import { alice } from "@cognate/runtime-api/conformance";
+import { createClient } from "@godspeedai/client";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
+import { alice } from "@godspeedai/runtime-api/conformance";
 
 // react/react-dom aren't hoisted to the repo root; resolve them the way the codebase's own stdio-transport
 // test does for out-of-workspace-root scripts, relative to a package that declares them (packages/ui-astryx).

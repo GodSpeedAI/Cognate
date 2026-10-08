@@ -1,13 +1,13 @@
-import { modelContract } from "@cognate/capabilities";
-import type { ModelMessage, ModelProvider, ModelResponse } from "@cognate/capabilities";
-import type { DurableStore, Json } from "@cognate/events";
-import { isUnavailable, rulePolicy } from "@cognate/kernel-api";
-import type { Component, ComponentHandle, Policy } from "@cognate/kernel-api";
-import { defineProfile } from "@cognate/profile";
-import type { ComponentEntry, ProfileDefinition } from "@cognate/profile";
-import type { AgentDefinition, Caller, RunContext } from "@cognate/runtime-api";
-import { createRuntime, type GovernanceOptions, governanceFromEnv } from "@cognate/runtime-bun";
-import type { ActionPolicy, Runtime } from "@cognate/runtime-bun";
+import { modelContract } from "@godspeedai/capabilities";
+import type { ModelMessage, ModelProvider, ModelResponse } from "@godspeedai/capabilities";
+import type { DurableStore, Json } from "@godspeedai/events";
+import { isUnavailable, rulePolicy } from "@godspeedai/kernel-api";
+import type { Component, ComponentHandle, Policy } from "@godspeedai/kernel-api";
+import { defineProfile } from "@godspeedai/profile";
+import type { ComponentEntry, ProfileDefinition } from "@godspeedai/profile";
+import type { AgentDefinition, Caller, RunContext } from "@godspeedai/runtime-api";
+import { createRuntime, type GovernanceOptions, governanceFromEnv } from "@godspeedai/runtime-bun";
+import type { ActionPolicy, Runtime } from "@godspeedai/runtime-bun";
 
 export const LOOP_AGENT = "agent.loop";
 
@@ -22,7 +22,7 @@ export const harnessProfile: ProfileDefinition = defineProfile({
 
 export const harnessRegistry: readonly ComponentEntry<unknown>[] = HARNESS_COMPONENTS.map((name) => ({
   name,
-  package: "@cognate/profile-harness",
+  package: "@godspeedai/profile-harness",
   supported: true,
   contribute: () => undefined,
 }));

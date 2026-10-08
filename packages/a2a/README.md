@@ -1,4 +1,4 @@
-# @cognate/a2a
+# @godspeedai/a2a
 
 Publishes a runtime agent as an A2A agent (`@a2a-js/sdk` 1.2.1, protocol v1.0 proto-JSON wire format —
 `TASK_STATE_*` / `ROLE_*` string enums, not the legacy v0.3 JSON-Schema shapes).

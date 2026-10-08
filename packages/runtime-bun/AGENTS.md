@@ -1,4 +1,4 @@
-# AGENTS.md — @cognate/runtime-bun
+# AGENTS.md — @godspeedai/runtime-bun
 
 - Never return stored copies of content: views are folds over events (`fold.ts`) so erasure is honoured.
 - Keep step ids and other non-sensitive ids in event metadata; content goes in payloads only.

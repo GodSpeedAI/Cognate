@@ -6,7 +6,7 @@
 //   cd /home/sprime01/projects/cognate/validation/reconstructions/copilot && bun test tests/protocol/
 //
 // What is proven, against the REAL reconstruction endpoint (cognate/src/server.ts wiring
-// @cognate/ag-ui's createAgUiHandler, with every canonical journey agent registered):
+// @godspeedai/ag-ui's createAgUiHandler, with every canonical journey agent registered):
 //   - a standards-compliant AG-UI participant (an SSE client holding only the pinned
 //     @ag-ui/core schemas, plus the official @ag-ui/client HttpAgent) interoperates fully;
 //   - every received frame validates against the pinned EventSchema;
@@ -21,7 +21,7 @@ import { beforeAll, afterAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { threadCorrelationId } from "@cognate/ag-ui";
+import { threadCorrelationId } from "@godspeedai/ag-ui";
 import { startServer, type AppServer } from "../../cognate/src/server.ts";
 import { CONTINUATION_MESSAGE, JOURNEY_F_AGENT, JOURNEY_G_AGENT, JOURNEY_K_AGENT, LIVE_RECOVERY_CHUNKS } from "../../cognate/src/remaining-journeys.ts";
 import { JOURNEY_B_AGENT } from "../../cognate/src/constants.ts";

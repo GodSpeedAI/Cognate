@@ -16,7 +16,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { alice } from "@cognate/runtime-api/conformance";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import {
   CONTINUATION_MESSAGE,
   createRemainingJourneysApp,

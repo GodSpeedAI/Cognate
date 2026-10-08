@@ -2,7 +2,7 @@
 // Agents write with `ctx.emit("state.changed", …)`; callers write with `RuntimeService.updateState`. Both append a
 // `state.changed` event carrying `{ snapshot }` or `{ patch }` (RFC 6902); the state is the fold of those events in
 // store position order.
-import type { Json, StoredEvent } from "@cognate/events";
+import type { Json, StoredEvent } from "@godspeedai/events";
 
 export type JsonPatchOp =
   | { readonly op: "add"; readonly path: string; readonly value: Json }

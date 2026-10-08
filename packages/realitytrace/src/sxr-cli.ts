@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Json } from "@cognate/events";
+import type { Json } from "@godspeedai/events";
 import type { SxrEvidenceRow } from "./godspeed.ts";
 import type { DeliveryReceipt, Observation, ObservationPort } from "./types.ts";
 

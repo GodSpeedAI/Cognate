@@ -8,10 +8,10 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@cognate/cli": "workspace:*",
-    "@cognate/profile-copilot": "workspace:*",
-    "@cognate/domainforge": "workspace:*",
-    "@cognate/provider-local": "workspace:*",
+    "@godspeedai/cli": "workspace:*",
+    "@godspeedai/profile-copilot": "workspace:*",
+    "@godspeedai/cognate-domainforge": "workspace:*",
+    "@godspeedai/provider-local": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   }

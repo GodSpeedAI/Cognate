@@ -1,5 +1,5 @@
-import type { Json } from "@cognate/events";
-import type { Principal, SemanticRef } from "@cognate/kernel-api";
+import type { Json } from "@godspeedai/events";
+import type { Principal, SemanticRef } from "@godspeedai/kernel-api";
 
 export type ContinuationStatus = "OPEN" | "RESUMED" | "CANCELLED" | "EXPIRED" | "FAILED" | "BLOCKED";
 

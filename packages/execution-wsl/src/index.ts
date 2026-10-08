@@ -15,8 +15,8 @@
 //    them. A session's lifetime is bound to a stdin pipe, so it ends by itself if this process dies.
 //  * No Windows path ever enters the contract: roots are POSIX paths inside the distribution.
 import { randomUUID } from "node:crypto";
-import { commandFileSystem, execScript, shellQuote, WorldUnavailableError } from "@cognate/execution";
-import type { ExecResult, ExecSpec, ExecutionWorldProvider, ProcessPort, RunScript } from "@cognate/execution";
+import { commandFileSystem, execScript, shellQuote, WorldUnavailableError } from "@godspeedai/execution";
+import type { ExecResult, ExecSpec, ExecutionWorldProvider, ProcessPort, RunScript } from "@godspeedai/execution";
 
 export interface WslWorldOptions {
   readonly worldId: string;

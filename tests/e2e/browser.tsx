@@ -2,11 +2,11 @@
 // UI over the real Connect transport, authenticated as tenant-a:alice (spec §36).
 import { useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@cognate/client";
-import { CognateProvider, useArtifact, useRun } from "@cognate/react";
-import { Approvals, ArtifactViewer, ChatPanel, CognateShell, RunInspector } from "@cognate/ui-astryx";
-import { connectTransport, devToken } from "@cognate/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@cognate/protocol-connect";
+import { createClient } from "@godspeedai/client";
+import { CognateProvider, useArtifact, useRun } from "@godspeedai/react";
+import { Approvals, ArtifactViewer, ChatPanel, CognateShell, RunInspector } from "@godspeedai/ui-astryx";
+import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
 
 const caller = { tenant: "tenant-a", actor: { id: "alice", kind: "user" as const } };
 const transport = connectTransport(window.location.origin);

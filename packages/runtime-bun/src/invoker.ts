@@ -1,9 +1,9 @@
 // Capability invocation through the kernel, with the caller's tenant and the policy decision captured per call.
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { Json } from "@cognate/events";
-import { type InvocationResult, isUnavailable } from "@cognate/kernel-api";
+import type { Json } from "@godspeedai/events";
+import { type InvocationResult, isUnavailable } from "@godspeedai/kernel-api";
 import { type GovernanceEscalation, type Governor, parseTimeoutSeconds } from "./governed-operation.ts";
-import type { Component, ComponentHandle, InvocationContext, InvocationFailure, Kernel, Policy, PolicyDecision, SemanticRef } from "@cognate/kernel-api";
+import type { Component, ComponentHandle, InvocationContext, InvocationFailure, Kernel, Policy, PolicyDecision, SemanticRef } from "@godspeedai/kernel-api";
 import { messageOf, toJson } from "./fold.ts";
 
 export interface InvocationOutcome {

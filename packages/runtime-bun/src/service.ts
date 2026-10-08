@@ -1,8 +1,8 @@
 // In-process RuntimeService (ADR-0011): authorization, tenancy, and typed errors over the durable core.
 import { randomUUID } from "node:crypto";
-import type { ContinuationRecord, TransitionOutcome } from "@cognate/continuations";
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@cognate/events";
-import { applyStateUpdate, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@cognate/runtime-api";
+import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/continuations";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@godspeedai/events";
+import { applyStateUpdate, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/runtime-api";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";

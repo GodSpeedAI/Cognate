@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { bindCapabilities, loadSemanticProjection, type CapabilityBinding } from "@cognate/domainforge";
-import type { CapabilityContract } from "@cognate/kernel-api";
+import { bindCapabilities, loadSemanticProjection, type CapabilityBinding } from "@godspeedai/cognate-domainforge";
+import type { CapabilityContract } from "@godspeedai/kernel-api";
 
 const MODEL_URL = new URL("../../.sea/interaction/interaction-model.sea", import.meta.url);
 const NAMESPACE = "copilotkit-reconstruction.interaction";

@@ -1,6 +1,6 @@
 // CG-AGUI-002 (spec §24, §32): inbound actions pass through native authentication, authorization, and idempotency.
 import { afterEach, describe, expect, test } from "bun:test";
-import { alice } from "@cognate/runtime-api/conformance";
+import { alice } from "@godspeedai/runtime-api/conformance";
 import { type Event, post, setup, types, valid } from "./support.ts";
 
 const user = (content: string) => ({ messages: [{ id: "m1", role: "user", content }] });

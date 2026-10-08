@@ -8,8 +8,8 @@
 // of the app uses, so the tab is live during a run and correct after a reload with no refetch
 // protocol. Subagent runs (`subagent:` correlation) are excluded — they are the child sessions'
 // own traces.
-import type { Json } from "@cognate/events";
-import type { Projection } from "@cognate/projections";
+import type { Json } from "@godspeedai/events";
+import type { Projection } from "@godspeedai/projections";
 
 export interface TraceRequest {
   readonly requestNumber: number;

@@ -4,14 +4,14 @@ This file is the only place in the skill that says how the Cognate CLI is instal
 
 ## Distribution mode
 
-**Current mode: source checkout.** `@cognate/cli` is private (version `0.0.0`) and not yet on npm (DEBT-016). Every `@cognate/*` package comes from a local Cognate checkout.
+**Current mode: source checkout.** `@godspeedai/cli` is private (version `0.0.0`) and not yet on npm (DEBT-016). Every `@godspeedai/*` package comes from a local Cognate checkout.
 
 | Setting | Source checkout (current) | Published (future) |
 | --- | --- | --- |
 | `COGNATE_CHECKOUT` | path to a Cognate clone, e.g. `~/projects/cognate` | not needed |
-| `cognate` means | `bun $COGNATE_CHECKOUT/packages/cli/src/bin.ts` | `bunx @cognate/cli` (or `cognate` after `bun add -g @cognate/cli`) |
+| `cognate` means | `bun $COGNATE_CHECKOUT/packages/cli/src/bin.ts` | `bunx @godspeedai/cli` (or `cognate` after `bun add -g @godspeedai/cli`) |
 | `create` package source | `--source $COGNATE_CHECKOUT` (packs and vendors packages) | npm registry, pinned versions |
-| Upgrade the app | re-run `create` against a newer checkout, or re-vendor | `bun update @cognate/*` |
+| Upgrade the app | re-run `create` against a newer checkout, or re-vendor | `bun update @godspeedai/*` |
 
 ## Commands
 

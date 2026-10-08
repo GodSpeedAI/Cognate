@@ -2,7 +2,7 @@
 // their instances, the capability catalog and bindings, the evidence ledger, automations, usage,
 // steering inboxes, grounded feedback, protection blocks). It only folds `workbench.*` events, via
 // the pure reducer in `src/workbench/reducer.ts`. Keys are tenant-prefixed (public projection rule).
-import type { Projection } from "@cognate/projections";
+import type { Projection } from "@godspeedai/projections";
 import { reduceWorkbench } from "../workbench/reducer.ts";
 
 export const workbenchProjection: Projection = {

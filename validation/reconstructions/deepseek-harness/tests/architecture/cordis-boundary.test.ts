@@ -1,5 +1,5 @@
 // Phase 8, criterion 5: Cordis stays behind Cognate interfaces. APP never imports
-// @cognate/kernel-cordis or the underlying `cordis` engine directly. Mirrors the pattern in the
+// @godspeedai/kernel-cordis or the underlying `cordis` engine directly. Mirrors the pattern in the
 // repo's own tests/architecture/engine-boundary.test.ts ("only kernel-cordis imports cordis"), scoped
 // to the reconstruction's own source and test trees.
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -35,7 +35,7 @@ describe("Phase 8 §5: Cordis stays behind Cognate interfaces", () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
-  test("no APP file imports @cognate/kernel-cordis or cordis directly", () => {
+  test("no APP file imports @godspeedai/kernel-cordis or cordis directly", () => {
     const offenders: string[] = [];
     for (const file of files) {
       const text = readFileSync(file, "utf8");
@@ -43,7 +43,7 @@ describe("Phase 8 §5: Cordis stays behind Cognate interfaces", () => {
       IMPORT_RE.lastIndex = 0;
       while ((m = IMPORT_RE.exec(text))) {
         const specifier = m[1] ?? m[2] ?? "";
-        if (specifier === "@cognate/kernel-cordis" || specifier === "cordis" || specifier.startsWith("cordis/")) {
+        if (specifier === "@godspeedai/kernel-cordis" || specifier === "cordis" || specifier.startsWith("cordis/")) {
           offenders.push(`${file.replace(ROOT + "/", "")}: ${specifier}`);
         }
       }
@@ -51,10 +51,10 @@ describe("Phase 8 §5: Cordis stays behind Cognate interfaces", () => {
     expect(offenders).toEqual([]);
   });
 
-  test("APP's own package.json does not declare @cognate/kernel-cordis or cordis as a dependency", () => {
+  test("APP's own package.json does not declare @godspeedai/kernel-cordis or cordis as a dependency", () => {
     const manifest = JSON.parse(readFileSync(join(APP, "package.json"), "utf8"));
     const deps = { ...manifest.dependencies, ...manifest.devDependencies, ...manifest.peerDependencies };
-    expect(Object.keys(deps)).not.toContain("@cognate/kernel-cordis");
+    expect(Object.keys(deps)).not.toContain("@godspeedai/kernel-cordis");
     expect(Object.keys(deps)).not.toContain("cordis");
   });
 });

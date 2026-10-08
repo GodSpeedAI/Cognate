@@ -1,9 +1,9 @@
 // CG-CLT-001 (spec §25.1, §31.8): headless client over the runtime service; reconnect from cursor; frontend capabilities.
 import { afterEach, describe, expect, test } from "bun:test";
-import type { Json, StoredEvent } from "@cognate/events";
-import { type AgentDefinition, type Caller, invokeFrontend, type RuntimeService } from "@cognate/runtime-api";
-import { alice } from "@cognate/runtime-api/conformance";
-import { createRuntime, type Runtime } from "@cognate/runtime-bun";
+import type { Json, StoredEvent } from "@godspeedai/events";
+import { type AgentDefinition, type Caller, invokeFrontend, type RuntimeService } from "@godspeedai/runtime-api";
+import { alice } from "@godspeedai/runtime-api/conformance";
+import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
 import { createClient, type CognateClient, type RunState } from "../src/index.ts";
 
 const agents: AgentDefinition[] = [

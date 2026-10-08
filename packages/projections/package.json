@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/projections",
+  "name": "@godspeedai/projections",
   "version": "0.1.0",
   "description": "Checkpointed, idempotent, rebuildable projections over the durable event log (spec §11).",
   "type": "module",
@@ -22,10 +22,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/events": "workspace:*"
+    "@godspeedai/events": "workspace:*"
   },
   "devDependencies": {
-    "@cognate/store-memory": "workspace:*",
-    "@cognate/store-sqlite": "workspace:*"
+    "@godspeedai/store-memory": "workspace:*",
+    "@godspeedai/store-sqlite": "workspace:*"
   }
 }

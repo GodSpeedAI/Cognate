@@ -7,11 +7,11 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { PathEscapeError, WorldUnavailableError } from "@cognate/execution";
-import { executionWorldConformance } from "@cognate/execution/conformance";
-import { HostKeyMismatchError, sshExecutionWorld } from "@cognate/execution-ssh";
-import type { SshWorldOptions } from "@cognate/execution-ssh";
-import { wslExecutionWorld } from "@cognate/execution-wsl";
+import { PathEscapeError, WorldUnavailableError } from "@godspeedai/execution";
+import { executionWorldConformance } from "@godspeedai/execution/conformance";
+import { HostKeyMismatchError, sshExecutionWorld } from "@godspeedai/execution-ssh";
+import type { SshWorldOptions } from "@godspeedai/execution-ssh";
+import { wslExecutionWorld } from "@godspeedai/execution-wsl";
 import { startRealSshd } from "./sshd.ts";
 import type { RealSshd } from "./sshd.ts";
 

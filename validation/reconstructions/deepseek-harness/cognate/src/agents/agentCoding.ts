@@ -6,9 +6,9 @@
 // answer or the step budget is exhausted. All I/O goes through `ctx.invoke`/`ctx.step`/`ctx.waitFor`;
 // the only non-deterministic local state is `readFiles`, a plain `Set` rebuilt identically on every
 // replay from the same sequence of recorded `tool.read` results, so it stays deterministic.
-import type { ModelMessage, ModelResponse, ToolCall, ToolDefinition } from "@cognate/capabilities";
-import type { Json } from "@cognate/events";
-import { InvocationFailedError, type AgentDefinition, type RunContext } from "@cognate/runtime-api";
+import type { ModelMessage, ModelResponse, ToolCall, ToolDefinition } from "@godspeedai/capabilities";
+import type { Json } from "@godspeedai/events";
+import { InvocationFailedError, type AgentDefinition, type RunContext } from "@godspeedai/runtime-api";
 import { approvalDeniedToolResult, approvalGate } from "../domain/approvalGate.ts";
 import {
   EXIT_PLAN_MODE_NOT_IN_PLAN_MODE,
@@ -496,7 +496,7 @@ export const agentCodingAgent: AgentDefinition = {
         } else if (call.name === "subagent") {
           // J-F-delegation: fire-and-forget delegation (reference-behavior-matrix.md §6.4) — starts
           // a durable child `agent.coding` run, correlated `subagent:<parentRunId>:<id>` (this app's
-          // own `subagent.start` capability, not `@cognate/profile-harness`'s `spawnSubagent` — see
+          // own `subagent.start` capability, not `@godspeedai/profile-harness`'s `spawnSubagent` — see
           // `src/capabilities/subagentStart.ts`), and returns immediately with the reference's exact
           // reflection text. There is no `ctx.waitFor` here: the parent does not block on the child,
           // and does not durably record the child's completion itself — the child's own events carry

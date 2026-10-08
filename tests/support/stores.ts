@@ -1,7 +1,7 @@
 // Runs a test body against every DurableStore implementation (memory and SQLite on a temp file).
-import type { DurableStore } from "@cognate/events";
-import { createMemoryStore } from "@cognate/store-memory";
-import { openSqliteStore } from "@cognate/store-sqlite";
+import type { DurableStore } from "@godspeedai/events";
+import { createMemoryStore } from "@godspeedai/store-memory";
+import { openSqliteStore } from "@godspeedai/store-sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

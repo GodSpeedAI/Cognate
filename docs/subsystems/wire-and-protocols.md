@@ -7,9 +7,9 @@ application means, and without making the application's semantics depend on a tr
 
 ## Responsibilities
 
-- The canonical protobuf schema and its generated bindings (`@cognate/proto`).
-- The `RuntimeService` ↔ Connect mapping, transport-independent (`@cognate/protocol-connect`).
-- A `Bun.serve()` bridge for it (`@cognate/protocol-connect-bun`), plus a fetch transport and the
+- The canonical protobuf schema and its generated bindings (`@godspeedai/proto`).
+- The `RuntimeService` ↔ Connect mapping, transport-independent (`@godspeedai/protocol-connect`).
+- A `Bun.serve()` bridge for it (`@godspeedai/protocol-connect-bun`), plus a fetch transport and the
   dev token authenticator.
 - Three optional protocol adapters: AG-UI, MCP, A2A.
 
@@ -29,7 +29,7 @@ application means, and without making the application's semantics depend on a tr
                               │
               ┌───────────────┼────────────────┐
               ▼               ▼                ▼
-      protocol-connect   @cognate/client    @cognate/ag-ui
+      protocol-connect   @godspeedai/client    @godspeedai/ag-ui
               │          (any surface)      (SSE endpoint)
       protocol-connect-bun
       (Bun.serve + fetch transport)

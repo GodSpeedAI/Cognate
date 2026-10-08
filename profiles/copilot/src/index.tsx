@@ -2,20 +2,20 @@
 // No kernel additions: the model provider and each backend tool are mounted as ordinary kernel components
 // (spec §8.3); the agent loop is authored entirely against `RunContext` (spec §12); AG-UI, React, and Astryx
 // are the existing packages, unmodified.
-import { allowCapabilities } from "@cognate/kernel-api";
-import type { Component, Policy } from "@cognate/kernel-api";
-import type { ModelMessage, ModelProvider, ModelRequest, ModelResponse, ToolCall, ToolDefinition } from "@cognate/capabilities";
-import type { Json } from "@cognate/events";
-import type { CapabilityContract } from "@cognate/kernel-api";
-import { createAgUiHandler } from "@cognate/ag-ui";
-import { type CognateClient } from "@cognate/client";
-import { useCognate } from "@cognate/react";
-import { type ComponentEntry, type ProfileDefinition, defineProfile } from "@cognate/profile";
-import { modelComponent } from "@cognate/provider-openai-compatible";
-import { devTokenAuthenticator } from "@cognate/protocol-connect-bun";
-import { type AgentDefinition, type Caller, ContinuationClosedError, invokeFrontend, type RunContext } from "@cognate/runtime-api";
-import { createRuntime } from "@cognate/runtime-bun";
-import type { Runtime } from "@cognate/runtime-bun";
+import { allowCapabilities } from "@godspeedai/kernel-api";
+import type { Component, Policy } from "@godspeedai/kernel-api";
+import type { ModelMessage, ModelProvider, ModelRequest, ModelResponse, ToolCall, ToolDefinition } from "@godspeedai/capabilities";
+import type { Json } from "@godspeedai/events";
+import type { CapabilityContract } from "@godspeedai/kernel-api";
+import { createAgUiHandler } from "@godspeedai/ag-ui";
+import { type CognateClient } from "@godspeedai/client";
+import { useCognate } from "@godspeedai/react";
+import { type ComponentEntry, type ProfileDefinition, defineProfile } from "@godspeedai/profile";
+import { modelComponent } from "@godspeedai/provider-openai-compatible";
+import { devTokenAuthenticator } from "@godspeedai/protocol-connect-bun";
+import { type AgentDefinition, type Caller, ContinuationClosedError, invokeFrontend, type RunContext } from "@godspeedai/runtime-api";
+import { createRuntime } from "@godspeedai/runtime-bun";
+import type { Runtime } from "@godspeedai/runtime-bun";
 import { type ReactNode, useEffect, useState } from "react";
 
 export const COPILOT_AGENT = "agent.copilot";
@@ -31,15 +31,15 @@ export const copilotProfile: ProfileDefinition = defineProfile({
 
 /** Registry entries backing the profile's component names; every one is backed by an existing package (no DEBT). */
 export const copilotRegistry: readonly ComponentEntry<unknown>[] = [
-  { name: "runtime", package: "@cognate/runtime-bun", supported: true, contribute: () => undefined },
-  { name: "runs", package: "@cognate/runtime-api", supported: true, contribute: () => undefined },
-  { name: "continuations", package: "@cognate/continuations", supported: true, contribute: () => undefined },
-  { name: "frontend-capabilities", package: "@cognate/runtime-api", supported: true, contribute: () => undefined },
-  { name: "state-projections", package: "@cognate/client", supported: true, contribute: () => undefined },
-  { name: "artifact-projections", package: "@cognate/artifacts", supported: true, contribute: () => undefined },
-  { name: "ag-ui", package: "@cognate/ag-ui", supported: true, contribute: () => undefined },
-  { name: "react", package: "@cognate/react", supported: true, contribute: () => undefined },
-  { name: "astryx", package: "@cognate/ui-astryx", supported: true, contribute: () => undefined },
+  { name: "runtime", package: "@godspeedai/runtime-bun", supported: true, contribute: () => undefined },
+  { name: "runs", package: "@godspeedai/runtime-api", supported: true, contribute: () => undefined },
+  { name: "continuations", package: "@godspeedai/continuations", supported: true, contribute: () => undefined },
+  { name: "frontend-capabilities", package: "@godspeedai/runtime-api", supported: true, contribute: () => undefined },
+  { name: "state-projections", package: "@godspeedai/client", supported: true, contribute: () => undefined },
+  { name: "artifact-projections", package: "@godspeedai/artifacts", supported: true, contribute: () => undefined },
+  { name: "ag-ui", package: "@godspeedai/ag-ui", supported: true, contribute: () => undefined },
+  { name: "react", package: "@godspeedai/react", supported: true, contribute: () => undefined },
+  { name: "astryx", package: "@godspeedai/ui-astryx", supported: true, contribute: () => undefined },
 ];
 
 export interface BackendTool {

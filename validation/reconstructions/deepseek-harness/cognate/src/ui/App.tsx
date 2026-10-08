@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { Json } from "@cognate/events";
-import { useCognate, useContinuations, useProjection } from "@cognate/react";
+import type { Json } from "@godspeedai/events";
+import { useCognate, useContinuations, useProjection } from "@godspeedai/react";
 import { ComposerBar } from "./workbench/ComposerBar.tsx";
 import { WorkbenchView, useBindableTasks } from "./workbench/Workbench.tsx";
 import { captureSnapshot, resolveAttention, withReferent, type FocusRef } from "../workbench/focus.ts";

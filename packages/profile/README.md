@@ -1,4 +1,4 @@
-# @cognate/profile
+# @godspeedai/profile
 
 Profiles are pure composition (spec §29, §40.J/K): a named, ordered
 selection of registered component names plus per-component options. They

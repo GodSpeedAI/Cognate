@@ -1,6 +1,6 @@
-import type { Json } from "@cognate/events";
-import { ModelProviderError, type ModelDelta, type ModelMessage, type ModelProvider, type ModelRequest, type ModelResponse, type ToolCall, modelContract } from "@cognate/capabilities";
-import type { Component } from "@cognate/kernel-api";
+import type { Json } from "@godspeedai/events";
+import { ModelProviderError, type ModelDelta, type ModelMessage, type ModelProvider, type ModelRequest, type ModelResponse, type ToolCall, modelContract } from "@godspeedai/capabilities";
+import type { Component } from "@godspeedai/kernel-api";
 
 export interface OpenAICompatibleOptions {
   /** Instance id, e.g. `local`; the provider id becomes `openai-compatible:<id>`. */

@@ -1,4 +1,4 @@
-import type { Json } from "@cognate/events";
+import type { Json } from "@godspeedai/events";
 import type { RunContext } from "./types.ts";
 
 /** Continuation condition kind for a capability served by a connected client (e.g. a browser). */

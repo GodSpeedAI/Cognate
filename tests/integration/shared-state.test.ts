@@ -2,11 +2,11 @@
 // visible to the client; a caller's `RuntimeService.updateState` is visible to the agent through
 // `RunContext.state`; `startRun({ state })` seeds it; AG-UI's `RunAgentInput.state` seeds it end to end.
 import { afterEach, describe, expect, test } from "bun:test";
-import { createClient } from "@cognate/client";
-import type { AgentDefinition } from "@cognate/runtime-api";
-import { alice } from "@cognate/runtime-api/conformance";
-import { createRuntime, type Runtime } from "@cognate/runtime-bun";
-import { createAgUiHandler } from "@cognate/ag-ui";
+import { createClient } from "@godspeedai/client";
+import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { alice } from "@godspeedai/runtime-api/conformance";
+import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import { createAgUiHandler } from "@godspeedai/ag-ui";
 
 const agents: AgentDefinition[] = [
   {

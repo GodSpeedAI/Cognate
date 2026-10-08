@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/ag-ui",
+  "name": "@godspeedai/ag-ui",
   "version": "0.1.0",
   "description": "AG-UI projection and interoperability adapter: outbound event mapping, inbound actions through native authorization, SSE endpoint with reconnect (spec §24). Internal events are never AG-UI aliases.",
   "type": "module",
@@ -24,12 +24,12 @@
   "dependencies": {
     "@ag-ui/core": "1.0.0",
     "@ag-ui/encoder": "1.0.0",
-    "@cognate/client": "workspace:*",
-    "@cognate/events": "workspace:*",
-    "@cognate/runtime-api": "workspace:*"
+    "@godspeedai/client": "workspace:*",
+    "@godspeedai/events": "workspace:*",
+    "@godspeedai/runtime-api": "workspace:*"
   },
   "devDependencies": {
     "@ag-ui/client": "1.0.0",
-    "@cognate/runtime-bun": "workspace:*"
+    "@godspeedai/runtime-bun": "workspace:*"
   }
 }

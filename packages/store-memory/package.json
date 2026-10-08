@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/store-memory",
+  "name": "@godspeedai/store-memory",
   "version": "0.1.0",
   "description": "In-memory DurableStore with the same semantics as the SQLite store (tests, ephemeral runtimes).",
   "type": "module",
@@ -22,6 +22,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/events": "workspace:*"
+    "@godspeedai/events": "workspace:*"
   }
 }

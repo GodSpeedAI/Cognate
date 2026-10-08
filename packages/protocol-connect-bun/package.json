@@ -1,5 +1,5 @@
 {
-  "name": "@cognate/protocol-connect-bun",
+  "name": "@godspeedai/protocol-connect-bun",
   "version": "0.1.0",
   "description": "Serves the Connect runtime service on Bun.serve with authentication, payload limits, and deadlines; provides a fetch transport.",
   "type": "module",
@@ -22,12 +22,12 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cognate/protocol-connect": "workspace:*",
-    "@cognate/runtime-api": "workspace:*",
+    "@godspeedai/protocol-connect": "workspace:*",
+    "@godspeedai/runtime-api": "workspace:*",
     "@connectrpc/connect": "2.2.0",
     "@connectrpc/connect-web": "2.2.0"
   },
   "devDependencies": {
-    "@cognate/runtime-bun": "workspace:*"
+    "@godspeedai/runtime-bun": "workspace:*"
   }
 }

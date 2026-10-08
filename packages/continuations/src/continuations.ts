@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { ConcurrencyError, fingerprint, OutboxDispatcher, PermanentDeliveryError, RecordConflictError } from "@cognate/events";
-import type { DrainReport, DurableStore, Json, OutboxIntent, StoredRecord } from "@cognate/events";
+import { ConcurrencyError, fingerprint, OutboxDispatcher, PermanentDeliveryError, RecordConflictError } from "@godspeedai/events";
+import type { DrainReport, DurableStore, Json, OutboxIntent, StoredRecord } from "@godspeedai/events";
 import type {
   ContinuationAction,
   ContinuationPolicy,

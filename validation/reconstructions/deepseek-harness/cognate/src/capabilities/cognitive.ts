@@ -1,5 +1,5 @@
 // Cognitive-navigation capabilities (local harness proof; candidates for core promotion are listed
-// in DEVIATIONS.md). They sit on `@cognate/execution` (files/processes in a named world) and the
+// in DEVIATIONS.md). They sit on `@godspeedai/execution` (files/processes in a named world) and the
 // durable event log (`agent.cognitive` records facts). Nothing here keeps its own store: the Case,
 // Reality and lineage are folds of events, so a restart reconstructs them.
 //
@@ -14,11 +14,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { localExecutionWorld } from "@cognate/execution";
-import type { ExecInput, ExecResult, ExecutionWorldRegistry, ListInput, ListResult, ReadInput, ReadResult } from "@cognate/execution";
-import type { Json } from "@cognate/events";
-import type { CapabilityLease, Component, HandlerContext, SemanticRef } from "@cognate/kernel-api";
-import type { Caller, RuntimeService } from "@cognate/runtime-api";
+import { localExecutionWorld } from "@godspeedai/execution";
+import type { ExecInput, ExecResult, ExecutionWorldRegistry, ListInput, ListResult, ReadInput, ReadResult } from "@godspeedai/execution";
+import type { Json } from "@godspeedai/events";
+import type { CapabilityLease, Component, HandlerContext, SemanticRef } from "@godspeedai/kernel-api";
+import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
 import { AGENT_COGNITIVE } from "../agents/agentCognitive.ts";
 import { hashOf } from "../cognitive/canonical.ts";
 import { checkPromotion, foldLineage, worldHash, worldManifest, WORLD_EVENTS, type WorldManifest } from "../cognitive/world.ts";

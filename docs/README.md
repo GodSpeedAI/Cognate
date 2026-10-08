@@ -24,22 +24,22 @@ Only the parts needed for a first mental model. Every arrow is a real call in th
 
 ```mermaid
 flowchart LR
-    SEA["domain/*.sea"] --> DF["DomainForge adapter<br/>@cognate/domainforge"]
+    SEA["domain/*.sea"] --> DF["DomainForge adapter<br/>@godspeedai/domainforge"]
     DF --> REF["SemanticRef"]
 
     AG["AgentDefinition.run(input, ctx)"] --> RC["RunContext"]
-    RC --> EX["@cognate/runtime-bun<br/>executor"]
-    EX --> ST[("SQLite event log<br/>@cognate/store-sqlite")]
-    RC -.invoke.-> KN["Kernel<br/>@cognate/kernel-cordis"]
+    RC --> EX["@godspeedai/runtime-bun<br/>executor"]
+    EX --> ST[("SQLite event log<br/>@godspeedai/store-sqlite")]
+    RC -.invoke.-> KN["Kernel<br/>@godspeedai/kernel-cordis"]
     KN --> PR["capability provider<br/>(model, tool, storage, …)"]
-    RC -.waitFor.-> CT["continuation<br/>@cognate/continuations"]
+    RC -.waitFor.-> CT["continuation<br/>@godspeedai/continuations"]
     CT -.resume.-> EX
 
     ST --> SVC["RuntimeService<br/>in-process"]
     ST --> CP["Connect · AG-UI · MCP · A2A<br/>protocol adapters"]
-    CP --> CL["@cognate/client"]
-    CL --> RE["@cognate/react"]
-    RE --> UI["@cognate/ui-astryx"]
+    CP --> CL["@godspeedai/client"]
+    CL --> RE["@godspeedai/react"]
+    RE --> UI["@godspeedai/ui-astryx"]
     ST --> COG["cognitive index (derived)"]
     ST --> OBS["RealityTrace observations (optional)"]
 ```

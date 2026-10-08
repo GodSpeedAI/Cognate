@@ -1,5 +1,5 @@
 // CG-WIR-003 (in-process half): the runtime passes the transport-independent service kit on SQLite and memory.
-import { runtimeServiceConformance } from "@cognate/runtime-api/conformance";
+import { runtimeServiceConformance } from "@godspeedai/runtime-api/conformance";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
