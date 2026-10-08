@@ -11,6 +11,7 @@
   "plugins": [
     {
       "linked-versions": {
+        "type": "linked-versions",
         "groupName": "cognate SDK packages",
         "components": [
           "a2a", "ag-ui", "artifacts", "capabilities", "cli", "client",
