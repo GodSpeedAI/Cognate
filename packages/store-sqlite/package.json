@@ -1,6 +1,6 @@
 {
   "name": "@cognate/store-sqlite",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Authoritative DurableStore on bun:sqlite (spec §13).",
   "type": "module",
   "license": "Apache-2.0",
