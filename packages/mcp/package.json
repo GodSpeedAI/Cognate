@@ -1,6 +1,6 @@
 {
   "name": "@cognate/mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "MCP adapter: exposes runtime capabilities as MCP tools through the runtime's authorization path.",
   "type": "module",
   "license": "Apache-2.0",

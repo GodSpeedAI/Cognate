@@ -1,6 +1,6 @@
 {
   "name": "@cognate/ui-astryx",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Reference Astryx surfaces over @cognate/react: shell, chat, approvals, artifacts, run and state inspection, themes (spec §25.3). A renderer, not the ontology.",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,6 +1,6 @@
 {
   "name": "@cognate/profile-harness",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Harness reference profile: model providers, tool registry, agent loop, sessions, storage, skills, scheduler, sandbox, replaceable services, subagents (spec §29.2). No kernel additions.",
   "type": "module",
   "license": "Apache-2.0",
