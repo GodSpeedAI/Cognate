@@ -10,19 +10,45 @@
   "bump-minor-pre-major": true,
   "plugins": [
     {
-      "linked-versions": {
-        "groupName": "cognate SDK packages",
-        "components": [
-          "a2a", "ag-ui", "artifacts", "capabilities", "cli", "client",
-          "cognitive-api", "cognitive-memory", "cognitive-ruvector", "cognitive-rvf",
-          "continuations", "domainforge", "events", "execution", "execution-ssh",
-          "execution-wsl", "kernel-api", "kernel-cordis", "mcp", "profile",
-          "projections", "proto", "protocol-connect", "protocol-connect-bun",
-          "provider-local", "provider-openai-compatible", "react", "realitytrace",
-          "runtime-api", "runtime-bun", "store-memory", "store-sqlite",
-          "ui-astryx", "profile-copilot", "profile-harness"
-        ]
-      }
+      "type": "linked-versions",
+      "groupName": "cognate SDK packages",
+      "components": [
+        "a2a",
+        "ag-ui",
+        "artifacts",
+        "capabilities",
+        "cli",
+        "client",
+        "cognitive-api",
+        "cognitive-memory",
+        "cognitive-ruvector",
+        "cognitive-rvf",
+        "continuations",
+        "domainforge",
+        "events",
+        "execution",
+        "execution-ssh",
+        "execution-wsl",
+        "kernel-api",
+        "kernel-cordis",
+        "mcp",
+        "profile",
+        "projections",
+        "proto",
+        "protocol-connect",
+        "protocol-connect-bun",
+        "provider-local",
+        "provider-openai-compatible",
+        "react",
+        "realitytrace",
+        "runtime-api",
+        "runtime-bun",
+        "store-memory",
+        "store-sqlite",
+        "ui-astryx",
+        "profile-copilot",
+        "profile-harness"
+      ]
     }
   ],
   "packages": {
