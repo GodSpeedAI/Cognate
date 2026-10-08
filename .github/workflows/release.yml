@@ -50,7 +50,14 @@ jobs:
   publish:
     name: publish ${{ matrix.path }}
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    # NPM_TRUSTED_PUBLISHING_READY is a repository VARIABLE (not secret), set
+    # to 'true' after every released package has a trusted publisher configured
+    # on npmjs.com (repo GodSpeedAI/Cognate, workflow release.yml, environment
+    # release). npm trusted publishers cannot be configured for packages that
+    # do not exist yet, so the first release must be published once from a
+    # logged-in npm session; until the variable is set this job skips instead
+    # of failing on missing OIDC configuration.
+    if: needs.release-please.outputs.releases_created == 'true' && vars.NPM_TRUSTED_PUBLISHING_READY == 'true'
     runs-on: ubuntu-latest
     environment: release
     # Serializes publications across runs; a queued publish is never cancelled
