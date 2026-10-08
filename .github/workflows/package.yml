@@ -80,10 +80,8 @@ jobs:
           cd .tmp/clean-room
           echo '{"name":"cognate-clean-room","private":true}' > package.json
           bun add "$PROBE_PACKAGE@$version"
-          # Headless client + event contract resolved through the published
-          # graph only (no workspace, no monorepo checkout).
-          bun -e 'import("@cognate/client").then((m) => { if (typeof m.createClient !== "function") throw new Error("createClient missing"); console.log("@cognate/client OK"); })'
-          bun -e 'import("@cognate/events").then(() => console.log("@cognate/events OK"))'
+          cp "$GITHUB_WORKSPACE/scripts/clean-room-smoke.ts" smoke.ts
+          bun smoke.ts
           # CLI bin: prints usage and exits 1 when called without a command.
-          bunx cognate 2>&1 | grep -q "usage: cognate"
+          ./node_modules/.bin/cognate 2>&1 | grep -q "usage: cognate"
           echo "clean-room install + smoke OK for $PROBE_PACKAGE@$version"
