@@ -8,7 +8,23 @@
   "group-pull-request-title-pattern": "chore(main): release ${branch}",
   "pull-request-title-pattern": "chore${component}: release${component} ${version}",
   "bump-minor-pre-major": true,
-  "plugins": ["node-workspace"],
+  "plugins": [
+    {
+      "linked-versions": {
+        "groupName": "cognate SDK packages",
+        "components": [
+          "a2a", "ag-ui", "artifacts", "capabilities", "cli", "client",
+          "cognitive-api", "cognitive-memory", "cognitive-ruvector", "cognitive-rvf",
+          "continuations", "domainforge", "events", "execution", "execution-ssh",
+          "execution-wsl", "kernel-api", "kernel-cordis", "mcp", "profile",
+          "projections", "proto", "protocol-connect", "protocol-connect-bun",
+          "provider-local", "provider-openai-compatible", "react", "realitytrace",
+          "runtime-api", "runtime-bun", "store-memory", "store-sqlite",
+          "ui-astryx", "profile-copilot", "profile-harness"
+        ]
+      }
+    }
+  ],
   "packages": {
     "packages/a2a": {},
     "packages/ag-ui": {},
