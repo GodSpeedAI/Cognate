@@ -1,9 +1,23 @@
 {
   "name": "@cognate/provider-openai-compatible",
   "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "ModelProvider for OpenAI-compatible chat completion endpoints (llama.cpp, vLLM, Ollama's /v1, hosted APIs) over fetch; no SDK.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/provider-openai-compatible"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
