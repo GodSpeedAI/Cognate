@@ -78,3 +78,9 @@ The command stays `cognate` (bin of `@godspeedai/cognate-cli`):
 ```sh
 bunx @godspeedai/cognate-cli create my-app --profile copilot --source <checkout>
 ```
+
+## Consumer type setup
+
+Every `@godspeedai/cognate-*` package ships Bun-native TypeScript source.
+Consumers running `tsc` need `bun add -d @types/bun @types/node` (verified
+in the registry clean-room).
