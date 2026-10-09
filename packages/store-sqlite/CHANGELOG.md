@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.1.1...cognate-store-sqlite-v0.1.2) (2026-10-09)
+
+
+### Documentation
+
+* consumer READMEs for all 36 packages + 0.1.2 documentation release prep ([#29](https://github.com/GodSpeedAI/Cognate/issues/29)) ([fc56129](https://github.com/GodSpeedAI/Cognate/commit/fc56129f0359568fd84c36002a5ad21cd7bac722))
+
 ## [0.1.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.1.1...cognate-store-sqlite-v0.1.0) (2026-10-09)
 
 
