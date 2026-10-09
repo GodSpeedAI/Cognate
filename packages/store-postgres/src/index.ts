@@ -332,7 +332,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
           position += 1;
           const eventId = event.eventId ?? crypto.randomUUID();
           await tx`INSERT INTO ${t.events} (position, event_id, stream_id, stream_sequence, event_type, schema_version, occurred_at, recorded_at, tenant, correlation_id, causation_id, run_id, scope_id, component_id, fiber_id, semantic_ref, metadata)
-            VALUES (${position}, ${eventId}, ${append.streamId}, ${sequence}, ${event.eventType}, ${event.schemaVersion}, ${event.occurredAt}, ${recordedAt}, ${event.tenant}, ${event.correlationId}, ${event.causationId}, ${event.runId}, ${event.scopeId}, ${event.componentId ?? null}, ${event.fiberId ?? null}, ${event.semanticRef ? sql.json(event.semanticRef) : null}::jsonb, ${event.metadata ? sql.json(event.metadata) : null}::jsonb)`;
+            VALUES (${position}, ${eventId}, ${append.streamId}, ${sequence}, ${event.eventType}, ${event.schemaVersion}, ${event.occurredAt}, ${recordedAt}, ${event.tenant}, ${event.correlationId}, ${event.causationId}, ${event.runId}, ${event.scopeId}, ${event.componentId ?? null}, ${event.fiberId ?? null}, ${event.semanticRef ? sql.json(event.semanticRef as unknown as Json) : null}::jsonb, ${event.metadata ? sql.json(event.metadata) : null}::jsonb)`;
           await tx`INSERT INTO ${t.payloads} (event_id, payload) VALUES (${eventId}, ${jsonb(event.payload)})`;
           storedEvents.push(
             mapEventRow({
@@ -457,7 +457,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     async streamVersion(streamId: string): Promise<number> {
       assertOpen();
       const rows = await sql`SELECT version FROM ${t.streams} WHERE stream_id = ${streamId}`;
-      return rows.length > 0 ? num(rows[0].version) : 0;
+      return rows.length > 0 ? num(rows[0]!.version) : 0;
     },
 
     async readStream(streamId: string, options?: { readonly afterSequence?: number; readonly limit?: number }): Promise<StoredEvent[]> {
@@ -606,7 +606,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     async readProjection(name: string, key: string): Promise<Json | undefined> {
       assertOpen();
       const rows = await sql`SELECT value::text AS value_text FROM ${t.projectionState} WHERE name = ${name} AND key = ${key}`;
-      return rows.length > 0 ? json<Json>(rows[0].value_text) : undefined;
+      return rows.length > 0 ? json<Json>(rows[0]!.value_text) : undefined;
     },
 
     async listProjection(name: string): Promise<{ readonly key: string; readonly value: Json }[]> {
@@ -633,7 +633,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     async getBlob(hash: string): Promise<Uint8Array | undefined> {
       assertOpen();
       const rows = await sql`SELECT bytes FROM ${t.blobs} WHERE hash = ${hash}`;
-      return rows.length > 0 ? new Uint8Array(rows[0].bytes) : undefined;
+      return rows.length > 0 ? new Uint8Array(rows[0]!.bytes) : undefined;
     },
 
     async deleteBlob(hash: string): Promise<void> {
@@ -715,12 +715,13 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
 }
 
 async function migrate(sql: postgres.Sql, schema: string, schemaVersions: postgres.Fragment): Promise<void> {
-  await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-  // One migration lock per schema: concurrent processes opening the same schema serialize here, re-read
-  // the applied set, and skip migrations already recorded. The DDL itself is unqualified; search_path
-  // pins it to this store's schema for the transaction.
+  // One migration lock per schema: concurrent processes opening the same schema serialize here —
+  // including the schema creation itself, because CREATE SCHEMA IF NOT EXISTS is not race-free in
+  // PostgreSQL (two creators can pass the existence check and collide on pg_namespace). The DDL is
+  // unqualified; search_path pins it to this store's schema for the transaction.
   await sql.begin(async (tx) => {
     await tx`SELECT pg_advisory_xact_lock(hashtext(${`cognate-migrate:${schema}`})::bigint)`;
+    await tx.unsafe(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
     await tx.unsafe(`SET LOCAL search_path = ${schema}`);
     await tx`CREATE TABLE IF NOT EXISTS ${schemaVersions} (version integer PRIMARY KEY, applied_at text NOT NULL)`;
     const applied = new Set(((await tx`SELECT version FROM ${schemaVersions}`) as Row[]).map((r) => num(r.version)));

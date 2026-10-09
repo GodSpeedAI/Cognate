@@ -8,8 +8,9 @@ const url = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgr
 test("postgres.js connects, transacts, and types under Bun", async () => {
   const sql = postgres(url, { max: 5 });
   try {
-    const [{ version }] = await sql`SELECT version()`;
-    expect(version).toContain("PostgreSQL 18");
+    const rows0 = await sql`SELECT version()`;
+    const version = rows0[0]!.version as string;
+    expect(String(version)).toContain("PostgreSQL 18");
 
     await sql`DROP TABLE IF EXISTS driver_smoke`;
     await sql`CREATE TABLE driver_smoke (id bigint generated always as identity primary key, value text)`;
