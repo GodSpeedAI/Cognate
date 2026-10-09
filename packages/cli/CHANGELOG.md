@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-cli-v0.1.0...cognate-cli-v0.1.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **ci:** tolerate the CLI bin's intentional exit 1 in the clean-room probe ([#19](https://github.com/GodSpeedAI/Cognate/issues/19)) ([f69d8e8](https://github.com/GodSpeedAI/Cognate/commit/f69d8e8edf117dd0f4ce3d5546ff932e39efb48b))
+* document the ambient type packages SDK consumers need ([#18](https://github.com/GodSpeedAI/Cognate/issues/18)) ([8db205d](https://github.com/GodSpeedAI/Cognate/commit/8db205d6820a3a4b22550be366321a5794d0e029))
+
 ## 0.1.0 (2026-10-09)
 
 
