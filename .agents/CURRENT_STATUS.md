@@ -1,25 +1,23 @@
 # Current status
 
-**Status revision:** 41
+**Status revision:** 42
 
-**Stage:** cognate-* migration complete: 0.1.0 published, 0.1.1 released through fully automated OIDC, superseded names deprecated
+**Stage:** cognate-* migration closed: all 33 superseded packages deprecated, registry state clean
 
-**Summary:** The renamed @godspeedai/cognate-* SDK is live on npm: 0.1.0 of all 36 identities published and verified, 33 superseded @godspeedai/<module> packages deprecated with migration messages (realitytrace pending one operator command), and the automated pipeline proven end to end — a fix commit flowed Release Please (0.1.1 for 35 components, lockstep) through npm trusted publishing (OIDC, zero tokens) with every publish job green. The umbrella joined the release config after its path was found missing; it publishes 0.1.0 (manual first push) and re-joins lockstep at the next release.
+**Summary:** The last open registry mutation is done: @godspeedai/realitytrace@0.1.0 is deprecated with the migration message after the operator refreshed the machine's npm auth (the shared token had been invalidated by npm's 2026 token-policy enforcement, which is also why the first attempt returned E404). npm stage list is clean (no pending stages). All 33 superseded @godspeedai/<module> packages now carry the migration message; the 36 @godspeedai/cognate-* packages are live (35 at 0.1.1 via the automated OIDC round, umbrella at 0.1.0 until the next lockstep release).
 
 **Verified:**
-- npm: 36/36 cognate-* packages resolved via npm view at publication time; 35 at 0.1.1 after the automated release (umbrella 0.1.0, current)
-- Automated round: release run 37880531909 success — 36/36 publish jobs green via OIDC (id-token: write, no tokens), serialized, guard-guarded
-- Deprecations: 32/33 verified via npm view deprecated with the migration message; @godspeedai/realitytrace@0.1.0 deprecation needs one rerun from the operator session (EOTP here)
-- Real-registry clean-room in CI (package.yml) now active and green: installs @godspeedai/cognate-cli from npm, consumer smoke + typed probe pass
-- Release Please state aligned: manifest, cognate-* tags, and GitHub releases agree at 0.1.1 (umbrella 0.1.0); verification dispatches succeed with no duplicates
+- npm view deprecated confirms the migration message on all 33 superseded packages, including @godspeedai/realitytrace@0.1.0
+- npm stage list: no staged packages pending
+- Fresh npm auth on the shared machine (npm whoami: sprime01); CI unaffected throughout (OIDC, no user tokens)
+- bun run check passes with revision 42 and a regenerated human view
 
 **Limits:**
-- @godspeedai/realitytrace@0.1.0 deprecation pending one operator command (EOTP in the agent session)
-- Umbrella sits at 0.1.0 while the group is 0.1.1; linked-versions pulls it to the group version at the next release
-- Trusted-publisher configs must each complete a successful OIDC publish within 2 days of creation; the 0.1.1 round validated them the same day
-- Umbrella 0.1.1 tag creation collided with the bootstrap release (already_exists) once; resolved by state alignment, no residue
+- Umbrella @godspeedai/cognate remains at 0.1.0 until the next release pulls it into lockstep (linked-versions)
+- The design spec still describes the old package naming; a spec-revision note remains a documentation follow-up
+- npm user tokens on this machine expire under the 2026 policy — manual npm operations need a fresh npm login; automated releases are unaffected (OIDC)
 
-**Next:** Operator reruns the realitytrace deprecation command; optionally exercise bunx @godspeedai/cognate-cli create from a clean machine to finish DEBT-016's exit criterion
+**Next:** Optional: exercise bunx @godspeedai/cognate-cli create from a clean machine to close DEBT-016's exit criterion; propose the spec revision for the cognate-* naming
 
 **Evidence:**
 - .agents/evidence/2026-10-08-release-0.1.0-prep.md
