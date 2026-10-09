@@ -21,3 +21,12 @@ transports, React bindings) are deliberate opt-ins via their own packages and
 are intentionally not bundled here.
 
 This package is Bun-native like the rest of the SDK (`engines: bun >= 1.4.0`).
+
+## Consumer type setup
+
+The SDK ships Bun-native TypeScript source, so typechecking a consumer
+project needs the ambient type packages alongside the SDK:
+
+```sh
+bun add -d @types/bun @types/node
+```

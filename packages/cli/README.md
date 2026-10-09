@@ -23,3 +23,12 @@ extras (`unsupported: <name> (<reason>)`) and never adds them to imports or
 `GET /health`, the Connect `RuntimeService` at `/cognate.v1.RuntimeService/*`
 (dev-only `Bearer <tenant>:<user>` auth), `/agui` (copilot only), and `/` — an
 Astryx chat UI for copilot, a health JSON page for harness.
+
+## Consumer type setup
+
+Typechecking a project that depends on this package (or on generated apps
+vendoring it) needs the ambient type packages:
+
+```sh
+bun add -d @types/bun @types/node
+```
