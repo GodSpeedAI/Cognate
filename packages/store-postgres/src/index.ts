@@ -265,22 +265,21 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
   // ── Commit ──────────────────────────────────────────────────────────────────────
 
   async function commit(request: CommitRequest): Promise<CommitOutcome> {
+    const appends = request.appends ?? [];
     // Phase A (pre-transaction, mirrors the SQLite store): every envelope is validated before anything
     // is written, so a bad envelope cannot even open a transaction.
-    for (const append of request.appends) for (const event of append.events) validateNewEvent(event);
+    for (const append of appends) for (const event of append.events) validateNewEvent(event);
 
-    const eventCount = request.appends.reduce((total, append) => total + append.events.length, 0);
+    const eventCount = appends.reduce((total, append) => total + append.events.length, 0);
 
-    // Phase B — idempotency pre-check outside the transaction: the common replay path returns without
-    // opening a write transaction at all. A concurrent same-key race is settled by Phase H.
-      if (request.idempotency) {
-        const rows = await sql`SELECT fingerprint, result::text AS result, event_ids::text AS event_ids FROM ${t.idempotency} WHERE scope = ${request.idempotency.scope} AND key = ${request.idempotency.key}`;
-        if (rows.length > 0) {
-          const row = rows[0]!;
-          if (row.fingerprint !== request.idempotency.fingerprint) throw new IdempotencyMismatchError(request.idempotency.scope, request.idempotency.key);
-          return { kind: "duplicate", events: await eventsByIds(json<string[]>(row.event_ids)), result: json<Json>(row.result) };
-        }
-      }
+    // Phase B (fast path) — a committed idempotency key replays outside the write transaction. A
+    // concurrent same-key race is re-checked under serialization below, because a loser that passed
+    // this check must not reach the stream CAS before discovering the winner (the SQLite store checks
+    // idempotency inside BEGIN IMMEDIATE; this re-check preserves that order).
+    if (request.idempotency) {
+      const settled = await readIdempotencyRecord(sql, request.idempotency);
+      if (settled) return settled;
+    }
 
     let outcome: CommitOutcome | undefined;
     await sql.begin(async (tx) => {
@@ -292,11 +291,21 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
         firstPosition = num(counter[0]!.base);
       }
 
+      // Phase B (serialized) — replay or mismatch the idempotency key before any CAS, exactly where the
+      // SQLite store checks it. A loser of a same-key race lands here after the winner committed.
+      if (request.idempotency) {
+        const settled = await readIdempotencyRecord(tx, request.idempotency);
+        if (settled) {
+          outcome = settled;
+          return;
+        }
+      }
+
       // Phase C — CAS every stream's expected version before writing any event (empty appends included,
       // like the SQLite store). Appends are serialized by the counter lock, so read-modify-write here
       // cannot interleave with another appender.
       const streamVersions = new Map<string, number>();
-      for (const append of request.appends) {
+      for (const append of appends) {
         await tx`INSERT INTO ${t.streams} (stream_id, version) VALUES (${append.streamId}, 0) ON CONFLICT (stream_id) DO NOTHING`;
         const rows = await tx`SELECT version FROM ${t.streams} WHERE stream_id = ${append.streamId} FOR UPDATE`;
         const current = num(rows[0]!.version);
@@ -316,7 +325,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
       const recordedAt = new Date().toISOString();
       const storedEvents: StoredEvent[] = [];
       let position = firstPosition - 1;
-      for (const append of request.appends) {
+      for (const append of appends) {
         let sequence = streamVersions.get(append.streamId) ?? 0;
         for (const event of append.events) {
           sequence += 1;
@@ -414,6 +423,16 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     const rows = await sql`${eventSelect} WHERE e.event_id IN ${sql([...ids])}`;
     const byId = new Map<string, Row>(rows.map((row: Row) => [row.event_id, row]));
     return ids.filter((id) => byId.has(id)).map((eventId) => mapEventRow(byId.get(eventId)));
+  }
+
+  type Executor = postgres.Sql | postgres.TransactionSql;
+
+  async function readIdempotencyRecord(executor: Executor, idempotency: { readonly scope: string; readonly key: string; readonly fingerprint: string }): Promise<CommitOutcome | undefined> {
+    const rows = await executor`SELECT fingerprint, result::text AS result, event_ids::text AS event_ids FROM ${t.idempotency} WHERE scope = ${idempotency.scope} AND key = ${idempotency.key}`;
+    if (rows.length === 0) return undefined;
+    const row = rows[0]!;
+    if (row.fingerprint !== idempotency.fingerprint) throw new IdempotencyMismatchError(idempotency.scope, idempotency.key);
+    return { kind: "duplicate", events: await eventsByIds(json<string[]>(row.event_ids)), result: json<Json>(row.result) };
   }
 
   // ── Store surface ───────────────────────────────────────────────────────────────
@@ -681,8 +700,15 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     },
   };
 
+  // Drops through an ephemeral connection so cleanup works regardless of the store pool's state
+  // (tests close the store before dropping its schema).
   const dropSchema = async (): Promise<void> => {
-    await sql.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+    const dropper = postgres(options.url, { max: 1, onnotice: () => {} });
+    try {
+      await dropper.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+    } finally {
+      await dropper.end({ timeout: 1 });
+    }
   };
 
   return { store, dropSchema, close: () => store.close() };
