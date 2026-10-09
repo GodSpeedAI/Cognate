@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-artifacts",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Durable, addressable, content-hashed artifacts with access policy, retention, and tombstones (spec §13.1).",
   "type": "module",
   "license": "Apache-2.0",
