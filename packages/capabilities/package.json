@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-capabilities",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Two-phase capability selection: deterministic eligibility, then contained adaptive ranking with durable explanations (spec §8.2, §17, §30).",
   "type": "module",
   "license": "Apache-2.0",
