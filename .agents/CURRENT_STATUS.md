@@ -1,24 +1,24 @@
 # Current status
 
-**Status revision:** 42
+**Status revision:** 43
 
-**Stage:** cognate-* migration closed: all 33 superseded packages deprecated, registry state clean
+**Stage:** migration follow-ups closed: ADR-0012 records the naming contract, DEBT-016 narrowed with published-CLI evidence
 
-**Summary:** The last open registry mutation is done: @godspeedai/realitytrace@0.1.0 is deprecated with the migration message after the operator refreshed the machine's npm auth (the shared token had been invalidated by npm's 2026 token-policy enforcement, which is also why the first attempt returned E404). npm stage list is clean (no pending stages). All 33 superseded @godspeedai/<module> packages now carry the migration message; the 36 @godspeedai/cognate-* packages are live (35 at 0.1.1 via the automated OIDC round, umbrella at 0.1.0 until the next lockstep release).
+**Summary:** The two follow-ups from the cognate-* migration are done. ADR-0012 records the package-naming contract revision (the frozen spec keeps its @cognate names; the ADR is the canonical why, with the spec divergence and the provenance-is-N/A decision recorded). DEBT-016 is narrowed to its true remaining gap: the published CLI (bun x @godspeedai/cognate-cli@0.1.1) was exercised from a clean consumer context and generates a working vendored app, so the debt is now only registry-only app generation without --source, plus the provenance half accepted as N/A for the private repository.
 
 **Verified:**
-- npm view deprecated confirms the migration message on all 33 superseded packages, including @godspeedai/realitytrace@0.1.0
-- npm stage list: no staged packages pending
-- Fresh npm auth on the shared machine (npm whoami: sprime01); CI unaffected throughout (OIDC, no user tokens)
-- bun run check passes with revision 42 and a regenerated human view
+- bun run check, just verify 78/78 gates, full suite 768 tests / 0 fail with the ADR and DEBT changes
+- Published-CLI exercise: bun x @godspeedai/cognate-cli@0.1.1 create my-app --profile copilot --source <checkout> from a clean context vendors 26 cognate-* tarballs; the generated app installs and passes its own test
+- ADR-0012 registered in docs/decisions/README.md and the documentation map (twelve records)
 
 **Limits:**
-- Umbrella @godspeedai/cognate remains at 0.1.0 until the next release pulls it into lockstep (linked-versions)
-- The design spec still describes the old package naming; a spec-revision note remains a documentation follow-up
-- npm user tokens on this machine expire under the 2026 policy — manual npm operations need a fresh npm login; automated releases are unaffected (OIDC)
+- cognate create still requires --source <checkout>; a registry-only mode is the remaining DEBT-016 exit criterion (or an ADR accepting vendoring)
+- Spec §27 still names @cognate/*; ADR-0012 is the recorded contract revision, spec text unchanged by design
+- Umbrella @godspeedai/cognate remains at 0.1.0 until the next lockstep release
 
-**Next:** Optional: exercise bunx @godspeedai/cognate-cli create from a clean machine to close DEBT-016's exit criterion; propose the spec revision for the cognate-* naming
+**Next:** Optional product follow-up: registry-only mode for cognate create (closes DEBT-016); spec pass adopting the cognate-* names
 
 **Evidence:**
 - .agents/evidence/2026-10-08-release-0.1.0-prep.md
+- docs/decisions/ADR-0012-cognate-package-naming.md
 - docs/package-naming.md
