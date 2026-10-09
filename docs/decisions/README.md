@@ -24,6 +24,7 @@ that concern.
 | [ADR-0009](ADR-0009-ui-react-astryx.md) | Headless client → React → Astryx, each replaceable | Accepted (Phase 0 characterization complete) | `client`, `react`, `ui-astryx` are implemented; `CG-UI-001..003` and `CG-CLT-001` pass |
 | [ADR-0010](ADR-0010-mcp.md) | MCP tools as an authorized adapter over capabilities | Accepted (Phase 0 characterization complete) | `mcp` is implemented, proven over stdio; `CG-MCP-001` passes, [DEBT-013](../../.agents/DEBT.md) closed |
 | [ADR-0011](ADR-0011-runtime-service-contract-package.md) | A transport-independent `runtime-api` package owning `RuntimeService` and the agent surface | Accepted | Implemented; it is what makes Connect replaceable (`CG-WIR-003`) |
+| [ADR-0012](ADR-0012-cognate-package-naming.md) | SDK packages publish as `@godspeedai/cognate-<module>`; superseded names deprecated, umbrella `@godspeedai/cognate` | Accepted | 36 packages live on npm (0.1.0/0.1.1); `docs/package-naming.md` holds the old→new mapping; [DEBT-016](../../.agents/DEBT.md) narrowed |
 
 ## What the records share
 

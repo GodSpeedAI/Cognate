@@ -103,7 +103,7 @@ adding, renaming, or removing a page means editing this list.
 
 ## Architecture decisions
 
-[decisions/README.md](decisions/README.md) and the eleven records it indexes:
+[decisions/README.md](decisions/README.md) and the twelve records it indexes:
 [ADR-0001](decisions/ADR-0001-kernel-engine-cordis.md) ·
 [ADR-0002](decisions/ADR-0002-semantic-binding-domainforge.md) ·
 [ADR-0003](decisions/ADR-0003-wire-connect-protobuf.md) ·
@@ -114,7 +114,8 @@ adding, renaming, or removing a page means editing this list.
 [ADR-0008](decisions/ADR-0008-ag-ui.md) ·
 [ADR-0009](decisions/ADR-0009-ui-react-astryx.md) ·
 [ADR-0010](decisions/ADR-0010-mcp.md) ·
-[ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md) — each states a decision, its
+[ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md) ·
+[ADR-0012](decisions/ADR-0012-cognate-package-naming.md) — each states a decision, its
 context, its consequences, and what it rejected. They are the canonical record of *why*; the explanation pages
 above are the canonical record of *what the code does today*. Where an ADR's status line predates
 the implementation, the decision still stands and the current status is in the ledger.
