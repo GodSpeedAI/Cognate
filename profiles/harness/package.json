@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/profile-harness",
+  "name": "@godspeedai/cognate-profile-harness",
   "version": "0.1.0",
   "description": "Harness reference profile: model providers, tool registry, agent loop, sessions, storage, skills, scheduler, sandbox, replaceable services, subagents (spec §29.2). No kernel additions.",
   "type": "module",
@@ -22,15 +22,15 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/capabilities": "workspace:*",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/kernel-api": "workspace:*",
-    "@godspeedai/profile": "workspace:*",
-    "@godspeedai/provider-openai-compatible": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*",
-    "@godspeedai/runtime-bun": "workspace:*"
+    "@godspeedai/cognate-capabilities": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-kernel-api": "workspace:*",
+    "@godspeedai/cognate-profile": "workspace:*",
+    "@godspeedai/cognate-provider-openai-compatible": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*",
+    "@godspeedai/cognate-runtime-bun": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/provider-local": "workspace:*"
+    "@godspeedai/cognate-provider-local": "workspace:*"
   }
 }

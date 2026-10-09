@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/store-sqlite",
+  "name": "@godspeedai/cognate-store-sqlite",
   "version": "0.1.0",
   "description": "Authoritative DurableStore on bun:sqlite (spec §13).",
   "type": "module",
@@ -22,6 +22,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/events": "workspace:*"
+    "@godspeedai/cognate-events": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/profile",
+  "name": "@godspeedai/cognate-profile",
   "version": "0.1.0",
   "description": "defineProfile: reusable application compositions that select and configure components without new kernel concepts (spec §29).",
   "type": "module",
@@ -22,6 +22,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/kernel-api": "workspace:*"
+    "@godspeedai/cognate-kernel-api": "workspace:*"
   }
 }

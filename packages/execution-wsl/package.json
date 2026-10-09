@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/execution-wsl",
+  "name": "@godspeedai/cognate-execution-wsl",
   "version": "0.1.0",
   "description": "WSL distribution as an execution world: filesystem and process ports over `wsl.exe -e sh -s`. Same contracts as every other provider.",
   "type": "module",
@@ -22,6 +22,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/execution": "workspace:*"
+    "@godspeedai/cognate-execution": "workspace:*"
   }
 }

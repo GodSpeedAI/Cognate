@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/profile-copilot",
+  "name": "@godspeedai/cognate-profile-copilot",
   "version": "0.1.0",
   "description": "Copilot reference profile: a composition of runtime, runs, continuations, frontend capabilities, state and artifact projections, AG-UI, React, and Astryx (spec §29.1). No kernel additions.",
   "type": "module",
@@ -22,22 +22,22 @@
     ".": "./src/index.tsx"
   },
   "dependencies": {
-    "@godspeedai/ag-ui": "workspace:*",
-    "@godspeedai/capabilities": "workspace:*",
-    "@godspeedai/client": "workspace:*",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/kernel-api": "workspace:*",
-    "@godspeedai/profile": "workspace:*",
-    "@godspeedai/protocol-connect-bun": "workspace:*",
-    "@godspeedai/provider-openai-compatible": "workspace:*",
-    "@godspeedai/react": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*",
-    "@godspeedai/runtime-bun": "workspace:*",
-    "@godspeedai/ui-astryx": "workspace:*"
+    "@godspeedai/cognate-ag-ui": "workspace:*",
+    "@godspeedai/cognate-capabilities": "workspace:*",
+    "@godspeedai/cognate-client": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-kernel-api": "workspace:*",
+    "@godspeedai/cognate-profile": "workspace:*",
+    "@godspeedai/cognate-protocol-connect-bun": "workspace:*",
+    "@godspeedai/cognate-provider-openai-compatible": "workspace:*",
+    "@godspeedai/cognate-react": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*",
+    "@godspeedai/cognate-runtime-bun": "workspace:*",
+    "@godspeedai/cognate-ui-astryx": "workspace:*"
   },
   "devDependencies": {
     "@ag-ui/core": "1.0.0",
-    "@godspeedai/provider-local": "workspace:*",
+    "@godspeedai/cognate-provider-local": "workspace:*",
     "@happy-dom/global-registrator": "20.14.5",
     "@testing-library/react": "16.3.3",
     "react": "19.3.0",

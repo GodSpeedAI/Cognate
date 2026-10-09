@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/cognitive-ruvector",
+  "name": "@godspeedai/cognate-cognitive-ruvector",
   "version": "0.1.0",
   "description": "RuVector-backed CognitiveIndex (reference cognitive implementation; vector_search only per ADR-0004 / DEBT-007).",
   "type": "module",
@@ -22,7 +22,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/cognitive-api": "workspace:*",
+    "@godspeedai/cognate-cognitive-api": "workspace:*",
     "@ruvector/core": "0.1.32"
   }
 }
