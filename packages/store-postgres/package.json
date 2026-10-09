@@ -1,7 +1,7 @@
 {
   "name": "@godspeedai/cognate-store-postgres",
   "version": "0.1.2",
-  "description": "Authoritative DurableStore on PostgreSQL (spec §13); multi-process writers.",
+  "description": "Authoritative DurableStore on PostgreSQL (spec \u00a713); multi-process writers.",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
@@ -24,5 +24,8 @@
   "dependencies": {
     "@godspeedai/cognate-events": "workspace:*",
     "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@godspeedai/cognate-store-sqlite": "workspace:*"
   }
 }
