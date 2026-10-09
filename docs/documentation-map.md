@@ -87,6 +87,7 @@ adding, renaming, or removing a page means editing this list.
 | [reference/verification.md](reference/verification.md) | Reference: the ledger and evidence model | the ledger shape, what `check` enforces, what `gate.ts` does, evidence, compatibility fixtures, the current limits, what "implemented" does not mean | — |
 | [troubleshooting.md](troubleshooting.md) | Reference: diagnose a symptom | symptom → cause → recovery tables per subsystem, plus the environment caveats | — |
 | [package-naming.md](package-naming.md) | Reference: what each npm package is called and why | the `@godspeedai/cognate-<module>` convention, the 0.1.0 old→new name mapping, the umbrella package, Release Please handling of the rename | — |
+| [package-readme-standard.md](package-readme-standard.md) | Reference: what every published package README must contain | the consumer-README convention, the hard rules `scripts/check-readmes.mjs` enforces, and how README examples are verified | — |
 
 ## Plane pages (cross-cutting concerns)
 

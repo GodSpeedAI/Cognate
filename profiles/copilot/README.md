@@ -1,32 +1,102 @@
 # @godspeedai/cognate-profile-copilot
 
-Reference Copilot profile (spec §29.1, §40.J, CG-PRF-002): a pure composition of existing packages. No
-kernel or runtime primitive is added; every profile component name resolves to an existing package.
+The Copilot reference profile: a complete interactive chat application composed from existing Cognate packages — a model-and-tool agent loop, human approvals, frontend tools served by the browser, shared state and artifact projections, an AG-UI endpoint, and React/Astryx surfaces. It adds no new kernel or runtime primitives; every piece is a package you can also use separately.
 
-| Profile component      | Backing package                  | Primitive used                                                              |
-| ----------------------- | --------------------------------- | ---------------------------------------------------------------------------------- |
-| `runtime`               | `@godspeedai/cognate-runtime-bun`            | `createRuntime` (kernel, store, agent execution loop)                              |
-| `runs`                  | `@godspeedai/cognate-runtime-api`            | `AgentDefinition.run(input, RunContext)`                                           |
-| `continuations`         | `@godspeedai/cognate-continuations`          | `RunContext.waitFor` (approval gate + frontend tool waits)                         |
-| `frontend-capabilities` | `@godspeedai/cognate-runtime-api`            | `invokeFrontend` (a `frontend_capability` continuation, no bidi transport)         |
-| `state-projections`     | `@godspeedai/cognate-client`                 | `state.changed {snapshot|patch}` folded into `RunState.state` (RFC 6902)           |
-| `artifact-projections`  | `@godspeedai/cognate-artifacts`              | `RunContext.artifact` → `run.artifact` → `RunState.artifacts` / `getArtifact`      |
-| `ag-ui`                 | `@godspeedai/cognate-ag-ui`                  | `createAgUiHandler({ service, defaultAgent, authenticate })`                       |
-| `react`                 | `@godspeedai/cognate-react`                  | `useCognate`, `CognateProvider` (headless client bindings)                         |
-| `astryx`                | `@godspeedai/cognate-ui-astryx`              | `ArtifactViewer` (used directly by consumers; not reimplemented here)              |
+**When to use this package:** you want a working chat-copilot skeleton (streamed replies, approval-gated backend tools, browser-served tools, generative UI) to run as-is or study before composing your own. For an autonomous, session-and-scheduler style agent instead, see [`@godspeedai/cognate-profile-harness`](https://www.npmjs.com/package/@godspeedai/cognate-profile-harness).
 
-`createCopilotApp` mounts `modelComponent(options.model)` (`@godspeedai/cognate-provider-openai-compatible`) plus one
-kernel component per backend tool, each publishing exactly `tool.contract` (its own capability id/version) —
-no new contract shapes. `COPILOT_AGENT` is an ordinary `AgentDefinition`: it builds a `ModelRequest`, prefers
-`provider.stream()` when available (recorded once via `ctx.step`, replayed as ordered `ctx.emit("message.delta")`
-calls — `ctx.emit` is idempotent per call site, so replay never duplicates), and per tool call either
-`ctx.waitFor` an approval continuation (`type` containing `"approval"`, `condition.kind: "human_approval"`) or
-`invokeFrontend` a client-served tool. Approved backend calls go through `ctx.invoke(capability, args)`; their
-`statePatch`/`render`/`artifact` projections emit `state.changed`, `ui.render`, and `ctx.artifact` respectively.
+## Installation
 
-`GenerativeSurface` renders a run's `ui.render` events with an app-supplied component registry, synchronously
-draining `useCognate().subscribe({ runId })`'s replayed buffer (so it also works under `renderToString`) and
-keeping live via `useEffect` in a mounted client; an unknown `component` name renders a placeholder, never throws.
+```sh
+bun add @godspeedai/cognate-profile-copilot
+```
 
-No file in this package touches `@godspeedai/cognate-kernel-cordis`, `@godspeedai/cognate-kernel-api`'s scope/fiber machinery, or any
-runtime-bun internal — only its public `createRuntime` and `RunContext` surface.
+Requires [Bun](https://bun.sh) >= 1.4.0 and **React 19.3.0** with **react-dom 19.3.0** (both declared as peer dependencies). It builds on [`@godspeedai/cognate-runtime-bun`](https://www.npmjs.com/package/@godspeedai/cognate-runtime-bun), [`@godspeedai/cognate-ag-ui`](https://www.npmjs.com/package/@godspeedai/cognate-ag-ui), [`@godspeedai/cognate-react`](https://www.npmjs.com/package/@godspeedai/cognate-react), and [`@godspeedai/cognate-ui-astryx`](https://www.npmjs.com/package/@godspeedai/cognate-ui-astryx); the model connects through [`@godspeedai/cognate-provider-openai-compatible`](https://www.npmjs.com/package/@godspeedai/cognate-provider-openai-compatible).
+
+## Quick start
+
+```tsx
+import { createClient } from "@godspeedai/cognate-client";
+import { openAICompatible } from "@godspeedai/cognate-provider-openai-compatible";
+import { COPILOT_AGENT, createCopilotApp, GenerativeSurface } from "@godspeedai/cognate-profile-copilot";
+const app = await createCopilotApp({
+  store: "./copilot.sqlite",
+  model: openAICompatible({
+    id: "main",
+    baseURL: process.env.MODEL_BASE_URL!,
+    model: "my-model",
+    apiKey: () => process.env.MODEL_API_KEY!, // read per request, never stored
+  }),
+  instructions: "You are a support copilot.",
+  backendTools: [
+    {
+      contract: { id: "refund.approve", version: "1.0.0" },
+      description: "Issue a refund",
+      inputSchema: { type: "object" },
+      handler: (input) => ({ refunded: (input as { amount: number }).amount }),
+      requiresApproval: true, // pauses the run as a human-approval continuation
+      statePatch: (input) => [{ op: "add", path: "/refund", value: { amount: (input as { amount: number }).amount, status: "refunded" } }],
+      render: (input) => ({ component: "RefundCard", props: { amount: (input as { amount: number }).amount } }),
+      artifact: (input, output) => ({ name: "refund-receipt.json", mediaType: "application/json", content: JSON.stringify({ request: input, result: output }) }),
+    },
+  ],
+  frontendTools: [{ name: "map.focus", description: "Focus the map", inputSchema: { type: "object" } }],
+});
+
+// Serve the AG-UI endpoint (SSE) for browser clients:
+Bun.serve({ port: 3000, fetch: app.agUi });
+```
+
+A connected client serves `map.focus` itself and resolves the approval:
+
+```tsx
+import { useCapability } from "@godspeedai/cognate-react";
+
+const caller = { actor: { id: "alice", kind: "user" }, tenant: "tenant-a" };
+const client = createClient({ service: app.runtime.service, caller });
+client.provideCapability("map.focus", (input) => ({ centered: true }));
+
+// Or per component lifetime:
+function MapTool() {
+  useCapability("map.focus", (input) => ({ centered: true }));
+  return null;
+}
+
+// Render a run's generative-UI events with your own component registry:
+function Surface({ runId }: { runId: string }) {
+  return <GenerativeSurface runId={runId} components={{ RefundCard: (props) => <b>Refund of {String(props.amount)}</b> }} />;
+}
+```
+
+An unknown component name renders a placeholder instead of throwing, and the surface works under server-side rendering because the client replays its buffered events into the first subscription.
+
+## What the profile composes
+
+| Concern | Backing package |
+| --- | --- |
+| runtime, durable runs | [`@godspeedai/cognate-runtime-bun`](https://www.npmjs.com/package/@godspeedai/cognate-runtime-bun) |
+| continuations (approvals) | [`@godspeedai/cognate-continuations`](https://www.npmjs.com/package/@godspeedai/cognate-continuations) |
+| frontend capabilities | [`@godspeedai/cognate-runtime-api`](https://www.npmjs.com/package/@godspeedai/cognate-runtime-api) |
+| state/artifact projections | [`@godspeedai/cognate-client`](https://www.npmjs.com/package/@godspeedai/cognate-client) |
+| AG-UI endpoint | [`@godspeedai/cognate-ag-ui`](https://www.npmjs.com/package/@godspeedai/cognate-ag-ui) |
+| React bindings | [`@godspeedai/cognate-react`](https://www.npmjs.com/package/@godspeedai/cognate-react) |
+| UI surfaces | [`@godspeedai/cognate-ui-astryx`](https://www.npmjs.com/package/@godspeedai/cognate-ui-astryx) |
+
+The exported `copilotProfile` and `copilotRegistry` declare this composition by name (`resolveProfile` from [`@godspeedai/cognate-profile`](https://www.npmjs.com/package/@godspeedai/cognate-profile) resolves every entry to an existing package), and `COPILOT_AGENT` is the built-in agent id (`agent.copilot`).
+
+Inside a run, the copilot agent streams model output as `message.delta`, invokes approved backend tools through its capability contracts, serves frontend tools to the client as continuations, and publishes `state.changed`, `ui.render`, and artifact events that the client folds into shared state, generative UI, and the artifact list. A run survives a full application restart: waiting continuations resume where they left off.
+
+## Limitations
+
+- The built-in AG-UI endpoint authenticates with the development `Bearer <tenant>:<user>` token convention — bring your own `authenticate` (compose `createAgUiHandler` from `@godspeedai/cognate-ag-ui` directly) for anything real.
+- One copilot agent per app instance; multi-agent routing is yours to add.
+- `requiresApproval` gates on a human decision only — there is no auto-approve or delegation policy built in.
+
+## Related packages
+
+- [`@godspeedai/cognate-profile-harness`](https://www.npmjs.com/package/@godspeedai/cognate-profile-harness) — the autonomous profile (tools, scheduler, sandbox, subagents).
+- [`@godspeedai/cognate-provider-openai-compatible`](https://www.npmjs.com/package/@godspeedai/cognate-provider-openai-compatible) — the model provider used by `createCopilotApp`.
+- [`@godspeedai/cognate`](https://www.npmjs.com/package/@godspeedai/cognate) — the SDK umbrella.
+
+## License
+
+Apache-2.0

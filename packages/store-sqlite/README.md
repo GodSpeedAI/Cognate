@@ -1,40 +1,77 @@
 # @godspeedai/cognate-store-sqlite
 
-Authoritative `DurableStore` on `bun:sqlite` (spec §13).
+Durable, transactional event storage for Cognate applications, built on `bun:sqlite`. One SQLite
+file holds an application's entire authoritative history: events, records, idempotency results,
+outbox intents, and blobs — committed atomically per decision.
 
-## Tables (spec §13.2)
+**When to use this package:** any Cognate app that must survive restarts. Use
+[`@godspeedai/cognate-store-memory`](https://www.npmjs.com/package/@godspeedai/cognate-store-memory)
+for tests and throwaway prototypes instead. Both implement the same
+`@godspeedai/cognate-events` store contract, so an app can switch stores with one line.
 
-`schema_versions` (migrations), `event_streams` (per-stream version), `events` (envelope only —
-position, event_id, stream_id/sequence, type, timing, causality, semantic ref, metadata),
-`payloads` (event_id → JSON payload, separate from the envelope so `erasePayload` can delete
-content without touching causality), `idempotency` (scope+key → fingerprint/result/event_ids),
-`records` (collection+id → version/JSON value, CAS), `outbox` (id, topic, payload, status,
-attempts, `claimed_until` lease), `projection_checkpoints`, `projection_state`, `blobs`
-(sha256-addressed bytes).
+## Installation
 
-## Transaction boundary
+```sh
+bun add @godspeedai/cognate-store-sqlite
+```
 
-`commit()` runs the entire decision — envelope validation, idempotency lookup, stream/record CAS,
-event/record/outbox writes, idempotency recording — inside one `BEGIN IMMEDIATE` transaction.
-Any failure throws and rolls back everything; `onCommitted` listeners fire only after `COMMIT`
-returns. `commitProjection` and `erasePayload` are each their own single transaction. bun:sqlite
-is synchronous and the store performs no `await` before entering a transaction, so concurrent
-`commit()` calls in one process serialize naturally through the JS event loop — exactly one wins
-a stream-version race, the rest see `ConcurrencyError`.
+Requires [Bun](https://bun.sh) >= 1.4.0 (the store uses Bun's built-in `bun:sqlite`).
 
-## Durability settings
+## Quick start
 
-`journal_mode=WAL`, `synchronous=FULL` (fsync on every commit — durability over speed, per spec
-§31.2 "fail closed": a decision must never be reported committed before SQLite confirms it),
-`foreign_keys=ON`, `busy_timeout=5000`. `secure_delete=ON` so `erasePayload` overwrites freed
-pages instead of merely unlinking them; it also runs `PRAGMA wal_checkpoint(TRUNCATE)` so no
-plaintext lingers in the WAL either.
+```ts
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 
-## Limits
+const store = openSqliteStore({ path: "./app.sqlite" });
+```
 
-Single-process writer: correctness relies on one Node/Bun process holding the connection and on
-bun:sqlite's synchronous API for in-process serialization, not on SQLite's file locking for
-cross-process write concurrency. Multiple processes writing the same file concurrently will hit
-`SQLITE_BUSY` after `busy_timeout` rather than being serialized by this store. Back up by copying
-the `.sqlite` file plus its `-wal`/`-shm` siblings only after a checkpoint (or use the SQLite
-backup API); a bare copy of the main file while WAL is active can miss committed data.
+Pass the store to `createRuntime` from
+[`@godspeedai/cognate-runtime-bun`](https://www.npmjs.com/package/@godspeedai/cognate-runtime-bun)
+to make an entire agent runtime durable — `createRuntime` also accepts a file path directly
+(`store: "./app.sqlite"`), which selects this store:
+
+```ts
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
+
+const runtime = await createRuntime({ store: "./app.sqlite" /* agents, policy, ... */ });
+```
+
+The store implements the `DurableStore` contract from
+[`@godspeedai/cognate-events`](https://www.npmjs.com/package/@godspeedai/cognate-events):
+`commit` applies an atomic batch per decision (stream appends with expected versions, record
+compare-and-swap writes, outbox intents, idempotency results), and `ConcurrencyError` is thrown
+when a concurrent writer loses a stream-version race.
+
+## What the schema guarantees
+
+Every committed decision is one SQLite transaction (`BEGIN IMMEDIATE`): envelope validation,
+per-stream version checks, record compare-and-swap writes, outbox intents, and idempotency
+recording succeed or roll back together. A duplicate idempotency key returns the originally
+recorded result instead of re-applying the decision.
+
+Durability is configured for correctness over speed: `journal_mode=WAL` with
+`synchronous=FULL` (fsync on every commit), so a decision is never reported committed before
+SQLite has confirmed it. Payload erasure overwrites freed pages (`secure_delete`) and
+checkpoints the WAL, so erased content does not linger in sidecar files.
+
+## Limitations
+
+- **One writer process.** Concurrent `commit` calls in one process serialize naturally, but
+  multiple processes writing the same file will hit `SQLITE_BUSY` after the 5-second busy
+  timeout rather than being serialized by this store.
+- **Back up carefully.** Copy the `.sqlite` file plus its `-wal`/`-shm` siblings only after a
+  WAL checkpoint (or use SQLite's backup API) — a bare copy while WAL is active can miss
+  committed data.
+
+## Related packages
+
+- [`@godspeedai/cognate-events`](https://www.npmjs.com/package/@godspeedai/cognate-events) — the
+  store contract and conformance kit this package implements.
+- [`@godspeedai/cognate-store-memory`](https://www.npmjs.com/package/@godspeedai/cognate-store-memory) —
+  the in-memory implementation of the same contract.
+- [`@godspeedai/cognate`](https://www.npmjs.com/package/@godspeedai/cognate) — the SDK umbrella;
+  the easiest way to get a runtime backed by this store.
+
+## License
+
+Apache-2.0
