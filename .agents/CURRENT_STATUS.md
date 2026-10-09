@@ -1,23 +1,27 @@
 # Current status
 
-**Status revision:** 39
+**Status revision:** 40
 
-**Stage:** 0.1.0 release preparation: SDK scope moved to @godspeedai for publication under the godspeedai npm org
+**Stage:** cognate-* package-name migration: renamed, released in-repo, publication pending operator OTP
 
-**Summary:** Operator decision: the SDK publishes under the @godspeedai npm org (which already publishes @godspeedai/domainforge via GitHub Actions trusted publishing), not @cognate (an unrelated-to-publish npm user owns that scope). 385 functional files renamed @cognate/* to @godspeedai/* (package names, imports, workflows, templates, user-facing docs); lockfile regenerated. Historical records (spec, evidence, plans, status history) keep the old scope by design; a spec revision proposal is a follow-up. Publication steps are otherwise unchanged: 0.1.0 already tagged/released in-repo; npm publish + trusted-publisher configuration happen from the godspeedai-authorized session.
+**Summary:** Every Cognate SDK module is now @godspeedai/cognate-<module> (operator convention decision): 372 files renamed, external pins untouched, the DomainForge adapter keeps its pre-conformant name, and a new re-export-only umbrella @godspeedai/cognate (root + /runtime + /client) ships. Release Please was realigned (components renamed, manifest reset so initial-version bootstraps each new identity at exactly 0.1.0) and 36 cognate-* tags + GitHub releases exist. The superseded @godspeedai/<module> 0.1.0 packages on npm await deprecation; the 36 renamed packages are packed, inspected, and ready to publish — blocked only on the operator's npm OTP.
 
 **Verified:**
-- bun run check passes with revision 39 and matching human view
-- Rename audit: git grep @cognate/ outside bun.lock hits only .agents history, the spec, and one captured log
-- Scope rename applied to 385 files: 35 package name fields, all imports in packages/profiles/tests/examples/validation reconstructions/templates, package.yml PROBE_PACKAGE, user-facing markdown
+- just verify on 6dd2a93: 78/78 gates; full suite 768 tests / 0 fail; frozen install clean
+- Whole-name audit: zero old-style references outside historical records (spec, .agents history, logs)
+- 36/36 tarballs pack and pass inspect-npm-tarballs.mjs under the new names
+- Verdaccio clean-room: bun add @godspeedai/cognate@0.1.0 installs 17 packages and the consumer smoke passes (capabilities, durable events across restart, continuations); @godspeedai/cognate-cli graph smoke passed earlier in the session
+- Release Please aligned: 36 tags cognate-*-v0.1.0 + GitHub releases (34 bootstrapped via API from PR #13 notes after the release-please PR-body parser matched only the first component; verification dispatch finds all 36 with no duplicates)
+- CI verify + pack/clean-room green on PR #14 and the #13 release PR merge
 
 **Limits:**
-- npm publication still pending: requires a session authorized for the godspeedai org (sprime01 membership or org login)
-- Per-package npm trusted publishers still unconfigurable before first publish; release.yml publish job remains gated on NPM_TRUSTED_PUBLISHING_READY
-- The design spec still names the @cognate scope (frozen ruler): a contract-revision note is a required follow-up
-- verify on main after PR #11 failed on status-view drift (missing --- separator before revision 38); fixed in this revision's branch and re-verified before merge
+- npm publication of the 36 renamed packages pending: requires the operator's OTP (EOTP on every publish from this session)
+- Old @godspeedai/<module> packages not yet deprecated (must happen only after the replacements exist on npm; @godspeedai/a2a was never published so it needs no deprecation)
+- Trusted publishers not yet configured for the new package identities; publish job stays gated on NPM_TRUSTED_PUBLISHING_READY
+- Design spec still describes the old package naming; contract-revision note remains a follow-up
 
-**Next:** Verify the renamed workspace end to end, merge the scope change, publish @godspeedai/* 0.1.0 from the authorized npm session, configure trusted publishers (repo GodSpeedAI/Cognate, workflow release.yml, environment release), set NPM_TRUSTED_PUBLISHING_READY=true, then repeat the registry clean-room against published versions
+**Next:** Operator publishes .tmp/pack-cognate/*.tgz (npm publish --access public, OTP interactively) or supplies an OTP; then verify each with npm view, deprecate the 33 superseded packages, configure trusted publishers per package (GodSpeedAI/Cognate, release.yml, environment release), set NPM_TRUSTED_PUBLISHING_READY=true, and repeat the clean-room against the real registry
 
 **Evidence:**
 - .agents/evidence/2026-10-08-release-0.1.0-prep.md
+- docs/package-naming.md
