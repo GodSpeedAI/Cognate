@@ -17,6 +17,8 @@ on:
       - "profiles/**"
       - "scripts/prepare-npm-package.mjs"
       - "scripts/inspect-npm-tarballs.mjs"
+      - "scripts/check-readmes.mjs"
+      - "docs/package-readme-standard.md"
       - "release-please-config.json"
       - ".release-please-manifest.json"
       - ".github/workflows/package.yml"
@@ -27,6 +29,8 @@ on:
       - "profiles/**"
       - "scripts/prepare-npm-package.mjs"
       - "scripts/inspect-npm-tarballs.mjs"
+      - "scripts/check-readmes.mjs"
+      - "docs/package-readme-standard.md"
       - "release-please-config.json"
       - ".release-please-manifest.json"
       - ".github/workflows/package.yml"
@@ -66,6 +70,8 @@ jobs:
           ls -la .tmp/pack
       - name: Inspect tarballs as a consumer would receive them
         run: node scripts/inspect-npm-tarballs.mjs .tmp/pack/*.tgz
+      - name: README documentation gate
+        run: bun scripts/check-readmes.mjs
       - name: Clean-room install from the npm registry (Bun, no monorepo)
         run: |
           set -euo pipefail
@@ -75,15 +81,16 @@ jobs:
             exit 0
           fi
           version=$(npm view "$PROBE_PACKAGE" version)
-          echo "clean-room: installing $PROBE_PACKAGE@$version"
+          umbrella_version=$(npm view "@godspeedai/cognate" version)
+          echo "clean-room: installing $PROBE_PACKAGE@$version + @godspeedai/cognate@$umbrella_version"
           rm -rf .tmp/clean-room && mkdir -p .tmp/clean-room
           cd .tmp/clean-room
           echo '{"name":"cognate-clean-room","private":true}' > package.json
-          bun add "$PROBE_PACKAGE@$version"
+          bun add "$PROBE_PACKAGE@$version" "@godspeedai/cognate@$umbrella_version"
           cp "$GITHUB_WORKSPACE/scripts/clean-room-smoke.ts" smoke.ts
           bun smoke.ts
           # CLI bin: prints usage and exits 1 when called without a command —
           # capture first (ignoring the intentional exit code), then assert.
           cli_usage=$(./node_modules/.bin/cognate 2>&1 || true)
           echo "$cli_usage" | grep -q "usage: cognate"
-          echo "clean-room install + smoke OK for $PROBE_PACKAGE@$version"
+          echo "clean-room install + smoke OK for $PROBE_PACKAGE@$version and @godspeedai/cognate@$umbrella_version"

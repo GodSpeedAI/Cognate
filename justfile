@@ -25,8 +25,12 @@ typecheck:
 test:
     bun run test
 
-# Regression baseline: substrate check, typecheck, gate-runner tests, and every gate claimed implemented
-verify: check typecheck
+# Published-package README gate (docs/package-readme-standard.md)
+docs:
+    bun scripts/check-readmes.mjs
+
+# Regression baseline: substrate check, typecheck, gate-runner tests, README gate, and every gate claimed implemented
+verify: check typecheck docs
     bun test ./tests/proof-routing.test.ts
     bun scripts/gate.ts --implemented
 
