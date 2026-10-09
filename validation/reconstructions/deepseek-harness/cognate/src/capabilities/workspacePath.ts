@@ -3,8 +3,8 @@
 // scope every `tool.<name>` / `filesystem.*` / `process.exec` call to the right world
 // (`ctx.invoke("workspace.path", ...)`, so the lookup is itself recorded/replayable). `root` is
 // opaque above the execution-world boundary — an OS path locally, a POSIX path for SSH.
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { RuntimeService } from "@godspeedai/runtime-api";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 export interface WorkspacePathInput {
   readonly workspaceId: string;

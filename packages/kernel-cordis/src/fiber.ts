@@ -10,7 +10,7 @@ import {
   CleanupError,
   PermanentActivationError,
   UndeclaredCapabilityError,
-} from "@godspeedai/kernel-api";
+} from "@godspeedai/cognate-kernel-api";
 import type {
   CapabilityContract,
   CapabilityHandler,
@@ -23,7 +23,7 @@ import type {
   FiberState,
   KernelEvent,
   Policy,
-} from "@godspeedai/kernel-api";
+} from "@godspeedai/cognate-kernel-api";
 import { createLease } from "./lease.ts";
 import type { CapabilityRegistry, Publication } from "./registry.ts";
 import type { ScopeImpl } from "./scope.ts";

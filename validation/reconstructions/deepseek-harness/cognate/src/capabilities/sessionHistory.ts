@@ -9,9 +9,9 @@
 // has since completed (the `subagents` projection, keyed `${parentRunId}/${toolCallId}`) is folded
 // in as a synthetic `user`-role context message right after that run's own turn, so the *next* turn's
 // model call sees the completed child's answer.
-import type { ModelMessage } from "@godspeedai/capabilities";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { RuntimeService } from "@godspeedai/runtime-api";
+import type { ModelMessage } from "@godspeedai/cognate-capabilities";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 import type { SubagentRow } from "../projections/subagents.ts";
 
 export interface SessionHistoryInput {

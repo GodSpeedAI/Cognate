@@ -1,7 +1,7 @@
 // Spec §32: public projections are tenant-partitioned; a caller only sees its own tenant's entries.
 import { expect, test } from "bun:test";
-import type { Projection } from "@godspeedai/projections";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { Projection } from "@godspeedai/cognate-projections";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import { createRuntime } from "../src/index.ts";
 
 /** Public projections key state as `<tenant>/<key>`; the service strips the prefix and filters by caller tenant. */

@@ -1,6 +1,6 @@
 // CG-CMT-001: external commitments are explicit records, never reversible effects (spec §9.3).
 import { afterEach, describe, expect, test } from "bun:test";
-import type { DurableStore, Json } from "@godspeedai/events";
+import type { DurableStore, Json } from "@godspeedai/cognate-events";
 import { storeCases } from "../../../tests/support/stores.ts";
 import { CommitmentRejectedError, CommitmentService, type CommitmentTarget, type IntendCommitment } from "../src/index.ts";
 

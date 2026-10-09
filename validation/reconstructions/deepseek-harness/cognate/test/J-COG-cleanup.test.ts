@@ -14,9 +14,9 @@ import { validateSurface } from "../src/cognitive/surface.ts";
 import { foldLineage } from "../src/cognitive/world.ts";
 import { reality, realityOfCheck } from "../src/cognitive/case.ts";
 import { bootAimock, withTempHome } from "./helpers.ts";
-import { createClient } from "@godspeedai/client";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { createClient } from "@godspeedai/cognate-client";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 
 const clientFor = (app: AppServer) => createClient({ service: createRemoteRuntimeService(connectTransport(app.url), () => devToken(LOCAL_OPERATOR)), caller: LOCAL_OPERATOR });
 type Client = ReturnType<typeof clientFor>;

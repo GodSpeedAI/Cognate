@@ -1,7 +1,7 @@
 // CG-A2A-001 (spec §6 optional protocols): a pinned A2A client discovers the agent and completes a task backed by a run.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { createA2AHandler } from "../src/index.ts";
 
 const agent: AgentDefinition = {

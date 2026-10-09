@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useArtifact, useContinuations, useCognate, useProjection, useRun } from "@godspeedai/react";
+import { useArtifact, useContinuations, useCognate, useProjection, useRun } from "@godspeedai/cognate-react";
 import { JOURNEY_MCP_AGENT, MCP_APP_COMPONENT, MCP_APP_OPERATION } from "../constants.ts";
 
 type ProjectionRows = NonNullable<ReturnType<typeof useProjection>>;

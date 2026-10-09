@@ -28,18 +28,18 @@ flowchart LR
     DF --> REF["SemanticRef"]
 
     AG["AgentDefinition.run(input, ctx)"] --> RC["RunContext"]
-    RC --> EX["@godspeedai/runtime-bun<br/>executor"]
-    EX --> ST[("SQLite event log<br/>@godspeedai/store-sqlite")]
-    RC -.invoke.-> KN["Kernel<br/>@godspeedai/kernel-cordis"]
+    RC --> EX["@godspeedai/cognate-runtime-bun<br/>executor"]
+    EX --> ST[("SQLite event log<br/>@godspeedai/cognate-store-sqlite")]
+    RC -.invoke.-> KN["Kernel<br/>@godspeedai/cognate-kernel-cordis"]
     KN --> PR["capability provider<br/>(model, tool, storage, …)"]
-    RC -.waitFor.-> CT["continuation<br/>@godspeedai/continuations"]
+    RC -.waitFor.-> CT["continuation<br/>@godspeedai/cognate-continuations"]
     CT -.resume.-> EX
 
     ST --> SVC["RuntimeService<br/>in-process"]
     ST --> CP["Connect · AG-UI · MCP · A2A<br/>protocol adapters"]
-    CP --> CL["@godspeedai/client"]
-    CL --> RE["@godspeedai/react"]
-    RE --> UI["@godspeedai/ui-astryx"]
+    CP --> CL["@godspeedai/cognate-client"]
+    CL --> RE["@godspeedai/cognate-react"]
+    RE --> UI["@godspeedai/cognate-ui-astryx"]
     ST --> COG["cognitive index (derived)"]
     ST --> OBS["RealityTrace observations (optional)"]
 ```

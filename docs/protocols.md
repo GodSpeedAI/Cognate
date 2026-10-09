@@ -2,9 +2,9 @@
 
 Wire representation is not semantic ontology (spec §3.7): every adapter here maps a stable internal contract (`RuntimeService`, durable events) to a protocol's own shapes, and never lets the protocol define what something means. Internal framework events are never aliases of a protocol's events (spec §24).
 
-## Protobuf: `@godspeedai/proto`
+## Protobuf: `@godspeedai/cognate-proto`
 
-[`@godspeedai/proto`](../packages/proto/README.md) holds the canonical `proto/cognate/v1/*.proto` sources and their generated bindings. Codegen determinism is verified by `test/codegen.test.ts`: two fresh generations plus the committed output must be byte-for-byte identical.
+[`@godspeedai/cognate-proto`](../packages/proto/README.md) holds the canonical `proto/cognate/v1/*.proto` sources and their generated bindings. Codegen determinism is verified by `test/codegen.test.ts`: two fresh generations plus the committed output must be byte-for-byte identical.
 
 | Concern | Support |
 |---|---|
@@ -12,9 +12,9 @@ Wire representation is not semantic ontology (spec §3.7): every adapter here ma
 | `RuntimeService` methods | Unary + server-streaming only ([DEBT-004](../.agents/DEBT.md)); no client/bidi streaming methods exist in the schema |
 | Wire formats | JSON and binary |
 
-## RPC: `@godspeedai/protocol-connect` and `@godspeedai/protocol-connect-bun`
+## RPC: `@godspeedai/cognate-protocol-connect` and `@godspeedai/cognate-protocol-connect-bun`
 
-Default RPC is Connect over standard HTTP (spec §22), chosen so the framework does not depend on Node-only server adapters — the transport must be isolated from `RuntimeService` itself, which is why `@godspeedai/runtime-api` exists independently ([ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md), [architecture.md](architecture.md)):
+Default RPC is Connect over standard HTTP (spec §22), chosen so the framework does not depend on Node-only server adapters — the transport must be isolated from `RuntimeService` itself, which is why `@godspeedai/cognate-runtime-api` exists independently ([ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md), [architecture.md](architecture.md)):
 
 ```mermaid
 flowchart LR
@@ -23,7 +23,7 @@ flowchart LR
     adapter -. replaceable transport .-> other["Future transport"]
 ```
 
-[`@godspeedai/protocol-connect`](../packages/protocol-connect/README.md) maps `RuntimeService` to the generated `cognate.v1.RuntimeService`, independent of the HTTP server:
+[`@godspeedai/cognate-protocol-connect`](../packages/protocol-connect/README.md) maps `RuntimeService` to the generated `cognate.v1.RuntimeService`, independent of the HTTP server:
 
 - `registerRuntimeService(router, service, { authenticate, maxJsonDepth })` — server routes. The caller comes from request headers via `authenticate`, never from message bodies (spec §32). `google.protobuf.Value` inputs are depth-checked.
 - `createRemoteRuntimeService(transport, tokenFor)` — a `RuntimeService` implementation over any Connect transport; `ServiceError` codes round-trip exactly.
@@ -31,13 +31,13 @@ flowchart LR
 
 `test/service.test.ts` runs the *same* service conformance kit as the in-process runtime, over both JSON and binary encoding — this is what proves `CG-WIR-003` (transport replaceability, spec §40.G).
 
-[`@godspeedai/protocol-connect-bun`](../packages/protocol-connect-bun/README.md) adapts `Bun.serve()`'s Request/Response handling to that router, since Bun has no first-party Connect server adapter.
+[`@godspeedai/cognate-protocol-connect-bun`](../packages/protocol-connect-bun/README.md) adapts `Bun.serve()`'s Request/Response handling to that router, since Bun has no first-party Connect server adapter.
 
 **Mode matrix ([DEBT-004](../.agents/DEBT.md))**: unary and server streaming only. `@connectrpc/connect-web`'s fetch transport rejects streaming request bodies over HTTP/1.1, and no HTTP/2 path has been demonstrated, so bidirectional streaming is not advertised, per spec §22's explicit requirement not to advertise it until HTTP/2 is proven. Design agent code and runtime services so they never require client or bidi streaming.
 
-## AG-UI: `@godspeedai/ag-ui`
+## AG-UI: `@godspeedai/cognate-ag-ui`
 
-[`@godspeedai/ag-ui`](../packages/ag-ui/README.md) ([ADR-0008](decisions/ADR-0008-ag-ui.md)) is a projection and interoperability layer over `@ag-ui/core` 1.0.0, publishing an event-by-event compatibility matrix (`MatrixRow[]`, one row per AG-UI `EventType`, all 31) rather than assuming full parity. Unsupported event kinds are rejected or explicitly ignored per the matrix, never silently reinterpreted.
+[`@godspeedai/cognate-ag-ui`](../packages/ag-ui/README.md) ([ADR-0008](decisions/ADR-0008-ag-ui.md)) is a projection and interoperability layer over `@ag-ui/core` 1.0.0, publishing an event-by-event compatibility matrix (`MatrixRow[]`, one row per AG-UI `EventType`, all 31) rather than assuming full parity. Unsupported event kinds are rejected or explicitly ignored per the matrix, never silently reinterpreted.
 
 ```text
 Framework run lifecycle       → AG-UI RUN_* events
@@ -50,15 +50,15 @@ Framework projected state     → AG-UI STATE_SNAPSHOT / STATE_DELTA
 
 `CG-AGUI-001..003` are `implemented`: `bun test ./packages/ag-ui ./packages/runtime-bun ./tests/integration/{causality,erasure}.test.ts` proves the outbound matrix over all 31 AG-UI 1.0.0 event types against a real `@ag-ui/client` `HttpAgent` consumer, inbound actions through native auth/authorization/idempotency (approvals, frontend tool results, cancellation, unsupported interactions reported), and cursor reconnect/resync semantics (`.agents/evidence/m8-wire-client.md`).
 
-## MCP: `@godspeedai/mcp`
+## MCP: `@godspeedai/cognate-mcp`
 
-[`@godspeedai/mcp`](../packages/mcp/README.md) ([ADR-0010](decisions/ADR-0010-mcp.md)) exposes runtime capabilities as MCP tools via `@modelcontextprotocol/sdk` 1.30.1. `createMcpServer({ service, caller, tools })` registers one tool per binding (name defaults to the capability id with `.` → `_`), advertising the binding's JSON Schema. Every call goes through `RuntimeService.invoke` as the connection's authenticated caller, so kernel policy applies (spec §32); a `ServiceError` returns `isError: true` with `<code>: <message>`, never a partial success. Tools are proven both over the in-memory transport and, from a separate process, over stdio.
+[`@godspeedai/cognate-mcp`](../packages/mcp/README.md) ([ADR-0010](decisions/ADR-0010-mcp.md)) exposes runtime capabilities as MCP tools via `@modelcontextprotocol/sdk` 1.30.1. `createMcpServer({ service, caller, tools })` registers one tool per binding (name defaults to the capability id with `.` → `_`), advertising the binding's JSON Schema. Every call goes through `RuntimeService.invoke` as the connection's authenticated caller, so kernel policy applies (spec §32); a `ServiceError` returns `isError: true` with `<code>: <message>`, never a partial success. Tools are proven both over the in-memory transport and, from a separate process, over stdio.
 
 `CG-MCP-001` is `implemented`. [DEBT-013](../.agents/DEBT.md) (MCP proven only over the in-memory transport) is **closed**: `packages/mcp/test/mcp.test.ts` now drives the adapter over stdio from a separate process.
 
-## A2A: `@godspeedai/a2a`
+## A2A: `@godspeedai/cognate-a2a`
 
-[`@godspeedai/a2a`](../packages/a2a/README.md) exposes a runtime agent over the [A2A protocol](https://github.com/a2aproject/A2A) v1.0 via `@a2a-js/sdk` 1.2.1 (proto-JSON). `createA2AHandler(options)` serves the agent card at `/.well-known/agent-card.json` and JSON-RPC at `/a2a`. `message/send` starts (or, with a `taskId`, resumes) a durable run: the A2A task id equals the Cognate run id; an open continuation surfaces as `TASK_STATE_INPUT_REQUIRED`; completion returns `TASK_STATE_COMPLETED` with the run output in artifacts.
+[`@godspeedai/cognate-a2a`](../packages/a2a/README.md) exposes a runtime agent over the [A2A protocol](https://github.com/a2aproject/A2A) v1.0 via `@a2a-js/sdk` 1.2.1 (proto-JSON). `createA2AHandler(options)` serves the agent card at `/.well-known/agent-card.json` and JSON-RPC at `/a2a`. `message/send` starts (or, with a `taskId`, resumes) a durable run: the A2A task id equals the Cognate run id; an open continuation surfaces as `TASK_STATE_INPUT_REQUIRED`; completion returns `TASK_STATE_COMPLETED` with the run output in artifacts.
 
 ```ts
 interface A2AAdapterOptions {

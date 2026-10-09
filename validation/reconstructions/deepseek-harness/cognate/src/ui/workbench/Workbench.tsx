@@ -5,7 +5,7 @@
 // Serves J-WB-task-contract, -review-gate, -protected-evidence, -workflow, -capability-lifecycle,
 // -automation, -economics. See UX.md for the rules every surface follows.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useProjection } from "@godspeedai/react";
+import { useProjection } from "@godspeedai/cognate-react";
 import { describeAuthority } from "../../workbench/authority.ts";
 import { contractMissing, defaultAuthority } from "../../workbench/contract.ts";
 import { budgetState, provenanceLine, rollupUsage } from "../../workbench/economics.ts";

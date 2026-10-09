@@ -2,8 +2,8 @@
 // world lineage, observations, findings, experiment rounds, method decisions). Like `agent.config`
 // it is deterministic and only emits; all I/O (hashing a workspace, running an observer) happens in
 // the `cognitive.*` capability handlers before this run starts. Authority is checked there, not here.
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import type { Json } from "@godspeedai/events";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
 
 export const AGENT_COGNITIVE = "agent.cognitive";
 

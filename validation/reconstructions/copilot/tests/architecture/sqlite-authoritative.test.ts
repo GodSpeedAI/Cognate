@@ -1,5 +1,5 @@
 // Phase 13 check 8: SQLite remains authoritative. The reconstruction server must open its
-// runtime home on a SQLite-backed store: createRuntime from @godspeedai/runtime-bun accepts a
+// runtime home on a SQLite-backed store: createRuntime from @godspeedai/cognate-runtime-bun accepts a
 // SQLite file path, ":memory:", or an explicit DurableStore object ({ store }) — this pins the
 // server to the file-backed form (a .sqlite path derived from its home directory) and forbids
 // memory-store-as-authority wiring (":memory:", a memory DurableStore object, or a store-memory
@@ -29,7 +29,7 @@ function callArguments(text: string, callee: string): string {
 describe("Phase 13 §8: SQLite remains authoritative", () => {
   const serverText = readFileSync(SERVER, "utf8");
 
-  test("server wires createRuntime from @godspeedai/runtime-bun", () => {
+  test("server wires createRuntime from @godspeedai/cognate-runtime-bun", () => {
     expect(serverText).toMatch(/import\s+\{[^}]*createRuntime[^}]*\}\s+from\s+"@cognate\/runtime-bun"/);
   });
 
@@ -58,7 +58,7 @@ describe("Phase 13 §8: SQLite remains authoritative", () => {
     const manifest = JSON.parse(readFileSync(join(ROOT, "packages/runtime-bun/package.json"), "utf8")) as {
       dependencies?: Record<string, string>;
     };
-    expect(manifest.dependencies?.["@godspeedai/store-sqlite"]).toBeDefined();
-    expect(manifest.dependencies?.["@godspeedai/store-memory"]).toBeDefined(); // both exist; §8 pins which the app uses
+    expect(manifest.dependencies?.["@godspeedai/cognate-store-sqlite"]).toBeDefined();
+    expect(manifest.dependencies?.["@godspeedai/cognate-store-memory"]).toBeDefined(); // both exist; §8 pins which the app uses
   });
 });

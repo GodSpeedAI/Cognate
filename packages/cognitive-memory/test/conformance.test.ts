@@ -1,4 +1,4 @@
-import { cognitiveIndexConformance } from "@godspeedai/cognitive-api/conformance";
+import { cognitiveIndexConformance } from "@godspeedai/cognate-cognitive-api/conformance";
 import { describe, expect, test } from "bun:test";
 import { createMemoryIndex, hashingEmbedder } from "../src/index.ts";
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { createCordisKernel } from "@godspeedai/kernel-cordis";
-import { allowCapabilities, isUnavailable } from "@godspeedai/kernel-api";
-import type { Component, InvocationContext } from "@godspeedai/kernel-api";
+import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
+import { allowCapabilities, isUnavailable } from "@godspeedai/cognate-kernel-api";
+import type { Component, InvocationContext } from "@godspeedai/cognate-kernel-api";
 import { EXECUTION_CAPABILITY_IDS, createExecutionWorldRegistry, executionWorldsComponent, memoryExecutionWorld } from "../src/index.ts";
 
 const ctx: InvocationContext = { actor: { id: "test", kind: "user" }, correlationId: "execution-test", tenant: "test" };

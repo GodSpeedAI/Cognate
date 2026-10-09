@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/cli",
+  "name": "@godspeedai/cognate-cli",
   "version": "0.1.0",
   "description": "`cognate create` (starter generation with profiles) and `cognate dev` (runtime + Connect + AG-UI + UI server) (spec §37 Phase 10).",
   "type": "module",
@@ -25,16 +25,16 @@
     "cognate": "./src/bin.ts"
   },
   "dependencies": {
-    "@godspeedai/client": "workspace:*",
+    "@godspeedai/cognate-client": "workspace:*",
     "@godspeedai/cognate-domainforge": "workspace:*",
-    "@godspeedai/profile-copilot": "workspace:*",
-    "@godspeedai/profile-harness": "workspace:*",
-    "@godspeedai/protocol-connect": "workspace:*",
-    "@godspeedai/protocol-connect-bun": "workspace:*",
-    "@godspeedai/provider-local": "workspace:*",
-    "@godspeedai/react": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*",
-    "@godspeedai/ui-astryx": "workspace:*",
+    "@godspeedai/cognate-profile-copilot": "workspace:*",
+    "@godspeedai/cognate-profile-harness": "workspace:*",
+    "@godspeedai/cognate-protocol-connect": "workspace:*",
+    "@godspeedai/cognate-protocol-connect-bun": "workspace:*",
+    "@godspeedai/cognate-provider-local": "workspace:*",
+    "@godspeedai/cognate-react": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*",
+    "@godspeedai/cognate-ui-astryx": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   }

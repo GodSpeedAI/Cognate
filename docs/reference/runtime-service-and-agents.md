@@ -1,6 +1,6 @@
 # Reference: `RuntimeService` and the agent surface
 
-The transport-independent service contract (`@godspeedai/runtime-api`) and the agent authoring
+The transport-independent service contract (`@godspeedai/cognate-runtime-api`) and the agent authoring
 surface. This is the interface every surface consumes and every implementation must satisfy.
 
 ## `Caller`
@@ -106,7 +106,7 @@ names the current version).
 but its `lastTransition` matches the same `(actor, operation, idempotencyKey)`. A different key
 against a terminal record gets `already_terminal` instead.
 
-`@godspeedai/client`'s `resolveContinuation` wraps this: it mints a fresh `idempotencyKey` per call
+`@godspeedai/cognate-client`'s `resolveContinuation` wraps this: it mints a fresh `idempotencyKey` per call
 and returns the unwrapped `ContinuationView`, not the `{ outcome, continuation }` envelope. Use the
 service directly when you need the outcome or your own key.
 
@@ -206,7 +206,7 @@ Errors thrown to agent code: `InvocationFailedError(capability, failure)`,
 
 ## Conformance
 
-`@godspeedai/runtime-api/conformance` exports `runtimeServiceConformance`, the fixtures (`alice`,
+`@godspeedai/cognate-runtime-api/conformance` exports `runtimeServiceConformance`, the fixtures (`alice`,
 `kitAgents`, …), and the setup contract. Any implementation of `RuntimeService` — the in-process
 one, a Connect remote client, a future transport — must pass it unchanged. That is the mechanism
 behind `CG-WIR-003` (transport replaceability).

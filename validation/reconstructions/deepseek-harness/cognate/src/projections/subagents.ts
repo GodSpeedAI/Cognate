@@ -12,8 +12,8 @@
 // "returns to the parent" as context on the parent session's *next* turn. Child runs are NOT
 // sessions — `sessions.ts` explicitly excludes them (only "session:"-correlated runs are folded
 // there); this projection is the only place their existence/result is recorded for the UI.
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
 
 export interface SubagentRow {
   readonly parentRunId: string;

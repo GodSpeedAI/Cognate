@@ -36,11 +36,11 @@ bun test ./packages/kernel-api # one package
 bun scripts/gate.ts --implemented   # only gates the ledger claims are implemented
 ```
 
-Tests under `tests/`, `packages/*/test`, and `compatibility/phase0/*` are the source of truth for behavior. A package's `README.md` names the test file that proves each claim (for example `@godspeedai/kernel-api`'s conformance kit, proven by `packages/kernel-api/src/conformance/`).
+Tests under `tests/`, `packages/*/test`, and `compatibility/phase0/*` are the source of truth for behavior. A package's `README.md` names the test file that proves each claim (for example `@godspeedai/cognate-kernel-api`'s conformance kit, proven by `packages/kernel-api/src/conformance/`).
 
 ## `cognate create` and `cognate dev`
 
-[`@godspeedai/cli`](../packages/cli/README.md) (`CG-CLI-001`, implemented) provides both commands:
+[`@godspeedai/cognate-cli`](../packages/cli/README.md) (`CG-CLI-001`, implemented) provides both commands:
 
 ```bash
 cognate create my-app --profile copilot|harness --source /path/to/cognate/checkout [--with a,b]

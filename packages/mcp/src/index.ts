@@ -1,8 +1,8 @@
 // CG-MCP-001 (spec §6 optional protocols, §32; DEBT-013): runtime capabilities as MCP tools, authorized per caller.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { Json } from "@godspeedai/events";
-import { ServiceError, type Caller, type RuntimeService } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
+import { ServiceError, type Caller, type RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 export interface McpToolBinding {
   /** Runtime capability invoked by this tool, e.g. `billing.quote`. */

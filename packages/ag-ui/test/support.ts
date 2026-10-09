@@ -1,7 +1,7 @@
 import { EventSchema } from "@ag-ui/core/schemas";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { invokeFrontend } from "@godspeedai/runtime-api";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { invokeFrontend } from "@godspeedai/cognate-runtime-api";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 import { createAgUiHandler } from "../src/index.ts";
 
 export const agents: AgentDefinition[] = [

@@ -4,10 +4,10 @@
 // execution, durable continuations, event persistence across a runtime
 // restart, and the headless client — with every import resolved from
 // node_modules alone. package.yml's clean-room step runs this after install.
-import { createClient } from "@godspeedai/client";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { createRuntime } from "@godspeedai/runtime-bun";
-import { alice } from "@godspeedai/runtime-api/conformance";
+import { createClient } from "@godspeedai/cognate-client";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
 import { Database } from "bun:sqlite";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

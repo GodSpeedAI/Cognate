@@ -5,8 +5,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import type { Component } from "@godspeedai/kernel-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import type { Component } from "@godspeedai/cognate-kernel-api";
 import { createRuntime, SeaForgeAuthority, timeoutSecsEnforcer } from "../src/index.ts";
 import { exchange } from "../src/sea-forge-authority.ts";
 

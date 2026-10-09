@@ -41,7 +41,7 @@ describe("Phase 8 §7: DomainForge and RealityTrace unchanged", () => {
     expect(afterVersion).toBe(beforeVersion);
   });
 
-  test("@godspeedai/realitytrace dependency shape in bun.lock is unchanged vs merge-base (workspace pin)", () => {
+  test("@godspeedai/cognate-realitytrace dependency shape in bun.lock is unchanged vs merge-base (workspace pin)", () => {
     const before = git(["show", `${base}:bun.lock`]);
     const after = git(["show", "HEAD:bun.lock"]);
     const entryOf = (text: string): string | undefined => /"@cognate\/realitytrace":\s*\[[^\]]*\]/.exec(text)?.[0];

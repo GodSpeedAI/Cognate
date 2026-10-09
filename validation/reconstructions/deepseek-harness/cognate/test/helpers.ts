@@ -3,9 +3,9 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { createClient } from "@godspeedai/client";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { createClient } from "@godspeedai/cognate-client";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { startServer, LOCAL_OPERATOR, type AppServer } from "../src/server.ts";
 
 export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {

@@ -6,9 +6,9 @@
 // remote root is a POSIX path the provider owns, and an unknown/unreachable world fails the select
 // rather than silently falling back to the local machine.
 import { createHash, randomUUID } from "node:crypto";
-import type { ExecutionWorldRegistry } from "@godspeedai/execution";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { ExecutionWorldRegistry } from "@godspeedai/cognate-execution";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 
 export interface WorkspaceSelectInput {

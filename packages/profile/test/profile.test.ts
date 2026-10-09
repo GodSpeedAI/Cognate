@@ -1,13 +1,13 @@
 // CG-PRF-001 (spec §29, §40.J/K): profiles compose registered components and never enlarge the kernel.
 import { describe, expect, test } from "bun:test";
-import * as kernelApi from "@godspeedai/kernel-api";
+import * as kernelApi from "@godspeedai/cognate-kernel-api";
 import { defineProfile, ProfileError, resolveProfile, type ComponentEntry } from "../src/index.ts";
 
 const registry: ComponentEntry<string[]>[] = [
-  { name: "sessions", package: "@godspeedai/runtime-bun", supported: true, contribute: () => ["sessions"] },
-  { name: "agents", package: "@godspeedai/runtime-bun", supported: true, contribute: (o) => [`agents:${JSON.stringify(o ?? null)}`] },
-  { name: "cognition", package: "@godspeedai/cognitive-ruvector", supported: true, contribute: () => ["ruvector"] },
-  { name: "rvf", package: "@godspeedai/cognitive-rvf", supported: false, reason: "DEBT-006: RVF import integrity unproven", contribute: () => { throw new Error("must not be called"); } },
+  { name: "sessions", package: "@godspeedai/cognate-runtime-bun", supported: true, contribute: () => ["sessions"] },
+  { name: "agents", package: "@godspeedai/cognate-runtime-bun", supported: true, contribute: (o) => [`agents:${JSON.stringify(o ?? null)}`] },
+  { name: "cognition", package: "@godspeedai/cognate-cognitive-ruvector", supported: true, contribute: () => ["ruvector"] },
+  { name: "rvf", package: "@godspeedai/cognate-cognitive-rvf", supported: false, reason: "DEBT-006: RVF import integrity unproven", contribute: () => { throw new Error("must not be called"); } },
 ];
 
 describe("profiles (§29)", () => {

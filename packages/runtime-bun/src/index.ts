@@ -1,8 +1,8 @@
-import type { CognitiveIndex, Embedder, IndexDocument } from "@godspeedai/cognitive-api";
-import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@godspeedai/events";
-import type { Component, Kernel, Policy, Principal } from "@godspeedai/kernel-api";
-import type { Projection } from "@godspeedai/projections";
-import type { AgentDefinition, Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { CognitiveIndex, Embedder, IndexDocument } from "@godspeedai/cognate-cognitive-api";
+import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@godspeedai/cognate-events";
+import type { Component, Kernel, Policy, Principal } from "@godspeedai/cognate-kernel-api";
+import type { Projection } from "@godspeedai/cognate-projections";
+import type { AgentDefinition, Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
 

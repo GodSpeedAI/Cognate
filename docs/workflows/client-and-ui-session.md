@@ -60,7 +60,7 @@ idempotency key `frontend:<continuationId>`. A continuation is resolved at most 
 
 ## React bindings
 
-`@godspeedai/react` adapts the client's `Readable<T>` to React 19 with `useSyncExternalStore`:
+`@godspeedai/cognate-react` adapts the client's `Readable<T>` to React 19 with `useSyncExternalStore`:
 `CognateProvider`, `useCognate`, `useRun`, `useAgent`, `useProjection`, `useCapability`,
 `useSharedState`, `useContinuations`, `useArtifact`, `useConnectionStatus`. `useCapability`
 unregisters on unmount. No Astryx types cross this boundary (`CG-UI-003`).
@@ -71,7 +71,7 @@ A third-party AG-UI client talks to the same durable history through a different
 `createAgUiHandler` projects framework events to AG-UI event types and routes inbound actions
 through `RuntimeService` with the transport's authenticated caller. `forwardedProps.cognate.cursor`
 resumes from a durable position (snapshot first, then newer events); an unknown cursor triggers a
-full resync. Disconnecting never cancels the durable run. Removing `@godspeedai/ag-ui` leaves native
+full resync. Disconnecting never cancels the durable run. Removing `@godspeedai/cognate-ag-ui` leaves native
 execution and the React UI working — acceptance criterion H.
 
 ## State changes

@@ -4,8 +4,8 @@
 // isolation is per-service-name, not per-subtree, and can't be driven by dynamic capability ids
 // (spec §8.1 requires descendant-visible / sibling-invisible scoping for any capability id).
 import type { Context } from "cordis";
-import type { Principal, Scope, ScopeOptions } from "@godspeedai/kernel-api";
-import { ScopeClosedError } from "@godspeedai/kernel-api";
+import type { Principal, Scope, ScopeOptions } from "@godspeedai/cognate-kernel-api";
+import { ScopeClosedError } from "@godspeedai/cognate-kernel-api";
 
 let counter = 0;
 const nextId = () => `scope-${++counter}`;

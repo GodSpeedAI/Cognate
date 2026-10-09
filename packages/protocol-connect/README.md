@@ -1,6 +1,6 @@
-# @godspeedai/protocol-connect
+# @godspeedai/cognate-protocol-connect
 
-Maps `RuntimeService` (runtime-api) to the generated Connect service `cognate.v1.RuntimeService` (`@godspeedai/proto`), independent of the HTTP server.
+Maps `RuntimeService` (runtime-api) to the generated Connect service `cognate.v1.RuntimeService` (`@godspeedai/cognate-proto`), independent of the HTTP server.
 
 - `registerRuntimeService(router, service, { authenticate, maxJsonDepth })` — server routes. The caller comes from request headers via `authenticate`, never from message bodies (§32). `google.protobuf.Value` inputs are depth-checked.
 - `createRemoteRuntimeService(transport, tokenFor)` — a `RuntimeService` over any Connect transport; ServiceError codes round-trip exactly.

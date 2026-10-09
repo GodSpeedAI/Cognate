@@ -1,4 +1,4 @@
-import { useCognate, useProjection, useRun } from "@godspeedai/react";
+import { useCognate, useProjection, useRun } from "@godspeedai/cognate-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { DEFAULT_THREAD_ID, JOURNEY_A_AGENT } from "./constants.ts";
 import { Disclosure, Note } from "./ui/primitives.tsx";

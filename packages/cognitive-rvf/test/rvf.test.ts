@@ -1,7 +1,7 @@
 // CG-RVF-001 (spec §18, §31.4, §32; DEBT-006): snapshots, branches, verified imports, attached/detached classification.
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
-import { entry } from "@godspeedai/cognitive-api/conformance";
-import { createMemoryStore } from "@godspeedai/store-memory";
+import { entry } from "@godspeedai/cognate-cognitive-api/conformance";
+import { createMemoryStore } from "@godspeedai/cognate-store-memory";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

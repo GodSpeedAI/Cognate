@@ -42,7 +42,7 @@ fold two streams; `foldState` takes an iterable, so this is invisible at the cal
 
 ## The fold
 
-`foldState(events)` (in `@godspeedai/runtime-api/state.ts`, the single definition shared by the
+`foldState(events)` (in `@godspeedai/cognate-runtime-api/state.ts`, the single definition shared by the
 runtime and the client):
 
 1. keep only `eventType === "state.changed"`;
@@ -74,7 +74,7 @@ remembers what it saw.
 
 `client.run(runId).get().state` is folded in the browser by `RunStore.apply` with the same
 `applyStateUpdate`, from the `state.changed` events the reconnecting stream delivers. A patch that
-fails there is also skipped, for the same reason. `useSharedState(runId)` in `@godspeedai/react`
+fails there is also skipped, for the same reason. `useSharedState(runId)` in `@godspeedai/cognate-react`
 exposes the same read/write pair.
 
 ## `updateState` semantics

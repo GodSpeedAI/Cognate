@@ -1,7 +1,7 @@
 // Public projection `cognitive`: a single `latest` row that changes whenever a cognitive fact is
 // recorded. The Console subscribes to it only as a *change signal* and then asks `case.derive` for
 // the Case — the Case itself is never stored here (it is derived server-side from events).
-import type { Projection } from "@godspeedai/projections";
+import type { Projection } from "@godspeedai/cognate-projections";
 import { COGNITIVE_EVENT_TYPES } from "../agents/agentCognitive.ts";
 
 export const cognitiveProjection: Projection = {

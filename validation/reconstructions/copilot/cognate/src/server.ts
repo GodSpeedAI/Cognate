@@ -3,13 +3,13 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createAgUiHandler } from "@godspeedai/ag-ui";
-import { allowCapabilities, type Policy } from "@godspeedai/kernel-api";
-import { createClient } from "@godspeedai/client";
-import { registerRuntimeService } from "@godspeedai/protocol-connect";
-import { devToken, devTokenAuthenticator } from "@godspeedai/protocol-connect-bun";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
-import { createRuntime, type ActionPolicy, type Runtime } from "@godspeedai/runtime-bun";
+import { createAgUiHandler } from "@godspeedai/cognate-ag-ui";
+import { allowCapabilities, type Policy } from "@godspeedai/cognate-kernel-api";
+import { createClient } from "@godspeedai/cognate-client";
+import { registerRuntimeService } from "@godspeedai/cognate-protocol-connect";
+import { devToken, devTokenAuthenticator } from "@godspeedai/cognate-protocol-connect-bun";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type ActionPolicy, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 
@@ -71,10 +71,10 @@ function buildActionPolicy(): ActionPolicy {
 const BROWSER_ENTRY_TEMPLATE = (caller: { readonly tenant: string; readonly actorId: string }) => `
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@godspeedai/client";
-import { CognateProvider } from "@godspeedai/react";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { createClient } from "@godspeedai/cognate-client";
+import { CognateProvider } from "@godspeedai/cognate-react";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { App } from "../src/ui/App.tsx";
 
 const caller = { tenant: ${JSON.stringify(caller.tenant)}, actor: { id: ${JSON.stringify(caller.actorId)}, kind: "user" } };

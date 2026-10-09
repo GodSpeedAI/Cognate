@@ -3,7 +3,7 @@
 // conditionally AUTHORITY, SEARCH, METHOD RECOMMENDATION and the recorded REALITY. It renders only
 // what the server derives from durable events (`case.derive`); focus is ephemeral and never truth.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useCognate, useProjection } from "@godspeedai/react";
+import { useCognate, useProjection } from "@godspeedai/cognate-react";
 import { shortHash } from "../cognitive/canonical.ts";
 import { parseRef, type FocusContext } from "../cognitive/focus.ts";
 import { validateSurface, type Block, type Surface } from "../cognitive/surface.ts";

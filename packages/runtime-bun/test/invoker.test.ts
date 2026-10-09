@@ -1,8 +1,8 @@
 // Test for invoker failure recording with error details (T11 / structured error fields).
 import { describe, expect, test } from "bun:test";
-import type { Component, Policy } from "@godspeedai/kernel-api";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { alice } from "@godspeedai/runtime-api/conformance";
+import type { Component, Policy } from "@godspeedai/cognate-kernel-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
 import { createRuntime } from "../src/index.ts";
 
 // Simulates ModelProviderError or any error with structured properties.

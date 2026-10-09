@@ -1,4 +1,4 @@
-# @godspeedai/ag-ui
+# @godspeedai/cognate-ag-ui
 
 AG-UI 1.0.0 interoperability adapter (spec §24, §31.8, §32; ADR-0008). An
 optional boundary, not the internal event model: native Cognate execution

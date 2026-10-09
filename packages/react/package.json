@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/react",
+  "name": "@godspeedai/cognate-react",
   "version": "0.1.0",
   "description": "React 19 bindings over the headless client: runs, projections, frontend capabilities, continuations, artifacts (spec §25.2). No Astryx.",
   "type": "module",
@@ -22,12 +22,12 @@
     ".": "./src/index.tsx"
   },
   "dependencies": {
-    "@godspeedai/client": "workspace:*",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*"
+    "@godspeedai/cognate-client": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/runtime-bun": "workspace:*",
+    "@godspeedai/cognate-runtime-bun": "workspace:*",
     "@happy-dom/global-registrator": "20.14.5",
     "@testing-library/react": "16.3.3",
     "react": "19.3.0",

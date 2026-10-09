@@ -11,8 +11,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { Client } from "ssh2";
 import type { ClientChannel, ConnectConfig, SFTPWrapper } from "ssh2";
-import { PathEscapeError, WorldUnavailableError, createRootGuard, shellQuote, supervisedExecScript } from "@godspeedai/execution";
-import type { DirEntry, ExecResult, ExecSpec, ExecutionWorldProvider, FileStat } from "@godspeedai/execution";
+import { PathEscapeError, WorldUnavailableError, createRootGuard, shellQuote, supervisedExecScript } from "@godspeedai/cognate-execution";
+import type { DirEntry, ExecResult, ExecSpec, ExecutionWorldProvider, FileStat } from "@godspeedai/cognate-execution";
 import { checkKnownHosts, fingerprintOf, policyIsEmpty, verifyHostKey } from "./hostKeys.ts";
 import type { HostKeyPolicy } from "./hostKeys.ts";
 

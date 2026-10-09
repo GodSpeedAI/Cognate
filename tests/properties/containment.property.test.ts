@@ -1,7 +1,7 @@
 // CG-CAP-002 / §40.I: adaptive ranking can never select an ineligible candidate.
 import { expect, test } from "bun:test";
 import fc from "fast-check";
-import { compatibilityRule, createSelector, type Candidate, type EligibilityRule, type Ranker } from "@godspeedai/capabilities";
+import { compatibilityRule, createSelector, type Candidate, type EligibilityRule, type Ranker } from "@godspeedai/cognate-capabilities";
 
 const candidateArb = fc.record({
   providerId: fc.string({ minLength: 1, maxLength: 6 }),

@@ -2,8 +2,8 @@
 // shape as `workspace.path` (`workspacePath.ts`). `agent.coding` invokes this once per turn (`ctx.
 // invoke`, so the read is recorded/replayable) to know whether the session is already in plan mode
 // before deciding how to handle `exit_plan_mode`/`todo_write` calls this turn.
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { RuntimeService } from "@godspeedai/runtime-api";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 import type { PlanState } from "../projections/plans.ts";
 
 export interface PlanStateInput {

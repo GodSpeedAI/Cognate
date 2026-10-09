@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 import { createAgUiHandler, createProjector } from "../src/index.ts";
 import { EventSchema } from "@ag-ui/core/schemas";
 

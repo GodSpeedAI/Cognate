@@ -5,10 +5,10 @@
 import { EventType } from "@ag-ui/core";
 import { RunAgentInputSchema } from "@ag-ui/core/schemas";
 import { EventEncoder } from "@ag-ui/encoder";
-import type { Json, StoredEvent } from "@godspeedai/events";
-import { FRONTEND_CAPABILITY } from "@godspeedai/runtime-api";
-import type { Caller, ContinuationView, RuntimeService } from "@godspeedai/runtime-api";
-import { ServiceError } from "@godspeedai/runtime-api";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
+import { FRONTEND_CAPABILITY } from "@godspeedai/cognate-runtime-api";
+import type { Caller, ContinuationView, RuntimeService } from "@godspeedai/cognate-runtime-api";
+import { ServiceError } from "@godspeedai/cognate-runtime-api";
 
 /** One row per AG-UI 1.0.0 EventType (all 31): how Cognate produces or handles it (spec §24 compatibility matrix). */
 export interface MatrixRow {

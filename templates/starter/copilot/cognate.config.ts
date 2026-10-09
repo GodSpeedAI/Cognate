@@ -1,4 +1,4 @@
-import type { CognateConfig } from "@godspeedai/cli";
+import type { CognateConfig } from "@godspeedai/cognate-cli";
 
 export default {
   profile: "copilot",

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { fingerprint, OutboxDispatcher, PermanentDeliveryError } from "@godspeedai/events";
-import type { DrainReport, DurableStore, Json, StoredRecord } from "@godspeedai/events";
-import type { Principal } from "@godspeedai/kernel-api";
+import { fingerprint, OutboxDispatcher, PermanentDeliveryError } from "@godspeedai/cognate-events";
+import type { DrainReport, DurableStore, Json, StoredRecord } from "@godspeedai/cognate-events";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
 import { CommitmentRejectedError, type CommitmentRecord, type CommitmentTarget } from "./types.ts";
 
 export interface CommitmentServiceOptions {

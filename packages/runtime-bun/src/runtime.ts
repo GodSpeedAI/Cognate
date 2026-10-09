@@ -1,11 +1,11 @@
 // Composition root: store, kernel, continuations, artifacts, projections, cognition, and the background loop.
-import { ArtifactService } from "@godspeedai/artifacts";
-import { ContinuationService } from "@godspeedai/continuations";
-import { type DurableStore, OutboxDispatcher } from "@godspeedai/events";
-import { createCordisKernel } from "@godspeedai/kernel-cordis";
-import type { Principal } from "@godspeedai/kernel-api";
-import { ProjectionRunner } from "@godspeedai/projections";
-import { openSqliteStore } from "@godspeedai/store-sqlite";
+import { ArtifactService } from "@godspeedai/cognate-artifacts";
+import { ContinuationService } from "@godspeedai/cognate-continuations";
+import { type DurableStore, OutboxDispatcher } from "@godspeedai/cognate-events";
+import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
+import { ProjectionRunner } from "@godspeedai/cognate-projections";
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { COGNITION_PROJECTION, cognitionProjection, recallFor } from "./cognition.ts";
 import type { Core } from "./core.ts";
 import { executeOnce } from "./executor.ts";

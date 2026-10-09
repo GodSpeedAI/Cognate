@@ -1,10 +1,10 @@
 
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@godspeedai/client";
-import { CognateProvider } from "@godspeedai/react";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { createClient } from "@godspeedai/cognate-client";
+import { CognateProvider } from "@godspeedai/cognate-react";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { App } from "../src/ui/App.tsx";
 
 const caller = { tenant: "tenant-a", actor: { id: "operator", kind: "user" } };

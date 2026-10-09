@@ -1,4 +1,4 @@
-# @godspeedai/projections
+# @godspeedai/cognate-projections
 
 Checkpointed, idempotent, rebuildable projections over the durable event log (spec §11).
 

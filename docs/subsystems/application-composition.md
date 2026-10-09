@@ -26,10 +26,10 @@ generate a project that already works.
 
 ## Position in the system
 
-`@godspeedai/profile` depends on `kernel-api` for types only. `profiles/copilot` and
+`@godspeedai/cognate-profile` depends on `kernel-api` for types only. `profiles/copilot` and
 `profiles/harness` each depend on `runtime-bun`, `runtime-api`, `capabilities`, `kernel-api`,
 `events`, `profile`, and a provider; copilot additionally depends on the whole presentation and
-wire stack. `@godspeedai/cli` depends on both profiles, `domainforge`, `protocol-connect(+bun)`,
+wire stack. `@godspeedai/cognate-cli` depends on both profiles, `domainforge`, `protocol-connect(+bun)`,
 `client`, `react`, `ui-astryx`, and `provider-local`.
 
 This is the top of the graph: nothing depends on `cli` or on a profile except `cli` itself and the
@@ -80,8 +80,8 @@ oldest-first with status and output.
 1. copy `templates/starter/common` then `templates/starter/<profile>` over the target;
 2. index every `@godspeedai/*` package under `--source` by reading its `package.json` name;
 3. walk `dependencies` breadth-first from the profile's root packages to compute the transitive
-   closure (roots: `@godspeedai/cli`, `@godspeedai/profile-<profile>`, `@godspeedai/domainforge`,
-   `@godspeedai/provider-local`);
+   closure (roots: `@godspeedai/cognate-cli`, `@godspeedai/cognate-profile-<profile>`, `@godspeedai/domainforge`,
+   `@godspeedai/cognate-provider-local`);
 4. `bun pm pack` each package into `.cognate/vendor/`;
 5. rewrite the generated `package.json`: every closure member becomes a `file:` dependency **and**
    an `overrides` entry, so `workspace:*` inside the packed tarballs resolves outside the workspace;

@@ -20,7 +20,7 @@
 
 ## The kernel contract
 
-`@godspeedai/kernel-api`.
+`@godspeedai/cognate-kernel-api`.
 
 ```ts
 interface CapabilityContract { id: string; version: string; attributes?: Attributes; semanticRef?: SemanticRef }
@@ -113,7 +113,7 @@ These are tests, not conventions. `bun test ./tests/architecture` runs all of th
 | Test | Requirement | What it fails on |
 |---|---|---|
 | `dependencies.test.ts` | `CG-ARC-001` | a forbidden edge; a third-party engine imported outside its owning adapter; a dependency cycle |
-| `acceptance.test.ts` | `CG-ARC-002` | an architectural acceptance criterion (A–M) whose requirements are not all `implemented`; a framework package depending on `@godspeedai/ag-ui`; a non-exact DomainForge pin |
+| `acceptance.test.ts` | `CG-ARC-002` | an architectural acceptance criterion (A–M) whose requirements are not all `implemented`; a framework package depending on `@godspeedai/cognate-ag-ui`; a non-exact DomainForge pin |
 | `engine-boundary.test.ts` | `CG-UI-003` and siblings | an engine type crossing a framework contract |
 | `invariants.test.ts` | `CG-ARC-003` | framework-specific `.sea` grammar; an unpinned upstream release; non-framework wire schema; RxJS |
 | `docs.test.ts` | `CG-DOC-001` | a page in the documentation map that does not exist; a missing `README.md`/`AGENTS.md`; a broken relative markdown link; a page describing an `implemented` requirement as candidate |

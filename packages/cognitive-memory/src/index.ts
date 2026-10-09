@@ -1,4 +1,4 @@
-import type { CognitiveEntry, CognitiveFlag, CognitiveIndex, Embedder, SimilarQuery } from "@godspeedai/cognitive-api";
+import type { CognitiveEntry, CognitiveFlag, CognitiveIndex, Embedder, SimilarQuery } from "@godspeedai/cognate-cognitive-api";
 
 function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   let dot = 0;

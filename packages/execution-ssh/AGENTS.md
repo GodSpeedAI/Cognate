@@ -6,6 +6,6 @@ Rules for changing this provider:
 - Never fall back to local execution; every connection/auth/host-key failure is a `WorldUnavailableError`.
 - Commands must go through `supervisedExecScript` so cancellation cannot orphan a remote process tree.
 - `metadata` and every error message must stay secret-free (no passwords, passphrases, key bodies).
-- `ssh2` types stay inside this package; only `@godspeedai/execution` interfaces cross its boundary.
+- `ssh2` types stay inside this package; only `@godspeedai/cognate-execution` interfaces cross its boundary.
 - Any behaviour change needs a test in `test/ssh.test.ts` and, if it concerns a real server, in
   `tests/live/remote-workspaces.live.ts`.

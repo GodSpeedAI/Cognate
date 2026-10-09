@@ -1,4 +1,4 @@
-import { cognitiveIndexConformance } from "@godspeedai/cognitive-api/conformance";
+import { cognitiveIndexConformance } from "@godspeedai/cognate-cognitive-api/conformance";
 import { afterAll } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

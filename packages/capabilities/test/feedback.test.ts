@@ -1,7 +1,7 @@
 // CG-COG-006: outcome feedback is durable before it changes ranking and survives index/projection loss (spec §15).
 import { describe, expect, test } from "bun:test";
-import { createMemoryStore } from "@godspeedai/store-memory";
-import { ProjectionRunner } from "@godspeedai/projections";
+import { createMemoryStore } from "@godspeedai/cognate-store-memory";
+import { ProjectionRunner } from "@godspeedai/cognate-projections";
 import { compatibilityRule, createOutcomeRanker, createSelector, outcomeProjection, recordOutcome, recordSelection, type Candidate } from "../src/index.ts";
 
 const ctx = { tenant: "tenant-a", scopeId: "root", correlationId: "corr", runId: "run" };

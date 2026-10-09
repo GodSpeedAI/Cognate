@@ -1,15 +1,15 @@
 // CG-WIR-003 (spec §22, §40.G): the same service kit passes over Connect as in-process.
 import { expect, test } from "bun:test";
-import { runtimeServiceConformance } from "@godspeedai/runtime-api/conformance";
-import { connectTransport, devToken, devTokenAuthenticator, serveRuntime } from "@godspeedai/protocol-connect-bun";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { runtimeServiceConformance } from "@godspeedai/cognate-runtime-api/conformance";
+import { connectTransport, devToken, devTokenAuthenticator, serveRuntime } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { kitPolicies } from "../../runtime-bun/test/support.ts";
 import { createRemoteRuntimeService } from "../src/index.ts";
-import { createClient } from "@godspeedai/client";
-import { alice } from "@godspeedai/runtime-api/conformance";
+import { createClient } from "@godspeedai/cognate-client";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
 
 for (const binary of [false, true]) {
   test(`remote capability offer round-trips over Connect (${binary ? "binary" : "JSON"})`, async () => {

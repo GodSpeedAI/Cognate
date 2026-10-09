@@ -10,11 +10,11 @@ import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react
 import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { renderToString } from "react-dom/server";
-import { createClient } from "@godspeedai/client";
-import { CognateProvider } from "@godspeedai/react";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { alice } from "@godspeedai/runtime-api/conformance";
-import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import { createClient } from "@godspeedai/cognate-client";
+import { CognateProvider } from "@godspeedai/cognate-react";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { ApprovalCard, ArtifactViewer, Approvals, ChatPanel, CognateShell, RunInspector, StateInspector } from "../src/index.tsx";
 import { stylesheetPaths } from "../src/styles.ts";
 

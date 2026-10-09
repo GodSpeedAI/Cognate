@@ -1,7 +1,7 @@
 // Framework-owned kernel contract (spec §8, §8.5, §9.1, §32). No engine types may appear here.
 
 /**
- * Structurally identical to `@godspeedai/events`' `Json`, declared locally: `@godspeedai/events` itself
+ * Structurally identical to `@godspeedai/cognate-events`' `Json`, declared locally: `@godspeedai/cognate-events` itself
  * depends on this package (for `SemanticRef`), so importing it here would cycle the package graph
  * (spec §28). Any JSON value satisfies both structurally.
  */

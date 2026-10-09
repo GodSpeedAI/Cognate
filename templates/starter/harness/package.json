@@ -8,9 +8,9 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@godspeedai/cli": "workspace:*",
-    "@godspeedai/profile-harness": "workspace:*",
+    "@godspeedai/cognate-cli": "workspace:*",
+    "@godspeedai/cognate-profile-harness": "workspace:*",
     "@godspeedai/cognate-domainforge": "workspace:*",
-    "@godspeedai/provider-local": "workspace:*"
+    "@godspeedai/cognate-provider-local": "workspace:*"
   }
 }

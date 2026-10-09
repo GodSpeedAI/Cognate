@@ -1,4 +1,4 @@
-import type { Json, StoredEvent } from "@godspeedai/events";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
 
 /** Read access to projection state inside a batch; reflects writes made earlier in the same batch. */
 export interface ProjectionState {

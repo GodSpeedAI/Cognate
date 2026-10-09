@@ -1,4 +1,4 @@
-# @godspeedai/cognitive-ruvector
+# @godspeedai/cognate-cognitive-ruvector
 
 RuVector-backed reference `CognitiveIndex` (ADR-0004). `createRuVectorIndex({ dimension, storagePath, id? })`.
 

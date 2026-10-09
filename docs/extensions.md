@@ -12,8 +12,8 @@ No LLM SDK is required by the kernel. `ModelProvider` is a capability contract w
 
 Two reference providers:
 
-- **[`@godspeedai/provider-local`](../packages/provider-local/README.md)** — a deterministic, rule-scripted provider for tests, demos, and offline fallback. `localProvider(options)` matches `rules` in order by case-insensitive substring of the last user message; no match returns a fixed reply. Every feature flag is `true` except `multimodal_input`.
-- **[`@godspeedai/provider-openai-compatible`](../packages/provider-openai-compatible/README.md)** — targets any OpenAI-compatible `/chat/completions` endpoint (llama.cpp, vLLM, Ollama, hosted APIs) using `fetch` directly, no vendor SDK. `apiKey()` is called per request and never stored, logged, or placed in an error message or capability contract ([security.md](security.md)). `modelComponent(provider)` wraps a provider as a kernel `Component` publishing `model.generate`.
+- **[`@godspeedai/cognate-provider-local`](../packages/provider-local/README.md)** — a deterministic, rule-scripted provider for tests, demos, and offline fallback. `localProvider(options)` matches `rules` in order by case-insensitive substring of the last user message; no match returns a fixed reply. Every feature flag is `true` except `multimodal_input`.
+- **[`@godspeedai/cognate-provider-openai-compatible`](../packages/provider-openai-compatible/README.md)** — targets any OpenAI-compatible `/chat/completions` endpoint (llama.cpp, vLLM, Ollama, hosted APIs) using `fetch` directly, no vendor SDK. `apiKey()` is called per request and never stored, logged, or placed in an error message or capability contract ([security.md](security.md)). `modelComponent(provider)` wraps a provider as a kernel `Component` publishing `model.generate`.
 
 A provider is replaceable without consumers importing its concrete implementation; removing a provider capability deterministically deactivates dependent fibers, and restoring a compatible one may reactivate them (spec §29.2, kernel dependency closure — see [concepts.md](concepts.md#components-fibers-and-lifecycle)).
 
@@ -34,10 +34,10 @@ Building a new adapter means implementing the relevant framework-owned interface
 
 ## Profiles: `defineProfile`
 
-[`@godspeedai/profile`](../packages/profile/README.md) treats a profile as pure composition (spec §29, §40.J/K): a named, ordered selection of registered component names plus per-component options. `defineProfile` validates a non-empty name and unique non-empty component names, and returns a deep-frozen `ProfileDefinition`.
+[`@godspeedai/cognate-profile`](../packages/profile/README.md) treats a profile as pure composition (spec §29, §40.J/K): a named, ordered selection of registered component names plus per-component options. `defineProfile` validates a non-empty name and unique non-empty component names, and returns a deep-frozen `ProfileDefinition`.
 
 ```ts
-import { defineProfile } from "@godspeedai/profile";
+import { defineProfile } from "@godspeedai/cognate-profile";
 
 export default defineProfile({
   name: "research-workbench",

@@ -1,8 +1,8 @@
 // Data access for the cockpit: typed reads of the public `workbench` projection and one action
 // helper that surfaces a capability's own refusal text. Components below this layer stay pure.
 import { useMemo } from "react";
-import { useCognate, useProjection } from "@godspeedai/react";
-import type { Json } from "@godspeedai/events";
+import { useCognate, useProjection } from "@godspeedai/cognate-react";
+import type { Json } from "@godspeedai/cognate-events";
 
 export interface WbRow<T> {
   readonly id: string;

@@ -5,8 +5,8 @@
 // old, mount new — no restart), and only then starts a deterministic `agent.config` run to durably
 // record the non-secret `model.configured` fact.
 import { randomUUID } from "node:crypto";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import type { ModelConfig, ProviderRegistry } from "../components/providerRegistry.ts";
 import type { SecretStore } from "../secrets.ts";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";

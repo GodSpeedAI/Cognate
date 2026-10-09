@@ -1,5 +1,5 @@
-import type { Component, Policy } from "@godspeedai/kernel-api";
-import type { KitSetup } from "@godspeedai/runtime-api/conformance";
+import type { Component, Policy } from "@godspeedai/cognate-kernel-api";
+import type { KitSetup } from "@godspeedai/cognate-runtime-api/conformance";
 import type { ActionPolicy } from "../src/index.ts";
 
 export function kitPolicies(setup: KitSetup): { policy: Policy; actions: ActionPolicy; components: Component[] } {

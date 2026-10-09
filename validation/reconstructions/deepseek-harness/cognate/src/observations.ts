@@ -16,11 +16,11 @@
 //     `readCorrelation`).
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { StoredEvent, Json, DurableStore, OutboxIntent } from "@godspeedai/events";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
-import { ObservationDelivery, observationIntent, createSxrCliPort, type ObservationPort } from "@godspeedai/realitytrace";
-import type { SxrWorkflow } from "@godspeedai/realitytrace";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { StoredEvent, Json, DurableStore, OutboxIntent } from "@godspeedai/cognate-events";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
+import { ObservationDelivery, observationIntent, createSxrCliPort, type ObservationPort } from "@godspeedai/cognate-realitytrace";
+import type { SxrWorkflow } from "@godspeedai/cognate-realitytrace";
 
 /** The events worth an evidence record: a step's start, completion, failure, the turn's final
  *  answer, and a failed run. Kept deliberately small — every observation is an SXR ingest

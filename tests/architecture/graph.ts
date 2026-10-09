@@ -6,7 +6,7 @@ export interface PackageNode {
   readonly name: string;
   readonly dir: string;
   readonly declared: ReadonlySet<string>;
-  /** Bare specifiers imported from src/ (not tests), e.g. `@godspeedai/events`, `cordis`, `react`. */
+  /** Bare specifiers imported from src/ (not tests), e.g. `@godspeedai/cognate-events`, `cordis`, `react`. */
   readonly imports: ReadonlySet<string>;
 }
 

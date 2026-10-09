@@ -1,8 +1,8 @@
 // Example: cognitive-memory — index authoritative facts and recall them by semantic similarity.
 // Docs: docs/cognition.md (ADR-0004; spec §16: embed -> similar -> authorize -> resolve).
-import type { Principal } from "@godspeedai/kernel-api";
-import { createRecall } from "@godspeedai/cognitive-api";
-import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
+import { createRecall } from "@godspeedai/cognate-cognitive-api";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognate-cognitive-memory";
 
 async function main() {
   const dimension = 64;

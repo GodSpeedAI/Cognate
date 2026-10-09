@@ -1,7 +1,7 @@
 // Ephemeral remote capability availability. Durable work starts only after an offer is selected
 // and represented by a normal continuation; offers themselves must not enter the event log.
-import type { Json } from "@godspeedai/events";
-import type { Caller, RemoteCapabilityOffer } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Caller, RemoteCapabilityOffer } from "@godspeedai/cognate-runtime-api";
 
 type StoredOffer = RemoteCapabilityOffer & { readonly tenant: string; readonly actorId: string };
 

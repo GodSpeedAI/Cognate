@@ -4,7 +4,7 @@
 // straight to the server's secret store — they are never kept in component state after submit, never
 // shown again, and never part of the durable record the sidebar reads.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useCognate, useProjection } from "@godspeedai/react";
+import { useCognate, useProjection } from "@godspeedai/cognate-react";
 
 export interface WorldRow {
   readonly worldId: string;

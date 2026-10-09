@@ -3,7 +3,7 @@
 # into a clean external project that has no access to this monorepo.
 #
 # This repository is private, so the clean-room install runs against the
-# public npm registry only when @godspeedai/cli exists there; before the first
+# public npm registry only when @godspeedai/cognate-cli exists there; before the first
 # release the step reports that no published version exists yet, and the
 # tarball-content checks still gate every PR. Publishing happens through
 # release.yml (Release Please + OIDC), never from this workflow.
@@ -36,7 +36,7 @@ permissions:
   contents: read
 
 env:
-  PROBE_PACKAGE: "@godspeedai/cli"
+  PROBE_PACKAGE: "@godspeedai/cognate-cli"
 
 jobs:
   pack-and-install:

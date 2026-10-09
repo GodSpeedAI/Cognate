@@ -1,4 +1,4 @@
-# AGENTS.md — @godspeedai/cli
+# AGENTS.md — @godspeedai/cognate-cli
 
 - Packages are not published (DEBT-016): `create` must keep vendoring via
   `bun pm pack` + `overrides`, never assume a registry install works.

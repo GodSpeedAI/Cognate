@@ -3,10 +3,10 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createClient } from "@godspeedai/client";
-import { localProvider } from "@godspeedai/provider-local";
-import { alice } from "@godspeedai/runtime-api/conformance";
-import { COPILOT_AGENT, createCopilotApp } from "@godspeedai/profile-copilot";
+import { createClient } from "@godspeedai/cognate-client";
+import { localProvider } from "@godspeedai/cognate-provider-local";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
+import { COPILOT_AGENT, createCopilotApp } from "@godspeedai/cognate-profile-copilot";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-example-copilot-"));
 

@@ -1,7 +1,7 @@
 // CG-PRJ-001: idempotent, atomically checkpointed projections that never skip a failure (spec §11).
 import { afterEach, describe, expect, test } from "bun:test";
-import { event } from "@godspeedai/events/conformance";
-import type { DurableStore, StoredEvent } from "@godspeedai/events";
+import { event } from "@godspeedai/cognate-events/conformance";
+import type { DurableStore, StoredEvent } from "@godspeedai/cognate-events";
 import { storeCases } from "../../../tests/support/stores.ts";
 import { ProjectionRunner, type Projection } from "../src/index.ts";
 

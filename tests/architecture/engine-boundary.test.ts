@@ -5,7 +5,7 @@ import { loadGraph } from "./graph.ts";
 
 test("only kernel-cordis imports cordis", () => {
   const importers = loadGraph().filter((node) => node.imports.has("cordis")).map((node) => node.name);
-  expect(importers).toEqual(["@godspeedai/kernel-cordis"]);
+  expect(importers).toEqual(["@godspeedai/cognate-kernel-cordis"]);
 });
 
 test("kernel-cordis exports only framework-owned types", () => {

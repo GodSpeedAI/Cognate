@@ -25,7 +25,7 @@ The first adapter targets RealityTrace's documented CLI workflow and CEP record 
 
 ### Per-observation verifier design
 
-`sxr ingest` dedupes by `(run_id, verifier)`, not by any caller-supplied id, and mints a fresh `observation_id` on every call — even duplicates. [`@godspeedai/realitytrace`](../packages/realitytrace/README.md) uses a unique verifier per observation (`cognate.<observationId>`), so SXR's own idempotency key becomes, in effect, per-observation: retries land on the same `ledger_position` and report `already_committed`.
+`sxr ingest` dedupes by `(run_id, verifier)`, not by any caller-supplied id, and mints a fresh `observation_id` on every call — even duplicates. [`@godspeedai/cognate-realitytrace`](../packages/realitytrace/README.md) uses a unique verifier per observation (`cognate.<observationId>`), so SXR's own idempotency key becomes, in effect, per-observation: retries land on the same `ledger_position` and report `already_committed`.
 
 ## Correlation ids
 

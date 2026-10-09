@@ -12,7 +12,7 @@ three packages you need: `runtime-bun`, `runtime-api`, and `client`.
 An agent is a function plus a name and a version. Create `agent.ts`:
 
 ```ts
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 
 export const refundAgent: AgentDefinition = {
   id: "agent.refund",
@@ -46,7 +46,7 @@ Two rules to internalize now, because the runtime depends on them:
 `ctx.invoke` needs a provider. Write `billing.ts`:
 
 ```ts
-import type { CapabilityContract, Component } from "@godspeedai/kernel-api";
+import type { CapabilityContract, Component } from "@godspeedai/cognate-kernel-api";
 
 const contract: CapabilityContract = {
   id: "billing.quote",
@@ -83,9 +83,9 @@ name-keyed record) and the component stays `WAITING` until a provider appears.
 Write `main.ts`:
 
 ```ts
-import { createClient } from "@godspeedai/client";
-import { allowCapabilities } from "@godspeedai/kernel-api";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createClient } from "@godspeedai/cognate-client";
+import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 import { billingQuote } from "./billing.ts";
 import { refundAgent } from "./agent.ts";
 
@@ -194,10 +194,10 @@ get a new run id and therefore a new ticket, because the randomness is recorded 
 
 | Piece | Package |
 |---|---|
-| the agent and its recorded context | `@godspeedai/runtime-api` |
-| the capability provider | `@godspeedai/kernel-api` types, `@godspeedai/kernel-cordis` engine |
-| the durable store, continuations, artifacts, loop | `@godspeedai/runtime-bun` |
-| the derived view and the event subscription | `@godspeedai/client` |
+| the agent and its recorded context | `@godspeedai/cognate-runtime-api` |
+| the capability provider | `@godspeedai/cognate-kernel-api` types, `@godspeedai/cognate-kernel-cordis` engine |
+| the durable store, continuations, artifacts, loop | `@godspeedai/cognate-runtime-bun` |
+| the derived view and the event subscription | `@godspeedai/cognate-client` |
 
 The same three calls work unchanged over Connect, AG-UI, MCP, and A2A — the client talks to a
 `RuntimeService`, and that is the only interface.

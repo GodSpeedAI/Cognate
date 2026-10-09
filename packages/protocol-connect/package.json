@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/protocol-connect",
+  "name": "@godspeedai/cognate-protocol-connect",
   "version": "0.1.0",
   "description": "Maps RuntimeService to the generated Connect service (server routes and a remote client). Transport-agnostic.",
   "type": "module",
@@ -23,14 +23,14 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.15.0",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/kernel-api": "workspace:*",
-    "@godspeedai/proto": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-kernel-api": "workspace:*",
+    "@godspeedai/cognate-proto": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*",
     "@connectrpc/connect": "2.2.0"
   },
   "devDependencies": {
-    "@godspeedai/protocol-connect-bun": "workspace:*",
-    "@godspeedai/runtime-bun": "workspace:*"
+    "@godspeedai/cognate-protocol-connect-bun": "workspace:*",
+    "@godspeedai/cognate-runtime-bun": "workspace:*"
   }
 }

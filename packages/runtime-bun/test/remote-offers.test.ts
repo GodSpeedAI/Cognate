@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import { createRuntime, type Runtime } from "../src/index.ts";
 
 const alice = { tenant: "tenant-a", actor: { id: "alice", kind: "user" as const } };

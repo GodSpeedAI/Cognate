@@ -7,9 +7,9 @@
 // from, so every setting survives a reload AND a full runtime restart. The `settings` projection
 // merges the partial patches into its single "current" row (see `src/projections/settings.ts`).
 import { randomUUID } from "node:crypto";
-import type { Json } from "@godspeedai/events";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 import { isWorkDetailsMode } from "../workDetails.ts";
 import {

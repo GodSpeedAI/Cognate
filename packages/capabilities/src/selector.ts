@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { isCompatible } from "@godspeedai/kernel-api";
-import type { DurableStore, Json } from "@godspeedai/events";
-import type { Projection, ProjectionState } from "@godspeedai/projections";
+import { isCompatible } from "@godspeedai/cognate-kernel-api";
+import type { DurableStore, Json } from "@godspeedai/cognate-events";
+import type { Projection, ProjectionState } from "@godspeedai/cognate-projections";
 import type { Candidate, EligibilityRule, Outcome, Ranker, SelectionDecision, SelectionRequest } from "./types.ts";
 
 export interface SelectorOptions {
