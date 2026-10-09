@@ -82,6 +82,8 @@ jobs:
           bun add "$PROBE_PACKAGE@$version"
           cp "$GITHUB_WORKSPACE/scripts/clean-room-smoke.ts" smoke.ts
           bun smoke.ts
-          # CLI bin: prints usage and exits 1 when called without a command.
-          ./node_modules/.bin/cognate 2>&1 | grep -q "usage: cognate"
+          # CLI bin: prints usage and exits 1 when called without a command —
+          # capture first (ignoring the intentional exit code), then assert.
+          cli_usage=$(./node_modules/.bin/cognate 2>&1 || true)
+          echo "$cli_usage" | grep -q "usage: cognate"
           echo "clean-room install + smoke OK for $PROBE_PACKAGE@$version"
