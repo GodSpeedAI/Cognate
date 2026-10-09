@@ -64,7 +64,7 @@
     },
     "packages/a2a": {
       "name": "@godspeedai/cognate-a2a",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@a2a-js/sdk": "1.2.1",
         "@godspeedai/cognate-events": "workspace:*",
@@ -76,7 +76,7 @@
     },
     "packages/ag-ui": {
       "name": "@godspeedai/cognate-ag-ui",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@ag-ui/core": "1.0.0",
         "@ag-ui/encoder": "1.0.0",
@@ -91,7 +91,7 @@
     },
     "packages/artifacts": {
       "name": "@godspeedai/cognate-artifacts",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
@@ -103,7 +103,7 @@
     },
     "packages/capabilities": {
       "name": "@godspeedai/cognate-capabilities",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
@@ -116,7 +116,7 @@
     },
     "packages/cli": {
       "name": "@godspeedai/cognate-cli",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "bin": {
         "cognate": "./src/bin.ts",
       },
@@ -137,7 +137,7 @@
     },
     "packages/client": {
       "name": "@godspeedai/cognate-client",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-runtime-api": "workspace:*",
@@ -148,7 +148,7 @@
     },
     "packages/cognate": {
       "name": "@godspeedai/cognate",
-      "version": "0.0.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-client": "workspace:*",
         "@godspeedai/cognate-runtime-api": "workspace:*",
@@ -157,7 +157,7 @@
     },
     "packages/cognitive-api": {
       "name": "@godspeedai/cognate-cognitive-api",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
@@ -170,14 +170,14 @@
     },
     "packages/cognitive-memory": {
       "name": "@godspeedai/cognate-cognitive-memory",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-cognitive-api": "workspace:*",
       },
     },
     "packages/cognitive-ruvector": {
       "name": "@godspeedai/cognate-cognitive-ruvector",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-cognitive-api": "workspace:*",
         "@ruvector/core": "0.1.32",
@@ -185,7 +185,7 @@
     },
     "packages/cognitive-rvf": {
       "name": "@godspeedai/cognate-cognitive-rvf",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-cognitive-api": "workspace:*",
         "@godspeedai/cognate-events": "workspace:*",
@@ -194,7 +194,7 @@
     },
     "packages/continuations": {
       "name": "@godspeedai/cognate-continuations",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
@@ -206,7 +206,7 @@
     },
     "packages/domainforge": {
       "name": "@godspeedai/cognate-domainforge",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-kernel-api": "workspace:*",
         "@godspeedai/domainforge": "0.19.0",
@@ -214,14 +214,14 @@
     },
     "packages/events": {
       "name": "@godspeedai/cognate-events",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-kernel-api": "workspace:*",
       },
     },
     "packages/execution": {
       "name": "@godspeedai/cognate-execution",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-kernel-api": "workspace:*",
       },
@@ -231,7 +231,7 @@
     },
     "packages/execution-ssh": {
       "name": "@godspeedai/cognate-execution-ssh",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-execution": "workspace:*",
         "ssh2": "1.17.0",
@@ -242,18 +242,18 @@
     },
     "packages/execution-wsl": {
       "name": "@godspeedai/cognate-execution-wsl",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-execution": "workspace:*",
       },
     },
     "packages/kernel-api": {
       "name": "@godspeedai/cognate-kernel-api",
-      "version": "0.1.0",
+      "version": "0.1.2",
     },
     "packages/kernel-cordis": {
       "name": "@godspeedai/cognate-kernel-cordis",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-kernel-api": "workspace:*",
         "cordis": "4.0.0-rc.10",
@@ -261,7 +261,7 @@
     },
     "packages/mcp": {
       "name": "@godspeedai/cognate-mcp",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-runtime-api": "workspace:*",
@@ -274,14 +274,14 @@
     },
     "packages/profile": {
       "name": "@godspeedai/cognate-profile",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-kernel-api": "workspace:*",
       },
     },
     "packages/projections": {
       "name": "@godspeedai/cognate-projections",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
       },
@@ -292,7 +292,7 @@
     },
     "packages/proto": {
       "name": "@godspeedai/cognate-proto",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@bufbuild/protobuf": "2.15.0",
       },
@@ -303,7 +303,7 @@
     },
     "packages/protocol-connect": {
       "name": "@godspeedai/cognate-protocol-connect",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@bufbuild/protobuf": "2.15.0",
         "@connectrpc/connect": "2.2.0",
@@ -319,7 +319,7 @@
     },
     "packages/protocol-connect-bun": {
       "name": "@godspeedai/cognate-protocol-connect-bun",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@connectrpc/connect": "2.2.0",
         "@connectrpc/connect-web": "2.2.0",
@@ -332,7 +332,7 @@
     },
     "packages/provider-local": {
       "name": "@godspeedai/cognate-provider-local",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-capabilities": "workspace:*",
         "@godspeedai/cognate-events": "workspace:*",
@@ -341,7 +341,7 @@
     },
     "packages/provider-openai-compatible": {
       "name": "@godspeedai/cognate-provider-openai-compatible",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-capabilities": "workspace:*",
         "@godspeedai/cognate-events": "workspace:*",
@@ -353,7 +353,7 @@
     },
     "packages/react": {
       "name": "@godspeedai/cognate-react",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-client": "workspace:*",
         "@godspeedai/cognate-events": "workspace:*",
@@ -373,7 +373,7 @@
     },
     "packages/realitytrace": {
       "name": "@godspeedai/cognate-realitytrace",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
@@ -385,7 +385,7 @@
     },
     "packages/runtime-api": {
       "name": "@godspeedai/cognate-runtime-api",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
@@ -393,7 +393,7 @@
     },
     "packages/runtime-bun": {
       "name": "@godspeedai/cognate-runtime-bun",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-artifacts": "workspace:*",
         "@godspeedai/cognate-capabilities": "workspace:*",
@@ -413,21 +413,29 @@
     },
     "packages/store-memory": {
       "name": "@godspeedai/cognate-store-memory",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
       },
     },
+    "packages/store-postgres": {
+      "name": "@godspeedai/cognate-store-postgres",
+      "version": "0.1.2",
+      "dependencies": {
+        "@godspeedai/cognate-events": "workspace:*",
+        "postgres": "^3.4.9",
+      },
+    },
     "packages/store-sqlite": {
       "name": "@godspeedai/cognate-store-sqlite",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-events": "workspace:*",
       },
     },
     "packages/ui-astryx": {
       "name": "@godspeedai/cognate-ui-astryx",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@astryxdesign/core": "0.6.3",
         "@astryxdesign/theme-neutral": "0.6.3",
@@ -452,7 +460,7 @@
     },
     "profiles/copilot": {
       "name": "@godspeedai/cognate-profile-copilot",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-ag-ui": "workspace:*",
         "@godspeedai/cognate-capabilities": "workspace:*",
@@ -484,7 +492,7 @@
     },
     "profiles/harness": {
       "name": "@godspeedai/cognate-profile-harness",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@godspeedai/cognate-capabilities": "workspace:*",
         "@godspeedai/cognate-events": "workspace:*",
@@ -725,6 +733,8 @@
     "@godspeedai/cognate-runtime-bun": ["@godspeedai/cognate-runtime-bun@workspace:packages/runtime-bun"],
 
     "@godspeedai/cognate-store-memory": ["@godspeedai/cognate-store-memory@workspace:packages/store-memory"],
+
+    "@godspeedai/cognate-store-postgres": ["@godspeedai/cognate-store-postgres@workspace:packages/store-postgres"],
 
     "@godspeedai/cognate-store-sqlite": ["@godspeedai/cognate-store-sqlite@workspace:packages/store-sqlite"],
 
@@ -1213,6 +1223,8 @@
     "points-on-curve": ["points-on-curve@0.2.0", "", {}, "sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A=="],
 
     "points-on-path": ["points-on-path@0.2.1", "", { "dependencies": { "path-data-parser": "0.1.0", "points-on-curve": "0.2.0" } }, "sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g=="],
+
+    "postgres": ["postgres@3.4.9", "", {}, "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="],
 
     "pretty-format": ["pretty-format@27.5.1", "", { "dependencies": { "ansi-regex": "^5.0.1", "ansi-styles": "^5.0.0", "react-is": "^17.0.1" } }, "sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ=="],
 
