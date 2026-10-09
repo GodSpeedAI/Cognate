@@ -2,13 +2,17 @@
 
 Bridges a validated IDM in `.sea/interaction/` (see
 `.agents/skills/deriving-interaction-domain-models/references/output-and-validation.md`) to real
-Cognate constructs. Grounded in what `packages/domainforge` actually does — read that package
-before trusting this table for anything it doesn't cover.
+Cognate constructs. Grounded in what `@godspeedai/cognate-domainforge` actually does — read the installed
+package (its `src/` ships in the npm tarball) before trusting this table for anything it doesn't cover.
 
-## What `packages/domainforge` actually does
+Source citations like `@godspeedai/cognate-runtime-api/src/types.ts` point into the *installed*
+npm package (`node_modules/...`), not a Cognate checkout — the same files ship in every published
+tarball ([ADR-0012](../../../docs/decisions/ADR-0012-cognate-package-naming.md)).
 
-`loadSemanticProjection(source, { uri })` (`packages/domainforge/src/index.ts`) calls
-`Graph.parse(source)` from the pinned `@godspeedai/domainforge@0.18.2` binding — **not** a
+## What `@godspeedai/cognate-domainforge` actually does
+
+`loadSemanticProjection(source, { uri })` (the installed `@godspeedai/cognate-domainforge` package, `src/index.ts`) calls
+`Graph.parse(source)` from the pinned `@godspeedai/domainforge@0.19.0` binding — **not** a
 DomainForge CLI subprocess; the adapter links the Rust/native binding directly. It walks
 `graph.allEntities() / allResources() / allFlows() / allRoles() / allRelations() / allInstances()`
 and produces a `SemanticProjection`: a flat list of read-only `SemanticObject`s (`{ ref, kind,
@@ -16,9 +20,9 @@ name, namespace, fields }`) plus `SemanticRelation`s (`flow.from`, `flow.to`, `f
 `relation.subject`, `relation.object`, `relation.via`). Each object's `ref` is a `SemanticRef`
 (`{ namespace, id, kind, source: { uri, digest }, projectionVersion }`) — the framework-owned,
 opaque handle DomainForge concepts get before touching anything else in Cognate
-(`packages/kernel-api/src/types.ts`).
+(the installed `@godspeedai/cognate-kernel-api` (`src/types.ts`)).
 
-The installed DomainForge 0.18.2 binding exposes every SEA-declared Graph collection to Cognate as
+The installed DomainForge 0.19.0 binding exposes every SEA-declared Graph collection to Cognate as
 read-only objects: Policy, Metric, Dimension, Unit, Mapping, Projection,
 Pattern, ConceptChange, and SEA `EntityInstance` (DEBT-003 closed 2026-09-26);
 `Instance` remains the programmatic `ResourceInstance` collection and has no SEA declaration. `External` is only a
@@ -44,22 +48,22 @@ same way at `cognate dev` startup (`docs/getting-started.md`); nothing distingui
 
 | IDM concept | Cognate construct | Where it lives | Status |
 |---|---|---|---|
-| Actor / role | `Role` → `SemanticObject{kind:"Role"}` | `packages/domainforge` (`graph.allRoles()`) | **enforced by packages/domainforge** |
-| Actor / role, at invocation time | `Caller.actor: Principal`, `RunContext.actor` | `packages/runtime-api/src/types.ts` | convention (you map an IDM role to a `Principal.kind`/id scheme) |
-| Intention / job | agent id (`AgentDefinition.id`), or a run's `correlationId` thread | `packages/runtime-api/src/types.ts` | convention |
-| Affordance | `Requirement` (what a step may ask for) | `packages/kernel-api/src/types.ts` | convention |
-| Canonical journey | one `AgentDefinition.run` plus a stable `correlationId` scheme across the runs that compose it | `packages/runtime-api` | convention |
-| Journey step | `ctx.step(id, fn)` or `ctx.invoke(capability, input)` — one deterministic step id per journey step | `RunContext`, `packages/runtime-api/src/types.ts` | convention |
-| Capability / action | `CapabilityContract` published by a `Component`, optionally carrying the step's `SemanticRef` via `bindCapabilities` | `packages/kernel-api/src/types.ts`, `packages/domainforge/src/index.ts` | binding mechanism enforced by packages/domainforge (explicit only); the `Component` itself is hand-authored |
-| State transition | an event type (`ctx.emit(type, payload)`, or `state.changed`) | `packages/events/src/types.ts` | convention |
-| Artifact / resource | `Resource` → `SemanticObject{kind:"Resource"}` for the *modeled* resource; `ArtifactService`/`ctx.artifact()` for a *produced* file/receipt | `packages/domainforge` for the model; `packages/artifacts/src/index.ts` for the runtime artifact | modeled resource: **enforced by packages/domainforge**; produced artifact: convention (you decide which journey outputs become artifacts) |
-| Policy / authority | DomainForge `Policy` declaration (unmapped — referenced constraint only, never executable) vs. Cognate `Policy` (`denyAll`/`rulePolicy`/`allowCapabilities`) | `.sea` source (unread by the adapter); `packages/kernel-api/src/policy.ts` | DomainForge side: **not mapped at all** (unsupported kind); Cognate side: convention, hand-authored to match the IDM's stated authority rules |
-| Outcome / evidence | run `output`, plus an optional RealityTrace observation correlated by `SemanticRef` | `RunView.output`; `packages/realitytrace/src/index.ts` | convention; evidence delivery mechanics enforced by the realitytrace adapter once you wire it |
-| Settlement | `CommitmentService` (`INTENT → PREPARE → COMMIT → OBSERVE`, `commitment.intended`/`.reconciled` events) | `packages/continuations/src/commitments.ts` | convention (you decide what counts as settlement) |
-| Decision / next affordance | `ContinuationView` open on a run (`waitingOn`), resolved via `resolveContinuation` | `packages/runtime-api/src/types.ts`, `packages/continuations` | convention |
-| Material payment | an external commitment, `CommitmentRecord` (idempotency key, attempt count, `UNKNOWN_RECONCILIATION_REQUIRED`) | `packages/continuations/src/types.ts`, `commitments.ts` | convention |
-| Failure / recovery | `InvocationFailure{kind:"failed"|"denied"|"unavailable"|...}`, `ContinuationClosedError`, `run.failed` | `packages/kernel-api/src/types.ts`, `packages/runtime-api/src/types.ts` | convention, but the failure *shape* is enforced by the runtime type system |
-| UI surface for an affordance/decision | `ApprovalCard`/`Approvals` (Astryx), or a client-served frontend capability | `packages/ui-astryx/src/index.tsx`, `@godspeedai/cognate-client.provideCapability` | convention |
+| Actor / role | `Role` → `SemanticObject{kind:"Role"}` | `@godspeedai/cognate-domainforge` (`graph.allRoles()`) | **enforced by `@godspeedai/cognate-domainforge`** |
+| Actor / role, at invocation time | `Caller.actor: Principal`, `RunContext.actor` | the installed `@godspeedai/cognate-runtime-api` (`src/types.ts`) | convention (you map an IDM role to a `Principal.kind`/id scheme) |
+| Intention / job | agent id (`AgentDefinition.id`), or a run's `correlationId` thread | the installed `@godspeedai/cognate-runtime-api` (`src/types.ts`) | convention |
+| Affordance | `Requirement` (what a step may ask for) | the installed `@godspeedai/cognate-kernel-api` (`src/types.ts`) | convention |
+| Canonical journey | one `AgentDefinition.run` plus a stable `correlationId` scheme across the runs that compose it | `@godspeedai/cognate-runtime-api` | convention |
+| Journey step | `ctx.step(id, fn)` or `ctx.invoke(capability, input)` — one deterministic step id per journey step | `RunContext`, the installed `@godspeedai/cognate-runtime-api` (`src/types.ts`) | convention |
+| Capability / action | `CapabilityContract` published by a `Component`, optionally carrying the step's `SemanticRef` via `bindCapabilities` | the installed `@godspeedai/cognate-kernel-api` (`src/types.ts`), `@godspeedai/cognate-domainforge/src/index.ts` | binding mechanism enforced by `@godspeedai/cognate-domainforge` (explicit only); the `Component` itself is hand-authored |
+| State transition | an event type (`ctx.emit(type, payload)`, or `state.changed`) | `@godspeedai/cognate-events/src/types.ts` | convention |
+| Artifact / resource | `Resource` → `SemanticObject{kind:"Resource"}` for the *modeled* resource; `ArtifactService`/`ctx.artifact()` for a *produced* file/receipt | `@godspeedai/cognate-domainforge` for the model; `@godspeedai/cognate-artifacts/src/index.ts` for the runtime artifact | modeled resource: **enforced by `@godspeedai/cognate-domainforge`**; produced artifact: convention (you decide which journey outputs become artifacts) |
+| Policy / authority | DomainForge `Policy` declaration (unmapped — referenced constraint only, never executable) vs. Cognate `Policy` (`denyAll`/`rulePolicy`/`allowCapabilities`) | `.sea` source (unread by the adapter); `@godspeedai/cognate-kernel-api/src/policy.ts` | DomainForge side: **not mapped at all** (unsupported kind); Cognate side: convention, hand-authored to match the IDM's stated authority rules |
+| Outcome / evidence | run `output`, plus an optional RealityTrace observation correlated by `SemanticRef` | `RunView.output`; `@godspeedai/cognate-realitytrace/src/index.ts` | convention; evidence delivery mechanics enforced by the realitytrace adapter once you wire it |
+| Settlement | `CommitmentService` (`INTENT → PREPARE → COMMIT → OBSERVE`, `commitment.intended`/`.reconciled` events) | `@godspeedai/cognate-continuations/src/commitments.ts` | convention (you decide what counts as settlement) |
+| Decision / next affordance | `ContinuationView` open on a run (`waitingOn`), resolved via `resolveContinuation` | the installed `@godspeedai/cognate-runtime-api` (`src/types.ts`), `@godspeedai/cognate-continuations` | convention |
+| Material payment | an external commitment, `CommitmentRecord` (idempotency key, attempt count, `UNKNOWN_RECONCILIATION_REQUIRED`) | `@godspeedai/cognate-continuations/src/types.ts`, `commitments.ts` | convention |
+| Failure / recovery | `InvocationFailure{kind:"failed"|"denied"|"unavailable"|...}`, `ContinuationClosedError`, `run.failed` | the installed `@godspeedai/cognate-kernel-api` (`src/types.ts`), the installed `@godspeedai/cognate-runtime-api` (`src/types.ts`) | convention, but the failure *shape* is enforced by the runtime type system |
+| UI surface for an affordance/decision | `ApprovalCard`/`Approvals` (Astryx), or a client-served frontend capability | `@godspeedai/cognate-ui-astryx/src/index.tsx`, `@godspeedai/cognate-client.provideCapability` | convention |
 
 **Read this table honestly, not optimistically.** The only row where DomainForge *enforces*
 anything Cognate-side is the supported kinds becoming read-only `SemanticObject`s with a
@@ -77,7 +81,7 @@ convention you establish and must keep consistent by hand — there is no compil
    object that names it.
 2. **Every `NewEvent` for a journey step should carry the same `SemanticRef`** the capability
    contract carries, via the event's optional `semanticRef` field
-   (`packages/events/src/types.ts`). This is how an event in the durable log can be traced back
+   (`@godspeedai/cognate-events/src/types.ts`). This is how an event in the durable log can be traced back
    to the exact `.sea` object and source digest that justified it — not just a string that
    happens to match today.
 3. **One test file per canonical journey**, named after the journey, asserting the event sequence

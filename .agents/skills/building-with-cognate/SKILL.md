@@ -14,7 +14,7 @@ Build software as: **validated interaction model → explicit bindings → deter
 
 ## Tooling
 
-Invoke the Cognate CLI only as `cognate <command>`. Resolve what `cognate` means (source checkout now, published package later) from [references/cli.md](references/cli.md) before first use. Keep install paths and version pins out of every other file in this skill.
+Invoke the Cognate CLI only as `cognate <command>`. Resolve what `cognate` means (the published [`@godspeedai/cognate-cli`](https://www.npmjs.com/package/@godspeedai/cognate-cli) package; `create` still needs `--source <checkout>`) from [references/cli.md](references/cli.md) before first use. Keep install paths and version pins out of every other file in this skill.
 
 ## References (load as needed)
 
@@ -37,7 +37,7 @@ Run the deriving-interaction-domain-models workflow over the available evidence,
 
 ### 3. Scaffold, project, and bind
 
-For a new app, generate a starter with `cognate create` using the profile closest to the product (see `cli.md`), and place the validated model where the starter loads `.sea` from. Load the model with `@godspeedai/domainforge` (`loadSemanticProjection`), and treat the resulting semantic objects as read-only. Nothing becomes a capability implicitly. Bind semantic IDs to capability contracts explicitly with `bindCapabilities`, and record every binding in the handoff so names stay traceable. Use the mapping in `idm-to-cognate.md` to decide what each IDM element becomes. With the installed DomainForge 0.18.1 binding, Entity, Resource, Flow, Role, Relation, the programmatic ResourceInstance collection, SEA entity instances, policies, metrics, patterns, concept changes, dimensions, units, mappings, and projections all reach the projection as read-only objects (DEBT-003 closed). Policies remain read-only referenced constraints: Cognate does not evaluate them or turn them into capabilities or permissions. Hand-implement any runtime checks the app needs, and name them after their `.sea` declarations.
+For a new app, generate a starter with `cognate create` using the profile closest to the product (see `cli.md`), and place the validated model where the starter loads `.sea` from. Load the model with `@godspeedai/domainforge` (`loadSemanticProjection`), and treat the resulting semantic objects as read-only. Nothing becomes a capability implicitly. Bind semantic IDs to capability contracts explicitly with `bindCapabilities`, and record every binding in the handoff so names stay traceable. Use the mapping in `idm-to-cognate.md` to decide what each IDM element becomes. With the installed DomainForge 0.19.0 binding, Entity, Resource, Flow, Role, Relation, the programmatic ResourceInstance collection, SEA entity instances, policies, metrics, patterns, concept changes, dimensions, units, mappings, and projections all reach the projection as read-only objects (DEBT-003 closed). Policies remain read-only referenced constraints: Cognate does not evaluate them or turn them into capabilities or permissions. Hand-implement any runtime checks the app needs, and name them after their `.sea` declarations.
 
 ### 4. Implement journey by journey
 
