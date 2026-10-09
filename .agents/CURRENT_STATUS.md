@@ -1,26 +1,25 @@
 # Current status
 
-**Status revision:** 40
+**Status revision:** 41
 
-**Stage:** cognate-* package-name migration: renamed, released in-repo, publication pending operator OTP
+**Stage:** cognate-* migration complete: 0.1.0 published, 0.1.1 released through fully automated OIDC, superseded names deprecated
 
-**Summary:** Every Cognate SDK module is now @godspeedai/cognate-<module> (operator convention decision): 372 files renamed, external pins untouched, the DomainForge adapter keeps its pre-conformant name, and a new re-export-only umbrella @godspeedai/cognate (root + /runtime + /client) ships. Release Please was realigned (components renamed, manifest reset so initial-version bootstraps each new identity at exactly 0.1.0) and 36 cognate-* tags + GitHub releases exist. The superseded @godspeedai/<module> 0.1.0 packages on npm await deprecation; the 36 renamed packages are packed, inspected, and ready to publish — blocked only on the operator's npm OTP.
+**Summary:** The renamed @godspeedai/cognate-* SDK is live on npm: 0.1.0 of all 36 identities published and verified, 33 superseded @godspeedai/<module> packages deprecated with migration messages (realitytrace pending one operator command), and the automated pipeline proven end to end — a fix commit flowed Release Please (0.1.1 for 35 components, lockstep) through npm trusted publishing (OIDC, zero tokens) with every publish job green. The umbrella joined the release config after its path was found missing; it publishes 0.1.0 (manual first push) and re-joins lockstep at the next release.
 
 **Verified:**
-- just verify on 6dd2a93: 78/78 gates; full suite 768 tests / 0 fail; frozen install clean
-- Whole-name audit: zero old-style references outside historical records (spec, .agents history, logs)
-- 36/36 tarballs pack and pass inspect-npm-tarballs.mjs under the new names
-- Verdaccio clean-room: bun add @godspeedai/cognate@0.1.0 installs 17 packages and the consumer smoke passes (capabilities, durable events across restart, continuations); @godspeedai/cognate-cli graph smoke passed earlier in the session
-- Release Please aligned: 36 tags cognate-*-v0.1.0 + GitHub releases (34 bootstrapped via API from PR #13 notes after the release-please PR-body parser matched only the first component; verification dispatch finds all 36 with no duplicates)
-- CI verify + pack/clean-room green on PR #14 and the #13 release PR merge
+- npm: 36/36 cognate-* packages resolved via npm view at publication time; 35 at 0.1.1 after the automated release (umbrella 0.1.0, current)
+- Automated round: release run 37880531909 success — 36/36 publish jobs green via OIDC (id-token: write, no tokens), serialized, guard-guarded
+- Deprecations: 32/33 verified via npm view deprecated with the migration message; @godspeedai/realitytrace@0.1.0 deprecation needs one rerun from the operator session (EOTP here)
+- Real-registry clean-room in CI (package.yml) now active and green: installs @godspeedai/cognate-cli from npm, consumer smoke + typed probe pass
+- Release Please state aligned: manifest, cognate-* tags, and GitHub releases agree at 0.1.1 (umbrella 0.1.0); verification dispatches succeed with no duplicates
 
 **Limits:**
-- npm publication of the 36 renamed packages pending: requires the operator's OTP (EOTP on every publish from this session)
-- Old @godspeedai/<module> packages not yet deprecated (must happen only after the replacements exist on npm; @godspeedai/a2a was never published so it needs no deprecation)
-- Trusted publishers not yet configured for the new package identities; publish job stays gated on NPM_TRUSTED_PUBLISHING_READY
-- Design spec still describes the old package naming; contract-revision note remains a follow-up
+- @godspeedai/realitytrace@0.1.0 deprecation pending one operator command (EOTP in the agent session)
+- Umbrella sits at 0.1.0 while the group is 0.1.1; linked-versions pulls it to the group version at the next release
+- Trusted-publisher configs must each complete a successful OIDC publish within 2 days of creation; the 0.1.1 round validated them the same day
+- Umbrella 0.1.1 tag creation collided with the bootstrap release (already_exists) once; resolved by state alignment, no residue
 
-**Next:** Operator publishes .tmp/pack-cognate/*.tgz (npm publish --access public, OTP interactively) or supplies an OTP; then verify each with npm view, deprecate the 33 superseded packages, configure trusted publishers per package (GodSpeedAI/Cognate, release.yml, environment release), set NPM_TRUSTED_PUBLISHING_READY=true, and repeat the clean-room against the real registry
+**Next:** Operator reruns the realitytrace deprecation command; optionally exercise bunx @godspeedai/cognate-cli create from a clean machine to finish DEBT-016's exit criterion
 
 **Evidence:**
 - .agents/evidence/2026-10-08-release-0.1.0-prep.md
