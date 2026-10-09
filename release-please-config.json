@@ -59,6 +59,7 @@
     "packages/capabilities": {},
     "packages/cli": {},
     "packages/client": {},
+    "packages/cognate": {},
     "packages/cognitive-api": {},
     "packages/cognitive-memory": {},
     "packages/cognitive-ruvector": {},
