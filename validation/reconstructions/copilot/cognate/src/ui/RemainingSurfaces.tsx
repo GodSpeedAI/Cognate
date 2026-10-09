@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
-import type { FrontendHandler } from "@godspeedai/client";
-import { useCapability, useContinuations, useCognate, useProjection, useRun } from "@godspeedai/react";
+import type { FrontendHandler } from "@godspeedai/cognate-client";
+import { useCapability, useContinuations, useCognate, useProjection, useRun } from "@godspeedai/cognate-react";
 import { DECLARATIVE_OPERATION, JOURNEY_D_AGENT, JOURNEY_E_AGENT, JOURNEY_F_AGENT, JOURNEY_G_AGENT, JOURNEY_H_AGENT } from "../constants.ts";
 
 type ProjectionRows = NonNullable<ReturnType<typeof useProjection>>;

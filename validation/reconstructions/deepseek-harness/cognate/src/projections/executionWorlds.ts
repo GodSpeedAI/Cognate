@@ -2,8 +2,8 @@
 // distribution). The record is exactly what is needed to rebuild the provider after a restart and to
 // show it in the UI — and nothing secret: no password, passphrase or key material, only the auth
 // *kind*, a key *path*, and the pinned host-key fingerprint.
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
 
 export interface WorldRecord {
   readonly worldId: string;

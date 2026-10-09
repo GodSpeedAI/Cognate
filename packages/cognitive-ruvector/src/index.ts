@@ -1,4 +1,4 @@
-import type { CognitiveEntry, CognitiveFlag, CognitiveIndex, SimilarQuery } from "@godspeedai/cognitive-api";
+import type { CognitiveEntry, CognitiveFlag, CognitiveIndex, SimilarQuery } from "@godspeedai/cognate-cognitive-api";
 import { rmSync } from "node:fs";
 
 export interface RuVectorIndexOptions {

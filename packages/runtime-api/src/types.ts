@@ -1,6 +1,6 @@
 // Transport-independent runtime service and agent authoring contract (spec §8, §10, §12, §22, §32; ADR-0011).
-import type { Json, StoredEvent } from "@godspeedai/events";
-import type { Principal, SemanticRef } from "@godspeedai/kernel-api";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
+import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import type { StateUpdate } from "./state.ts";
 
 // ── Agent authoring ────────────────────────────────────────────────────────────

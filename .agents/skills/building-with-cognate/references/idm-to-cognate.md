@@ -59,7 +59,7 @@ same way at `cognate dev` startup (`docs/getting-started.md`); nothing distingui
 | Decision / next affordance | `ContinuationView` open on a run (`waitingOn`), resolved via `resolveContinuation` | `packages/runtime-api/src/types.ts`, `packages/continuations` | convention |
 | Material payment | an external commitment, `CommitmentRecord` (idempotency key, attempt count, `UNKNOWN_RECONCILIATION_REQUIRED`) | `packages/continuations/src/types.ts`, `commitments.ts` | convention |
 | Failure / recovery | `InvocationFailure{kind:"failed"|"denied"|"unavailable"|...}`, `ContinuationClosedError`, `run.failed` | `packages/kernel-api/src/types.ts`, `packages/runtime-api/src/types.ts` | convention, but the failure *shape* is enforced by the runtime type system |
-| UI surface for an affordance/decision | `ApprovalCard`/`Approvals` (Astryx), or a client-served frontend capability | `packages/ui-astryx/src/index.tsx`, `@godspeedai/client.provideCapability` | convention |
+| UI surface for an affordance/decision | `ApprovalCard`/`Approvals` (Astryx), or a client-served frontend capability | `packages/ui-astryx/src/index.tsx`, `@godspeedai/cognate-client.provideCapability` | convention |
 
 **Read this table honestly, not optimistically.** The only row where DomainForge *enforces*
 anything Cognate-side is the supported kinds becoming read-only `SemanticObject`s with a

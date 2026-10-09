@@ -1,8 +1,8 @@
 // Cognition wiring (spec §15, §16): an indexer projection over completed runs and an authorized recall path.
-import { cognitiveIndexer, createRecall, type IndexDocument } from "@godspeedai/cognitive-api";
-import type { DurableStore, Json, StoredEvent } from "@godspeedai/events";
-import type { Principal } from "@godspeedai/kernel-api";
-import type { Projection } from "@godspeedai/projections";
+import { cognitiveIndexer, createRecall, type IndexDocument } from "@godspeedai/cognate-cognitive-api";
+import type { DurableStore, Json, StoredEvent } from "@godspeedai/cognate-events";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
+import type { Projection } from "@godspeedai/cognate-projections";
 import type { RecallResultJson } from "./core.ts";
 import { field, foldRun, meta, runStream } from "./fold.ts";
 import type { CognitionOptions } from "./index.ts";

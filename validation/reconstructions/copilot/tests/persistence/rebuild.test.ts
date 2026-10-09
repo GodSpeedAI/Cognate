@@ -10,7 +10,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { alice } from "@godspeedai/runtime-api/conformance";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
 import {
   CONTINUATION_MESSAGE,
   createRemainingJourneysApp,

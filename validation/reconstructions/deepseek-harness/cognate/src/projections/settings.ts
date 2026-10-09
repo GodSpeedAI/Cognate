@@ -6,8 +6,8 @@
 // until a later event changes it, and fields an event does not mention are untouched. Absence of
 // the row (or of a field) is what makes the UI fall back to the documented defaults on a fresh
 // COGNATE_HARNESS_HOME (`src/settings.ts`'s `resolveGeneralSettings`).
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
 
 export const settingsProjection: Projection = {
   name: "settings",

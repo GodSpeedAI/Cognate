@@ -1,9 +1,9 @@
 // Shared internals of one runtime instance (not exported from the package).
-import type { ArtifactService } from "@godspeedai/artifacts";
-import type { ContinuationService } from "@godspeedai/continuations";
-import type { DurableStore, Json, OutboxIntent } from "@godspeedai/events";
-import type { Kernel, Principal } from "@godspeedai/kernel-api";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { ArtifactService } from "@godspeedai/cognate-artifacts";
+import type { ContinuationService } from "@godspeedai/cognate-continuations";
+import type { DurableStore, Json, OutboxIntent } from "@godspeedai/cognate-events";
+import type { Kernel, Principal } from "@godspeedai/cognate-kernel-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import type { Invoker } from "./invoker.ts";
 import type { Governor } from "./governed-operation.ts";
 import type { PendingEvent } from "./index.ts";

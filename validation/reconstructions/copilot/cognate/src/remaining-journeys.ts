@@ -1,10 +1,10 @@
-import { createAgUiHandler } from "@godspeedai/ag-ui";
-import type { Json } from "@godspeedai/events";
-import { allowCapabilities } from "@godspeedai/kernel-api";
-import type { Projection, ProjectionWrite } from "@godspeedai/projections";
-import type { AgentDefinition, Caller, RunContext } from "@godspeedai/runtime-api";
-import { invokeFrontend } from "@godspeedai/runtime-api";
-import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import { createAgUiHandler } from "@godspeedai/cognate-ag-ui";
+import type { Json } from "@godspeedai/cognate-events";
+import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
+import type { Projection, ProjectionWrite } from "@godspeedai/cognate-projections";
+import type { AgentDefinition, Caller, RunContext } from "@godspeedai/cognate-runtime-api";
+import { invokeFrontend } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import {
   DECLARATIVE_OPERATION,
   JOURNEY_D_AGENT,

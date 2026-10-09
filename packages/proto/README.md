@@ -1,4 +1,4 @@
-# @godspeedai/proto
+# @godspeedai/cognate-proto
 
 Generated TypeScript bindings for the canonical `proto/` sources (spec §21). Generated code
 (`src/gen/**`) is committed and never edited by hand; `src/index.ts` re-exports `RuntimeService`,

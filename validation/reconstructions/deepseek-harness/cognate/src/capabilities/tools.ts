@@ -4,16 +4,16 @@
 // These are the model-facing tools and they have not changed shape: the model still calls
 // `read`/`edit`/`bash`/`run_code`. What changed (Remote Workspaces, tranches T2–T4) is where they
 // execute. This file no longer touches `node:fs` or `Bun.spawn`; it requires the framework-owned
-// `filesystem.*` / `process.exec` capabilities from `@godspeedai/execution` and delegates every
+// `filesystem.*` / `process.exec` capabilities from `@godspeedai/cognate-execution` and delegates every
 // operation to the provider for the workspace's `executionWorldId`. A local workspace and an SSH
 // workspace take the exact same code path here; only the provider differs.
 //
 // Output is not streamed through `HandlerContext.progress`: these calls are made from inside
 // `agent.coding`'s `ctx.invoke`, which already records the call and its result as a
 // `run.invocation` event — a second progress channel would just duplicate that.
-export { PathEscapeError } from "@godspeedai/execution";
-import type { ExecInput, ExecResult, ReadInput, ReadResult, ResolveInput, ResolveResult, WriteInput } from "@godspeedai/execution";
-import type { CapabilityLease, Component, HandlerContext, SemanticRef } from "@godspeedai/kernel-api";
+export { PathEscapeError } from "@godspeedai/cognate-execution";
+import type { ExecInput, ExecResult, ReadInput, ReadResult, ResolveInput, ResolveResult, WriteInput } from "@godspeedai/cognate-execution";
+import type { CapabilityLease, Component, HandlerContext, SemanticRef } from "@godspeedai/cognate-kernel-api";
 
 const MAX_OUTPUT = 20_000;
 
@@ -37,7 +37,7 @@ async function delegate<I, O>(lease: CapabilityLease, input: I, ctx: HandlerCont
 // -- tool.read ---------------------------------------------------------------------------------
 export interface ToolReadInput {
   readonly workspaceRoot: string;
-  /** The execution world that owns `workspaceRoot` (`@godspeedai/execution`). Defaults to `local`. */
+  /** The execution world that owns `workspaceRoot` (`@godspeedai/cognate-execution`). Defaults to `local`. */
   readonly executionWorldId?: string;
   readonly file_path: string;
 }
@@ -49,7 +49,7 @@ export interface ToolReadResult {
 // -- tool.edit ---------------------------------------------------------------------------------
 export interface ToolEditInput {
   readonly workspaceRoot: string;
-  /** The execution world that owns `workspaceRoot` (`@godspeedai/execution`). Defaults to `local`. */
+  /** The execution world that owns `workspaceRoot` (`@godspeedai/cognate-execution`). Defaults to `local`. */
   readonly executionWorldId?: string;
   readonly file_path: string;
   readonly old_string: string;
@@ -108,7 +108,7 @@ function diffLines(oldText: string, newText: string): { readonly diffLines: read
 // -- tool.bash ---------------------------------------------------------------------------------
 export interface ToolBashInput {
   readonly workspaceRoot: string;
-  /** The execution world that owns `workspaceRoot` (`@godspeedai/execution`). Defaults to `local`. */
+  /** The execution world that owns `workspaceRoot` (`@godspeedai/cognate-execution`). Defaults to `local`. */
   readonly executionWorldId?: string;
   readonly command: string;
   readonly description?: string;
@@ -131,7 +131,7 @@ export interface ToolBashResult {
 // an `bun -e` subprocess with `cwd` = the workspace root.
 export interface ToolRunCodeInput {
   readonly workspaceRoot: string;
-  /** The execution world that owns `workspaceRoot` (`@godspeedai/execution`). Defaults to `local`. */
+  /** The execution world that owns `workspaceRoot` (`@godspeedai/cognate-execution`). Defaults to `local`. */
   readonly executionWorldId?: string;
   readonly code: string;
   readonly description?: string;

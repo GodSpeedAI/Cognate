@@ -1,11 +1,11 @@
-import { createAgUiHandler } from "@godspeedai/ag-ui";
-import type { ModelResponse } from "@godspeedai/capabilities";
-import { allowCapabilities, type Policy } from "@godspeedai/kernel-api";
-import { localProvider } from "@godspeedai/provider-local";
-import { modelComponent } from "@godspeedai/provider-openai-compatible";
-import type { Projection } from "@godspeedai/projections";
-import type { AgentDefinition, Caller } from "@godspeedai/runtime-api";
-import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import { createAgUiHandler } from "@godspeedai/cognate-ag-ui";
+import type { ModelResponse } from "@godspeedai/cognate-capabilities";
+import { allowCapabilities, type Policy } from "@godspeedai/cognate-kernel-api";
+import { localProvider } from "@godspeedai/cognate-provider-local";
+import { modelComponent } from "@godspeedai/cognate-provider-openai-compatible";
+import type { Projection } from "@godspeedai/cognate-projections";
+import type { AgentDefinition, Caller } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { loadJourneyABindings, loadJourneyCBindings } from "./domain.ts";
 import { sharedStateAgent, sharedStateCanvasProjection } from "./shared-state.ts";
 

@@ -1,4 +1,4 @@
-# ADR-0011 — `@godspeedai/runtime-api`: a transport-independent runtime service contract
+# ADR-0011 — `@godspeedai/cognate-runtime-api`: a transport-independent runtime service contract
 
 <!-- Index: [decisions/README.md](README.md). The Status line below is historical; the current implementation status is in [requirements/ledger.yaml](../../requirements/ledger.yaml).
 -->

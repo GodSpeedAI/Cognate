@@ -1,9 +1,9 @@
 // CG-SEC-001 (spec §32): erasure leaves a tombstone, replay reports a redacted gap, derived views and cognition drop the content.
 import { expect, test } from "bun:test";
-import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { alice } from "@godspeedai/runtime-api/conformance";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognate-cognitive-memory";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 
 const intake: AgentDefinition = { id: "agent.intake", version: "1.0.0", run: async (input) => ({ summary: `patient ${(input as { name: string }).name} admitted` }) };
 

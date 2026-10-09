@@ -6,8 +6,8 @@
 // (`createRemainingJourneysApp`) at the service level — the same settlement surface the
 // reconstruction's journey tests assert against — with no DOM and no reference stack.
 import { Database } from "bun:sqlite";
-import type { StoredEvent } from "@godspeedai/events";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { StoredEvent } from "@godspeedai/cognate-events";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 /** The public projections `createRemainingJourneysApp` wires (remaining-journeys.ts). */
 export const PROJECTION_NAMES = ["controlled-rendering", "declarative-catalog", "rich-thread", "shared-state-canvas"] as const;

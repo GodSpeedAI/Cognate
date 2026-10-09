@@ -1,6 +1,6 @@
-import { allowCapabilities } from "@godspeedai/kernel-api";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
+import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { JOURNEY_B_AGENT } from "./constants.ts";
 import { browserOffer, RemoteCapabilitySurface, MountedCapability, RemoteCapabilityHistory } from "./ui/RemoteCapabilitySurface.tsx";
 

@@ -38,9 +38,9 @@ describe("architectural acceptance criteria (§40)", () => {
 
   test("H (structural): no framework package depends on the AG-UI adapter", () => {
     const dependents = loadGraph()
-      .filter((node) => node.declared.has("@godspeedai/ag-ui") || node.imports.has("@godspeedai/ag-ui"))
+      .filter((node) => node.declared.has("@godspeedai/cognate-ag-ui") || node.imports.has("@godspeedai/cognate-ag-ui"))
       .map((node) => node.name)
-      .filter((name) => !name.startsWith("@godspeedai/profile-"));
+      .filter((name) => !name.startsWith("@godspeedai/cognate-profile-"));
     expect(dependents).toEqual([]);
   });
 

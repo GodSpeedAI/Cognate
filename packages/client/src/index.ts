@@ -1,8 +1,8 @@
 // CG-CLT-001 (spec §25.1, §31.8): headless client over the runtime service; reconnect from cursor; frontend capabilities.
 // All exposed state is DERIVED from durable events -- nothing here is authoritative, everything can be rebuilt
 // by replaying the tenant's event stream from position 0. No React import (framework-neutral).
-import type { Json, StoredEvent } from "@godspeedai/events";
-import { applyStateUpdate, type Caller, type ContinuationView, type RemoteCapabilityOffer, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@godspeedai/runtime-api";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
+import { applyStateUpdate, type Caller, type ContinuationView, type RemoteCapabilityOffer, type RunView, type RuntimeService, StatePatchError, type StateUpdate } from "@godspeedai/cognate-runtime-api";
 
 /** A minimal observable value, framework-neutral (React bindings adapt it with useSyncExternalStore). */
 export interface Readable<T> {

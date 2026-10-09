@@ -1,6 +1,6 @@
 // CG-ART-001: artifacts have authoritative records, content-addressed bytes, access policy, and tombstones (spec §13.1).
 import { afterEach, describe, expect, test } from "bun:test";
-import type { Principal } from "@godspeedai/kernel-api";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
 import { storeCases } from "../../../tests/support/stores.ts";
 import { ArtifactService, type PutArtifact } from "../src/index.ts";
 

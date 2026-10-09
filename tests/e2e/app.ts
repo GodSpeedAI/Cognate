@@ -4,19 +4,19 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { bindCapabilities, loadSemanticProjection } from "@godspeedai/cognate-domainforge";
-import type { CapabilityContract, Component } from "@godspeedai/kernel-api";
-import { allowCapabilities } from "@godspeedai/kernel-api";
-import { cognitiveIndexer, type IndexDocument } from "@godspeedai/cognitive-api";
-import { createRuVectorIndex } from "@godspeedai/cognitive-ruvector";
-import { hashingEmbedder } from "@godspeedai/cognitive-memory";
-import { createRvfIndex } from "@godspeedai/cognitive-rvf";
-import { ProjectionRunner } from "@godspeedai/projections";
-import { createSxrCliPort, observationIntent, ObservationDelivery } from "@godspeedai/realitytrace";
-import type { AgentDefinition, RunContext } from "@godspeedai/runtime-api";
-import { ContinuationClosedError } from "@godspeedai/runtime-api";
-import { createRuntime, type PendingEvent } from "@godspeedai/runtime-bun";
-import { devTokenAuthenticator, serveRuntime } from "@godspeedai/protocol-connect-bun";
-import type { Json, StoredEvent } from "@godspeedai/events";
+import type { CapabilityContract, Component } from "@godspeedai/cognate-kernel-api";
+import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
+import { cognitiveIndexer, type IndexDocument } from "@godspeedai/cognate-cognitive-api";
+import { createRuVectorIndex } from "@godspeedai/cognate-cognitive-ruvector";
+import { hashingEmbedder } from "@godspeedai/cognate-cognitive-memory";
+import { createRvfIndex } from "@godspeedai/cognate-cognitive-rvf";
+import { ProjectionRunner } from "@godspeedai/cognate-projections";
+import { createSxrCliPort, observationIntent, ObservationDelivery } from "@godspeedai/cognate-realitytrace";
+import type { AgentDefinition, RunContext } from "@godspeedai/cognate-runtime-api";
+import { ContinuationClosedError } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type PendingEvent } from "@godspeedai/cognate-runtime-bun";
+import { devTokenAuthenticator, serveRuntime } from "@godspeedai/cognate-protocol-connect-bun";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
 
 const PORT = Number(process.env.PORT ?? "43917");
 const DB = process.env.COGNATE_E2E_DB ?? ":memory:";
@@ -179,7 +179,7 @@ const observationTimer = setInterval(() => {
 const internal = serveRuntime({ service: runtime.service, authenticate: devTokenAuthenticator, port: 0, hostname: "127.0.0.1" });
 
 // ── UI: bundle the browser entry with Bun.build, serve Astryx CSS, and the shell page ──────────
-const { stylesheetPaths } = await import("@godspeedai/ui-astryx/styles");
+const { stylesheetPaths } = await import("@godspeedai/cognate-ui-astryx/styles");
 const cssPaths = stylesheetPaths();
 const build = await Bun.build({ entrypoints: [join(import.meta.dir, "browser.tsx")], target: "browser", format: "esm" });
 if (!build.success) {

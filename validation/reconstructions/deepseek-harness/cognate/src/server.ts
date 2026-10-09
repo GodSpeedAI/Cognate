@@ -4,16 +4,16 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { allowCapabilities, rulePolicy } from "@godspeedai/kernel-api";
-import type { Policy } from "@godspeedai/kernel-api";
-import type { RuntimeService } from "@godspeedai/runtime-api";
-import { createRuntime } from "@godspeedai/runtime-bun";
-import type { ActionPolicy, Runtime } from "@godspeedai/runtime-bun";
-import { devToken, devTokenAuthenticator } from "@godspeedai/protocol-connect-bun";
-import { registerRuntimeService } from "@godspeedai/protocol-connect";
+import { allowCapabilities, rulePolicy } from "@godspeedai/cognate-kernel-api";
+import type { Policy } from "@godspeedai/cognate-kernel-api";
+import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
+import type { ActionPolicy, Runtime } from "@godspeedai/cognate-runtime-bun";
+import { devToken, devTokenAuthenticator } from "@godspeedai/cognate-protocol-connect-bun";
+import { registerRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
-import { stylesheetPaths } from "@godspeedai/ui-astryx/styles";
+import { stylesheetPaths } from "@godspeedai/cognate-ui-astryx/styles";
 
 import { bindExecutionWorlds, bindWorkbench, bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
@@ -21,7 +21,7 @@ import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
 import { sessionHistoryComponent } from "./capabilities/sessionHistory.ts";
 import { modelConfigureComponent } from "./capabilities/modelConfigure.ts";
-import { EXECUTION_CAPABILITY_IDS, createExecutionWorldRegistry, executionWorldsComponent, localExecutionWorld } from "@godspeedai/execution";
+import { EXECUTION_CAPABILITY_IDS, createExecutionWorldRegistry, executionWorldsComponent, localExecutionWorld } from "@godspeedai/cognate-execution";
 import { executionWorldsManageComponent, restoreExecutionWorlds } from "./capabilities/executionWorlds.ts";
 import { executionWorldsProjection } from "./projections/executionWorlds.ts";
 import { cognitiveComponent } from "./capabilities/cognitive.ts";
@@ -124,10 +124,10 @@ function buildActionPolicy(): ActionPolicy {
 const BROWSER_ENTRY_TEMPLATE = (caller: { readonly tenant: string; readonly actorId: string }) => `
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@godspeedai/client";
-import { CognateProvider } from "@godspeedai/react";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { createClient } from "@godspeedai/cognate-client";
+import { CognateProvider } from "@godspeedai/cognate-react";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { App } from "../src/ui/App.tsx";
 
 const caller = { tenant: ${JSON.stringify(caller.tenant)}, actor: { id: ${JSON.stringify(caller.actorId)}, kind: "user" } };

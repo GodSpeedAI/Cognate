@@ -1,4 +1,4 @@
-# @godspeedai/provider-local
+# @godspeedai/cognate-provider-local
 
 A deterministic, rule-scripted `ModelProvider` (spec §26) for tests, demos,
 and offline fallback. It is never a real model: `localProvider(options)`

@@ -6,9 +6,9 @@
 // Human-only decisions (`task.review.decide`, `authority.elevate`) require a `user` actor: an agent
 // run invokes capabilities as a non-user principal, so it cannot accept its own work.
 import { randomUUID } from "node:crypto";
-import type { Json } from "@godspeedai/events";
-import type { CapabilityContract, Component, HandlerContext, SemanticRef } from "@godspeedai/kernel-api";
-import type { Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
+import type { CapabilityContract, Component, HandlerContext, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 import { decideShell, decideWrite, type Decision } from "../workbench/authority.ts";
 import { advance as advanceAutomation, deliveryReceipt, newAutomation, nextFire, type AutomationRun, type Schedule } from "../workbench/automation.ts";

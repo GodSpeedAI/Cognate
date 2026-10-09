@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Component } from "@godspeedai/kernel-api";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { Component } from "@godspeedai/cognate-kernel-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import { createRuntime, timeoutSecsEnforcer, type ConstraintEnforcer, type GovernanceAuthority, type GovernanceDecision, type GovernedOperation, type Runtime } from "../src/index.ts";
 
 let keyCounter = 0;

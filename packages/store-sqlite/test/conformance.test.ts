@@ -1,4 +1,4 @@
-import { storeConformance } from "@godspeedai/events/conformance";
+import { storeConformance } from "@godspeedai/cognate-events/conformance";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

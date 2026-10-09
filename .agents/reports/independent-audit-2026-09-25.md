@@ -53,7 +53,7 @@ All 12 sampled tests read their outcomes from real state transitions (event stre
 | Requirement | Gate file | Verdict |
 |---|---|---|
 | CG-KRN-001/005 (kernel contract/scopes) | `packages/kernel-cordis/test/{contract,scopes}.test.ts` | Strong — asserts idempotent dispose, lease invalidation post-dispose, reverse-order effect cleanup, scope-close cascades. |
-| CG-EVT-003 (atomic commit) | `packages/store-sqlite/test/conformance.test.ts` (uses shared `storeConformance` harness) | Adequate — a shared conformance suite parameterized over persistent/memory stores; strength depends on `@godspeedai/events/conformance` body (not separately re-audited line by line here). |
+| CG-EVT-003 (atomic commit) | `packages/store-sqlite/test/conformance.test.ts` (uses shared `storeConformance` harness) | Adequate — a shared conformance suite parameterized over persistent/memory stores; strength depends on `@godspeedai/cognate-events/conformance` body (not separately re-audited line by line here). |
 | CG-CON-001 (continuation races) | `packages/continuations/test/lifecycle.test.ts:` racing-resume/cancel/expire test runs 10 rounds of `Promise.all` and asserts exactly one terminal transition and exactly one stream write — this is a genuine concurrency proof, not a mock. |
 | CG-CMT-001 (commitments) | `packages/continuations/test/commitments.test.ts` — uses a fake remote with injected socket-timeout-after-effect behavior to test idempotent reconciliation of "effect happened, response lost" — realistic failure-mode coverage. |
 | CG-COG-004 (index rebuild determinism) | `tests/integration/cognitive-rebuild.test.ts` — asserts identical authorization/outcome behavior across delete+rebuild using a real runtime, not a stub. |

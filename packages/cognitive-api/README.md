@@ -1,4 +1,4 @@
-# @godspeedai/cognitive-api
+# @godspeedai/cognate-cognitive-api
 
 Dependency-free `CognitiveIndex` contract, the standard recall pipeline, an event-driven
 indexing projection, and the conformance kit every index implementation must pass (spec §14–16).
@@ -12,4 +12,4 @@ indexing projection, and the conformance kit every index implementation must pas
   upserts them into a `CognitiveIndex`; removes entries whose source event is erased.
 - `conformance.ts` — `cognitiveIndexConformance`, reused by every `CognitiveIndex` implementation.
 
-See `@godspeedai/cognitive-memory` for the reference in-memory implementation.
+See `@godspeedai/cognate-cognitive-memory` for the reference in-memory implementation.

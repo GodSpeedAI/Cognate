@@ -60,7 +60,7 @@ the kernel's own tenant. A `Policy` that ignores `context.tenant` will authorize
 
 ## The two-phase selection model
 
-Where more than one provider is eligible, `@godspeedai/capabilities` runs two phases:
+Where more than one provider is eligible, `@godspeedai/cognate-capabilities` runs two phases:
 
 1. **Every `EligibilityRule` filters every candidate**, and every `(provider, rule)` result is
    recorded. Only now is the eligible set fixed.

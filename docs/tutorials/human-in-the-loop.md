@@ -11,7 +11,7 @@ setup.
 Replace the agent's `run` with:
 
 ```ts
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 
 export const refundAgent: AgentDefinition = {
   id: "agent.refund",
@@ -144,7 +144,7 @@ wraps it and mints a key per call.
 
 Two options, and they are genuinely different mechanisms:
 
-1. **Native UI** — `Approvals` from `@godspeedai/ui-astryx` renders the open continuations of a run;
+1. **Native UI** — `Approvals` from `@godspeedai/cognate-ui-astryx` renders the open continuations of a run;
    `ApprovalCard` takes `onResolve(approved)`. This is the copilot path.
 2. **A frontend capability** — if the "human" step is really a browser API (pan a map, pick a
    file), have the agent wait on
@@ -158,11 +158,11 @@ Both reduce to the same continuation; only who resolves it differs.
 
 | Piece | Package |
 |---|---|
-| `ctx.waitFor` | `@godspeedai/runtime-api` |
-| continuation records, lifecycle, resume delivery | `@godspeedai/continuations` |
-| the resume handler and re-entry | `@godspeedai/runtime-bun` |
+| `ctx.waitFor` | `@godspeedai/cognate-runtime-api` |
+| continuation records, lifecycle, resume delivery | `@godspeedai/cognate-continuations` |
+| the resume handler and re-entry | `@godspeedai/cognate-runtime-bun` |
 | approval resolution | `RuntimeService.resolveContinuation` |
-| approval UI | `@godspeedai/ui-astryx`, or AG-UI `CUSTOM cognate.continuation` |
+| approval UI | `@godspeedai/cognate-ui-astryx`, or AG-UI `CUSTOM cognate.continuation` |
 
 ## Next
 

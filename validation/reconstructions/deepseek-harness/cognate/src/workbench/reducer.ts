@@ -1,7 +1,7 @@
 // Pure fold of `workbench.*` events into projection rows. The events are the truth; every row is
 // derived and rebuildable. Keys are workspace-agnostic (`task/<id>`, `evidence/<taskId>/<id>`, ...);
 // the projection wrapper adds the tenant prefix.
-import type { Json } from "@godspeedai/events";
+import type { Json } from "@godspeedai/cognate-events";
 import { enqueue, emptyInbox, type Inbox } from "./steering.ts";
 import type { UsageRecord } from "./economics.ts";
 import type {

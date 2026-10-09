@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { RuntimeService } from "@godspeedai/runtime-api";
+import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 export interface CreateOptions {
   readonly dir: string;
@@ -28,13 +28,13 @@ export interface CreateReport {
 
 /** `--with` names the starter cannot yet wire up, with a specific reason where one is known. */
 const KNOWN_UNSUPPORTED: Readonly<Record<string, string>> = {
-  sona: "SONA was rejected as a ranker (ADR-0005); adaptive ranking is built in via @godspeedai/capabilities createOutcomeRanker (UCB1)",
+  sona: "SONA was rejected as a ranker (ADR-0005); adaptive ranking is built in via @godspeedai/cognate-capabilities createOutcomeRanker (UCB1)",
 };
 
 /** Root `@godspeedai/*` package names a generated app's own package.json depends on, per profile. */
 const PROFILE_ROOTS: Readonly<Record<CreateOptions["profile"], readonly string[]>> = {
-  copilot: ["@godspeedai/cli", "@godspeedai/profile-copilot", "@godspeedai/cognate-domainforge", "@godspeedai/provider-local"],
-  harness: ["@godspeedai/cli", "@godspeedai/profile-harness", "@godspeedai/cognate-domainforge", "@godspeedai/provider-local"],
+  copilot: ["@godspeedai/cognate-cli", "@godspeedai/cognate-profile-copilot", "@godspeedai/cognate-domainforge", "@godspeedai/cognate-provider-local"],
+  harness: ["@godspeedai/cognate-cli", "@godspeedai/cognate-profile-harness", "@godspeedai/cognate-domainforge", "@godspeedai/cognate-provider-local"],
 };
 
 async function copyDir(srcDir: string, destDir: string): Promise<void> {
@@ -145,11 +145,11 @@ export interface DevServer {
 const BROWSER_ENTRY = `
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@godspeedai/client";
-import { CognateProvider } from "@godspeedai/react";
-import { CognateShell, ChatPanel } from "@godspeedai/ui-astryx";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { createClient } from "@godspeedai/cognate-client";
+import { CognateProvider } from "@godspeedai/cognate-react";
+import { CognateShell, ChatPanel } from "@godspeedai/cognate-ui-astryx";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 
 const caller = { tenant: "local", actor: { id: "dev", kind: "user" } };
 const transport = connectTransport(window.location.origin);
@@ -220,8 +220,8 @@ export async function dev(options: { readonly dir: string; readonly port: number
   let closeApp: () => Promise<void>;
 
   if (config.profile === "copilot") {
-    const { createCopilotApp, COPILOT_AGENT, copilotRegistry } = await import("@godspeedai/profile-copilot");
-    const { localProvider } = await import("@godspeedai/provider-local");
+    const { createCopilotApp, COPILOT_AGENT, copilotRegistry } = await import("@godspeedai/cognate-profile-copilot");
+    const { localProvider } = await import("@godspeedai/cognate-provider-local");
     const app = await createCopilotApp({
       store: storePath,
       model: localProvider({ id: "starter", rules: [{ respond: () => ({ message: { role: "assistant", content: "Hello from the Cognate starter." }, toolCalls: [], finishReason: "stop" }) }] }),
@@ -233,8 +233,8 @@ export async function dev(options: { readonly dir: string; readonly port: number
     runtimeService = app.runtime.service;
     closeApp = () => app.close();
   } else {
-    const { createHarness, LOOP_AGENT, harnessRegistry, providerComponent } = await import("@godspeedai/profile-harness");
-    const { localProvider } = await import("@godspeedai/provider-local");
+    const { createHarness, LOOP_AGENT, harnessRegistry, providerComponent } = await import("@godspeedai/cognate-profile-harness");
+    const { localProvider } = await import("@godspeedai/cognate-provider-local");
     const harness = await createHarness({ store: storePath, instructions: config.instructions });
     await harness.mount(providerComponent(localProvider({ id: "starter" })));
     agents = [LOOP_AGENT];
@@ -243,14 +243,14 @@ export async function dev(options: { readonly dir: string; readonly port: number
     closeApp = () => harness.close();
   }
 
-  const { serveRuntime, devTokenAuthenticator } = await import("@godspeedai/protocol-connect-bun");
+  const { serveRuntime, devTokenAuthenticator } = await import("@godspeedai/cognate-protocol-connect-bun");
   // Dev-only auth: `Bearer <tenant>:<principalId>` (see devTokenAuthenticator); never for production use.
   const internal = serveRuntime({ service: runtimeService, authenticate: devTokenAuthenticator, port: 0, hostname: "127.0.0.1" });
 
   let bundleJs: string | undefined;
   let cssPaths: readonly string[] = [];
   if (config.profile === "copilot") {
-    const { stylesheetPaths } = await import("@godspeedai/ui-astryx/styles");
+    const { stylesheetPaths } = await import("@godspeedai/cognate-ui-astryx/styles");
     cssPaths = stylesheetPaths();
     const entryPath = join(dir, ".cognate", "entry.tsx");
     await writeFile(entryPath, BROWSER_ENTRY);

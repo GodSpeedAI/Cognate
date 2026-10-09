@@ -18,13 +18,13 @@ flowchart TD
 | Plane | Responsibilities | Reference implementation |
 |---|---|---|
 | Semantic | `.sea` meaning, DomainForge projection into `SemanticRef` | [`@godspeedai/domainforge`](../packages/domainforge/README.md) — see [semantics.md](semantics.md) |
-| Execution | contexts, scopes, capabilities, components, fibers, dependencies, reversible effects, continuations, event emission, boundary classification | [`@godspeedai/kernel-api`](../packages/kernel-api/README.md) + [`@godspeedai/kernel-cordis`](../packages/kernel-cordis/README.md) |
-| Durable state | authoritative event log, idempotency, outbox, projections | [`@godspeedai/events`](../packages/events/README.md), [`@godspeedai/store-sqlite`](../packages/store-sqlite/README.md), [`@godspeedai/projections`](../packages/projections/README.md) |
-| Cognitive | recall, ranking, portable snapshots | [`@godspeedai/cognitive-api`](../packages/cognitive-api/README.md), [`@godspeedai/cognitive-ruvector`](../packages/cognitive-ruvector/README.md), [`@godspeedai/cognitive-rvf`](../packages/cognitive-rvf/README.md) — see [cognition.md](cognition.md), [rvf.md](rvf.md) |
-| Wire/interop | Protobuf schema, Connect RPC, AG-UI, MCP, A2A | [`@godspeedai/proto`](../packages/proto/README.md), [`@godspeedai/protocol-connect`](../packages/protocol-connect/README.md), [`@godspeedai/ag-ui`](../packages/ag-ui/README.md), [`@godspeedai/mcp`](../packages/mcp/README.md), [`@godspeedai/a2a`](../packages/a2a/README.md) — see [protocols.md](protocols.md) |
-| Presentation | headless client, React bindings, Astryx renderer | [`@godspeedai/client`](../packages/client/README.md), [`@godspeedai/react`](../packages/react/README.md), [`@godspeedai/ui-astryx`](../packages/ui-astryx/README.md) — see [ui.md](ui.md) |
+| Execution | contexts, scopes, capabilities, components, fibers, dependencies, reversible effects, continuations, event emission, boundary classification | [`@godspeedai/cognate-kernel-api`](../packages/kernel-api/README.md) + [`@godspeedai/cognate-kernel-cordis`](../packages/kernel-cordis/README.md) |
+| Durable state | authoritative event log, idempotency, outbox, projections | [`@godspeedai/cognate-events`](../packages/events/README.md), [`@godspeedai/cognate-store-sqlite`](../packages/store-sqlite/README.md), [`@godspeedai/cognate-projections`](../packages/projections/README.md) |
+| Cognitive | recall, ranking, portable snapshots | [`@godspeedai/cognate-cognitive-api`](../packages/cognitive-api/README.md), [`@godspeedai/cognate-cognitive-ruvector`](../packages/cognitive-ruvector/README.md), [`@godspeedai/cognate-cognitive-rvf`](../packages/cognitive-rvf/README.md) — see [cognition.md](cognition.md), [rvf.md](rvf.md) |
+| Wire/interop | Protobuf schema, Connect RPC, AG-UI, MCP, A2A | [`@godspeedai/cognate-proto`](../packages/proto/README.md), [`@godspeedai/cognate-protocol-connect`](../packages/protocol-connect/README.md), [`@godspeedai/cognate-ag-ui`](../packages/ag-ui/README.md), [`@godspeedai/cognate-mcp`](../packages/mcp/README.md), [`@godspeedai/cognate-a2a`](../packages/a2a/README.md) — see [protocols.md](protocols.md) |
+| Presentation | headless client, React bindings, Astryx renderer | [`@godspeedai/cognate-client`](../packages/client/README.md), [`@godspeedai/cognate-react`](../packages/react/README.md), [`@godspeedai/cognate-ui-astryx`](../packages/ui-astryx/README.md) — see [ui.md](ui.md) |
 
-No layer's public API leaks another layer's engine types: framework public APIs never expose Cordis (spec §3.4), `@godspeedai/react`/`@godspeedai/client` never expose Astryx types (`CG-UI-003`), and wire representation is not semantic ontology (spec §3.7).
+No layer's public API leaks another layer's engine types: framework public APIs never expose Cordis (spec §3.4), `@godspeedai/cognate-react`/`@godspeedai/cognate-client` never expose Astryx types (`CG-UI-003`), and wire representation is not semantic ontology (spec §3.7).
 
 ## Authority and projection paths
 
@@ -63,7 +63,7 @@ profiles/
 └── harness/
 ```
 
-`@godspeedai/runtime-api` ([ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md)) is one package beyond the spec's original layout: a transport-independent `RuntimeService` contract with no dependency beyond `kernel-api` and `events`, so `runtime-bun` can implement it in-process while `protocol-connect` maps it to Connect and `client` consumes it over any transport — proving `CG-WIR-003` (transport replaceability).
+`@godspeedai/cognate-runtime-api` ([ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md)) is one package beyond the spec's original layout: a transport-independent `RuntimeService` contract with no dependency beyond `kernel-api` and `events`, so `runtime-bun` can implement it in-process while `protocol-connect` maps it to Connect and `client` consumes it over any transport — proving `CG-WIR-003` (transport replaceability).
 
 ## Dependency rules (spec §28)
 

@@ -1,8 +1,8 @@
 // React 19 bindings over the headless client (spec §25.2). All hooks are thin useSyncExternalStore
 // adapters over the client's framework-neutral Readables; the client remains the single source of truth.
-import type { CognateClient, ConnectionStatus, FrontendHandler, RemoteCapabilityOfferInput, RunState, ThreadSharedState } from "@godspeedai/client";
-import type { Json, StoredEvent } from "@godspeedai/events";
-import type { ContinuationView, RunView, StateUpdate } from "@godspeedai/runtime-api";
+import type { CognateClient, ConnectionStatus, FrontendHandler, RemoteCapabilityOfferInput, RunState, ThreadSharedState } from "@godspeedai/cognate-client";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
+import type { ContinuationView, RunView, StateUpdate } from "@godspeedai/cognate-runtime-api";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 const CognateContext = createContext<CognateClient | undefined>(undefined);
