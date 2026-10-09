@@ -49,3 +49,13 @@ The documentation-release branch reconciles tree and manifest back to the publis
 (35 × 0.1.1 + umbrella 0.1.0) before the release commit, and the release itself is forced to
 **0.1.2 × 36** with a `Release-As: 0.1.2` footer so the whole group lands in lockstep —
 including pulling the umbrella from 0.1.0 straight to 0.1.2.
+
+## Shipment (0.1.2)
+
+PR #29 merged on operator approval → Release Please proposed 0.1.2 × 36 (verified: 36 summaries
+including the umbrella, 36 version bumps, no stray versions) → PR #22 merged → release run
+`37971472138` success with 37/37 jobs (release-please + 36 OIDC publish jobs, zero tokens).
+npm: 36/36 at 0.1.2; 36 v0.1.2 tags and GitHub releases (an initial "34" count was a
+per_page=100 pagination artifact — all 36 confirmed across pages). Post-publication CI
+clean-room green (run `37971472337`): installs cognate-cli + umbrella at 0.1.2 from npm and
+passes the consumer smoke; npm package pages serve the new READMEs (spot-checked).
