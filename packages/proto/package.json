@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-proto",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Generated TypeScript bindings for the canonical proto/ sources. Generated files are never edited by hand (spec §21).",
   "type": "module",
   "license": "Apache-2.0",
