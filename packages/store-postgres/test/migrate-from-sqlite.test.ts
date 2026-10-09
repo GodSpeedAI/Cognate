@@ -101,9 +101,12 @@ test("the real migration preserves everything and verifies", async () => {
       sourceEvents.map((e) => [e.position, e.eventId, e.eventType, e.streamSequence, e.payload === null ? null : e.payload, e.erasure?.reason ?? null]),
     );
     expect(await target.store.streamVersion("runs")).toBe(await source.streamVersion("runs"));
-    // Idempotent replay returns the recorded result from PostgreSQL.
+    // Idempotent replay returns the recorded result — here a tombstone, because the source erased an
+    // event on the run stream and the row's snapshot was redacted before migration; the redaction
+    // semantics survive the migration.
     const replay = await target.store.commit({ idempotency: { scope: "tenant-a:alice:run.start", key: "k1", fingerprint: "fp1" }, appends: [] });
-    expect(replay).toMatchObject({ kind: "duplicate", result: { runId: "run-1" } });
+    expect(replay.kind).toBe("duplicate");
+    expect(JSON.stringify(replay.result)).toContain("__erased");
     // Records across collections.
     expect((await target.store.getRecord("runs", "run-1"))!.value).toEqual({ tenant: "tenant-a", agent: "agent.intake" });
     expect((await target.store.listRecords("continuations", { status: "RESUMED" })).map((r) => r.id)).toEqual(["c-1"]);

@@ -400,6 +400,21 @@ export function createMemoryStore(): DurableStore {
           const streamIndex = streamArr.findIndex((e) => e.eventId === eventId);
           if (streamIndex >= 0) streamArr[streamIndex] = updated;
         }
+        // Idempotency results are derived copies: a stored result may quote the erased payload (the
+        // continuation-transition shape) or fold earlier events of the same stream (the updateState
+        // shape). Erasure tombstones such results — and the stored event clones a replay returns —
+        // so replay can never re-disclose the content.
+        const tombstoneResult: Json = { __erased: { reason, erasedAt } };
+        for (const [key, entry] of state.idempotency) {
+          const derived = entry.events.some((e) => e.eventId === eventId || e.streamId === event.streamId);
+          if (derived) {
+            state.idempotency.set(key, {
+              ...entry,
+              result: tombstoneResult,
+              events: entry.events.map((e) => (e.eventId === eventId ? { ...e, payload: null, erasure: { reason, erasedAt } } : e)),
+            });
+          }
+        }
         const tombstone: NewEvent = {
           eventType: "erasure.recorded",
           schemaVersion: 1,

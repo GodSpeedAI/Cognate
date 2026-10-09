@@ -313,6 +313,15 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
     db.query("DELETE FROM payloads WHERE event_id = ?").run(eventId);
     db.query("UPDATE events SET erasure_reason = ?, erasure_at = ? WHERE event_id = ?").run(reason, erasedAt, eventId);
 
+    // Idempotency results are derived copies: a stored result may quote the erased payload (the
+    // continuation-transition shape) or fold earlier events of the same stream (the updateState
+    // shape). Erasure tombstones such results so replay can never re-disclose the content.
+    db.query(
+      `UPDATE idempotency SET result = ?
+       WHERE EXISTS (SELECT 1 FROM json_each(idempotency.event_ids) je WHERE je.value = ?)
+          OR EXISTS (SELECT 1 FROM json_each(idempotency.event_ids) je JOIN events e ON e.event_id = je.value WHERE e.stream_id = ?)`,
+    ).run(JSON.stringify({ __erased: { reason, erasedAt } }), eventId, original.stream_id);
+
     ensureStream("$erasures");
     const sequence = streamVersionRow("$erasures") + 1;
     const tombstone = insertEventRow(

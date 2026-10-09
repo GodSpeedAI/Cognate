@@ -428,6 +428,9 @@
         "@godspeedai/cognate-events": "workspace:*",
         "postgres": "^3.4.9",
       },
+      "devDependencies": {
+        "@godspeedai/cognate-store-sqlite": "workspace:*",
+      },
     },
     "packages/store-sqlite": {
       "name": "@godspeedai/cognate-store-sqlite",

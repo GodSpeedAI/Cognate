@@ -652,6 +652,13 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
         await tx`DELETE FROM ${t.payloads} WHERE event_id = ${eventId}`;
         await tx`UPDATE ${t.events} SET erasure_reason = ${reason}, erasure_at = ${erasedAt} WHERE event_id = ${eventId}`;
 
+        // Idempotency results are derived copies: a stored result may quote the erased payload (the
+        // continuation-transition shape) or fold earlier events of the same stream (the updateState
+        // shape). Erasure tombstones such results so replay can never re-disclose the content.
+        await tx`UPDATE ${t.idempotency} SET result = ${sql.json({ __erased: { reason, erasedAt } })}::jsonb
+          WHERE event_ids @> ${sql.json([eventId])}::jsonb
+             OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(event_ids) je JOIN ${t.events} e ON e.event_id = je WHERE e.stream_id = ${original.stream_id})`;
+
         await tx`INSERT INTO ${t.streams} (stream_id, version) VALUES (${'$erasures'}, 0) ON CONFLICT (stream_id) DO NOTHING`;
         const counter = await tx`UPDATE ${t.meta} SET next_position = next_position + 1 WHERE id = ${POSITION_COUNTER_ID} RETURNING next_position - 1 AS base`;
         const position = num(counter[0]!.base);

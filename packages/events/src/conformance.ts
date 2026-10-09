@@ -273,6 +273,44 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       expect(tombstones.map((e) => [e.eventType, e.payload])).toEqual([["erasure.recorded", { eventId: id, reason: "gdpr-art-17", actorId: "operator-1" }]]);
       expect(JSON.stringify(await store.readAll())).not.toContain("a@example.com");
     });
+
+    test("erasure redacts idempotency result snapshots derived from the erased event or its stream", async () => {
+      const store = await open();
+      // Two decisions whose recorded results copy event content: a transition snapshot (the
+      // continuation shape) and a fold snapshot taken on the same stream (the updateState shape —
+      // its result folds the stream's earlier events, including the soon-to-be-erased one).
+      const { events } = await store.commit({
+        idempotency: { scope: "actor:continuation.resume", key: "k1", fingerprint: "f1" },
+        appends: [{ streamId: "cont-1", expectedVersion: 0, events: [event("continuation.resumed", { input: { secret: "s3cr3t" } })] }],
+        result: { id: "cont-1", payload: { secret: "s3cr3t" } },
+      });
+      await store.commit({
+        idempotency: { scope: "actor:run.state.update", key: "k2", fingerprint: "f2" },
+        appends: [{ streamId: "cont-1", expectedVersion: 1, events: [event("state.changed", { snapshot: { v: 2 } })] }],
+        result: { state: { v: 2, prior: "s3cr3t" }, version: 2 },
+      });
+      // An unrelated row that references nothing erased.
+      await store.commit({ idempotency: { scope: "other", key: "k3", fingerprint: "f3" }, appends: [], result: { keep: true } });
+
+      expect(await store.commit({ idempotency: { scope: "actor:continuation.resume", key: "k1", fingerprint: "f1" }, appends: [] })).toMatchObject({ kind: "duplicate", result: { payload: { secret: "s3cr3t" } } });
+
+      await store.erasePayload(events[0]!.eventId, "dsar", "operator-1");
+
+      // Replay after erasure returns the tombstone, never the recorded content; re-replaying the
+      // request is deterministic (the same tombstone), and nothing discloses the secret.
+      const replayAfter = await store.commit({ idempotency: { scope: "actor:continuation.resume", key: "k1", fingerprint: "f1" }, appends: [] });
+      expect(replayAfter.kind).toBe("duplicate");
+      expect(JSON.stringify(replayAfter.result)).toContain("__erased");
+      expect(JSON.stringify(replayAfter)).not.toContain("s3cr3t");
+      // The fold-shaped snapshot on the same stream is redacted too: erasure of any event on the
+      // stream makes a stored fold a derived copy of erased content.
+      const foldReplay = await store.commit({ idempotency: { scope: "actor:run.state.update", key: "k2", fingerprint: "f2" }, appends: [] });
+      expect(JSON.stringify(foldReplay.result)).toContain("__erased");
+      expect(JSON.stringify(foldReplay)).not.toContain("s3cr3t");
+      // Unrelated idempotency rows are untouched.
+      const unrelated = await store.commit({ idempotency: { scope: "other", key: "k3", fingerprint: "f3" }, appends: [] });
+      expect(unrelated).toMatchObject({ kind: "duplicate", result: { keep: true } });
+    });
   });
 
   if (options.persistent) {

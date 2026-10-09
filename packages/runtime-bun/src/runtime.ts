@@ -1,7 +1,7 @@
 // Composition root: store, kernel, continuations, artifacts, projections, cognition, and the background loop.
 import { ArtifactService } from "@godspeedai/cognate-artifacts";
 import { ContinuationService } from "@godspeedai/cognate-continuations";
-import { type DurableStore, OutboxDispatcher } from "@godspeedai/cognate-events";
+import { type DurableStore, type Json, NotFoundError, OutboxDispatcher } from "@godspeedai/cognate-events";
 import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 import type { Principal } from "@godspeedai/cognate-kernel-api";
 import { ProjectionRunner } from "@godspeedai/cognate-projections";
@@ -152,6 +152,107 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     }
   }
 
+  // ── Erasure propagation (spec §32, DEBT-014) ─────────────────────────────────────
+  // Erasing one event must also reach its derived copies: idempotency result snapshots (redacted by
+  // the store's erasePayload itself), continuation records and their transition events, run.resumed
+  // resolution copies on the run stream, and recorded run.recall results referencing the erased
+  // run's view. Every erasure is recorded as a durable job before it runs, so an interrupted
+  // propagation resumes on the next erase call or runtime start instead of being reported complete.
+  const ERASURES = "erasures";
+
+  interface ErasureJob {
+    readonly id: string;
+    readonly streamId: string | null;
+    readonly runId: string | null;
+    readonly eventType: string | null;
+    readonly reason: string;
+  }
+
+  async function propagateErasure(job: ErasureJob): Promise<void> {
+    const event = await store.getEvent(job.id);
+    if (event && !event.erasure) await store.erasePayload(job.id, job.reason, "erasure");
+    if (!job.runId) return;
+    await continuations.redactForRun(job.runId, { reason: job.reason });
+    // run.resumed events carry the resolution-input copy on the run stream itself.
+    for (const e of await store.readStream(runStream(job.runId))) {
+      if (e.eventType === "run.resumed" && !e.erasure) await store.erasePayload(e.eventId, job.reason, "erasure");
+    }
+    // A recorded run.recall whose items reference an erased run's view copies that view's source
+    // content (run.started input, run.completed output). Lineage is explicit (sourceRef), not a text
+    // guess. The closure is transitive: a recalling run's own terminal output may embed the recalled
+    // result (the agent returned it), and a third run may have recalled THAT view — so each erased
+    // terminal output makes its run a view source too. Visited runs terminate the loop.
+    if (job.eventType !== "run.started" && job.eventType !== "run.completed") return;
+    const viewSources: string[] = [job.runId];
+    const visited = new Set<string>();
+    while (viewSources.length > 0) {
+      const sourceRunId = viewSources.shift()!;
+      if (visited.has(sourceRunId)) continue;
+      visited.add(sourceRunId);
+      let afterPosition = 0;
+      for (;;) {
+        const page = await store.readAll({ afterPosition, limit: 500 });
+        if (page.length === 0) break;
+        for (const e of page) {
+          afterPosition = e.position;
+          if (e.eventType !== "run.recall" || e.erasure || !e.runId) continue;
+          const items = (e.payload as { readonly result?: { readonly items?: readonly { readonly sourceRef?: string }[] } } | null)?.result?.items;
+          if (!Array.isArray(items) || !items.some((item) => item.sourceRef === `run:${sourceRunId}`)) continue;
+          await store.erasePayload(e.eventId, job.reason, "erasure");
+          // The recalling run's terminal output may embed the recalled content; erase it and treat
+          // that run as a view source for its own recallers.
+          for (const terminal of await store.readStream(runStream(e.runId))) {
+            if ((terminal.eventType === "run.completed" || terminal.eventType === "run.failed") && !terminal.erasure) {
+              await store.erasePayload(terminal.eventId, job.reason, "erasure");
+            }
+          }
+          viewSources.push(e.runId);
+        }
+        if (page.length < 500) break;
+      }
+    }
+  }
+
+  async function completeErasureJob(job: { readonly id: string; readonly version: number; readonly value: Record<string, Json> }): Promise<void> {
+    await store.commit({
+      appends: [],
+      records: [{ collection: ERASURES, id: job.id, expectedVersion: job.version, value: { ...job.value, status: "complete", completedAt: new Date().toISOString() } }],
+    });
+  }
+
+  async function resumeErasureJobs(): Promise<void> {
+    for (const stored of await store.listRecords(ERASURES, { status: "propagating" })) {
+      const value = stored.value;
+      await propagateErasure({
+        id: stored.id,
+        streamId: (value.streamId as string | null) ?? null,
+        runId: (value.runId as string | null) ?? null,
+        eventType: (value.eventType as string | null) ?? null,
+        reason: value.reason as string,
+      });
+      await completeErasureJob(stored);
+    }
+  }
+
+  async function eraseWithPropagation(eventId: string, reason: string, actor: Principal): Promise<void> {
+    await resumeErasureJobs();
+    const target = await store.getEvent(eventId);
+    if (!target) throw new NotFoundError(`event ${eventId} not found`);
+    let job = await store.getRecord(ERASURES, eventId);
+    if (!job) {
+      await store.commit({
+        appends: [],
+        records: [{ collection: ERASURES, id: eventId, expectedVersion: 0, value: { status: "propagating", reason, actorId: actor.id, streamId: target.streamId, runId: target.runId, eventType: target.eventType, startedAt: new Date().toISOString() } }],
+      });
+      job = await store.getRecord(ERASURES, eventId);
+    }
+    if (!job) throw new Error(`erase: could not record the propagation job for ${eventId}`);
+    await propagateErasure({ id: eventId, streamId: target.streamId, runId: target.runId, eventType: target.eventType, reason });
+    await completeErasureJob(job);
+  }
+
+  await resumeErasureJobs();
+
   const timer = setInterval(kick, options.tickMs ?? 10);
   kick();
 
@@ -219,7 +320,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     },
 
     async erase(eventId, reason, actor) {
-      await store.erasePayload(eventId, reason, actor.id);
+      await eraseWithPropagation(eventId, reason, actor);
     },
 
     pollApprovals,
