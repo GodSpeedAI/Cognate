@@ -5,6 +5,7 @@ import { type DurableStore, OutboxDispatcher } from "@godspeedai/cognate-events"
 import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 import type { Principal } from "@godspeedai/cognate-kernel-api";
 import { ProjectionRunner } from "@godspeedai/cognate-projections";
+import { openPostgresStore, resolvePg0Url } from "@godspeedai/cognate-store-postgres";
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { COGNITION_PROJECTION, cognitionProjection, recallFor } from "./cognition.ts";
 import type { Core } from "./core.ts";
@@ -21,8 +22,23 @@ const DELIVERY = { baseMs: 50, maxMs: 5_000, maxAttempts: 10 };
 const TOPICS = [RUN_EXECUTE_TOPIC, "continuation.resume"];
 
 export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
-  const ownsStore = typeof options.store === "string";
-  const store: DurableStore = typeof options.store === "string" ? openSqliteStore({ path: options.store }) : options.store.store;
+  // The runtime closes only stores it opened itself; an injected store is owned by its creator.
+  // (The PostgreSQL store's close() ends its pool and LISTEN connection, so one call covers both.)
+  const config = options.store;
+  const ownsStore = typeof config === "string" || !("store" in config);
+  let store: DurableStore;
+  if (typeof config === "string") {
+    store = openSqliteStore({ path: config });
+  } else if ("store" in config) {
+    store = config.store;
+  } else if ("sqlite" in config) {
+    store = openSqliteStore({ path: config.sqlite.path });
+  } else if ("postgres" in config) {
+    store = (await openPostgresStore({ url: config.postgres.url, schema: config.postgres.schema })).store;
+  } else {
+    const url = await resolvePg0Url(config.postgresPg0);
+    store = (await openPostgresStore({ url, schema: config.postgresPg0.schema })).store;
+  }
   const system: Principal = options.system ?? { id: "system", kind: "system" };
   const governor = new Governor(options.actions, options.policy, options.governance ?? { mode: "off" });
   const invoker = new Invoker(governor);

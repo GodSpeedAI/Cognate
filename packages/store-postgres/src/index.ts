@@ -35,6 +35,7 @@ import type {
   StoredRecord,
 } from "@godspeedai/cognate-events";
 import { migrations, POSITION_COUNTER_ID } from "./schema.ts";
+export { findPg0Bin, resolvePg0Url, type Pg0Options } from "./pg0.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = any;

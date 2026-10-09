@@ -32,6 +32,7 @@
     "@godspeedai/cognate-projections": "workspace:*",
     "@godspeedai/cognate-runtime-api": "workspace:*",
     "@godspeedai/cognate-store-memory": "workspace:*",
+    "@godspeedai/cognate-store-postgres": "workspace:*",
     "@godspeedai/cognate-store-sqlite": "workspace:*"
   },
   "devDependencies": {
