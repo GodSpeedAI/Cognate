@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/client",
+  "name": "@godspeedai/cognate-client",
   "version": "0.1.0",
   "description": "Headless client: runs, reconnecting event subscriptions, derived run state, shared projections, continuations, frontend capabilities, artifacts. No React (spec §25.1).",
   "type": "module",
@@ -22,10 +22,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*"
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/runtime-bun": "workspace:*"
+    "@godspeedai/cognate-runtime-bun": "workspace:*"
   }
 }

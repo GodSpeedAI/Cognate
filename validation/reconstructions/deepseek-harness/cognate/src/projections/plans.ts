@@ -5,8 +5,8 @@
 // `Entity "PlanMode"`). Read by `plan.state` (`src/capabilities/planState.ts`, for `agent.coding`'s
 // own turn-start check) and by the UI (`useProjection("plans")`) for the To-dos widget, the plan
 // review card, and the sidebar's "Plan awaiting review <title>" prefix.
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
 
 export interface TodoItem {
   readonly content: string;

@@ -1,4 +1,4 @@
-# AGENTS.md — @godspeedai/artifacts
+# AGENTS.md — @godspeedai/cognate-artifacts
 
 - Never put artifact content in an event payload — ids, hashes, and metadata only.
 - Always `putBlob` before the record + `artifact.created` commit, and keep both in one `store.commit`.

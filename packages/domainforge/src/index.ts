@@ -1,7 +1,7 @@
 export * from "./types.ts";
 import { createHash } from "node:crypto";
 import { Graph, type Entity, type Flow, type Relation, type Resource, type Role } from "@godspeedai/domainforge";
-import type { CapabilityContract, SemanticRef } from "@godspeedai/kernel-api";
+import type { CapabilityContract, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import {
   BINDING,
   PROJECTION_SCHEMA,

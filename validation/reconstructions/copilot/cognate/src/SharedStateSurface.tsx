@@ -1,4 +1,4 @@
-import { useCognate, useRun, useThreadSharedState } from "@godspeedai/react";
+import { useCognate, useRun, useThreadSharedState } from "@godspeedai/cognate-react";
 import { useState } from "react";
 import { JOURNEY_C_AGENT } from "./constants.ts";
 import { Disclosure, Note, StateTag } from "./ui/primitives.tsx";

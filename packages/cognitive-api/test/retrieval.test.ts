@@ -1,7 +1,7 @@
 // CG-COG-002: similarity never bypasses authorization; restricted hits leak nothing (spec §16, §32).
 import { describe, expect, test } from "bun:test";
-import type { Principal } from "@godspeedai/kernel-api";
-import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognate-cognitive-memory";
 import { entry } from "../src/conformance.ts";
 import { createRecall, type SourceResolver } from "../src/index.ts";
 

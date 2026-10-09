@@ -57,7 +57,7 @@ Output: `unsupported: <name> (<reason>)` lines, then
 
 Behavior: copies `templates/starter/common` then `templates/starter/<profile>`; computes the
 transitive `@godspeedai/*` closure from the profile roots
-(`@godspeedai/cli`, `@godspeedai/profile-<profile>`, `@godspeedai/domainforge`, `@godspeedai/provider-local`);
+(`@godspeedai/cognate-cli`, `@godspeedai/cognate-profile-<profile>`, `@godspeedai/domainforge`, `@godspeedai/cognate-provider-local`);
 `bun pm pack`s each into `.cognate/vendor/`; rewrites `package.json` so each closure member is a
 `file:./.cognate/vendor/<tarball>` dependency **and** an `overrides` entry.
 

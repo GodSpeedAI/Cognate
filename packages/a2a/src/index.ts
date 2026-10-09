@@ -4,7 +4,7 @@
 // implements the JSON-RPC wire contract directly, using the SDK's own proto-JSON codecs (`SendMessageRequest`,
 // `SendMessageResponse`, `TaskState`, `Role`) so every shape on the wire is exactly what the SDK's `Client`
 // (`ClientFactory` → `JsonRpcTransport`) sends and expects — never a guessed shape.
-import type { Caller, ContinuationView, RunStatus, RunView, RuntimeService } from "@godspeedai/runtime-api";
+import type { Caller, ContinuationView, RunStatus, RunView, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { type Message, SendMessageRequest, SendMessageResponse, type Task, TaskState } from "@a2a-js/sdk";
 
 const AGENT_CARD_PATH = "/.well-known/agent-card.json";

@@ -1,7 +1,7 @@
 // `subagent.start`: starts a child `agent.coding` run for the `subagent` tool
 // (`agentCoding.ts`, invoked directly via `ctx.invoke("subagent.start", { agent, input, key })` —
 // fire-and-forget, reference-behavior-matrix.md §6.4: the parent does not wait on the child). Named
-// and shaped after `@godspeedai/profile-harness`'s own `subagent.start` (`profiles/harness/src/
+// and shaped after `@godspeedai/cognate-profile-harness`'s own `subagent.start` (`profiles/harness/src/
 // index.ts`'s `subagentStartComponent`, which `spawnSubagent` depends on) but not reused directly:
 // the packaged version starts the child run with no `correlationId` at all, so a child would fall
 // back to whatever the runtime defaults to — this app needs the child correlated as
@@ -9,9 +9,9 @@
 // `subagents` projection parses this correlation back apart) and so it is *excluded* from the
 // `sessions` projection's "session:"-only guard (`src/projections/sessions.ts`) — children must not
 // appear as top-level sessions.
-import type { Json } from "@godspeedai/events";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
-import type { RuntimeService } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 type SystemActor = { readonly id: string; readonly kind: "system" };
 

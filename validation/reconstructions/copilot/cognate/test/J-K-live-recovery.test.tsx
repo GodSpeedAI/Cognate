@@ -3,7 +3,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { alice } from "@godspeedai/runtime-api/conformance";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
 import { createRemainingJourneysApp, JOURNEY_K_AGENT, LIVE_RECOVERY_CHUNKS } from "../src/remaining-journeys.ts";
 
 type Frame = { readonly type: string; readonly rawEvent?: { readonly cognate?: { readonly position?: number } }; readonly [key: string]: unknown };

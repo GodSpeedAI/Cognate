@@ -15,14 +15,14 @@ matters:
 ```ts
 // tests/architecture/dependencies.test.ts
 const OWNERS = {
-  cordis: ["@godspeedai/kernel-cordis"],
+  cordis: ["@godspeedai/cognate-kernel-cordis"],
   "@ruvector/core": ["@godspeedai/ruvector-core"],           // cognitive-ruvector
-  "@ruvector/rvf": ["@godspeedai/cognitive-rvf"],
+  "@ruvector/rvf": ["@godspeedai/cognate-cognitive-rvf"],
   "@godspeedai/domainforge": ["@godspeedai/domainforge"],
-  "@ag-ui/core": ["@godspeedai/ag-ui"],
-  "@astryxdesign/core": ["@godspeedai/ui-astryx"],
-  "@connectrpc/connect": ["@godspeedai/protocol-connect", "@godspeedai/protocol-connect-bun", "@godspeedai/proto"],
-  "@modelcontextprotocol/sdk": ["@godspeedai/mcp"],
+  "@ag-ui/core": ["@godspeedai/cognate-ag-ui"],
+  "@astryxdesign/core": ["@godspeedai/cognate-ui-astryx"],
+  "@connectrpc/connect": ["@godspeedai/cognate-protocol-connect", "@godspeedai/cognate-protocol-connect-bun", "@godspeedai/cognate-proto"],
+  "@modelcontextprotocol/sdk": ["@godspeedai/cognate-mcp"],
 };
 ```
 
@@ -53,7 +53,7 @@ imports Cordis, but nothing in an exported signature does. `runtime-bun` uses `k
 throughout; Cordis types never cross. The same for `client` (no React), `react` (no Astryx), and
 `cognitive-api` (no RuVector).
 
-This is why `@godspeedai/runtime-api` exists at all
+This is why `@godspeedai/cognate-runtime-api` exists at all
 ([ADR-0011](../decisions/ADR-0011-runtime-service-contract-package.md)). The spec (§22) requires the
 service interface to be isolated from the RPC adapter. Had the interface lived in `runtime-bun`,
 every protocol adapter would depend on Bun; had it lived in `proto`, the wire schema would define

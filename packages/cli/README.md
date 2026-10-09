@@ -1,4 +1,4 @@
-# @godspeedai/cli
+# @godspeedai/cognate-cli
 
 `cognate create` and `cognate dev` (spec §37 Phase 10).
 

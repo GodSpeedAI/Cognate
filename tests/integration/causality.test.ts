@@ -1,8 +1,8 @@
 // CG-OBS-001 (spec §33, §40.M): causal identity is machine-inspectable across run, events, fibers, capabilities, semantics, artifacts.
 import { expect, test } from "bun:test";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { alice } from "@godspeedai/runtime-api/conformance";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 
 const semanticRef = { namespace: "billing", id: "billing::Refund", kind: "Flow", source: { uri: "file:///domain/billing.sea", digest: "sha256:abc" }, projectionVersion: "1" };
 const agent: AgentDefinition = {

@@ -3,8 +3,8 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { ContinuationService } from "@godspeedai/continuations";
-import { openSqliteStore } from "@godspeedai/store-sqlite";
+import { ContinuationService } from "@godspeedai/cognate-continuations";
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-restart-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

@@ -100,43 +100,43 @@ Computed from every `package.json`; acyclic; no forbidden edge present. This is 
 version of the "by example" table in [architecture.md](architecture.md).
 
 ```text
-@godspeedai/kernel-api                     → (none)
-@godspeedai/proto                           → (none)
-@godspeedai/events                          → kernel-api
+@godspeedai/cognate-kernel-api                     → (none)
+@godspeedai/cognate-proto                           → (none)
+@godspeedai/cognate-events                          → kernel-api
 @godspeedai/domainforge                     → kernel-api
-@godspeedai/profile                         → kernel-api
-@godspeedai/store-memory                    → events
-@godspeedai/store-sqlite                    → events
-@godspeedai/projections                     → events
-@godspeedai/continuations                   → events, kernel-api
-@godspeedai/artifacts                       → events, kernel-api
-@godspeedai/capabilities                    → events, kernel-api, projections
-@godspeedai/cognitive-api                   → events, kernel-api, projections
-@godspeedai/realitytrace                    → events, kernel-api
-@godspeedai/runtime-api                     → events, kernel-api
-@godspeedai/cognitive-memory                → cognitive-api
-@godspeedai/cognitive-ruvector              → cognitive-api
-@godspeedai/cognitive-rvf                   → cognitive-api, events
-@godspeedai/kernel-cordis                   → kernel-api
-@godspeedai/provider-local                  → capabilities, events, kernel-api
-@godspeedai/provider-openai-compatible      → capabilities, events, kernel-api
-@godspeedai/client                          → events, runtime-api
-@godspeedai/ag-ui                           → client, events, runtime-api
-@godspeedai/mcp                             → events, runtime-api
-@godspeedai/a2a                             → events, runtime-api
-@godspeedai/react                           → client, events, runtime-api
-@godspeedai/ui-astryx                       → client, events, react, runtime-api
-@godspeedai/protocol-connect                → events, kernel-api, proto, runtime-api
-@godspeedai/protocol-connect-bun            → protocol-connect, runtime-api
-@godspeedai/runtime-bun                     → artifacts, capabilities, cognitive-api, continuations,
+@godspeedai/cognate-profile                         → kernel-api
+@godspeedai/cognate-store-memory                    → events
+@godspeedai/cognate-store-sqlite                    → events
+@godspeedai/cognate-projections                     → events
+@godspeedai/cognate-continuations                   → events, kernel-api
+@godspeedai/cognate-artifacts                       → events, kernel-api
+@godspeedai/cognate-capabilities                    → events, kernel-api, projections
+@godspeedai/cognate-cognitive-api                   → events, kernel-api, projections
+@godspeedai/cognate-realitytrace                    → events, kernel-api
+@godspeedai/cognate-runtime-api                     → events, kernel-api
+@godspeedai/cognate-cognitive-memory                → cognitive-api
+@godspeedai/cognate-cognitive-ruvector              → cognitive-api
+@godspeedai/cognate-cognitive-rvf                   → cognitive-api, events
+@godspeedai/cognate-kernel-cordis                   → kernel-api
+@godspeedai/cognate-provider-local                  → capabilities, events, kernel-api
+@godspeedai/cognate-provider-openai-compatible      → capabilities, events, kernel-api
+@godspeedai/cognate-client                          → events, runtime-api
+@godspeedai/cognate-ag-ui                           → client, events, runtime-api
+@godspeedai/cognate-mcp                             → events, runtime-api
+@godspeedai/cognate-a2a                             → events, runtime-api
+@godspeedai/cognate-react                           → client, events, runtime-api
+@godspeedai/cognate-ui-astryx                       → client, events, react, runtime-api
+@godspeedai/cognate-protocol-connect                → events, kernel-api, proto, runtime-api
+@godspeedai/cognate-protocol-connect-bun            → protocol-connect, runtime-api
+@godspeedai/cognate-runtime-bun                     → artifacts, capabilities, cognitive-api, continuations,
                                           events, kernel-api, kernel-cordis, projections,
                                           runtime-api, store-memory, store-sqlite
-@godspeedai/profile-copilot                 → ag-ui, capabilities, client, events, kernel-api, profile,
+@godspeedai/cognate-profile-copilot                 → ag-ui, capabilities, client, events, kernel-api, profile,
                                           protocol-connect-bun, provider-openai-compatible,
                                           react, runtime-api, runtime-bun, ui-astryx
-@godspeedai/profile-harness                 → capabilities, events, kernel-api, profile,
+@godspeedai/cognate-profile-harness                 → capabilities, events, kernel-api, profile,
                                           provider-openai-compatible, runtime-api, runtime-bun
-@godspeedai/cli                             → client, domainforge, profile-copilot, profile-harness,
+@godspeedai/cognate-cli                             → client, domainforge, profile-copilot, profile-harness,
                                           protocol-connect, protocol-connect-bun, provider-local,
                                           react, runtime-api, ui-astryx
 ```

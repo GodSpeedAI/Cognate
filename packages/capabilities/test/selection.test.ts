@@ -1,7 +1,7 @@
 // CG-CAP-001: deterministic eligibility precedes ranking; the decision is explained and recorded (spec §8.2, §17, §30).
 import { describe, expect, test } from "bun:test";
-import { createMemoryStore } from "@godspeedai/store-memory";
-import type { Principal } from "@godspeedai/kernel-api";
+import { createMemoryStore } from "@godspeedai/cognate-store-memory";
+import type { Principal } from "@godspeedai/cognate-kernel-api";
 import { compatibilityRule, createSelector, recordSelection, type Candidate, type EligibilityRule, type Ranker, type SelectionRequest } from "../src/index.ts";
 
 const alice: Principal = { id: "alice", kind: "user" };

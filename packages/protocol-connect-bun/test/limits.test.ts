@@ -1,7 +1,7 @@
 // CG-WIR-004 (spec §32): untrusted protocol input is authenticated, size- and depth-bounded, and deadlined.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { createRuntime, type Runtime } from "@godspeedai/runtime-bun";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import { devTokenAuthenticator, serveRuntime, type RuntimeServer } from "../src/index.ts";
 
 const slow: AgentDefinition = { id: "agent.echo", version: "1.0.0", run: async (i) => i };

@@ -1,4 +1,4 @@
-# @godspeedai/execution-ssh — an SSH host as an execution world
+# @godspeedai/cognate-execution-ssh — an SSH host as an execution world
 
 `sshExecutionWorld(options)` is an `ExecutionWorldProvider`: files over SFTP, commands over `exec`,
 behind the same `filesystem.*` / `process.exec` contracts as every other world. Nothing above the

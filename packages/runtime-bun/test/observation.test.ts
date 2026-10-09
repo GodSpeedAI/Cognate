@@ -6,8 +6,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { StoredEvent } from "@godspeedai/events";
-import type { AgentDefinition, Caller, RuntimeService } from "@godspeedai/runtime-api";
+import type { StoredEvent } from "@godspeedai/cognate-events";
+import type { AgentDefinition, Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { type ActionPolicy, createRuntime } from "../src/index.ts";
 
 const alice: Caller = { actor: { id: "alice", kind: "user" }, tenant: "tenant-a" };

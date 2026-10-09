@@ -1,7 +1,7 @@
 // Causal identity reconstruction from committed envelopes (spec §33, §40.M). Uses only envelope fields and
 // metadata, so it still works after payload erasure.
-import type { ContinuationService } from "@godspeedai/continuations";
-import type { DurableStore, Json, StoredEvent } from "@godspeedai/events";
+import type { ContinuationService } from "@godspeedai/cognate-continuations";
+import type { DurableStore, Json, StoredEvent } from "@godspeedai/cognate-events";
 import { field, meta } from "./fold.ts";
 import { type CausalChain, OBSERVATION_OUTBOX_TOPIC } from "./index.ts";
 

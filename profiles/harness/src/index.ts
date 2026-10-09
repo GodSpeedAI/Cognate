@@ -1,13 +1,13 @@
-import { modelContract } from "@godspeedai/capabilities";
-import type { ModelMessage, ModelProvider, ModelResponse } from "@godspeedai/capabilities";
-import type { DurableStore, Json } from "@godspeedai/events";
-import { isUnavailable, rulePolicy } from "@godspeedai/kernel-api";
-import type { Component, ComponentHandle, Policy } from "@godspeedai/kernel-api";
-import { defineProfile } from "@godspeedai/profile";
-import type { ComponentEntry, ProfileDefinition } from "@godspeedai/profile";
-import type { AgentDefinition, Caller, RunContext } from "@godspeedai/runtime-api";
-import { createRuntime, type GovernanceOptions, governanceFromEnv } from "@godspeedai/runtime-bun";
-import type { ActionPolicy, Runtime } from "@godspeedai/runtime-bun";
+import { modelContract } from "@godspeedai/cognate-capabilities";
+import type { ModelMessage, ModelProvider, ModelResponse } from "@godspeedai/cognate-capabilities";
+import type { DurableStore, Json } from "@godspeedai/cognate-events";
+import { isUnavailable, rulePolicy } from "@godspeedai/cognate-kernel-api";
+import type { Component, ComponentHandle, Policy } from "@godspeedai/cognate-kernel-api";
+import { defineProfile } from "@godspeedai/cognate-profile";
+import type { ComponentEntry, ProfileDefinition } from "@godspeedai/cognate-profile";
+import type { AgentDefinition, Caller, RunContext } from "@godspeedai/cognate-runtime-api";
+import { createRuntime, type GovernanceOptions, governanceFromEnv } from "@godspeedai/cognate-runtime-bun";
+import type { ActionPolicy, Runtime } from "@godspeedai/cognate-runtime-bun";
 
 export const LOOP_AGENT = "agent.loop";
 
@@ -22,7 +22,7 @@ export const harnessProfile: ProfileDefinition = defineProfile({
 
 export const harnessRegistry: readonly ComponentEntry<unknown>[] = HARNESS_COMPONENTS.map((name) => ({
   name,
-  package: "@godspeedai/profile-harness",
+  package: "@godspeedai/cognate-profile-harness",
   supported: true,
   contribute: () => undefined,
 }));

@@ -9,8 +9,8 @@
 // LLM re-titling cadence (a separate model request; see reference-behavior-matrix.md §0/§4) was not
 // observed to visibly replace this literal-text title within the pinned pass's timeframe, so this
 // reconstruction does not implement a second titling call — see APP/README.md "Known gaps".
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
 
 const TITLE_MAX = 80;
 

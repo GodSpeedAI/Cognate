@@ -7,16 +7,16 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Component as ReactComponent, type ReactNode } from "react";
-import { entry } from "@godspeedai/cognitive-api/conformance";
-import { createRvfIndex } from "@godspeedai/cognitive-rvf";
-import { createClient } from "@godspeedai/client";
+import { entry } from "@godspeedai/cognate-cognitive-api/conformance";
+import { createRvfIndex } from "@godspeedai/cognate-cognitive-rvf";
+import { createClient } from "@godspeedai/cognate-client";
 import { bindCapabilities, loadSemanticProjection } from "@godspeedai/cognate-domainforge";
-import { CognateProvider } from "@godspeedai/react";
-import { ObservationDelivery, observationIntent, type ObservationPort } from "@godspeedai/realitytrace";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { alice } from "@godspeedai/runtime-api/conformance";
-import { createRuntime } from "@godspeedai/runtime-bun";
-import { createMemoryStore } from "@godspeedai/store-memory";
+import { CognateProvider } from "@godspeedai/cognate-react";
+import { ObservationDelivery, observationIntent, type ObservationPort } from "@godspeedai/cognate-realitytrace";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
+import { createMemoryStore } from "@godspeedai/cognate-store-memory";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-failure-"));
 afterAll(async () => {
@@ -31,7 +31,7 @@ const snapshotOf = async (store: { readAll(): Promise<unknown[]> }) => JSON.stri
 describe("failure isolation (§31.4–§31.7)", () => {
   test("§31.4 a failed RVF snapshot corrupts neither the active cognitive index nor the event store", async () => {
     const store = createMemoryStore();
-    await store.commit({ appends: [{ streamId: "s", expectedVersion: 0, events: [(await import("@godspeedai/events/conformance")).event("fact.recorded", { n: 1 })] }] });
+    await store.commit({ appends: [{ streamId: "s", expectedVersion: 0, events: [(await import("@godspeedai/cognate-events/conformance")).event("fact.recorded", { n: 1 })] }] });
     const before = await snapshotOf(store);
     const index = await createRvfIndex({ dimension: 4, path: join(dir, "active.rvf") });
     await index.upsert([entry("a", [1, 0, 0, 0]), entry("b", [0, 1, 0, 0])]);

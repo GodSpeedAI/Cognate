@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/cognitive-rvf",
+  "name": "@godspeedai/cognate-cognitive-rvf",
   "version": "0.1.0",
   "description": "Optional RVF-backed CognitiveIndex with snapshot/branch, Cognate-owned integrity manifests, and attached/detached import classification (spec §18; DEBT-006 mitigations).",
   "type": "module",
@@ -22,8 +22,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/cognitive-api": "workspace:*",
-    "@godspeedai/events": "workspace:*",
+    "@godspeedai/cognate-cognitive-api": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
     "@ruvector/rvf": "0.3.4"
   }
 }

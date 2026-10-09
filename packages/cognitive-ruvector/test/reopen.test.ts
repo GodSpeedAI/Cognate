@@ -1,7 +1,7 @@
 // The RuVector adapter is derived state, not a persistence layer: reopening an existing
 // storagePath must never resurrect entries the adapter map (the only source of provenance)
 // has no record of. See DEBT-007 and packages/cognitive-ruvector/README.md.
-import { entry } from "@godspeedai/cognitive-api/conformance";
+import { entry } from "@godspeedai/cognate-cognitive-api/conformance";
 import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

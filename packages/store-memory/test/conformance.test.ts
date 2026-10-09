@@ -1,4 +1,4 @@
-import { storeConformance } from "@godspeedai/events/conformance";
+import { storeConformance } from "@godspeedai/cognate-events/conformance";
 import { createMemoryStore } from "../src/index.ts";
 
 storeConformance("store-memory", async () => {

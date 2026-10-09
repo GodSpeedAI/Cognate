@@ -20,8 +20,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { FetchLike } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { request as httpRequest } from "node:http";
-import type { CognateClient, FrontendHandler } from "@godspeedai/client";
-import type { Json } from "@godspeedai/events";
+import type { CognateClient, FrontendHandler } from "@godspeedai/cognate-client";
+import type { Json } from "@godspeedai/cognate-events";
 
 /** The UI resource reference an MCP Apps tool result advertises. */
 export interface McpUiResourceRef {

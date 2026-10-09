@@ -1,7 +1,7 @@
 {
-  "name": "@godspeedai/ui-astryx",
+  "name": "@godspeedai/cognate-ui-astryx",
   "version": "0.1.0",
-  "description": "Reference Astryx surfaces over @godspeedai/react: shell, chat, approvals, artifacts, run and state inspection, themes (spec §25.3). A renderer, not the ontology.",
+  "description": "Reference Astryx surfaces over @godspeedai/cognate-react: shell, chat, approvals, artifacts, run and state inspection, themes (spec §25.3). A renderer, not the ontology.",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
@@ -25,13 +25,13 @@
   "dependencies": {
     "@astryxdesign/core": "0.6.3",
     "@astryxdesign/theme-neutral": "0.6.3",
-    "@godspeedai/client": "workspace:*",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/react": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*"
+    "@godspeedai/cognate-client": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-react": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/runtime-bun": "workspace:*",
+    "@godspeedai/cognate-runtime-bun": "workspace:*",
     "@happy-dom/global-registrator": "20.14.5",
     "@testing-library/react": "16.3.3",
     "react": "19.3.0",

@@ -18,11 +18,11 @@ import {
   RuntimeService as RuntimeServiceDesc,
   type SemanticRef as PbSemanticRef,
   type StateUpdate as PbStateUpdate,
-} from "@godspeedai/proto";
-import type { Json, StoredEvent } from "@godspeedai/events";
-import type { SemanticRef } from "@godspeedai/kernel-api";
-import type { Caller, ContinuationView, JsonPatchOp, RemoteCapabilityOffer, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@godspeedai/runtime-api";
-import { ServiceError } from "@godspeedai/runtime-api";
+} from "@godspeedai/cognate-proto";
+import type { Json, StoredEvent } from "@godspeedai/cognate-events";
+import type { SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { Caller, ContinuationView, JsonPatchOp, RemoteCapabilityOffer, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@godspeedai/cognate-runtime-api";
+import { ServiceError } from "@godspeedai/cognate-runtime-api";
 
 export interface HandlerOptions {
   /** Establish the caller from request headers (e.g. `authorization: Bearer …`); undefined → unauthenticated. */

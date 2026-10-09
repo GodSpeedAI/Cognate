@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/capabilities",
+  "name": "@godspeedai/cognate-capabilities",
   "version": "0.1.0",
   "description": "Two-phase capability selection: deterministic eligibility, then contained adaptive ranking with durable explanations (spec §8.2, §17, §30).",
   "type": "module",
@@ -22,12 +22,12 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/kernel-api": "workspace:*",
-    "@godspeedai/projections": "workspace:*"
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-kernel-api": "workspace:*",
+    "@godspeedai/cognate-projections": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/store-memory": "workspace:*",
-    "@godspeedai/store-sqlite": "workspace:*"
+    "@godspeedai/cognate-store-memory": "workspace:*",
+    "@godspeedai/cognate-store-sqlite": "workspace:*"
   }
 }

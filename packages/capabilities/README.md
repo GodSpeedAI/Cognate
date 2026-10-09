@@ -1,4 +1,4 @@
-# @godspeedai/capabilities
+# @godspeedai/cognate-capabilities
 
 Two-phase capability selection (spec §3.6, §8.2, §17, §30): every `EligibilityRule` filters
 every candidate first, and every (provider, rule) result is recorded. Only the eligible set is

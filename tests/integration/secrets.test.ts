@@ -3,10 +3,10 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import { alice } from "@godspeedai/runtime-api/conformance";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognate-cognitive-memory";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 
 const SECRET = "sk-live-7f3a9c1e5b2d4f60aa11";
 const dir = mkdtempSync(join(tmpdir(), "cognate-secret-"));

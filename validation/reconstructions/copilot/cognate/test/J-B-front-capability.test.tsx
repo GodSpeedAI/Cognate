@@ -5,8 +5,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createElement } from "react";
-import { createClient, type CognateClient } from "@godspeedai/client";
-import { alice } from "@godspeedai/runtime-api/conformance";
+import { createClient, type CognateClient } from "@godspeedai/cognate-client";
+import { alice } from "@godspeedai/cognate-runtime-api/conformance";
 import { createJourneyBApp, JOURNEY_B_AGENT, RemoteCapabilitySurface } from "../src/remote-capability.tsx";
 
 let close: (() => Promise<void>) | undefined;

@@ -2,8 +2,8 @@
 // over arbitrary component graphs and appearance/removal sequences, against the reference engine.
 import { expect, test } from "bun:test";
 import fc from "fast-check";
-import { isUnavailable, type ComponentHandle, type Kernel } from "@godspeedai/kernel-api";
-import { createCordisKernel } from "@godspeedai/kernel-cordis";
+import { isUnavailable, type ComponentHandle, type Kernel } from "@godspeedai/cognate-kernel-api";
+import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 
 const allow = { authorize: () => ({ allow: true, policyId: "p", reason: "test" }) };
 const settle = () => Bun.sleep(5);

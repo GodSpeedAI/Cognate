@@ -13,7 +13,7 @@ details live only in `cli.md` — this file just says `cognate create` / `cognat
 5. `RuntimeService` methods
 6. Capability selection: eligibility, ranking, UCB1
 7. Shared state
-8. Client (`@godspeedai/client`) and React hooks
+8. Client (`@godspeedai/cognate-client`) and React hooks
 9. AG-UI, Connect, MCP, A2A
 10. Stores: memory vs sqlite
 11. Projections
@@ -60,7 +60,7 @@ What matters for application code:
   copilot, health JSON for harness). Source: `docs/reference/commands-and-configuration.md`,
   `packages/cli/src/index.ts`.
 - To compose a runtime by hand instead of through a profile, call `createRuntime(options)` from
-  `@godspeedai/runtime-bun` directly — see §3's worked example and `docs/tutorials/run-your-first-agent.md`.
+  `@godspeedai/cognate-runtime-bun` directly — see §3's worked example and `docs/tutorials/run-your-first-agent.md`.
 
 ## 3. Defining agents: `AgentDefinition`, `RunContext`
 
@@ -94,11 +94,11 @@ Minimal worked example (adapted from `docs/tutorials/run-your-first-agent.md`,
 `examples/shared-state/index.ts`):
 
 ```ts
-import type { AgentDefinition } from "@godspeedai/runtime-api";
-import type { CapabilityContract, Component } from "@godspeedai/kernel-api";
-import { createRuntime } from "@godspeedai/runtime-bun";
-import { createClient } from "@godspeedai/client";
-import { allowCapabilities } from "@godspeedai/kernel-api";
+import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
+import type { CapabilityContract, Component } from "@godspeedai/cognate-kernel-api";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
+import { createClient } from "@godspeedai/cognate-client";
+import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
 
 const contract: CapabilityContract = { id: "billing.quote", version: "1.0.0", attributes: { currency: "usd" } };
 const billingQuote: Component = {
@@ -156,7 +156,7 @@ Child/multi-agent (durable subagent spawning, harness profile only —
 `examples/multi-agent/index.ts`):
 
 ```ts
-import { createHarness, LOCAL_OPERATOR, spawnSubagent } from "@godspeedai/profile-harness";
+import { createHarness, LOCAL_OPERATOR, spawnSubagent } from "@godspeedai/cognate-profile-harness";
 // inside a parent agent's run(input, ctx):
 const childOutput = await spawnSubagent(ctx, "child-1", "agent.child", { n });
 ```
@@ -185,7 +185,7 @@ interface Component {
 `isCompatible(requirement, contract)` (`packages/kernel-api/src/compat.ts`): same id; same major
 version with minor/patch ≥ required; every required attribute equal.
 
-Policies (`@godspeedai/kernel-api`, `packages/kernel-api/src/policy.ts`):
+Policies (`@godspeedai/cognate-kernel-api`, `packages/kernel-api/src/policy.ts`):
 
 ```ts
 const denyAll: Policy;                                          // the default — no authority
@@ -198,7 +198,7 @@ through the kernel `Policy`; `run.start`, `run.cancel`, `continuation.resume`,
 `continuation.cancel`, `run.state.update` go through the `ActionPolicy` passed to `createRuntime`.
 
 Mount in a hand-composed runtime via `createRuntime({ components: [...] })`; in a profile, add a
-`ComponentEntry` to its registry (`@godspeedai/profile`, §"Profiles" below).
+`ComponentEntry` to its registry (`@godspeedai/cognate-profile`, §"Profiles" below).
 
 Call it: `ctx.invoke(capability, input, { version? })` from an agent (recorded, replayable), or
 `client.invoke(capability, input)` / `runtime.service.invoke(caller, { capability, input })` from
@@ -228,17 +228,17 @@ from a request body. `ServiceError` codes: `not_found | permission_denied | inva
 failed_precondition | unavailable | deadline_exceeded | already_exists | unauthenticated |
 resource_exhausted` (`packages/runtime-api/src/types.ts`).
 
-`createRuntime(options)` (`@godspeedai/runtime-bun`, `packages/runtime-bun/src/index.ts`):
+`createRuntime(options)` (`@godspeedai/cognate-runtime-bun`, `packages/runtime-bun/src/index.ts`):
 `store` (path | `":memory:"` | `{ store }`), `policy`, `actions: ActionPolicy`, `agents`,
 `components`, `cognition?`, `projections?`, `outboxFor?`, `tickMs` (default 10), `system?`.
 
 Conformance: `runtimeServiceConformance(name, factory, { persistent })` from
-`@godspeedai/runtime-api/conformance`, plus fixtures `alice`, `mallory`, `bob`, `kitAgents(counters)`.
+`@godspeedai/cognate-runtime-api/conformance`, plus fixtures `alice`, `mallory`, `bob`, `kitAgents(counters)`.
 Any `RuntimeService` implementation (in-process, Connect remote) must pass it unchanged.
 
 ## 6. Capability selection: eligibility, ranking, UCB1
 
-`@godspeedai/capabilities` (`packages/capabilities/src/index.ts`, `selector.ts`). Two phases —
+`@godspeedai/cognate-capabilities` (`packages/capabilities/src/index.ts`, `selector.ts`). Two phases —
 eligibility never widened by ranking (`CG-CAP-002`, "adaptive containment"):
 
 ```ts
@@ -270,9 +270,9 @@ A suspended agent observes a caller write on resume through `ctx.state(id)`. Cli
 `client.updateState(runId, update, options?)`; React: `useSharedState(runId)`. See
 `docs/workflows/shared-state.md`, `examples/shared-state/index.ts`.
 
-## 8. Client (`@godspeedai/client`) and React
+## 8. Client (`@godspeedai/cognate-client`) and React
 
-`@godspeedai/client` (`packages/client/src/index.ts`) is a headless client over any `RuntimeService`,
+`@godspeedai/cognate-client` (`packages/client/src/index.ts`) is a headless client over any `RuntimeService`,
 no React dependency:
 
 ```ts
@@ -287,19 +287,19 @@ capability by resolving an open `frontend_capability` continuation locally; retu
 function — a reversible effect), `projection(name)`, `invoke`, `artifact`, `startRun`, `cancelRun`,
 `resolveContinuation`, `close`.
 
-`@godspeedai/react` (`packages/react/src/index.tsx`) wraps it via `useSyncExternalStore`:
+`@godspeedai/cognate-react` (`packages/react/src/index.tsx`) wraps it via `useSyncExternalStore`:
 `CognateProvider`, `useCognate`, `useRun`, `useAgent`, `useProjection`, `useCapability` (registers
 a frontend capability for the component's lifetime, unregistered on unmount), `useSharedState`,
 `useContinuations`, `useArtifact`, `useConnectionStatus`. No Astryx dependency.
 
-`@godspeedai/ui-astryx` (`packages/ui-astryx/src/index.tsx`) is the reference renderer:
+`@godspeedai/cognate-ui-astryx` (`packages/ui-astryx/src/index.tsx`) is the reference renderer:
 `CognateShell`, `ChatPanel`, `ApprovalCard`, `Approvals` (renders every open approval continuation
 of a run), `ArtifactViewer`, `RunInspector`, `StateInspector`. Astryx types never cross into
 `client`/`react` (`CG-UI-003`, enforced by an architecture test).
 
 ## 9. AG-UI, Connect, MCP, A2A
 
-**AG-UI** (`@godspeedai/ag-ui`, `packages/ag-ui/src/index.ts`): `createProjector({ threadId, runId,
+**AG-UI** (`@godspeedai/cognate-ag-ui`, `packages/ag-ui/src/index.ts`): `createProjector({ threadId, runId,
 continuation? })` — stateful per-run projector, feed it `StoredEvent`s in order, get schema-valid
 AG-UI events; `matrix` documents all 31 AG-UI event types and support level (never silent
 reinterpretation). `createAgUiHandler(options: EndpointOptions)` is an HTTP handler: POST
@@ -307,26 +307,26 @@ reinterpretation). `createAgUiHandler(options: EndpointOptions)` is an HTTP hand
 same authorization path as native clients. `forwardedProps.cognate.cursor` resumes from a durable
 position. `threadCorrelationId(threadId)` builds the `agui-thread:<id>` correlation id.
 
-**Connect** (`@godspeedai/protocol-connect`, `-bun`): `registerRuntimeService(router, service, {
+**Connect** (`@godspeedai/cognate-protocol-connect`, `-bun`): `registerRuntimeService(router, service, {
 authenticate, maxJsonDepth })` (server routes; caller from headers only, never the body),
 `createRemoteRuntimeService(transport, tokenFor)` (a `RuntimeService` over any Connect transport),
 `errorCodes` (the `ServiceError` ↔ Connect code table). `-bun`: `serveRuntime(options)`,
 `connectTransport(baseUrl, options?)`, `devTokenAuthenticator` (dev-only `Bearer
 <tenant>:<user>`), `devToken(caller)`.
 
-**MCP** (`@godspeedai/mcp`, `packages/mcp/src/index.ts`): `createMcpServer({ service, caller, tools
+**MCP** (`@godspeedai/cognate-mcp`, `packages/mcp/src/index.ts`): `createMcpServer({ service, caller, tools
 })` — one MCP tool per `McpToolBinding` (name defaults to the capability id, `.` → `_`), calls go
 through `RuntimeService.invoke` as the connection's authenticated caller; a `ServiceError` becomes
 `isError: true` with `<code>: <message>`.
 
-**A2A** (`@godspeedai/a2a`, `packages/a2a/src/index.ts`): `createA2AHandler(options:
+**A2A** (`@godspeedai/cognate-a2a`, `packages/a2a/src/index.ts`): `createA2AHandler(options:
 A2AAdapterOptions)` serves the agent card at `/.well-known/agent-card.json` and JSON-RPC at
 `/a2a`. `message/send` starts (or, with a `taskId`, resumes) a durable run — the A2A task id
 equals the Cognate run id; an open continuation surfaces as `TASK_STATE_INPUT_REQUIRED`.
 
 ## 10. Stores: memory vs sqlite
 
-`@godspeedai/store-memory` and `@godspeedai/store-sqlite` both implement `DurableStore` with identical
+`@godspeedai/cognate-store-memory` and `@godspeedai/cognate-store-sqlite` both implement `DurableStore` with identical
 semantics. `openSqliteStore({ path })` (`packages/store-sqlite/src/index.ts`); `path: ":memory:"`
 for an ephemeral database. One writer process (DEBT-011 — do not run two processes against the
 same file). Append-only triggers in the schema reject `UPDATE`/`DELETE` on `events` even via raw
@@ -350,18 +350,18 @@ event content. See `docs/how-to/add-a-projection.md` for the full walkthrough an
 
 ## 12. Artifacts
 
-`ArtifactService` (`@godspeedai/artifacts`, `packages/artifacts/src/index.ts`) writes content-addressed
+`ArtifactService` (`@godspeedai/cognate-artifacts`, `packages/artifacts/src/index.ts`) writes content-addressed
 bytes before the record and `artifact.created` event commit — never claims availability before
 bytes exist. From an agent: `ctx.artifact({ name, mediaType, bytes, readers?, representations?,
 metadata? })` (`ArtifactInput`). Read: `client.artifact(artifactId)` or
 `RuntimeService.getArtifact(caller, { artifactId, representation? })` → bytes, or `not_found`
 (deliberately indistinguishable for denied/tombstoned/absent), or `unavailable` (record present,
-bytes gone). `ArtifactViewer` in `@godspeedai/ui-astryx` renders text/markdown as text, JSON as a
+bytes gone). `ArtifactViewer` in `@godspeedai/cognate-ui-astryx` renders text/markdown as text, JSON as a
 table, other media as a download link.
 
 ## 13. RealityTrace evidence (optional)
 
-`@godspeedai/realitytrace` implements `ObservationPort.record(observation) → DeliveryReceipt`
+`@godspeedai/cognate-realitytrace` implements `ObservationPort.record(observation) → DeliveryReceipt`
 (`accepted | duplicate`). **A receipt is not evidence and not settlement** — those are separate,
 later SXR commands (`evidence create`, `settlement register`) outside this adapter's scope.
 Framework execution never blocks on SXR by default (normal mode: outbox delivery,
@@ -376,9 +376,9 @@ operation on `isRecorded(eventId)`. Correlation ids round-trip through `realityt
   to one package. `docs/getting-started.md`.
 - The **conformance kit** pattern: a framework-owned interface (`RuntimeService`, `KernelFactory`,
   `CognitiveIndex`) ships a reusable test suite that every implementation must pass unchanged —
-  `runtimeServiceConformance` (`@godspeedai/runtime-api/conformance`), `contractSuite` /
+  `runtimeServiceConformance` (`@godspeedai/cognate-runtime-api/conformance`), `contractSuite` /
   `lifecycleSuite` / `effectsSuite` / `dependenciesSuite` / `scopesSuite` / `authoritySuite`
-  (`@godspeedai/kernel-api/conformance`, plus `fixtures` from `harness.ts`: `system`, `alice`,
+  (`@godspeedai/cognate-kernel-api/conformance`, plus `fixtures` from `harness.ts`: `system`, `alice`,
   `contract()`, `provider()`, `consumer()`, `until()`). This is how `CG-WIR-003` (transport
   replaceability) and the kernel engine boundary are proven — not by writing new tests per engine.
 - Application tests: write against a hand-composed `createRuntime({ store: ":memory:", ... })`

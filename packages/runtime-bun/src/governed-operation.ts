@@ -6,8 +6,8 @@
 // In `sea-forge` mode both must allow. In `off` mode only local policy applies, and every decision says so.
 // Only `allow` proceeds. Every other disposition is refused here; later stages add constraint handling and
 // escalation. Nothing outside this file may call `ActionPolicy.authorize` or the user's kernel `Policy`.
-import type { Caller } from "@godspeedai/runtime-api";
-import type { AuthorizationRequest, Policy, PolicyDecision } from "@godspeedai/kernel-api";
+import type { Caller } from "@godspeedai/cognate-runtime-api";
+import type { AuthorizationRequest, Policy, PolicyDecision } from "@godspeedai/cognate-kernel-api";
 import type { ActionPolicy } from "./index.ts";
 
 export type GovernanceMode = "sea-forge" | "off";

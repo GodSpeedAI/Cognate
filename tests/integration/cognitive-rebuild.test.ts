@@ -1,9 +1,9 @@
 // CG-COG-004 (spec §3.5, Phase 6, §40.B): deleting and rebuilding the cognitive index leaves deterministic behaviour unchanged.
 import { expect, test } from "bun:test";
-import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognitive-memory";
-import type { AgentDefinition, Caller } from "@godspeedai/runtime-api";
-import { alice, mallory } from "@godspeedai/runtime-api/conformance";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createMemoryIndex, hashingEmbedder } from "@godspeedai/cognate-cognitive-memory";
+import type { AgentDefinition, Caller } from "@godspeedai/cognate-runtime-api";
+import { alice, mallory } from "@godspeedai/cognate-runtime-api/conformance";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 
 const policy = { authorize: (r: { actor: { id: string } }) => (r.actor.id === "mallory" ? { allow: false, policyId: "p", reason: "denied" } : { allow: true, policyId: "p", reason: "ok" }) };
 const actions = { authorize: () => ({ allow: true, reason: "ok" }) };

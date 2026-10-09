@@ -1,12 +1,12 @@
 // Publishes `model.generate`, forwarding streamed text deltas via `HandlerContext.progress` into
 // `run.invocation.progress` events (the G1 durable progress channel; see
 // docs/reference/capability-and-architecture-contracts.md and packages/runtime-bun/src/executor.ts).
-// Distinct from `@godspeedai/profile-harness`'s `providerComponent`, which only calls `generate` — this
+// Distinct from `@godspeedai/cognate-profile-harness`'s `providerComponent`, which only calls `generate` — this
 // reconstruction needs live token deltas in the invoking run, which requires calling `provider.stream`
 // from inside the handler.
-import type { ModelProvider, ModelRequest, ModelResponse } from "@godspeedai/capabilities";
-import { modelContract } from "@godspeedai/capabilities";
-import type { Component, SemanticRef } from "@godspeedai/kernel-api";
+import type { ModelProvider, ModelRequest, ModelResponse } from "@godspeedai/cognate-capabilities";
+import { modelContract } from "@godspeedai/cognate-capabilities";
+import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
 
 export function streamingProviderComponent(provider: ModelProvider, semanticRef?: SemanticRef): Component {
   const contract = { ...modelContract(provider), semanticRef };

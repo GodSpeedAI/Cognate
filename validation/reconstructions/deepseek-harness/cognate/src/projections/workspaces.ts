@@ -3,8 +3,8 @@
 // record's title in place; `workspace.deleted` deletes the record row and — if it was the current
 // pointer — the pointer too (a `null` value deletes a projection key), which drops the UI back to
 // the no-workspace state. Deleted workspaces' sessions' events stay in history untouched.
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
 
 export const workspacesProjection: Projection = {
   name: "workspaces",

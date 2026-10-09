@@ -1,4 +1,4 @@
-# AGENTS.md — @godspeedai/capabilities
+# AGENTS.md — @godspeedai/cognate-capabilities
 
 - Eligibility rules must stay pure and total: run every rule on every candidate, never short-circuit.
 - The ranker only ever sees `eligible` candidates and can only narrow, never widen, the result.

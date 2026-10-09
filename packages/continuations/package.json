@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/continuations",
+  "name": "@godspeedai/cognate-continuations",
   "version": "0.1.0",
   "description": "Durable continuations and external commitments on the durable store (spec §9.3, §12).",
   "type": "module",
@@ -22,11 +22,11 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/kernel-api": "workspace:*"
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-kernel-api": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/store-memory": "workspace:*",
-    "@godspeedai/store-sqlite": "workspace:*"
+    "@godspeedai/cognate-store-memory": "workspace:*",
+    "@godspeedai/cognate-store-sqlite": "workspace:*"
   }
 }

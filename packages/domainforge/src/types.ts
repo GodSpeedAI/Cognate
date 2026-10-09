@@ -1,4 +1,4 @@
-import type { CapabilityContract, SemanticRef } from "@godspeedai/kernel-api";
+import type { CapabilityContract, SemanticRef } from "@godspeedai/cognate-kernel-api";
 
 export const PROJECTION_SCHEMA = "cognate.semantic.v1";
 export const BINDING = "@godspeedai/domainforge@0.19.0";

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 import { createAgUiHandler, threadCorrelationId } from "../src/index.ts";
 
 test("AG-UI starts after a persisted thread state edit and projects later edits in the next run", async () => {

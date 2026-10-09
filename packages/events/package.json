@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/events",
+  "name": "@godspeedai/cognate-events",
   "version": "0.1.0",
   "description": "Event envelope, durable store port, and the store conformance kit.",
   "type": "module",
@@ -23,6 +23,6 @@
     "./conformance": "./src/conformance.ts"
   },
   "dependencies": {
-    "@godspeedai/kernel-api": "workspace:*"
+    "@godspeedai/cognate-kernel-api": "workspace:*"
   }
 }

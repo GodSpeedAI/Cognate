@@ -1,6 +1,6 @@
-import type { Json } from "@godspeedai/events";
-import type { Projection } from "@godspeedai/projections";
-import { applyStateUpdate, StatePatchError, type AgentDefinition, type StateUpdate } from "@godspeedai/runtime-api";
+import type { Json } from "@godspeedai/cognate-events";
+import type { Projection } from "@godspeedai/cognate-projections";
+import { applyStateUpdate, StatePatchError, type AgentDefinition, type StateUpdate } from "@godspeedai/cognate-runtime-api";
 
 export const JOURNEY_C_AGENT = "copilotkit-reconstruction.shared-state";
 

@@ -13,7 +13,7 @@ import type {
   InvocationResult,
   KernelEvent,
   Policy,
-} from "@godspeedai/kernel-api";
+} from "@godspeedai/cognate-kernel-api";
 
 export interface BoundProvider {
   readonly contract: CapabilityContract;

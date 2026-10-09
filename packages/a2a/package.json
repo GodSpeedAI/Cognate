@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/a2a",
+  "name": "@godspeedai/cognate-a2a",
   "version": "0.1.0",
   "description": "A2A adapter: publishes a runtime agent as an A2A agent; continuations map to input-required tasks.",
   "type": "module",
@@ -23,10 +23,10 @@
   },
   "dependencies": {
     "@a2a-js/sdk": "1.2.1",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/runtime-api": "workspace:*"
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*"
   },
   "devDependencies": {
-    "@godspeedai/runtime-bun": "workspace:*"
+    "@godspeedai/cognate-runtime-bun": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@godspeedai/provider-local",
+  "name": "@godspeedai/cognate-provider-local",
   "version": "0.1.0",
   "description": "Deterministic offline ModelProvider for tests, demos, and fallback; scripted by rules, never a real model.",
   "type": "module",
@@ -22,8 +22,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@godspeedai/capabilities": "workspace:*",
-    "@godspeedai/events": "workspace:*",
-    "@godspeedai/kernel-api": "workspace:*"
+    "@godspeedai/cognate-capabilities": "workspace:*",
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-kernel-api": "workspace:*"
   }
 }

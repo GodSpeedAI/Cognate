@@ -7,10 +7,10 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { createServer } from "node:net";
 import { chromium } from "playwright-core";
-import { startSshFixture } from "@godspeedai/execution-ssh/fixture";
-import { createClient } from "@godspeedai/client";
-import { connectTransport, devToken } from "@godspeedai/protocol-connect-bun";
-import { createRemoteRuntimeService } from "@godspeedai/protocol-connect";
+import { startSshFixture } from "@godspeedai/cognate-execution-ssh/fixture";
+import { createClient } from "@godspeedai/cognate-client";
+import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
+import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { LOCAL_OPERATOR, startServer } from "../src/server.ts";
 import { bootAimock, withTempHome } from "./helpers.ts";
 

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { NotFoundError } from "@godspeedai/events";
-import type { DurableStore, Json } from "@godspeedai/events";
-import type { Principal, SemanticRef } from "@godspeedai/kernel-api";
+import { NotFoundError } from "@godspeedai/cognate-events";
+import type { DurableStore, Json } from "@godspeedai/cognate-events";
+import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 
 export interface ArtifactAccess {
   readonly tenant: string;

@@ -6,7 +6,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { createRuntime } from "@godspeedai/runtime-bun";
+import { createRuntime } from "@godspeedai/cognate-runtime-bun";
 import { createMcpServer } from "../src/index.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-mcp-"));

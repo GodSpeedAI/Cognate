@@ -1,5 +1,5 @@
-import type { Json } from "@godspeedai/events";
-import type { SemanticRef } from "@godspeedai/kernel-api";
+import type { Json } from "@godspeedai/cognate-events";
+import type { SemanticRef } from "@godspeedai/cognate-kernel-api";
 
 /** A framework execution observation (spec §20). Correlation fields are Cognate's; SXR decides what becomes evidence. */
 export interface Observation {
