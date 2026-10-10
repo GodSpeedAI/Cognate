@@ -15,6 +15,7 @@ import type {
   OutboxSettlement,
   ProjectionCheckpoint,
   ProjectionCommit,
+  ProjectionSnapshot,
   Json,
 } from "@godspeedai/cognate-events";
 import { migrate } from "./schema.ts";
@@ -479,6 +480,29 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
       assertOpen();
       const rows = db.query("SELECT key, value FROM projection_state WHERE name = ? ORDER BY key").all(name) as Row[];
       return rows.map((row) => ({ key: row.key, value: JSON.parse(row.value) as Json }));
+    },
+
+    async readProjectionSnapshot(name: string): Promise<ProjectionSnapshot> {
+      assertOpen();
+      // One statement, one snapshot: the checkpoint can never be ahead of the rows it is returned
+      // with, even with another process folding concurrently (DEBT-021).
+      const row = db
+        .query(
+          `SELECT
+             (SELECT json_object('name', name, 'version', version, 'position', position, 'status', status,
+                                 'error_position', error_position, 'error_event_id', error_event_id, 'error_message', error_message)
+              FROM projection_checkpoints WHERE name = ?1) AS checkpoint,
+             (SELECT json_group_array(json_object('key', ordered.key, 'value', json(ordered.value)))
+              FROM (SELECT key, value FROM projection_state WHERE name = ?1 ORDER BY key) AS ordered) AS rows`,
+        )
+        .get(name) as Row;
+      const checkpoint = row.checkpoint ? JSON.parse(row.checkpoint as string) : undefined;
+      return {
+        checkpoint: checkpoint
+          ? { ...checkpoint, error: checkpoint.error_event_id != null ? { position: checkpoint.error_position, eventId: checkpoint.error_event_id, message: checkpoint.error_message } : null }
+          : undefined,
+        rows: (JSON.parse(row.rows as string) as { key: string; value: Json }[]).map((entry) => ({ key: entry.key, value: entry.value })),
+      };
     },
 
     async resetProjection(name: string): Promise<void> {

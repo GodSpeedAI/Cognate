@@ -17,6 +17,7 @@ import type {
   OutboxSettlement,
   ProjectionCheckpoint,
   ProjectionCommit,
+  ProjectionSnapshot,
   StoredEvent,
   StoredRecord,
 } from "@godspeedai/cognate-events";
@@ -364,6 +365,13 @@ export function createMemoryStore(): DurableStore {
       const entries = [...projectionMap.entries()].map(([key, value]) => ({ key, value }));
       entries.sort((a, b) => compareCodePoints(a.key, b.key));
       return clone(entries);
+    },
+
+    async readProjectionSnapshot(name): Promise<ProjectionSnapshot> {
+      // Synchronous map reads within one microtask: no fold can interleave between them.
+      const checkpoint = clone(state.projections.get(name));
+      const rows = await this.listProjection(name);
+      return { checkpoint, rows };
     },
 
     async resetProjection(name) {

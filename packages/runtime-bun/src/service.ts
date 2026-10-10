@@ -1,7 +1,7 @@
 // In-process RuntimeService (ADR-0011): authorization, tenancy, and typed errors over the durable core.
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
@@ -218,9 +218,15 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     async readProjection(caller, request) {
       if (!publicProjections.has(request.name)) throw new ServiceError("not_found", `projection ${request.name} not found`);
       // Public projections are tenant-partitioned by key prefix `<tenant>/` (spec §32); an empty
-      // partition is [] so the caller cannot tell whether other tenants have data.
+      // partition is [] so the caller cannot tell whether other tenants have data. The checkpoint is
+      // read consistently with the rows (never ahead of them) so a client can tell whether its view
+      // covers the events it has observed (DEBT-021).
       const prefix = `${caller.tenant}/`;
-      return (await store.listProjection(request.name)).filter((e) => e.key.startsWith(prefix)).map((e) => ({ key: e.key.slice(prefix.length), value: e.value }));
+      const snapshot = await readProjectionSnapshot(store, request.name);
+      return {
+        rows: snapshot.rows.filter((e) => e.key.startsWith(prefix)).map((e) => ({ key: e.key.slice(prefix.length), value: e.value })),
+        checkpoint: snapshot.checkpoint ?? null,
+      };
     },
 
     async listRuns(caller, request) {

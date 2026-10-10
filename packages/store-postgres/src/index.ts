@@ -31,6 +31,7 @@ import type {
   OutboxStatus,
   ProjectionCheckpoint,
   ProjectionCommit,
+  ProjectionSnapshot,
   StoredEvent,
   StoredRecord,
 } from "@godspeedai/cognate-events";
@@ -614,6 +615,29 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
       assertOpen();
       const rows = await sql`SELECT key, value::text AS value_text FROM ${t.projectionState} WHERE name = ${name} ORDER BY key COLLATE "C"`;
       return rows.map((row: Row) => ({ key: row.key, value: json<Json>(row.value_text) }));
+    },
+
+    async readProjectionSnapshot(name: string): Promise<ProjectionSnapshot> {
+      assertOpen();
+      // One statement, one snapshot: the checkpoint can never be ahead of the rows it is returned
+      // with, even with another process folding concurrently (DEBT-021).
+      const rows = await sql`SELECT
+          (SELECT to_jsonb(c)::text FROM ${t.checkpoints} c WHERE c.name = ${name}) AS checkpoint_text,
+          (SELECT COALESCE(jsonb_agg(jsonb_build_object('key', ordered.key, 'value', ordered.value) ORDER BY ordered.key COLLATE "C"), '[]'::jsonb)::text
+           FROM (SELECT key, value FROM ${t.projectionState} WHERE name = ${name} ORDER BY key COLLATE "C") AS ordered) AS rows_text`;
+      const checkpoint = rows.length > 0 && rows[0]!.checkpoint_text != null ? json<Row>(rows[0]!.checkpoint_text) : undefined;
+      return {
+        checkpoint: checkpoint
+          ? {
+              name: checkpoint.name,
+              version: checkpoint.version,
+              position: num(checkpoint.position),
+              status: checkpoint.status as ProjectionCheckpoint["status"],
+              error: checkpoint.error_event_id != null ? { position: num(checkpoint.error_position), eventId: checkpoint.error_event_id, message: checkpoint.error_message } : null,
+            }
+          : undefined,
+        rows: json<{ key: string; value: Json }[]>(rows[0]!.rows_text),
+      };
     },
 
     async resetProjection(name: string): Promise<void> {

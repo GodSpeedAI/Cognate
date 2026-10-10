@@ -19,7 +19,7 @@ export const inv = (c: Client, capability: string, input: unknown) => c.invoke(c
 export const SYSTEM = { actor: { id: "system", kind: "system" as const }, tenant: "local" };
 
 export async function wbRows(app: AppServer): Promise<Map<string, unknown>> {
-  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workbench" });
+  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workbench" })).rows;
   return new Map(rows.map((r) => [r.key, r.value]));
 }
 

@@ -248,6 +248,32 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       expect(await store.getProjection("p")).toBeUndefined();
       expect(await store.listProjection("p")).toEqual([]);
     });
+
+    test("readProjectionSnapshot returns rows with a checkpoint never ahead of them (DEBT-021)", async () => {
+      const store = await open();
+      if (!store.readProjectionSnapshot) throw new Error("store must implement readProjectionSnapshot");
+      // Unknown projection: no checkpoint, no rows.
+      const empty = await store.readProjectionSnapshot("absent");
+      expect(empty.checkpoint).toBeUndefined();
+      expect(empty.rows).toEqual([]);
+      // Rows and checkpoint agree after a fold, in code-point order.
+      await store.commitProjection({ name: "s", version: "1", fromPosition: 0, toPosition: 3, writes: [{ key: "zeta", value: 1 }, { key: "Alpha", value: 2 }] });
+      const snapshot = await store.readProjectionSnapshot("s");
+      expect(snapshot.checkpoint).toMatchObject({ name: "s", version: "1", position: 3, status: "ok", error: null });
+      expect(snapshot.rows).toEqual([{ key: "Alpha", value: 2 }, { key: "zeta", value: 1 }]);
+      // An advanced fold with all rows deleted still reports the fold position with empty rows —
+      // the checkpoint describes the fold that produced them, and [] is that state.
+      await store.commitProjection({ name: "s", version: "1", fromPosition: 3, toPosition: 5, writes: [{ key: "zeta", value: null }, { key: "Alpha", value: null }] });
+      const emptied = await store.readProjectionSnapshot("s");
+      expect(emptied.checkpoint).toMatchObject({ position: 5, status: "ok" });
+      expect(emptied.rows).toEqual([]);
+      // An errored projection reports its recorded error without advancing.
+      await store.commitProjection({ name: "s", version: "1", fromPosition: 5, toPosition: 6, writes: [{ key: "k", value: 1 }] });
+      await store.failProjection("s", { position: 7, eventId: "e7", message: "bad" });
+      const errored = await store.readProjectionSnapshot("s");
+      expect(errored.checkpoint).toMatchObject({ position: 6, status: "error", error: { position: 7, message: "bad" } });
+      expect(errored.rows).toEqual([{ key: "k", value: 1 }]);
+    });
   });
 
   describe(`${name}: blobs and erasure (§13.1, §32)`, () => {

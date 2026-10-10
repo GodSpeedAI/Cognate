@@ -65,7 +65,7 @@ export function assertPositionsNeverRegress(events: readonly StoredEvent[]): voi
 /** Projection rows keyed by projection name (service-level read; public projections only). */
 export async function snapshotProjections(service: RuntimeService, caller: Caller): Promise<Record<string, readonly { key: string; value: unknown }[]>> {
   const rows: Record<string, readonly { key: string; value: unknown }[]> = {};
-  for (const name of PROJECTION_NAMES) rows[name] = await service.readProjection(caller, { name });
+  for (const name of PROJECTION_NAMES) rows[name] = (await service.readProjection(caller, { name })).rows;
   return rows;
 }
 

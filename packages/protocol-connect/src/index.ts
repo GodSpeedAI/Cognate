@@ -468,8 +468,21 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
     async readProjection(req, context) {
       try {
         const caller = await requireCaller(options, context);
-        const entries = await withDeadline(context, service.readProjection(caller, { name: req.name }));
-        return { entries: entries.map((entry) => ({ key: entry.key, value: jsonToValue(entry.value) })) };
+        const read = await withDeadline(context, service.readProjection(caller, { name: req.name }));
+        return {
+          entries: read.rows.map((entry) => ({ key: entry.key, value: jsonToValue(entry.value) })),
+          checkpoint: read.checkpoint
+            ? {
+                name: read.checkpoint.name,
+                version: read.checkpoint.version,
+                position: BigInt(read.checkpoint.position),
+                status: read.checkpoint.status,
+                errorPosition: read.checkpoint.error ? BigInt(read.checkpoint.error.position) : undefined,
+                errorEventId: read.checkpoint.error?.eventId,
+                errorMessage: read.checkpoint.error?.message,
+              }
+            : undefined,
+        };
       } catch (e) {
         throwConnectError(e);
       }
@@ -648,7 +661,21 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
     async readProjection(caller, request) {
       try {
         const response = await client.readProjection({ name: request.name }, { headers: headersFor(caller) });
-        return response.entries.map((entry) => ({ key: entry.key, value: valueToJson(entry.value) }));
+        return {
+          rows: response.entries.map((entry) => ({ key: entry.key, value: valueToJson(entry.value) })),
+          checkpoint: response.checkpoint
+            ? {
+                name: response.checkpoint.name,
+                version: response.checkpoint.version,
+                position: Number(response.checkpoint.position),
+                status: response.checkpoint.status === "error" ? "error" : "ok",
+                error:
+                  response.checkpoint.errorEventId !== ""
+                    ? { position: Number(response.checkpoint.errorPosition), eventId: response.checkpoint.errorEventId, message: response.checkpoint.errorMessage }
+                    : null,
+              }
+            : null,
+        };
       } catch (e) {
         throwServiceError(e);
       }

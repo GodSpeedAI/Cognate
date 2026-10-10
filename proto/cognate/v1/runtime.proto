@@ -61,8 +61,23 @@ message ProjectionEntry {
   google.protobuf.Value value = 2;
 }
 
+// The fold checkpoint describing how far the projection that produced `entries` has processed the
+// store. Never ahead of the entries in the same response (DEBT-021): a client that has observed a
+// store event at a position greater than `position` knows its view is stale and re-reads.
+message ProjectionCheckpoint {
+  string name = 1;
+  string version = 2;
+  uint64 position = 3;
+  // "ok" or "error".
+  string status = 4;
+  uint64 error_position = 5;
+  string error_event_id = 6;
+  string error_message = 7;
+}
+
 message ReadProjectionResponse {
   repeated ProjectionEntry entries = 1;
+  ProjectionCheckpoint checkpoint = 2;
 }
 
 message RemoteCapabilityOffer {

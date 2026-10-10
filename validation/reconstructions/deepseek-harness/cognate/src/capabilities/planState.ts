@@ -21,7 +21,7 @@ export function planStateComponent(getService: () => RuntimeService, semanticRef
         const input = rawInput as PlanStateInput;
         const service = getService();
         const caller = { actor: ctx.actor, tenant: ctx.tenant ?? "local" };
-        const rows = await service.readProjection(caller, { name: "plans" });
+        const rows = ((await service.readProjection(caller, { name: "plans" }))).rows;
         const row = rows.find((r) => r.key === input.sessionId);
         if (!row) return { sessionId: input.sessionId, ...EMPTY };
         return row.value as unknown as PlanState;

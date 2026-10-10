@@ -131,7 +131,7 @@ test("J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction
     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
 
   // The projection row is the render's durable identity, built from the recorded event.
-  const row = (await journey.runtime.service.readProjection(alice, { name: "mcp-open-ended" }))[0]!;
+  const row = (await journey.runtime.service.readProjection(alice, { name: "mcp-open-ended" }).rows)[0]!;
   expect(row).toEqual({
     key: `run/${runId}`,
     value: {
@@ -188,7 +188,7 @@ test("J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction
 
   // The first run's durable evidence is untouched by the second: same projection row, same
   // artifact bytes, same settled continuations — no position regressed.
-  expect(await journey.runtime.service.readProjection(alice, { name: "mcp-open-ended" })).toContainEqual(row);
+  expect(await journey.runtime.service.readProjection(alice, { name: "mcp-open-ended" }).rows).toContainEqual(row);
   expect(new TextDecoder().decode((await journey.runtime.service.getArtifact(alice, { artifactId })).bytes)).toBe(document);
   bridge = undefined; // already disposed above; afterEach must not dispose twice
 });

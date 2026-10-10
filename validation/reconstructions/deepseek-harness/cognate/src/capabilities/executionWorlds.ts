@@ -128,7 +128,7 @@ export const unavailableReason = (worldId: string): string | undefined => MAX_WO
 
 /** Re-register every durable world at boot (lazy: no connection is opened here). */
 export async function restoreExecutionWorlds(options: Pick<ExecutionWorldsOptions, "getService" | "systemCaller" | "registry" | "secrets">): Promise<void> {
-  const rows = await options.getService().readProjection(options.systemCaller, { name: "execution-worlds" });
+  const rows = ((await options.getService().readProjection(options.systemCaller, { name: "execution-worlds" }))).rows;
   for (const row of rows) {
     if (!row.key.startsWith("record/")) continue;
     const record = row.value as unknown as WorldRecord;
@@ -253,7 +253,7 @@ export function executionWorldsManageComponent(options: ExecutionWorldsOptions):
         const { worldId } = raw as { worldId: string };
         need(typeof worldId === "string" && worldId !== "local", "cannot disconnect the local world");
         const service = options.getService();
-        const rows = await service.readProjection(options.systemCaller, { name: "workspaces" });
+        const rows = ((await service.readProjection(options.systemCaller, { name: "workspaces" }))).rows;
         const using = rows.filter((r) => r.key.startsWith("record/") && (r.value as { executionWorldId?: string }).executionWorldId === worldId).length;
         need(using === 0, `${using} workspace(s) still use this world; remove them first`);
         await options.registry.unregister(worldId);
