@@ -94,11 +94,11 @@ test("deleting every derived row rebuilds byte-identical folds from the durable 
   // ── Operator-style deletion of every derived row ─────────────────────────────
   await first.close();
   cleanup = async () => rmSync(directory, { recursive: true, force: true });
-  const before = dumpDerivedRows(store);
+  const before = await dumpDerivedRows(store);
   expect(before.state.length).toBeGreaterThan(0);
   expect(before.checkpoints.length).toBeGreaterThan(0);
-  deleteDerivedRows(store);
-  expect(countDerivedRows(store)).toEqual({ state: 0, checkpoints: 0 });
+  await deleteDerivedRows(store);
+  expect(await countDerivedRows(store)).toEqual({ state: 0, checkpoints: 0 });
 
   // ── A new runtime folds the durable event stream from position 0 ─────────────
   const second = await createRemainingJourneysApp(store);
@@ -110,7 +110,7 @@ test("deleting every derived row rebuilds byte-identical folds from the durable 
   await second.runtime.idle();
 
   // The rebuilt fold is byte-for-byte identical: raw TEXT rows and checkpoints match.
-  const after = dumpDerivedRows(store);
+  const after = await dumpDerivedRows(store);
   expect(after).toEqual(before);
 
   // The authoritative event stream was untouched by the deletion and rebuild.
@@ -138,7 +138,7 @@ test("deleting every derived row rebuilds byte-identical folds from the durable 
   expect(hitl2Events.find((event) => event.eventType === "message.delta")?.payload).toEqual({ text: CONTINUATION_MESSAGE });
 
   // The twin threads fold identically apart from their thread identity.
-  const richRows = await reopened.readProjection(alice, { name: "rich-thread" });
+  const richRows = (await reopened.readProjection(alice, { name: "rich-thread" })).rows;
   const [row1, row2] = [richRows.find((row) => row.key === "thread/thread:rebuild-chat"), richRows.find((row) => row.key === "thread/thread:rebuild-chat-2")];
   expect(row1).toBeDefined();
   expect({ ...row2!.value, threadId: row1!.value.threadId }).toEqual(row1!.value);

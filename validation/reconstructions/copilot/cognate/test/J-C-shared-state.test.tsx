@@ -39,7 +39,7 @@ test("J-C-shared-state streams an agent canvas write, commits a terminal user ed
 
   fireEvent.click(ui.getByRole("button", { name: "Save canvas edit" }));
   await waitFor(() => expect(ui.getByLabelText("Canvas todos").textContent).toContain("user todo"));
-  await waitFor(async () => expect(await journey.runtime.service.readProjection(alice, { name: "shared-state-canvas" }).rows).toContainEqual(expect.objectContaining({ key: "thread/thread:j-c", value: { todos: [{ id: "agent", text: "agent todo" }, { id: "user", text: "user todo" }] } })));
+  await waitFor(async () => expect((await journey.runtime.service.readProjection(alice, { name: "shared-state-canvas" })).rows).toContainEqual(expect.objectContaining({ key: "thread/thread:j-c", value: { todos: [{ id: "agent", text: "agent todo" }, { id: "user", text: "user todo" }] } })));
 
   fireEvent.click(ui.getByRole("button", { name: "Start agent observation" }));
   await waitFor(async () => expect(await journey.runtime.service.listRuns(alice, { correlationId: "thread:j-c", agent: JOURNEY_C_AGENT })).toHaveLength(2));

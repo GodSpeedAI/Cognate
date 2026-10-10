@@ -14,7 +14,7 @@ describe("J-I-work-details", () => {
       {
         const { app } = await bootApp(home);
         try {
-          const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+          const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
           expect(rows.find((r) => r.key === "current")).toBeUndefined();
         } finally {
           await app.stop();
@@ -25,7 +25,8 @@ describe("J-I-work-details", () => {
         const { app, client } = await bootApp(home);
         try {
           await client.invoke("settings.changeWorkDetails", { workDetails: "verbose" });
-          const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+          await app.runtime.idle();
+          const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
           const current = rows.find((r) => r.key === "current")?.value as { readonly workDetails?: string } | undefined;
           expect(current?.workDetails).toBe("verbose");
         } finally {
@@ -37,7 +38,8 @@ describe("J-I-work-details", () => {
       // full runtime restart, not just a client reload.
       const reopened = await startServer({ port: 0, home });
       try {
-        const rows = await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+        await reopened.runtime.idle();
+        const rows = (await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
         const current = rows.find((r) => r.key === "current")?.value as { readonly workDetails?: string } | undefined;
         expect(current?.workDetails).toBe("verbose");
       } finally {

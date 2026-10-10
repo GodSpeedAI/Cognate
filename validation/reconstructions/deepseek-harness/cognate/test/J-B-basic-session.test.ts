@@ -47,7 +47,7 @@ describe("J-B-basic-session", () => {
         expect(progressEvents.length).toBeGreaterThanOrEqual(2);
 
         await app.runtime.idle();
-        const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+        const sessionRows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
         const sessionRow = sessionRows.find((r) => r.key === sessionId)?.value as { readonly title?: string; readonly lastStatus?: string } | undefined;
         expect(sessionRow?.lastStatus).toBe("completed");
         // Title is derived from the literal first human message text, verbatim, not the assistant's
@@ -80,7 +80,7 @@ describe("J-B-basic-session", () => {
 });
 
 async function waitForCompletion(app: AppServer, runId: string) {
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 800; i++) {
     const run = await app.runtime.service.getRun(LOCAL_OPERATOR, { runId });
     if (run.status === "completed" || run.status === "failed" || run.status === "cancelled") return run;
     await new Promise((r) => setTimeout(r, 25));

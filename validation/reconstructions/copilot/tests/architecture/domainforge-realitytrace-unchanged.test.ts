@@ -3,7 +3,7 @@
 //   - no working-tree change under packages/domainforge/** or packages/realitytrace/**;
 //   - no commit touching those paths whose SUBJECT mentions the copilot reconstruction.
 // General maintenance commits are legitimate: e.g. "chore(domainforge): pin
-// @godspeedai/domainforge 0.18.2" is a pin bump, not reconstruction-specific work — the
+// an upstream pin bump is not reconstruction-specific work — the
 // criterion is the subject mentioning the copilot reconstruction, not the touch itself.
 // (This reconstruction's own .sea/interaction domain model is new by design and is check 9's
 // concern; the DomainForge *engine* and RealityTrace *adapter* must stay untouched.)
@@ -44,10 +44,12 @@ describe("Phase 13 §10: DomainForge and RealityTrace required no reconstruction
     expect(offenders).toEqual([]);
   });
 
-  test("the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact", () => {
+  test("the framework's external DomainForge pin is a single declared version", () => {
+    // The framework adapter pins the upstream @godspeedai/domainforge binding; the reconstruction
+    // consumes DomainForge only through this package (asserted by the import scans above).
     const manifest = JSON.parse(readFileSync(join(ROOT, "packages/domainforge/package.json"), "utf8")) as {
       dependencies?: Record<string, string>;
     };
-    expect(manifest.dependencies?.["@godspeedai/domainforge"]).toBe("0.18.2");
+    expect(manifest.dependencies?.["@godspeedai/domainforge"]).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });

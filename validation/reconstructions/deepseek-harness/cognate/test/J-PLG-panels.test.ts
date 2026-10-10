@@ -77,7 +77,7 @@ describe("J-PLG-panels", () => {
         expect(toolsMin).toEqual(["bash"]);
 
         // The sessions rows fold each session's preset into the mode-badge field.
-        const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+        const sessionRows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
         expect((sessionRows.find((r) => r.key === sessionId)?.value as { mode?: string }).mode).toBe("ptc");
         expect((sessionRows.find((r) => r.key === sessionIdMin)?.value as { mode?: string }).mode).toBe("minimal");
 
@@ -146,7 +146,8 @@ describe("J-PLG-panels", () => {
         const { app, client } = await bootApp(home);
         try {
           await client.invoke("settings.changePreset", { preset: "minimal" });
-          const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+          await app.runtime.idle();
+          const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
           expect((rows.find((r) => r.key === "current")?.value as { preset?: string }).preset).toBe("minimal");
         } finally {
           await app.stop();
@@ -154,7 +155,7 @@ describe("J-PLG-panels", () => {
       }
       const reopened = await startServer({ port: 0, home });
       try {
-        const rows = await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+        const rows = (await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
         expect((rows.find((r) => r.key === "current")?.value as { preset?: string }).preset).toBe("minimal");
       } finally {
         await reopened.stop();

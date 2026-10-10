@@ -62,7 +62,7 @@ test("J-D-agent-context supplies mounted context as immutable invocation input t
   // Agent-writable state is a different channel and moved during the same run.
   await waitFor(
     async () =>
-      expect(await journey.runtime.service.readProjection(alice, { name: "shared-state-canvas" }).rows).toContainEqual(
+      expect((await journey.runtime.service.readProjection(alice, { name: "shared-state-canvas" })).rows).toContainEqual(
         expect.objectContaining({ key: `thread/${threadId}`, value: { note: "agent-writable" } }),
       ),
     { timeout: 5_000 },

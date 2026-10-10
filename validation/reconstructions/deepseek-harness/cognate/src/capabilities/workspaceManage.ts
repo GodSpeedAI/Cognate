@@ -27,7 +27,7 @@ export function workspaceManageComponent(options: {
     provides: [renameContract, deleteContract],
     activate(fiber) {
       const knownWorkspaces = async () => {
-        const rows = (await (options.getService().readProjection(options.systemCaller, { name: "workspaces" }))).rows;
+        const rows = (await options.getService().readProjection(options.systemCaller, { name: "workspaces" })).rows;
         return new Set(rows.filter((r) => r.key.startsWith("record/")).map((r) => r.key.slice("record/".length)));
       };
       fiber.provide(renameContract, async (rawInput) => {

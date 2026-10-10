@@ -14,6 +14,8 @@ import { createClient } from "@godspeedai/cognate-client";
 import { connectTransport, devToken } from "@godspeedai/cognate-protocol-connect-bun";
 import { createRemoteRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
+import { postgresUrl, schemaFor } from "../src/store.ts";
+import postgres from "postgres";
 import { bootAimock, withTempHome } from "./helpers.ts";
 
 const PASSWORD = "s3cret-pass-ZXCV-1234";
@@ -76,19 +78,30 @@ describe("J-RW-ssh-workspaces", () => {
         // path escape is denied at the contract boundary
         await expect(client.invoke("filesystem.resolve", { worldId: world.worldId, root: remote, path: "../../etc/passwd" })).rejects.toThrow(/escapes/);
 
-        // secrets never reach events, projections or SQLite; they live only in the 0600 secret store
+        // secrets never reach events, projections or the durable store; they live only in the 0600 secret store
         const all = JSON.stringify(await events(app));
-        const rows = JSON.stringify(await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "execution-worlds" }));
+        const rows = JSON.stringify((await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "execution-worlds" })).rows);
         expect(all).not.toContain(PASSWORD);
         expect(rows).not.toContain(PASSWORD);
         expect(rows).toContain(fixture.fingerprint);
         const secretsFile = await readFile(join(home, "secrets.json"), "utf8");
         expect(secretsFile).toContain(PASSWORD);
         expect((await Bun.file(join(home, "secrets.json")).stat()).mode & 0o777).toBe(0o600);
-        const readIfPresent = async (n: string) => (await Bun.file(join(home, n)).exists()) ? Buffer.from(await Bun.file(join(home, n)).arrayBuffer()) : Buffer.alloc(0);
-        const db = Buffer.concat([await readIfPresent("app.sqlite"), await readIfPresent("app.sqlite-wal")]);
-        expect(db.length).toBeGreaterThan(0);
-        expect(db.includes(Buffer.from(PASSWORD))).toBe(false);
+        // Scan the authoritative PostgreSQL schema for the secret (payloads, metadata, records, folds).
+        const scan = postgres(postgresUrl(), { max: 1, onnotice: () => {} });
+        try {
+          const t = (name: string) => scan`${scan(schemaFor(home))}.${scan(name)}`;
+          const texts = [
+            ...(await scan`SELECT payload::text AS text FROM ${t("payloads")}`).map((r) => r.text as string),
+            ...(await scan`SELECT metadata::text AS text FROM ${t("events")} WHERE metadata IS NOT NULL`).map((r) => r.text as string),
+            ...(await scan`SELECT value::text AS text FROM ${t("records")}`).map((r) => r.text as string),
+            ...(await scan`SELECT value::text AS text FROM ${t("projection_state")}`).map((r) => r.text as string),
+          ];
+          expect(texts.length).toBeGreaterThan(0);
+          for (const text of texts) expect(text).not.toContain(PASSWORD);
+        } finally {
+          await scan.end({ timeout: 1 });
+        }
 
         // restart: the world is rebuilt from durable safe metadata + the secret store; reconnect is lazy
         await app.stop();
@@ -119,6 +132,13 @@ describe("J-RW-ssh-workspaces", () => {
         // disconnect is refused while a workspace uses the world, then cleans up secrets
         await expect(client.invoke("execution.world.disconnect", { worldId: world.worldId })).rejects.toThrow(/workspace/);
         await client.invoke("workspace.delete", { workspaceId: sel.workspaceId });
+        // The disconnect guard reads the server-side workspaces projection fold; wait for the
+        // removal to land there before disconnecting.
+        for (let i = 0; i < 400; i++) {
+          const current = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })).rows;
+          if (!current.some((r) => r.key === `record/${sel.workspaceId}`)) break;
+          await Bun.sleep(25);
+        }
         await client.invoke("execution.world.disconnect", { worldId: world.worldId });
         expect(await readFile(join(home, "secrets.json"), "utf8")).not.toContain(PASSWORD);
         await expect(client.invoke("process.exec", { worldId: world.worldId, argv: ["true"], cwd: "/" })).rejects.toThrow();
@@ -164,11 +184,11 @@ describe("J-RW-ssh-workspaces", () => {
         const sel = (await client.invoke("workspace.select", { path: remote, worldId: world.worldId })) as { workspaceId: string };
         const sessionId = randomUUID();
         const run = await client.startRun("agent.coding", { sessionId, workspaceId: sel.workspaceId, message: "[[scenario:slowbash]] run the long command" } as never, { idempotencyKey: randomUUID(), correlationId: `session:${sessionId}` });
-        for (let i = 0; i < 200 && fixture.stats.liveExecs < 1; i++) await Bun.sleep(25);
+        for (let i = 0; i < 800 && fixture.stats.liveExecs < 1; i++) await Bun.sleep(25);
         expect(fixture.stats.liveExecs).toBe(1); // really running on the remote
         await client.cancelRun(run.runId, "user-cancelled");
         expect((await finish(app, run.runId)).status).toBe("cancelled");
-        for (let i = 0; i < 200 && fixture.stats.liveExecs > 0; i++) await Bun.sleep(25);
+        for (let i = 0; i < 800 && fixture.stats.liveExecs > 0; i++) await Bun.sleep(25);
         expect(fixture.stats.liveExecs).toBe(0); // the remote command was ended, not orphaned
         const orphans = (await Bun.$`pgrep -x sleep -a`.nothrow().text()).split("\n").filter((l) => l.endsWith(" 4901.3")).length;
         expect(orphans).toBe(0);

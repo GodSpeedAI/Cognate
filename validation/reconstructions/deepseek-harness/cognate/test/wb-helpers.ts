@@ -19,7 +19,7 @@ export const inv = (c: Client, capability: string, input: unknown) => c.invoke(c
 export const SYSTEM = { actor: { id: "system", kind: "system" as const }, tenant: "local" };
 
 export async function wbRows(app: AppServer): Promise<Map<string, unknown>> {
-  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workbench" })).rows;
+  const rows = ((await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workbench" }))).rows;
   return new Map(rows.map((r) => [r.key, r.value]));
 }
 
@@ -61,12 +61,24 @@ export interface Seeded {
   readonly workspaceDir: string;
 }
 
+
+/** Wait until the workspaces projection fold covers the seeded workspace (async fold on PostgreSQL). */
+async function waitWorkspaceVisible(client: Client, workspaceId: string): Promise<void> {
+  const store = client.projection("workspaces");
+  for (let i = 0; i < 400; i++) {
+    if (store.get()?.some((row) => row.key === `record/${workspaceId}`)) return;
+    await Bun.sleep(25);
+  }
+  throw new Error(`workspace ${workspaceId} never appeared in the workspaces projection`);
+}
+
 /** Configure the mock model and select a real fixture workspace. */
 export async function seed(client: Client, home: string, aimockPort: number): Promise<Seeded> {
   await inv(client, "model.configure", { providerId: "mock", baseURL: `http://127.0.0.1:${aimockPort}/v1`, protocol: "openai-compatible", model: "mock-model-1", apiKey: "" });
   const workspaceDir = join(home, "ws-wb");
   await makeWorkspace(workspaceDir);
   const { workspaceId } = (await inv(client, "workspace.select", { path: workspaceDir })) as { readonly workspaceId: string };
+  await waitWorkspaceVisible(client, workspaceId);
   return { workspaceId, workspaceDir };
 }
 
@@ -75,6 +87,7 @@ export async function seedWorkspaceOnly(client: Client, home: string): Promise<S
   const workspaceDir = join(home, "ws-wb");
   await makeWorkspace(workspaceDir);
   const { workspaceId } = (await inv(client, "workspace.select", { path: workspaceDir })) as { readonly workspaceId: string };
+  await waitWorkspaceVisible(client, workspaceId);
   return { workspaceId, workspaceDir };
 }
 

@@ -83,7 +83,7 @@ test("J-E-controlled-rendering derives pending and terminal from recorded invoca
   expect(pending.get(prefixKey)).toEqual({ component: CONTROLLED_RENDER_COMPONENT, phase: "pending", renders: 1 });
   expect(fold(events).get(prefixKey)).toEqual({ component: CONTROLLED_RENDER_COMPONENT, phase: "terminal", renders: 2 });
 
-  const rows = await journey.runtime.service.readProjection(alice, { name: "controlled-rendering" }).rows;
+  const rows = ((await journey.runtime.service.readProjection(alice, { name: "controlled-rendering" }))).rows;
   expect(rows[0]).toEqual(expect.objectContaining({ key: `run/${runId}`, value: { component: CONTROLLED_RENDER_COMPONENT, phase: "terminal", renders: 2 } }));
 
   // A controlled render never turns into a human decision.

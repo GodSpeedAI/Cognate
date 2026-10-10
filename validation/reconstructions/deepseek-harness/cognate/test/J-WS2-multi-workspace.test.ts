@@ -18,7 +18,8 @@ interface WorkspaceRow {
 }
 
 async function readWorkspaces(app: Awaited<ReturnType<typeof bootApp>>["app"]): Promise<{ readonly records: readonly WorkspaceRow[]; readonly current: string | undefined }> {
-  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" });
+  await app.runtime.idle(); // let the projection fold cover every committed write before reading
+  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })).rows;
   const records = rows.filter((r) => r.key.startsWith("record/")).map((r) => r.value as unknown as WorkspaceRow);
   const current = rows.find((r) => r.key === "current")?.value as string | undefined;
   return { records, current };

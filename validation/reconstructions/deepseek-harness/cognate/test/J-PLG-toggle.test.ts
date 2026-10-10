@@ -23,7 +23,8 @@ interface ObservationStatus {
 }
 
 async function readPluginState(app: Awaited<ReturnType<typeof bootApp>>["app"]): Promise<Record<string, boolean> | undefined> {
-  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+  await app.runtime.idle(); // let the projection fold cover every committed write before reading
+  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
   const current = rows.find((row) => row.key === "current")?.value as { plugins?: Record<string, boolean> } | undefined;
   return current?.plugins;
 }

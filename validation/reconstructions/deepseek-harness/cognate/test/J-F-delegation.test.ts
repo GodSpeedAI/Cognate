@@ -55,7 +55,7 @@ interface SubagentRow {
 }
 
 async function subagentRowsFor(app: AppServer, sessionId: string): Promise<{ readonly key: string; readonly value: SubagentRow }[]> {
-  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" });
+  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" })).rows;
   return rows
     .map((r) => ({ key: r.key, value: r.value as unknown as SubagentRow }))
     .filter((r) => r.value.sessionId === sessionId);
@@ -115,7 +115,7 @@ describe("J-F-delegation", () => {
         expect(mine[0]!.value.output).toBe(CHILD_TEXT);
 
         // The child must NOT appear in the top-level `sessions` projection.
-        const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+        const sessionRows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
         expect(sessionRows.some((r) => r.key === childRunId)).toBe(false);
         expect(sessionRows.map((r) => r.key)).toContain(sessionId);
 

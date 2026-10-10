@@ -90,7 +90,7 @@ test("the as-built reconstruction runs identically across restart with no cognit
   const beforeChatOutput = (await beforeService.getRun(alice, { runId: chat.runId })).output;
   const beforeDecisions = await authorizationDecisions(beforeService);
   const beforeEvents = durableFacts(await snapshotEvents(beforeService, alice));
-  const beforeThread = await beforeService.readProjection(alice, { name: "rich-thread" });
+  const beforeThread = (await beforeService.readProjection(alice, { name: "rich-thread" })).rows;
 
   await first.close();
   cleanup = async () => rmSync(directory, { recursive: true, force: true });
@@ -109,7 +109,7 @@ test("the as-built reconstruction runs identically across restart with no cognit
   expect(await afterService.getRun(alice, { runId: chat2.runId })).toMatchObject({ output: beforeChatOutput });
   expect(await authorizationDecisions(afterService)).toEqual(beforeDecisions);
   expect(durableFacts(await snapshotEvents(afterService, alice)).slice(0, beforeEvents.length)).toEqual(beforeEvents);
-  const afterRows = await afterService.readProjection(alice, { name: "rich-thread" });
+  const afterRows = (await afterService.readProjection(alice, { name: "rich-thread" })).rows;
   for (const row of beforeThread) expect(afterRows.find((candidate) => candidate.key === row.key)).toEqual(row);
 
   // Tenant isolation (an authorization property) is identical too: another tenant reads nothing.
@@ -215,7 +215,7 @@ test("deleting the RuVector index changes no behavior or authorization; cognitio
   expect(beforeDecisions.runStartMallory).toContain("mallory may not start runs");
   await beforeService.updateSharedState(alice, { threadId: "thread:cognition-shared", update: { snapshot: { todos: [{ id: "agent", text: "agent todo" }] } }, idempotencyKey: "cognition-shared-1" });
   const beforeShared = await beforeService.readSharedState(alice, { threadId: "thread:cognition-shared" });
-  const beforeChatThreadRow = (await beforeService.readProjection(alice, { name: "conversation-thread-history" })).find((row) => row.key === "thread/thread:cognition-chat");
+  const beforeChatThreadRow = ((await beforeService.readProjection(alice, { name: "conversation-thread-history" })).rows).find((row) => row.key === "thread/thread:cognition-chat");
   const beforeEvents = durableFacts(await snapshotEvents(beforeService, alice));
 
   await first.close();
@@ -264,7 +264,7 @@ test("deleting the RuVector index changes no behavior or authorization; cognitio
   const rebuiltProbe = (await startAndAwait(afterService, alice, probeAgent.id, { query: PROBE_TOKENS }, "thread:cognition-probe", "cognition-probe-2")) as ProbeResult;
   expect(rebuiltProbe.answer).toBe(beforeProbe.answer);
   expect(seedRefs(rebuiltProbe, seedRunIds)).toHaveLength(SEED_COUNT);
-  const rebuiltChatThreadRow = (await afterService.readProjection(alice, { name: "conversation-thread-history" })).find((row) => row.key === "thread/thread:cognition-chat");
+  const rebuiltChatThreadRow = ((await afterService.readProjection(alice, { name: "conversation-thread-history" })).rows).find((row) => row.key === "thread/thread:cognition-chat");
   expect(rebuiltChatThreadRow).toEqual(beforeChatThreadRow);
 
   // Cognition is not an authority: destroying the index mid-flight leaves behavior, authorization

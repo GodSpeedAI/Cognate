@@ -53,6 +53,8 @@ export interface PostgresStoreOptions {
    * Notifications accelerate delivery; this bounds staleness when one is lost. 0 disables the timer.
    */
   readonly pollMs?: number;
+  /** Driver debug logger (query text + parameters) for diagnosing statement-level issues. */
+  readonly debug?: (connection: number, query: string, parameters: unknown[], paramTypes: unknown[]) => void;
 }
 
 export class PostgresStoreError extends Error {
@@ -146,13 +148,17 @@ export interface PostgresStoreHandle {
 }
 
 export async function openPostgresStore(options: PostgresStoreOptions): Promise<PostgresStoreHandle> {
-  const schema = options.schema ?? "cognate";
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schema)) throw new PostgresStoreError(`invalid PostgreSQL schema name "${schema}"`);
+  // Lowercase-only: schema names are spliced unquoted in a few DDL positions (CREATE SCHEMA, SET
+  // search_path) where PostgreSQL case-folds, while identifier fragments quote case-sensitively —
+  // a mixed-case name would silently become two schemas. Lowercase makes every reference agree.
+  const schema = (options.schema ?? "cognate").toLowerCase();
+  if (!/^[a-z_][a-z0-9_]*$/.test(schema)) throw new PostgresStoreError(`invalid PostgreSQL schema name "${schema}" (lowercase letters, digits, underscores only)`);
   // A not-yet-opened sql instance cannot escape identifiers, so the schema/table names are validated
   // above and spliced as literal text (qualified with the escaped schema via fragments below).
   const sql = postgres(options.url, {
     max: options.maxConnections ?? 10,
     onnotice: () => {},
+    ...(options.debug ? { debug: options.debug } : {}),
     // Durability over speed: PostgreSQL's defaults (synchronous_commit=on, fsync=on, full_page_writes=on)
     // persist a committed decision before the store reports it (spec §31.2); nothing here relaxes them.
   });
@@ -192,7 +198,10 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
 
   // ── Cross-process commit fan-out ────────────────────────────────────────────────
 
-  const channel = `${schema}_committed`;
+  // PostgreSQL identifiers (channel names included) are limited to 63 bytes; a long schema name is
+  // folded into a deterministic short channel so every process opening the same schema derives the
+  // same one.
+  const channel = `${schema}_committed`.length <= 63 ? `${schema}_committed` : `cognate_${createHash("sha256").update(schema).digest("hex").slice(0, 32)}`;
   // PostgreSQL notifies the sending session too, so a commit must be delivered to local listeners
   // exactly once: the local path advances the cursor and invokes listeners directly, and the drain
   // skips notifications carrying this store's own instance id.

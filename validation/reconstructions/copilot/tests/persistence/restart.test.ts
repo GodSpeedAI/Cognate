@@ -35,7 +35,7 @@ import {
   snapshotEvents,
   snapshotProjections,
   snapshotRuns,
-  sqliteIntegrity,
+  storeIntegrity,
   untilRunStatus,
 } from "./support.ts";
 
@@ -279,7 +279,7 @@ for (;;) {
     await proc.exited;
 
     // The store survives the kill intact, and the committed wait is still there.
-    expect(sqliteIntegrity(store)).toBe("ok");
+    expect(await storeIntegrity(store)).toBe("ok");
     const reopened = await createRemainingJourneysApp(store);
     const service = reopened.runtime.service;
     const events = await snapshotEvents(service, alice);

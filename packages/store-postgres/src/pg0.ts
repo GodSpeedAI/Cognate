@@ -4,6 +4,7 @@
 // an explicit `postgres://` URL always works without this module.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 export interface Pg0Options {
   /** pg0 instance name (default `cognate-dev`, matching `just db-up`). */
@@ -33,11 +34,18 @@ function uriFrom(output: string): string | undefined {
   return output.match(/URI:\s*(postgres(?:ql)?:\/\/\S+)/)?.[1];
 }
 
-/** Resolve the pg0 binary without starting anything (exported for diagnostics and the justfile). */
+/** Resolve the pg0 binary without starting anything (exported for diagnostics and the justfile).
+ * `.tmp/pg0/pg0` (what `just db-setup` installs) is found from the working directory or any parent,
+ * so apps booted from a subdirectory locate the repo's pinned binary. */
 export function findPg0Bin(explicit?: string): string {
   if (explicit) return explicit;
   if (process.env.COGNATE_PG0_BIN) return process.env.COGNATE_PG0_BIN;
-  if (existsSync(".tmp/pg0/pg0")) return ".tmp/pg0/pg0";
+  for (let dir = process.cwd(); ; dir = dirname(dir)) {
+    const candidate = join(dir, ".tmp", "pg0", "pg0");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break; // filesystem root
+  }
   return "pg0";
 }
 
