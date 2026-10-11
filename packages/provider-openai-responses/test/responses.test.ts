@@ -14,7 +14,7 @@ test("nonstream Responses uses store:false and parses completed settlement",asyn
 test("stream cannot settle before response.completed",async()=>{
   const stream= new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"Hi"}\n\n'));c.close();}});
   const provider=openAIResponses({id:"fixture",baseURL:"https://example.test/v1",model:"m",credentials:apiKeySource(()=>"k"),fetch:async()=>new Response(stream)});
-  await expect(async()=>{for await(const _ of provider.stream({messages:[{role:"user",content:"hi"}]})){} }).toThrow();
+  await expect((async()=>{for await(const _ of provider.stream({messages:[{role:"user",content:"hi"}]})){} })()).rejects.toThrow();
 });
 test("completed stream yields final done",async()=>{
   const body='event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"Hello"}\n\nevent: response.completed\ndata: '+JSON.stringify({type:"response.completed",response:completed})+'\n\n';
