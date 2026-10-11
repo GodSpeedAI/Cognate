@@ -144,7 +144,7 @@ describe("J-RT-realitytrace", () => {
         expect(final.status).toBe("completed");
 
         // The trace (the thing dev tools actually read) is event-sourced and unaffected.
-        const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "session-trace" });
+        const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "session-trace" })).rows;
         const trace = rows.find((r) => r.key === `trace/${sessionId}`)?.value as { readonly turns?: readonly { readonly tools?: readonly unknown[] }[] } | undefined;
         expect(trace?.turns?.[0]?.tools).toHaveLength(1);
 

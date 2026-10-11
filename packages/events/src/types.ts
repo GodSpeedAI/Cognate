@@ -118,6 +118,13 @@ export interface ProjectionCheckpoint {
   readonly error: { readonly position: number; readonly eventId: string; readonly message: string } | null;
 }
 
+/** Projection rows and the checkpoint describing how far the fold that produced them reached, read
+ * consistently: the checkpoint is never ahead of the rows it is returned with (DEBT-021). */
+export interface ProjectionSnapshot {
+  readonly checkpoint: ProjectionCheckpoint | undefined;
+  readonly rows: readonly { readonly key: string; readonly value: Json }[];
+}
+
 export interface ProjectionCommit {
   readonly name: string;
   readonly version: string;
@@ -156,6 +163,12 @@ export interface DurableStore {
   readProjection(name: string, key: string): Promise<Json | undefined>;
   /** All state entries ordered by key (code-point order), so replay comparisons are store-independent. */
   listProjection(name: string): Promise<{ readonly key: string; readonly value: Json }[]>;
+  /**
+   * Rows and checkpoint read consistently: the reported checkpoint is never ahead of the returned
+   * rows (DEBT-021). Optional — `readProjectionSnapshotFallback` composes the same guarantee from
+   * `getProjection` + `listProjection` for stores without a native snapshot read.
+   */
+  readProjectionSnapshot?(name: string): Promise<ProjectionSnapshot>;
   /** Delete a projection's state and checkpoint (derived data only). */
   resetProjection(name: string): Promise<void>;
 

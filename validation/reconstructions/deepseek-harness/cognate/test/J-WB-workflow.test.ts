@@ -120,6 +120,8 @@ describe("J-WB-capability-lifecycle", () => {
         const fa = { capabilityId: "capability.frontend-actualization", implementationId: "impl.native-build", provider: "native", executorKind: "llm" as const, setup: {} };
         await inv(client, "skill.bind", { binding: fa });
         const faKey = `binding/${fa.capabilityId}/${fa.implementationId}`;
+        // The fold of the bind must land before lifecycle.advance reads it (async fold on PostgreSQL).
+        await waitForRow<BindingRecord>(app, faKey, (b) => b.state === "IMPLEMENTATION_AVAILABLE");
         for (const to of ["REVIEWED", "INSTALLED", "AUTHORITY_GRANTED"] as const) {
           await inv(client, "skill.lifecycle.advance", { capabilityId: fa.capabilityId, implementationId: fa.implementationId, to });
           await waitForRow<BindingRecord>(app, faKey, (b) => b.state === to);

@@ -51,7 +51,7 @@ async function waitForCompletion(app: AppServer, runId: string) {
 async function snapshotProjections(app: AppServer): Promise<Record<string, unknown>> {
   const snapshot: Record<string, unknown> = {};
   for (const name of REBUILT_PROJECTIONS) {
-    const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name });
+    const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name })).rows;
     // Sort by key so row order (an implementation detail of storage, not of the events) never
     // affects the comparison.
     snapshot[name] = [...rows].sort((a, b) => a.key.localeCompare(b.key));
@@ -125,7 +125,7 @@ describe("Phase 8 §6: event history is authoritative (projections rebuild ident
           expect(finishedDelegate.status).toBe("completed");
           // Give the fire-and-forget child a moment to complete and land in the `subagents` projection.
           await waitForCondition(async () => {
-            const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" });
+            const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "subagents" })).rows;
             return rows.some((r) => r.key.startsWith(`${delegateSessionId}:`));
           }, 15_000).catch(() => {
             // If delegation never lands (e.g. scenario timing), the snapshot below still compares

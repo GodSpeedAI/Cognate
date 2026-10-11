@@ -60,14 +60,14 @@ describe("J-E-plan", () => {
         // Plan mode turns on immediately (before the model is even called) — the `plans`
         // projection reflects `plan.mode.changed` as soon as it commits.
         await waitForCondition(async () => {
-          const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" });
+          const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" })).rows;
           const row = rows.find((r) => r.key === sessionId);
           return Boolean(row && (row.value as { readonly on?: boolean }).on === true);
         });
 
         // `todo_write` lands next: the To-dos widget's data.
         await waitForCondition(async () => {
-          const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" });
+          const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" })).rows;
           const row = rows.find((r) => r.key === sessionId);
           const todos = (row?.value as { readonly todos?: readonly { readonly status: string }[] } | undefined)?.todos ?? [];
           return todos.length === 2 && todos.some((t) => t.status === "in_progress") && todos.some((t) => t.status === "pending");
@@ -79,6 +79,7 @@ describe("J-E-plan", () => {
           return continuations.some((c) => c.status === "OPEN" && c.type === "plan-review");
         });
         const pending = await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: run.runId });
+        await waitForCondition(async () => (await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: run.runId })).status === "waiting");
         expect(pending.status).toBe("waiting");
         const continuations = await app.runtime.service.listContinuations(LOCAL_OPERATOR, { runId: run.runId });
         const review = continuations.find((c) => c.status === "OPEN" && c.type === "plan-review")!;
@@ -87,7 +88,7 @@ describe("J-E-plan", () => {
         expect(payload.markdown).toContain("Read src/greet.ts");
 
         // The `plans` projection shows the review as pending before it's resolved.
-        const rowsBeforeApprove = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" });
+        const rowsBeforeApprove = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" })).rows;
         const stateBeforeApprove = rowsBeforeApprove.find((r) => r.key === sessionId)!.value as {
           readonly review?: { readonly status: string };
         };
@@ -102,7 +103,7 @@ describe("J-E-plan", () => {
           "Tool result: Plan approved — plan mode exited; carry out the plan starting with your next step.",
         );
 
-        const rowsAfter = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" });
+        const rowsAfter = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "plans" })).rows;
         const stateAfter = rowsAfter.find((r) => r.key === sessionId)!.value as unknown as {
           readonly on: boolean;
           readonly todos: readonly { readonly status: string }[];

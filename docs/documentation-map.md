@@ -116,7 +116,8 @@ adding, renaming, or removing a page means editing this list.
 [ADR-0009](decisions/ADR-0009-ui-react-astryx.md) ·
 [ADR-0010](decisions/ADR-0010-mcp.md) ·
 [ADR-0011](decisions/ADR-0011-runtime-service-contract-package.md) ·
-[ADR-0012](decisions/ADR-0012-cognate-package-naming.md) — each states a decision, its
+[ADR-0012](decisions/ADR-0012-cognate-package-naming.md) ·
+[ADR-0013](decisions/ADR-0013-postgresql-authoritative-store.md) — each states a decision, its
 context, its consequences, and what it rejected. They are the canonical record of *why*; the explanation pages
 above are the canonical record of *what the code does today*. Where an ADR's status line predates
 the implementation, the decision still stands and the current status is in the ledger.

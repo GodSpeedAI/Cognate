@@ -5,7 +5,8 @@
 // an authority. They drive the reconstruction's own runtime composition
 // (`createRemainingJourneysApp`) at the service level — the same settlement surface the
 // reconstruction's journey tests assert against — with no DOM and no reference stack.
-import { Database } from "bun:sqlite";
+import postgres from "postgres";
+import { postgresUrl, schemaFor } from "../../cognate/src/store.ts";
 import type { StoredEvent } from "@godspeedai/cognate-events";
 import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 
@@ -65,7 +66,7 @@ export function assertPositionsNeverRegress(events: readonly StoredEvent[]): voi
 /** Projection rows keyed by projection name (service-level read; public projections only). */
 export async function snapshotProjections(service: RuntimeService, caller: Caller): Promise<Record<string, readonly { key: string; value: unknown }[]>> {
   const rows: Record<string, readonly { key: string; value: unknown }[]> = {};
-  for (const name of PROJECTION_NAMES) rows[name] = await service.readProjection(caller, { name });
+  for (const name of PROJECTION_NAMES) rows[name] = ((await service.readProjection(caller, { name }))).rows;
   return rows;
 }
 
@@ -77,48 +78,67 @@ export async function snapshotRuns(service: RuntimeService, caller: Caller, corr
 }
 
 /**
- * Raw derived-state rows straight from SQLite, as byte-exact TEXT. `projection_state.value` is the
- * JSON the fold committed; comparing these strings is the strongest "identical fold" check.
+ * Raw derived-state rows straight from the PostgreSQL schema, as byte-exact TEXT. `value::text` is
+ * the JSON the fold committed (deterministic for a given jsonb value); comparing these strings is
+ * the strongest "identical fold" check. The schema is derived from the data path exactly as the
+ * app's `storeConfigFor` derives it.
  */
-export function dumpDerivedRows(path: string): { state: unknown[]; checkpoints: unknown[] } {
-  const db = new Database(path, { readonly: true });
+function schemaOf(dataPath: string): string {
+  return schemaFor(dataPath);
+}
+
+function poolFor(dataPath: string): postgres.Sql {
+  return postgres(postgresUrl(), { max: 1, onnotice: () => {} });
+}
+
+export async function dumpDerivedRows(dataPath: string): Promise<{ state: unknown[]; checkpoints: unknown[] }> {
+  const sql = poolFor(dataPath);
+  const schema = schemaOf(dataPath);
   try {
     return {
-      state: db.query("SELECT name, key, value FROM projection_state ORDER BY name, key").all(),
-      checkpoints: db.query("SELECT name, version, position, status FROM projection_checkpoints ORDER BY name").all(),
+      state: await sql`SELECT name, key, value::text AS value FROM ${sql(schema)}.projection_state ORDER BY name, key`,
+      checkpoints: (await sql`SELECT name, version, position, status FROM ${sql(schema)}.projection_checkpoints ORDER BY name`).map((row) => ({ ...row, position: Number(row.position) })),
     };
   } finally {
-    db.close();
+    await sql.end({ timeout: 1 });
   }
 }
 
-export function countDerivedRows(path: string): { state: number; checkpoints: number } {
-  const db = new Database(path, { readonly: true });
+export async function countDerivedRows(dataPath: string): Promise<{ state: number; checkpoints: number }> {
+  const sql = poolFor(dataPath);
+  const schema = schemaOf(dataPath);
   try {
     return {
-      state: (db.query("SELECT COUNT(*) AS n FROM projection_state").get() as { n: number }).n,
-      checkpoints: (db.query("SELECT COUNT(*) AS n FROM projection_checkpoints").get() as { n: number }).n,
+      state: Number((await sql`SELECT COUNT(*) AS n FROM ${sql(schema)}.projection_state`)[0]!.n),
+      checkpoints: Number((await sql`SELECT COUNT(*) AS n FROM ${sql(schema)}.projection_checkpoints`)[0]!.n),
     };
   } finally {
-    db.close();
+    await sql.end({ timeout: 1 });
   }
 }
 
-/** Operator-style deletion of every derived row, as `tests/integration/rebuild.test.ts` models it. */
-export function deleteDerivedRows(path: string): void {
-  const db = new Database(path);
+/** Operator-style deletion of every derived row; the fold must rebuild from events alone. */
+export async function deleteDerivedRows(dataPath: string): Promise<void> {
+  const sql = poolFor(dataPath);
+  const schema = schemaOf(dataPath);
   try {
-    db.exec("DELETE FROM projection_state; DELETE FROM projection_checkpoints;");
+    await sql`DELETE FROM ${sql(schema)}.projection_state`;
+    await sql`DELETE FROM ${sql(schema)}.projection_checkpoints`;
   } finally {
-    db.close();
+    await sql.end({ timeout: 1 });
   }
 }
 
-export function sqliteIntegrity(path: string): string {
-  const db = new Database(path, { readonly: true });
+/** Store integrity for PostgreSQL: the schema's authoritative log is present and queryable. */
+export async function storeIntegrity(dataPath: string): Promise<string> {
+  const sql = poolFor(dataPath);
+  const schema = schemaOf(dataPath);
   try {
-    return (db.query("PRAGMA integrity_check").get() as { integrity_check: string }).integrity_check;
+    const rows = await sql`SELECT count(*) AS n FROM ${sql(schema)}.events`;
+    return rows.length === 1 ? "ok" : "missing";
+  } catch {
+    return "missing";
   } finally {
-    db.close();
+    await sql.end({ timeout: 1 });
   }
 }

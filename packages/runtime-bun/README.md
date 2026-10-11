@@ -2,7 +2,7 @@
 
 The Cognate reference runtime for Bun: durable agent runs, human-in-the-loop continuations,
 artifacts, projections, and optional cognition, composed in-process behind a single
-`RuntimeService`. Point it at a SQLite file and your application's history survives restarts.
+`RuntimeService`. Point it at a SQLite file and your application's history survives restarts; point it at PostgreSQL (or a pg0-managed local instance) and multiple processes share the same history safely.
 
 **When to use this package:** to run agents for real — in a server, a worker, or a script. Pair it
 with [`@godspeedai/cognate-client`](https://www.npmjs.com/package/@godspeedai/cognate-client) to

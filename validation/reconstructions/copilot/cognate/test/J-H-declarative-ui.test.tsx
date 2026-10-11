@@ -82,7 +82,7 @@ test("J-H-declarative-ui lets only catalog-validated renders display and only de
   const events = await Array.fromAsync(journey.runtime.service.events(alice, { runId }));
   const renders = events.filter((event) => event.eventType === "ui.render");
   expect(renders.map((event) => (event.payload as { component?: unknown }).component)).toEqual([DECLARATIVE_COMPONENT, "UnknownPanel"]);
-  const rows = await journey.runtime.service.readProjection(alice, { name: "declarative-catalog" });
+  const rows = ((await journey.runtime.service.readProjection(alice, { name: "declarative-catalog" }))).rows;
   const row = rows[0]!;
   expect(row).toEqual(
     expect.objectContaining({
@@ -107,7 +107,7 @@ test("J-H-declarative-ui lets only catalog-validated renders display and only de
   expect(settled).toMatchObject({ status: "RESUMED" });
 
   // The refused render never produced a row, and settlement does not conjure one.
-  const after = await journey.runtime.service.readProjection(alice, { name: "declarative-catalog" });
+  const after = ((await journey.runtime.service.readProjection(alice, { name: "declarative-catalog" }))).rows;
   expect(after).toEqual([row]);
   expect(ui.getAllByRole("button", { name: "Select region" })).toHaveLength(1);
 });

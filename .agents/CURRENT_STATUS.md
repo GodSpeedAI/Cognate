@@ -1,27 +1,31 @@
 # Current status
 
-**Status revision:** 46
+**Status revision:** 47
 
-**Stage:** 0.1.2 documentation release shipped: 36 packages live with consumer READMEs
+**Stage:** PostgreSQL becomes an authoritative DurableStore: DEBT-011/014/021 closed on feat/debt-011-postgres-store
 
-**Summary:** The README overhaul shipped as 0.1.2 across all 36 packages through the fully automated pipeline: PR #29 (README overhaul + version reconciliation + Release-As 0.1.2) merged on operator approval, Release Please proposed 0.1.2 for all 36 (verified: 36 summaries, 36 version bumps, umbrella 0.1.0 to 0.1.2, no stray versions), and release run 37971472138 succeeded with 37/37 jobs green via OIDC. npm has 36/36 packages at 0.1.2; 36 tags and 36 GitHub releases exist (an apparent 2-release shortfall was a pagination artifact in the verification query, not missing releases). The post-publication CI clean-room passed against the published packages, and npm package pages now serve the new consumer READMEs.
+**Summary:** The mission branch delivers @godspeedai/cognate-store-postgres (postgres.js driver; PostgreSQL 18.1 via pinned, checksum-verified pg0 v0.15.2): the unchanged store conformance kit passes on PG; position order equals commit order across processes via a counter-row FOR UPDATE lock; multi-process writers are proven by 8 separate-process scenarios; runtimeServiceConformance passes on PG (28 tests); a verified one-transaction SQLite→PG migration with canonical-JSON digests, idempotency replay, refuse-double-import and dry-run; erasure now reaches every derived copy (store-level idempotency-snapshot redaction, continuation cascade, transitive recall closure, durable resumable jobs) on all three stores; projection reads carry their checkpoint end-to-end (store snapshot → service → Connect proto → client) and the client converges without sleeps, proven in gated React/client tests and cross-process over the wire; both reconstruction apps run on PG with all their suites green (harness 863/863, copilot 12 + 62); CI gains a pg0-backed matrix step; performance measured (~250 commits/s on TCP vs ~24k in-process SQLite; the documented trade).
 
 **Verified:**
-- npm view: 36/36 packages at 0.1.2
-- Release run 37971472138: success, 37/37 jobs (release-please + 36 OIDC publish jobs)
-- 36 v0.1.2 tags; 36 v0.1.2 GitHub releases (verified across all pagination pages — an initial count of 34 was per_page=100 truncation)
-- Post-publication clean-room green in CI (run 37971472337): installs @godspeedai/cognate-cli@0.1.2 + @godspeedai/cognate@0.1.2 from npm and runs the consumer smoke
-- Published npm pages serve the new READMEs (spot-checked store-sqlite)
-- check-readmes 36/36; just verify 78/78; full suite 768 tests / 0 fail
+- bun run check: 81 requirements (3 new PG gates CG-EVT-008/009/010), 0 blocked
+- just verify: 81/81 gates (incl. CG-SEC-001 erasure on PG); PG-backed suites green in CI config
+- packages/store-postgres: conformance 27/27, commit-order 6/6, migration 4/4, driver smoke 2/2
+- tests/integration: postgres-multiprocess 8/8 (5 consecutive runs), projection-convergence 5/5 stable, erasure 3/3 on PG
+- runtime service conformance on PG: 28/28 incl. restart; harness 863/863; copilot journeys 12/12 and persistence+architecture 62/62
+- Live boots: copilot AG-UI journey RUN_FINISHED durably in schema cognate_copilot_*; harness Connect StartRun events in cognate_harness_tmp_cg_home
+- bun run typecheck clean; check-readmes OK; docs map + decisions README register ADR-0013
 
 **Limits:**
-- create still requires --source (DEBT-016); provenance N/A per ADR-0012
-- Release-please PR-body parser still intermittently under-creates GitHub releases (34/36 created by the run; 2 bootstrapped via API) — upstream-worthy but fully mitigated
-- Full-suite load flakes (deepseek progress-event, ssh fixture race) remain documented and pass on rerun
+- PostgreSQL per-decision latency is TCP-bound (~3.5 ms p50, ~250 commits/s) vs in-process SQLite (~24k/s); SQLite stays supported for single-process apps (ADR-0013, evidence note)
+- runtime.idle() under heavy parallel load can exceed its 10 s budget on PG (intermittent copilot persistence-suite flake; passes standalone and on rerun)
+- Bun fetch caches repeated identical unary POSTs (DEBT-027); the framework's Bun transport defaults to cache: no-store
+- RuVector's PostgreSQL extension cannot install into pg0's PostgreSQL 18 (supports 14-17); pgvector 0.8.5 bundled is the PG-native vector path (evidence note)
+- Physical erasure on PG follows MVCC/WAL semantics: operator VACUUM + backup retention documented, no physical-erasure claim
 
-**Next:** Optional: registry-only mode for cognate create (DEBT-016); spec pass adopting the cognate-* names
+**Next:** Operator review + PR merge; release-please lockstep picks up cognate-store-postgres (already in linked-versions)
 
 **Evidence:**
-- .agents/evidence/2026-10-09-readme-overhaul.md
-- docs/package-readme-standard.md
-- docs/decisions/ADR-0012-cognate-package-naming.md
+- .agents/evidence/2026-10-09-postgres-migration.md
+- .agents/evidence/2026-10-09-postgres-performance.md
+- .agents/evidence/2026-10-09-ruvector-postgres-pg0.md
+- docs/decisions/ADR-0013-postgresql-authoritative-store.md

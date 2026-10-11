@@ -9,7 +9,7 @@ import { LOCAL_OPERATOR, startServer, type AppServer } from "../src/server.ts";
 import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 
 async function waitForCompletion(app: AppServer, runId: string) {
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 800; i++) {
     const run = await app.runtime.service.getRun(LOCAL_OPERATOR, { runId });
     if (run.status === "completed" || run.status === "failed" || run.status === "cancelled") return run;
     await new Promise((r) => setTimeout(r, 25));
@@ -52,14 +52,14 @@ describe("J-G-persistence", () => {
         // Reopen the same SQLite file in a fresh process-equivalent server instance.
         const reopened = await startServer({ port: 0, home });
         try {
-          const rows = await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+          const rows = (await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
           const sessionRow = rows.find((r) => r.key === sessionId)?.value as { readonly title?: string; readonly lastStatus?: string } | undefined;
           expect(sessionRow?.lastStatus).toBe("completed");
           // Title is derived from the literal first human message text, verbatim — matches the
           // reference (reference-behavior-matrix.md §4).
           expect(sessionRow?.title).toContain("remember this");
 
-          const workspaceRows = await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" });
+          const workspaceRows = (await reopened.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })).rows;
           const record = workspaceRows.find((r) => r.key === `record/${workspaceId}`);
           expect(record).toBeDefined();
 

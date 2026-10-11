@@ -3,3 +3,4 @@ export { ConcurrencyError, RecordConflictError, IdempotencyMismatchError, Envelo
 export { validateNewEvent, MAX_PAYLOAD_BYTES } from "./validate.ts";
 export { fingerprint } from "./fingerprint.ts";
 export { OutboxDispatcher, PermanentDeliveryError, type Backoff, type OutboxDispatcherOptions, type DrainReport } from "./dispatcher.ts";
+export { readProjectionSnapshot, readProjectionSnapshotFallback } from "./snapshot.ts";

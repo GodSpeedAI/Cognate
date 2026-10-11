@@ -1,6 +1,7 @@
 // Journey J-CFG-model-provider: save a model config -> provider mounted -> hot-swap to a new base
 // URL without restart; the secret never appears in any event, payload, or projection.
-import { Database } from "bun:sqlite";
+import postgres from "postgres";
+import { schemaFor, postgresUrl } from "../src/store.ts";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
@@ -41,22 +42,26 @@ describe("J-CFG-model-provider", () => {
 
         await app.runtime.idle();
 
-        const configRows = await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "model-config" });
+        const configRows = (await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "model-config" })).rows;
         const current = configRows.find((r) => r.key === "current")?.value as { readonly baseURL?: string } | undefined;
         expect(current?.baseURL).toBe(`http://127.0.0.1:${aimockB.port}/v1`);
 
-        // Scan the durable SQLite store for the secret. It must not appear anywhere.
-        const db = new Database(join(home, "app.sqlite"), { readonly: true });
+        // Scan the durable store for the secret. It must not appear anywhere (PostgreSQL: query the
+        // app's schema directly — payloads, metadata, records, and derived folds).
+        const schema = schemaFor(home);
+        const url = postgresUrl();
+        const scan = postgres(url, { max: 1, onnotice: () => {} });
         try {
-          const payloadRows = (db.query("SELECT payload FROM payloads").all() as { payload: string }[]).map((r) => r.payload);
-          const metadataRows = (db.query("SELECT metadata FROM events WHERE metadata IS NOT NULL").all() as { metadata: string }[]).map((r) => r.metadata);
-          const recordRows = (db.query("SELECT value FROM records").all() as { value: string }[]).map((r) => r.value);
-          const projectionRows = (db.query("SELECT value FROM projection_state").all() as { value: string }[]).map((r) => r.value);
+          const t = (name: string) => scan`${scan(schema)}.${scan(name)}`;
+          const payloadRows = (await scan`SELECT payload::text AS text FROM ${t("payloads")}`).map((r) => r.text as string);
+          const metadataRows = (await scan`SELECT metadata::text AS text FROM ${t("events")} WHERE metadata IS NOT NULL`).map((r) => r.text as string);
+          const recordRows = (await scan`SELECT value::text AS text FROM ${t("records")}`).map((r) => r.text as string);
+          const projectionRows = (await scan`SELECT value::text AS text FROM ${t("projection_state")}`).map((r) => r.text as string);
           for (const text of [...payloadRows, ...metadataRows, ...recordRows, ...projectionRows]) {
             expect(text ?? "").not.toContain(secretValue);
           }
         } finally {
-          db.close();
+          await scan.end({ timeout: 1 });
         }
       } finally {
         await app.stop();

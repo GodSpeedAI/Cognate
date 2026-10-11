@@ -48,7 +48,7 @@ describe("J-WB-steering", () => {
         expect(carries.slice(1).some(Boolean)).toBe(true);
         // 3. Queue-next was not consumed; it still waits for the next turn.
         const after = await waitUntil("inbox drained of steer", async () => {
-          const rows = await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "workbench" });
+          const rows = (await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "workbench" })).rows;
           const row = rows.find((r) => r.key === `inbox/${sessionId}`)?.value as Inbox | undefined;
           return row && row.nextStep.length === 0 ? row : undefined;
         });

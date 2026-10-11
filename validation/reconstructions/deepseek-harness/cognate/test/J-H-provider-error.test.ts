@@ -80,7 +80,7 @@ describe("J-H-provider-error", () => {
         expect(failurePayload.message).toBe("Internal server error");
 
         await app.runtime.idle();
-        const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+        const sessionRows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
         const sessionRow = sessionRows.find((r) => r.key === sessionId)?.value as { readonly lastStatus?: string } | undefined;
         expect(sessionRow?.lastStatus).toBe("failed");
       } finally {

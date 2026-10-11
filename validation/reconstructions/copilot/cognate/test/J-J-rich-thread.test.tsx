@@ -68,7 +68,7 @@ test("J-J-rich-thread replays chat, tool wait and render from durable state with
   expect(ui.getByLabelText("Replayed render").textContent).toBe("ThreadSummaryCard");
   expect(ui.getByLabelText("Replayed tool").textContent).toBe(`remote:${THREAD_INSPECT_CONTRACT.id}`);
 
-  const rows = await journey.runtime.service.readProjection(alice, { name: "rich-thread" });
+  const rows = ((await journey.runtime.service.readProjection(alice, { name: "rich-thread" }))).rows;
   const row = rows[0]!;
   expect(row).toEqual(
     expect.objectContaining({
@@ -85,5 +85,5 @@ test("J-J-rich-thread replays chat, tool wait and render from durable state with
   expect((await journey.runtime.service.getRun(alice, { runId: second.runId })).output).toEqual({ offers: [], tool: "no mounted capability" });
 
   // The first thread's replay is untouched by the second run.
-  expect(await journey.runtime.service.readProjection(alice, { name: "rich-thread" })).toContainEqual(row);
+  expect(((await journey.runtime.service.readProjection(alice, { name: "rich-thread" }))).rows).toContainEqual(row);
 });

@@ -1,6 +1,7 @@
 import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
 import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
+import { storeConfigFor } from "./store.ts";
 import { JOURNEY_B_AGENT } from "./constants.ts";
 import { browserOffer, RemoteCapabilitySurface, MountedCapability, RemoteCapabilityHistory } from "./ui/RemoteCapabilitySurface.tsx";
 
@@ -29,7 +30,8 @@ export interface JourneyBApp {
 }
 
 /** Isolated J-B runtime composition over the general remote-offer primitives. */
-export async function createJourneyBApp(store: string): Promise<JourneyBApp> {
+export async function createJourneyBApp(dataPath: string): Promise<JourneyBApp> {
+  const store = storeConfigFor(dataPath, "copilot");
   const runtime = await createRuntime({
     store,
     policy: allowCapabilities("journey-b", []),

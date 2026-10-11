@@ -90,7 +90,7 @@ test("the as-built reconstruction runs identically across restart with no cognit
   const beforeChatOutput = (await beforeService.getRun(alice, { runId: chat.runId })).output;
   const beforeDecisions = await authorizationDecisions(beforeService);
   const beforeEvents = durableFacts(await snapshotEvents(beforeService, alice));
-  const beforeThread = await beforeService.readProjection(alice, { name: "rich-thread" });
+  const beforeThread = (await beforeService.readProjection(alice, { name: "rich-thread" })).rows;
 
   await first.close();
   cleanup = async () => rmSync(directory, { recursive: true, force: true });
@@ -102,14 +102,14 @@ test("the as-built reconstruction runs identically across restart with no cognit
     rmSync(directory, { recursive: true, force: true });
   };
   const afterService = second.runtime.service;
-  await second.runtime.idle();
+  await second.runtime.idle(30_000);
 
   const chat2 = await afterService.startRun(alice, { agent: JOURNEY_K_AGENT, input: { message: "after restart" }, idempotencyKey: "nocog-chat-2", correlationId: "thread:nocognition-chat-2" });
   await untilRunStatus(afterService, alice, chat2.runId, "completed");
   expect(await afterService.getRun(alice, { runId: chat2.runId })).toMatchObject({ output: beforeChatOutput });
   expect(await authorizationDecisions(afterService)).toEqual(beforeDecisions);
   expect(durableFacts(await snapshotEvents(afterService, alice)).slice(0, beforeEvents.length)).toEqual(beforeEvents);
-  const afterRows = await afterService.readProjection(alice, { name: "rich-thread" });
+  const afterRows = (await afterService.readProjection(alice, { name: "rich-thread" })).rows;
   for (const row of beforeThread) expect(afterRows.find((candidate) => candidate.key === row.key)).toEqual(row);
 
   // Tenant isolation (an authorization property) is identical too: another tenant reads nothing.
@@ -202,7 +202,7 @@ test("deleting the RuVector index changes no behavior or authorization; cognitio
   expect(seedRunIds).toHaveLength(SEED_COUNT);
   // The cognitive indexer folds completed runs live; idle() guarantees the seeds are indexed
   // before anything recalls against them.
-  await first.idle();
+  await first.idle(30_000);
 
   // Baseline: deterministic behavior, working retrieval, authorization decisions, thread evidence.
   const chat = await beforeService.startRun(alice, { agent: JOURNEY_K_AGENT, input: { message: "cognition baseline" }, idempotencyKey: "cognition-chat-1", correlationId: "thread:cognition-chat" });
@@ -215,7 +215,7 @@ test("deleting the RuVector index changes no behavior or authorization; cognitio
   expect(beforeDecisions.runStartMallory).toContain("mallory may not start runs");
   await beforeService.updateSharedState(alice, { threadId: "thread:cognition-shared", update: { snapshot: { todos: [{ id: "agent", text: "agent todo" }] } }, idempotencyKey: "cognition-shared-1" });
   const beforeShared = await beforeService.readSharedState(alice, { threadId: "thread:cognition-shared" });
-  const beforeChatThreadRow = (await beforeService.readProjection(alice, { name: "conversation-thread-history" })).find((row) => row.key === "thread/thread:cognition-chat");
+  const beforeChatThreadRow = ((await beforeService.readProjection(alice, { name: "conversation-thread-history" })).rows).find((row) => row.key === "thread/thread:cognition-chat");
   const beforeEvents = durableFacts(await snapshotEvents(beforeService, alice));
 
   await first.close();
@@ -245,7 +245,7 @@ test("deleting the RuVector index changes no behavior or authorization; cognitio
     rmSync(directory, { recursive: true, force: true });
   };
   const afterService = second.service;
-  await second.idle();
+  await second.idle(30_000);
 
   // Deterministic behavior remains correct after the restart on the deleted index.
   const afterChatOutput = await startAndAwait(afterService, alice, JOURNEY_K_AGENT, { message: "unused" }, "thread:cognition-chat-3", "cognition-chat-3");
@@ -264,7 +264,7 @@ test("deleting the RuVector index changes no behavior or authorization; cognitio
   const rebuiltProbe = (await startAndAwait(afterService, alice, probeAgent.id, { query: PROBE_TOKENS }, "thread:cognition-probe", "cognition-probe-2")) as ProbeResult;
   expect(rebuiltProbe.answer).toBe(beforeProbe.answer);
   expect(seedRefs(rebuiltProbe, seedRunIds)).toHaveLength(SEED_COUNT);
-  const rebuiltChatThreadRow = (await afterService.readProjection(alice, { name: "conversation-thread-history" })).find((row) => row.key === "thread/thread:cognition-chat");
+  const rebuiltChatThreadRow = ((await afterService.readProjection(alice, { name: "conversation-thread-history" })).rows).find((row) => row.key === "thread/thread:cognition-chat");
   expect(rebuiltChatThreadRow).toEqual(beforeChatThreadRow);
 
   // Cognition is not an authority: destroying the index mid-flight leaves behavior, authorization

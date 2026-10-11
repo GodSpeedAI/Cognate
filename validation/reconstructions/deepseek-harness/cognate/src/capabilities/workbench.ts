@@ -88,11 +88,11 @@ export function workbenchComponent(options: {
   const contractOf = (id: WorkbenchCapabilityId): CapabilityContract => contracts.find((c) => c.id === id) as CapabilityContract;
 
   const readRows = async (prefix: string): Promise<{ key: string; value: unknown }[]> => {
-    const rows = await options.getService().readProjection(options.systemCaller, { name: "workbench" });
+    const rows = (await options.getService().readProjection(options.systemCaller, { name: "workbench" })).rows;
     return rows.filter((r) => r.key.startsWith(prefix)).map((r) => ({ key: r.key.slice(prefix.length), value: r.value }));
   };
   const readOne = async <T>(key: string, projection = "workbench"): Promise<T | undefined> => {
-    const rows = await options.getService().readProjection(options.systemCaller, { name: projection });
+    const rows = (await options.getService().readProjection(options.systemCaller, { name: projection })).rows;
     return rows.find((r) => r.key === key)?.value as T | undefined;
   };
   const record = async (events: readonly RecordedEvent[]): Promise<void> => {
@@ -124,7 +124,7 @@ export function workbenchComponent(options: {
       provide("task.create", async (input: { title: string; workspaceId: string; contract?: Partial<TaskContract> }) => {
         const title = (input.title ?? "").trim();
         if (!title) throw new Error("task.create: a title is required");
-        const workspaces = await options.getService().readProjection(options.systemCaller, { name: "workspaces" });
+        const workspaces = (await options.getService().readProjection(options.systemCaller, { name: "workspaces" })).rows;
         if (!workspaces.some((r) => r.key === `record/${input.workspaceId}`)) throw new Error(`task.create: unknown workspace ${input.workspaceId} — a task must bind to an explicit workspace`);
         const id = `task-${randomUUID().slice(0, 8)}`;
         const contract: Partial<TaskContract> = {
@@ -282,7 +282,7 @@ export function workbenchComponent(options: {
 
       provide("workflow.instantiate", async (input: { workflowId: string; workspaceId: string }) => {
         if (!(await readOne<WorkflowDefinition>(`workflow/${input.workflowId}`))) throw new Error(`workflow.instantiate: unknown workflow ${input.workflowId}`);
-        const workspaces = await options.getService().readProjection(options.systemCaller, { name: "workspaces" });
+        const workspaces = (await options.getService().readProjection(options.systemCaller, { name: "workspaces" })).rows;
         if (!workspaces.some((r) => r.key === `record/${input.workspaceId}`)) throw new Error(`workflow.instantiate: unknown workspace ${input.workspaceId}`);
         const instanceId = `wi-${randomUUID().slice(0, 8)}`;
         await record([{ type: "workbench.workflow.instantiated", payload: { instanceId, workflowId: input.workflowId, workspaceId: input.workspaceId } as unknown as Json }]);

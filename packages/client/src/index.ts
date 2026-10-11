@@ -378,13 +378,18 @@ class ProjectionStore implements Readable<readonly { readonly key: string; reado
   private readonly listeners = new Set<(value: readonly { readonly key: string; readonly value: Json }[] | undefined) => void>();
   private value: readonly { readonly key: string; readonly value: Json }[] | undefined;
   private gen = 0;
+  /** The greatest event position a refresh was scheduled for; a read counts as fresh only when its
+   * checkpoint covers this position (DEBT-021). */
+  private target = 0;
 
   constructor(
     private readonly name: string,
     private readonly service: RuntimeService,
     private readonly caller: Caller,
+    /** The engine's already-observed position: the initial read must cover it, or keep retrying. */
+    initialPosition = 0,
   ) {
-    this.scheduleRefresh();
+    this.scheduleRefresh(initialPosition);
   }
 
   get(): readonly { readonly key: string; readonly value: Json }[] | undefined {
@@ -398,26 +403,63 @@ class ProjectionStore implements Readable<readonly { readonly key: string; reado
     };
   }
 
-  scheduleRefresh(): void {
+  scheduleRefresh(afterPosition?: number): void {
+    if (afterPosition !== undefined && afterPosition > this.target) this.target = afterPosition;
     void this.readNow();
   }
 
-  /** Re-reads the projection now. The fold can complete just after the event that scheduled the last read, and a waiting run commits no further events, so consumers re-read on durable state changes. */
+  /** Re-read now; a manual refresh must still cover every position a scheduled refresh waits for. */
   refresh(): void {
     void this.readNow();
   }
 
+  /** Stop in-flight convergence loops (engine shutdown); a later refresh starts a fresh one. */
+  cancel(): void {
+    this.gen += 1;
+  }
+
+  /**
+   * Re-reads the projection until its checkpoint covers the triggering event's position. The first
+   * read is published immediately (the reader sees the best available state right away); a read
+   * whose checkpoint is behind the target returns rows the triggering event has not reached yet —
+   * the stale read that used to stick forever — so the loop keeps re-reading at a bounded rate
+   * (≤ 2 Hz) until covered, cancellable by a newer refresh or engine close. An errored projection
+   * stops the loop: the condition surfaces instead of spinning behind it.
+   */
   private async readNow(): Promise<void> {
     const gen = ++this.gen;
-    let value: readonly { readonly key: string; readonly value: Json }[];
-    try {
-      value = await this.service.readProjection(this.caller, { name: this.name });
-    } catch {
-      return;
+    let attempt = 0;
+    let published = false;
+    for (;;) {
+      let read: Awaited<ReturnType<RuntimeService["readProjection"]>>;
+      try {
+        read = await this.service.readProjection(this.caller, { name: this.name });
+      } catch {
+        return; // transient failure: keep the last published value; a later event or refresh() retries
+      }
+      if (gen !== this.gen) return;
+      const checkpoint = read.checkpoint;
+      // No fold yet (null checkpoint) means empty rows; that only covers a target of zero — a pending
+      // event position keeps the loop re-reading until the first fold lands (DEBT-021).
+      const covered = checkpoint !== null && checkpoint.position >= this.target && checkpoint.status !== "error";
+      const nothingPending = checkpoint === null && this.target === 0;
+      if (!published) {
+        this.value = read.rows;
+        for (const listener of this.listeners) listener(this.value);
+        published = true;
+      }
+      if (covered || nothingPending) {
+        if (read.rows !== this.value) {
+          this.value = read.rows;
+          for (const listener of this.listeners) listener(this.value);
+        }
+        return;
+      }
+      if (checkpoint?.status === "error") return;
+      attempt += 1;
+      await sleep(Math.min(500, 25 * 2 ** (Math.min(attempt, 5) - 1)));
+      if (gen !== this.gen) return;
     }
-    if (gen !== this.gen) return;
-    this.value = value;
-    for (const listener of this.listeners) listener(this.value);
   }
 }
 
@@ -489,6 +531,7 @@ class Engine {
     this.controller.abort();
     for (const store of this.threadStores.values()) store.close();
     this.threadStores.clear();
+    for (const store of this.projectionStores.values()) store.cancel();
     for (const entry of this.capabilities) {
       entry.unregistered = true;
       if (entry.renewal) clearInterval(entry.renewal);
@@ -516,7 +559,7 @@ class Engine {
       const store = this.runStores.get(event.runId);
       if (store) store.apply(event);
     }
-    for (const projection of this.projectionStores.values()) projection.scheduleRefresh();
+    for (const projection of this.projectionStores.values()) projection.scheduleRefresh(event.position);
     if (event.eventType === "run.waiting") void this.scanCapabilities();
   }
 
@@ -557,7 +600,9 @@ class Engine {
   getProjectionStore(name: string): ProjectionStore {
     let store = this.projectionStores.get(name);
     if (!store) {
-      store = new ProjectionStore(name, this.service, this.caller);
+      // Seed the convergence target with what this client has already observed: a projection read
+      // issued now must cover those events, even though no future event will re-trigger it.
+      store = new ProjectionStore(name, this.service, this.caller, this.position);
       this.projectionStores.set(name, store);
     }
     return store;

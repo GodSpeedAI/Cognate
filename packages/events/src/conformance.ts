@@ -248,6 +248,32 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       expect(await store.getProjection("p")).toBeUndefined();
       expect(await store.listProjection("p")).toEqual([]);
     });
+
+    test("readProjectionSnapshot returns rows with a checkpoint never ahead of them (DEBT-021)", async () => {
+      const store = await open();
+      if (!store.readProjectionSnapshot) throw new Error("store must implement readProjectionSnapshot");
+      // Unknown projection: no checkpoint, no rows.
+      const empty = await store.readProjectionSnapshot("absent");
+      expect(empty.checkpoint).toBeUndefined();
+      expect(empty.rows).toEqual([]);
+      // Rows and checkpoint agree after a fold, in code-point order.
+      await store.commitProjection({ name: "s", version: "1", fromPosition: 0, toPosition: 3, writes: [{ key: "zeta", value: 1 }, { key: "Alpha", value: 2 }] });
+      const snapshot = await store.readProjectionSnapshot("s");
+      expect(snapshot.checkpoint).toMatchObject({ name: "s", version: "1", position: 3, status: "ok", error: null });
+      expect(snapshot.rows).toEqual([{ key: "Alpha", value: 2 }, { key: "zeta", value: 1 }]);
+      // An advanced fold with all rows deleted still reports the fold position with empty rows —
+      // the checkpoint describes the fold that produced them, and [] is that state.
+      await store.commitProjection({ name: "s", version: "1", fromPosition: 3, toPosition: 5, writes: [{ key: "zeta", value: null }, { key: "Alpha", value: null }] });
+      const emptied = await store.readProjectionSnapshot("s");
+      expect(emptied.checkpoint).toMatchObject({ position: 5, status: "ok" });
+      expect(emptied.rows).toEqual([]);
+      // An errored projection reports its recorded error without advancing.
+      await store.commitProjection({ name: "s", version: "1", fromPosition: 5, toPosition: 6, writes: [{ key: "k", value: 1 }] });
+      await store.failProjection("s", { position: 7, eventId: "e7", message: "bad" });
+      const errored = await store.readProjectionSnapshot("s");
+      expect(errored.checkpoint).toMatchObject({ position: 6, status: "error", error: { position: 7, message: "bad" } });
+      expect(errored.rows).toEqual([{ key: "k", value: 1 }]);
+    });
   });
 
   describe(`${name}: blobs and erasure (§13.1, §32)`, () => {
@@ -272,6 +298,44 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       const tombstones = await store.readStream("$erasures");
       expect(tombstones.map((e) => [e.eventType, e.payload])).toEqual([["erasure.recorded", { eventId: id, reason: "gdpr-art-17", actorId: "operator-1" }]]);
       expect(JSON.stringify(await store.readAll())).not.toContain("a@example.com");
+    });
+
+    test("erasure redacts idempotency result snapshots derived from the erased event or its stream", async () => {
+      const store = await open();
+      // Two decisions whose recorded results copy event content: a transition snapshot (the
+      // continuation shape) and a fold snapshot taken on the same stream (the updateState shape —
+      // its result folds the stream's earlier events, including the soon-to-be-erased one).
+      const { events } = await store.commit({
+        idempotency: { scope: "actor:continuation.resume", key: "k1", fingerprint: "f1" },
+        appends: [{ streamId: "cont-1", expectedVersion: 0, events: [event("continuation.resumed", { input: { secret: "s3cr3t" } })] }],
+        result: { id: "cont-1", payload: { secret: "s3cr3t" } },
+      });
+      await store.commit({
+        idempotency: { scope: "actor:run.state.update", key: "k2", fingerprint: "f2" },
+        appends: [{ streamId: "cont-1", expectedVersion: 1, events: [event("state.changed", { snapshot: { v: 2 } })] }],
+        result: { state: { v: 2, prior: "s3cr3t" }, version: 2 },
+      });
+      // An unrelated row that references nothing erased.
+      await store.commit({ idempotency: { scope: "other", key: "k3", fingerprint: "f3" }, appends: [], result: { keep: true } });
+
+      expect(await store.commit({ idempotency: { scope: "actor:continuation.resume", key: "k1", fingerprint: "f1" }, appends: [] })).toMatchObject({ kind: "duplicate", result: { payload: { secret: "s3cr3t" } } });
+
+      await store.erasePayload(events[0]!.eventId, "dsar", "operator-1");
+
+      // Replay after erasure returns the tombstone, never the recorded content; re-replaying the
+      // request is deterministic (the same tombstone), and nothing discloses the secret.
+      const replayAfter = await store.commit({ idempotency: { scope: "actor:continuation.resume", key: "k1", fingerprint: "f1" }, appends: [] });
+      expect(replayAfter.kind).toBe("duplicate");
+      expect(JSON.stringify(replayAfter.result)).toContain("__erased");
+      expect(JSON.stringify(replayAfter)).not.toContain("s3cr3t");
+      // The fold-shaped snapshot on the same stream is redacted too: erasure of any event on the
+      // stream makes a stored fold a derived copy of erased content.
+      const foldReplay = await store.commit({ idempotency: { scope: "actor:run.state.update", key: "k2", fingerprint: "f2" }, appends: [] });
+      expect(JSON.stringify(foldReplay.result)).toContain("__erased");
+      expect(JSON.stringify(foldReplay)).not.toContain("s3cr3t");
+      // Unrelated idempotency rows are untouched.
+      const unrelated = await store.commit({ idempotency: { scope: "other", key: "k3", fingerprint: "f3" }, appends: [] });
+      expect(unrelated).toMatchObject({ kind: "duplicate", result: { keep: true } });
     });
   });
 

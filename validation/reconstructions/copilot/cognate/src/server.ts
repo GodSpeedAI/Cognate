@@ -10,6 +10,7 @@ import { registerRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import { devToken, devTokenAuthenticator } from "@godspeedai/cognate-protocol-connect-bun";
 import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { createRuntime, type ActionPolicy, type Runtime } from "@godspeedai/cognate-runtime-bun";
+import { storeConfigFor } from "./store.ts";
 import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 
@@ -112,13 +113,13 @@ function indexHtml(): string {
 export async function startServer(options: ServerOptions): Promise<AppServer> {
   const home = options.home;
   await mkdir(home, { recursive: true });
-  const storePath = join(home, "copilot.sqlite");
+  const store = storeConfigFor(home, "copilot");
 
   await loadJourneyABindings();
   await loadJourneyCBindings();
 
   const runtime = await createRuntime({
-    store: storePath,
+    store,
     policy: buildPolicy(),
     actions: buildActionPolicy(),
     // The served runtime hosts every canonical journey agent (J-A..J-K + open-ended MCP) so each

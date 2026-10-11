@@ -30,7 +30,7 @@ export function sessionHistoryComponent(getService: () => RuntimeService, semant
         const service = getService();
         const caller = { actor: ctx.actor, tenant: ctx.tenant ?? "local" };
         const runs = await service.listRuns(caller, { correlationId: `session:${input.sessionId}` });
-        const subagentRows = await service.readProjection(caller, { name: "subagents" });
+        const subagentRows = (await service.readProjection(caller, { name: "subagents" })).rows;
         // Critic round-4 P1-3: the UI's "N turns M steps" footer counter (`App.tsx`'s `sessionSteps`)
         // must read the same for a session reopened from history (`openSession` -> this capability)
         // as it does for a turn that just finished live in-memory (`useToolTimeline(...).length + 1`,

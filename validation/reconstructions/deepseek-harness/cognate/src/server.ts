@@ -8,6 +8,7 @@ import { allowCapabilities, rulePolicy } from "@godspeedai/cognate-kernel-api";
 import type { Policy } from "@godspeedai/cognate-kernel-api";
 import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 import { createRuntime } from "@godspeedai/cognate-runtime-bun";
+import { storeConfigFor } from "./store.ts";
 import type { ActionPolicy, Runtime } from "@godspeedai/cognate-runtime-bun";
 import { devToken, devTokenAuthenticator } from "@godspeedai/cognate-protocol-connect-bun";
 import { registerRuntimeService } from "@godspeedai/cognate-protocol-connect";
@@ -165,7 +166,7 @@ function indexHtml(): string {
 export async function startServer(options: ServerOptions): Promise<AppServer> {
   const home = options.home;
   await mkdir(home, { recursive: true });
-  const storePath = join(home, "app.sqlite");
+  const store = storeConfigFor(home, "harness");
   const secretsPath = join(home, "secrets.json");
   const secrets = secretStore(secretsPath);
 
@@ -190,7 +191,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const executionWorlds = createExecutionWorldRegistry([localExecutionWorld()]);
 
   const runtime = await createRuntime({
-    store: storePath,
+    store,
     // Usage pass U6 (RealityTrace, Option A): trace-worthy events get an observation intent
     // committed atomically with the event (the runtime's generic hook — no runtime dependency on
     // RealityTrace; the adapter only drains the outbox).
@@ -231,7 +232,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   serviceRef.current = runtime.service;
 
   // Seed `knownWorkspaceIds` from the persisted projection (survives restart).
-  for (const row of await runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })) {
+  for (const row of ((await runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" }))).rows) {
     if (row.key.startsWith("record/")) knownWorkspaceIds.add(row.key.slice("record/".length));
   }
 
@@ -256,7 +257,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   // itself durable state, only the fact `model.configured` is (via `model-config`) — a run resumed
   // after a restart (e.g. one paused on an open approval continuation) needs a live provider before
   // it can call `model.generate` again.
-  const modelConfigRows = await runtime.service.readProjection(LOCAL_OPERATOR, { name: "model-config" });
+  const modelConfigRows = ((await runtime.service.readProjection(LOCAL_OPERATOR, { name: "model-config" }))).rows;
   const currentModelConfig = modelConfigRows.find((r) => r.key === "current")?.value as
     | { readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
     | undefined;
@@ -286,7 +287,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
         // fail-closed: observations queue (at-least-once) and deliver once the plugin enables.
         enabled: async () => {
           try {
-            const rows = await getService().readProjection(LOCAL_OPERATOR, { name: "settings" });
+            const rows = (await getService().readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
             const current = rows.find((row) => row.key === "current")?.value as { plugins?: Record<string, boolean> } | undefined;
             return current?.plugins?.realitytrace === true;
           } catch {

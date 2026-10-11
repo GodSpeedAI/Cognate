@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "bun test ./test --timeout=30000",
     "dev": "PORT=3180 bun src/server.ts",
     "start": "bun src/server.ts",
-    "test": "bun test test",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

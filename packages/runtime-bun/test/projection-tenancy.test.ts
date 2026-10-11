@@ -20,8 +20,8 @@ test("readProjection returns only the caller tenant's partition", async () => {
   await runtime.service.startRun(a, { agent: "agent.echo", input: 2, idempotencyKey: "a2" });
   await runtime.service.startRun(b, { agent: "agent.echo", input: 3, idempotencyKey: "b1" });
   await runtime.idle();
-  expect(await runtime.service.readProjection(a, { name: "runs-by-agent" })).toEqual([{ key: "count", value: 2 }]);
-  expect(await runtime.service.readProjection(b, { name: "runs-by-agent" })).toEqual([{ key: "count", value: 1 }]);
-  expect(await runtime.service.readProjection({ actor: { id: "eve", kind: "user" }, tenant: "tenant-c" }, { name: "runs-by-agent" })).toEqual([]);
+  expect((await runtime.service.readProjection(a, { name: "runs-by-agent" })).rows).toEqual([{ key: "count", value: 2 }]);
+  expect((await runtime.service.readProjection(b, { name: "runs-by-agent" })).rows).toEqual([{ key: "count", value: 1 }]);
+  expect((await runtime.service.readProjection({ actor: { id: "eve", kind: "user" }, tenant: "tenant-c" }, { name: "runs-by-agent" })).rows).toEqual([]);
   await runtime.close();
 });

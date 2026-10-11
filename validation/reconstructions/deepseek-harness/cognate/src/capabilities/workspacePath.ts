@@ -24,7 +24,7 @@ export function workspacePathComponent(getService: () => RuntimeService, semanti
         const input = rawInput as WorkspacePathInput;
         const service = getService();
         const caller = { actor: ctx.actor, tenant: ctx.tenant ?? "local" };
-        const rows = await service.readProjection(caller, { name: "workspaces" });
+        const rows = ((await service.readProjection(caller, { name: "workspaces" }))).rows;
         const row = rows.find((r) => r.key === `record/${input.workspaceId}`);
         if (!row) throw new Error(`workspace.path: unknown workspaceId ${input.workspaceId}`);
         const value = row.value as { readonly root: string; readonly executionWorldId: string; readonly title: string };

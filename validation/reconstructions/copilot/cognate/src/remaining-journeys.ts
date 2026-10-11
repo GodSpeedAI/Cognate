@@ -17,6 +17,7 @@ import {
   JOURNEY_MCP_AGENT,
 } from "./constants.ts";
 import { deterministicModelComponent } from "./journey.ts";
+import { storeConfigFor } from "./store.ts";
 import { mcpToolContract } from "./mcp-bridge.ts";
 import { sharedStateCanvasProjection } from "./shared-state.ts";
 
@@ -369,9 +370,9 @@ export interface RemainingJourneysApp {
 }
 
 /** Isolated runtime composition over general Cognate primitives; no CopilotKit runtime is involved. */
-export async function createRemainingJourneysApp(store: string): Promise<RemainingJourneysApp> {
+export async function createRemainingJourneysApp(dataPath: string): Promise<RemainingJourneysApp> {
   const runtime = await createRuntime({
-    store,
+    store: storeConfigFor(dataPath, "copilot"),
     policy: allowCapabilities("remaining-journeys", ["model.generate"]),
     actions: { authorize: () => ({ allow: true, reason: "copilotkit reconstruction journeys make no external commitment" }) },
     agents: [journeyDAgent, journeyEAgent, journeyFAgent, journeyGAgent, journeyHAgent, journeyJAgent, journeyKAgent, journeyMcpAgent],

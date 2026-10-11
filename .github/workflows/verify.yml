@@ -52,6 +52,14 @@ jobs:
           done
       - name: Install the Playwright browser
         run: bunx playwright install --with-deps chromium
+      # PostgreSQL matrix (DEBT-011): the pinned pg0 binary (PostgreSQL 18.1 + pgvector, checksum
+      # verified) provides the server. pg0 is single-binary and runs as the non-root CI user.
+      # CG-SEC-001's gate (erasure) and the store/runtime/multi-process/convergence kits now run
+      # against PostgreSQL, so the database must be up before `just verify`.
+      - name: just db-setup && just db-up
+        run: |
+          just db-setup
+          just db-up
       # The regression baseline: substrate check, typecheck, gate-runner tests and
       # every gate claimed implemented. Live gates that need a real SEA-Forge,
       # sshd or WSL stay out of CI and are run locally (`just sea-forge-live`).
@@ -59,3 +67,10 @@ jobs:
         run: |
           export PATH="$HOME/.cargo/bin:$PWD/.tmp/realitytrace/bin:$PATH"
           just verify
+      - name: PostgreSQL-backed suites
+        run: |
+          bun test packages/store-postgres
+          bun test packages/runtime-bun/test/service-postgres.test.ts
+          bun test tests/integration/postgres-multiprocess.test.ts
+          bun test tests/integration/projection-convergence.test.ts
+          bun test tests/integration/erasure.test.ts

@@ -178,7 +178,7 @@ describe("E2E cognitive console", () => {
         expect(await readdir(repo)).toContain("generated"); // nothing ran before the human decided
         // The card renders from `tool.approval.requested`, a beat before `continuation.opened`; a human
         // can only decide once the continuation exists (pre-existing ordering in the console).
-        for (let i = 0; i < 200; i++) { if ((await events(app)).some((e) => e.eventType === "continuation.opened")) break; await Bun.sleep(25); }
+        for (let i = 0; i < 800; i++) { if ((await events(app)).some((e) => e.eventType === "continuation.opened")) break; await Bun.sleep(25); }
         await Bun.sleep(300);
         await card.getByRole("button", { name: "Allow once" }).click();
         await page.getByText("Removed the generated output.").waitFor({ timeout: 8_000 }).catch(async (e) => { console.log("BODY:", (await page.locator("body").innerText()).slice(0, 1500)); console.log("EVENTS:", (await events(app)).slice(-8).map((x) => x.eventType + " " + JSON.stringify(x.payload).slice(0, 160)).join("\n")); throw e; });

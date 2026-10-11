@@ -22,7 +22,7 @@ async function waitForCompletion(app: Awaited<ReturnType<typeof bootApp>>["app"]
 }
 
 async function readTrace(app: Awaited<ReturnType<typeof bootApp>>["app"], sessionId: string) {
-  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "session-trace" });
+  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "session-trace" })).rows;
   const row = rows.find((r) => r.key === `trace/${sessionId}`)?.value as
     | { readonly sessionId: string; readonly turns: readonly { readonly index: number; readonly userText: string; readonly requests: readonly { readonly requestNumber: number; readonly status: string; readonly toolNames: readonly string[]; readonly responseText?: string; readonly responseToolCalls?: readonly { readonly name: string }[]; readonly startedAt: string }[]; readonly tools: readonly { readonly toolCallId: string; readonly tool: string; readonly args: string; readonly status: string; readonly result?: string; readonly startedAt: string; readonly completedAt?: string }[] }[] }
     | undefined;

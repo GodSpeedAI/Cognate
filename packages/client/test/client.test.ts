@@ -225,8 +225,9 @@ describe("headless client (§25.1)", () => {
     // public refresh() lets a consumer re-read once durable state changes without waiting for a
     // stream event that may never come.
     let rows: { key: string; value: Json }[] = [];
+    let checkpoint: { position: number; status: "ok" | "error" } | null = null;
     const stub = {
-      readProjection: () => Promise.resolve(rows),
+      readProjection: () => Promise.resolve({ rows, checkpoint }),
       events: (_caller: unknown, request: { signal?: AbortSignal }) => (async function* () {
         const signal = request?.signal;
         if (signal?.aborted) return;

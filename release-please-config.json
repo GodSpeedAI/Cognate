@@ -13,6 +13,7 @@
       "type": "linked-versions",
       "groupName": "cognate SDK packages",
       "components": [
+        "cognate",
         "cognate-a2a",
         "cognate-ag-ui",
         "cognate-artifacts",
@@ -33,6 +34,8 @@
         "cognate-kernel-cordis",
         "cognate-mcp",
         "cognate-profile",
+        "cognate-profile-copilot",
+        "cognate-profile-harness",
         "cognate-projections",
         "cognate-proto",
         "cognate-protocol-connect",
@@ -44,11 +47,9 @@
         "cognate-runtime-api",
         "cognate-runtime-bun",
         "cognate-store-memory",
+        "cognate-store-postgres",
         "cognate-store-sqlite",
-        "cognate-ui-astryx",
-        "cognate-profile-copilot",
-        "cognate-profile-harness",
-        "cognate"
+        "cognate-ui-astryx"
       ]
     }
   ],

@@ -22,7 +22,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cognate/v1/runtime.proto.
  */
 export const file_cognate_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("Chhjb2duYXRlL3YxL3J1bnRpbWUucHJvdG8SCmNvZ25hdGUudjEipQEKE1N0cmVhbUV2ZW50c1JlcXVlc3QSGwoOYWZ0ZXJfcG9zaXRpb24YASABKARIAIgBARITCgZydW5faWQYAiABKAlIAYgBARIOCgZmb2xsb3cYAyABKAgSGwoOY29ycmVsYXRpb25faWQYBCABKAlIAogBAUIRCg9fYWZ0ZXJfcG9zaXRpb25CCQoHX3J1bl9pZEIRCg9fY29ycmVsYXRpb25faWQiKwoWUmVhZFNoYXJlZFN0YXRlUmVxdWVzdBIRCgl0aHJlYWRfaWQYASABKAkiUQoXUmVhZFNoYXJlZFN0YXRlUmVzcG9uc2USJQoFc3RhdGUYASABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSDwoHdmVyc2lvbhgCIAEoBCKjAQoYVXBkYXRlU2hhcmVkU3RhdGVSZXF1ZXN0EhEKCXRocmVhZF9pZBgBIAEoCRInCgZ1cGRhdGUYAiABKAsyFy5jb2duYXRlLnYxLlN0YXRlVXBkYXRlEhcKD2lkZW1wb3RlbmN5X2tleRgDIAEoCRIdChBleHBlY3RlZF92ZXJzaW9uGAQgASgESACIAQFCEwoRX2V4cGVjdGVkX3ZlcnNpb24iUwoZVXBkYXRlU2hhcmVkU3RhdGVSZXNwb25zZRIlCgVzdGF0ZRgBIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZRIPCgd2ZXJzaW9uGAIgASgEIiUKFVJlYWRQcm9qZWN0aW9uUmVxdWVzdBIMCgRuYW1lGAEgASgJIkUKD1Byb2plY3Rpb25FbnRyeRILCgNrZXkYASABKAkSJQoFdmFsdWUYAiABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUiRgoWUmVhZFByb2plY3Rpb25SZXNwb25zZRIsCgdlbnRyaWVzGAEgAygLMhsuY29nbmF0ZS52MS5Qcm9qZWN0aW9uRW50cnkizQIKFVJlbW90ZUNhcGFiaWxpdHlPZmZlchIKCgJpZBgBIAEoCRIQCghsZWFzZV9pZBgCIAEoCRINCgVhZ2VudBgDIAEoCRIQCghzY29wZV9pZBgEIAEoCRISCgpjYXBhYmlsaXR5GAUgASgJEhgKEGNvbnRyYWN0X3ZlcnNpb24YBiABKAkSKgoKYXR0cmlidXRlcxgHIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZRITCgtkZXNjcmlwdGlvbhgIIAEoCRIsCgxpbnB1dF9zY2hlbWEYCSABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSMgoNb3V0cHV0X3NjaGVtYRgKIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZUgAiAEBEhIKCmV4cGlyZXNfYXQYCyABKARCEAoOX291dHB1dF9zY2hlbWEirwIKGVB1Ymxpc2hSZW1vdGVPZmZlclJlcXVlc3QSEAoIbGVhc2VfaWQYASABKAkSDQoFYWdlbnQYAiABKAkSEgoKY2FwYWJpbGl0eRgDIAEoCRIYChBjb250cmFjdF92ZXJzaW9uGAQgASgJEioKCmF0dHJpYnV0ZXMYBSABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSEwoLZGVzY3JpcHRpb24YBiABKAkSLAoMaW5wdXRfc2NoZW1hGAcgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEjIKDW91dHB1dF9zY2hlbWEYCCABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWVIAIgBARIOCgZ0dGxfbXMYCSABKARCEAoOX291dHB1dF9zY2hlbWEiKAoXTGlzdFJlbW90ZU9mZmVyc1JlcXVlc3QSDQoFYWdlbnQYASABKAkiTQoYTGlzdFJlbW90ZU9mZmVyc1Jlc3BvbnNlEjEKBm9mZmVycxgBIAMoCzIhLmNvZ25hdGUudjEuUmVtb3RlQ2FwYWJpbGl0eU9mZmVyIiwKGFJldm9rZVJlbW90ZU9mZmVyUmVxdWVzdBIQCghvZmZlcl9pZBgBIAEoCSIbChlSZXZva2VSZW1vdGVPZmZlclJlc3BvbnNlMqEKCg5SdW50aW1lU2VydmljZRI4CghTdGFydFJ1bhIbLmNvZ25hdGUudjEuU3RhcnRSdW5SZXF1ZXN0Gg8uY29nbmF0ZS52MS5SdW4SNAoGR2V0UnVuEhkuY29nbmF0ZS52MS5HZXRSdW5SZXF1ZXN0Gg8uY29nbmF0ZS52MS5SdW4SOgoJQ2FuY2VsUnVuEhwuY29nbmF0ZS52MS5DYW5jZWxSdW5SZXF1ZXN0Gg8uY29nbmF0ZS52MS5SdW4SRAoMU3RyZWFtRXZlbnRzEh8uY29nbmF0ZS52MS5TdHJlYW1FdmVudHNSZXF1ZXN0GhEuY29nbmF0ZS52MS5FdmVudDABEmAKEUxpc3RDb250aW51YXRpb25zEiQuY29nbmF0ZS52MS5MaXN0Q29udGludWF0aW9uc1JlcXVlc3QaJS5jb2duYXRlLnYxLkxpc3RDb250aW51YXRpb25zUmVzcG9uc2USZgoTUmVzb2x2ZUNvbnRpbnVhdGlvbhImLmNvZ25hdGUudjEuUmVzb2x2ZUNvbnRpbnVhdGlvblJlcXVlc3QaJy5jb2duYXRlLnYxLlJlc29sdmVDb250aW51YXRpb25SZXNwb25zZRI/CgZJbnZva2USGS5jb2duYXRlLnYxLkludm9rZVJlcXVlc3QaGi5jb2duYXRlLnYxLkludm9rZVJlc3BvbnNlEkMKC0dldEFydGlmYWN0Eh4uY29nbmF0ZS52MS5HZXRBcnRpZmFjdFJlcXVlc3QaFC5jb2duYXRlLnYxLkFydGlmYWN0ElcKDlJlYWRQcm9qZWN0aW9uEiEuY29nbmF0ZS52MS5SZWFkUHJvamVjdGlvblJlcXVlc3QaIi5jb2duYXRlLnYxLlJlYWRQcm9qZWN0aW9uUmVzcG9uc2USRQoITGlzdFJ1bnMSGy5jb2duYXRlLnYxLkxpc3RSdW5zUmVxdWVzdBocLmNvZ25hdGUudjEuTGlzdFJ1bnNSZXNwb25zZRJOCgtVcGRhdGVTdGF0ZRIeLmNvZ25hdGUudjEuVXBkYXRlU3RhdGVSZXF1ZXN0Gh8uY29nbmF0ZS52MS5VcGRhdGVTdGF0ZVJlc3BvbnNlEloKD1JlYWRTaGFyZWRTdGF0ZRIiLmNvZ25hdGUudjEuUmVhZFNoYXJlZFN0YXRlUmVxdWVzdBojLmNvZ25hdGUudjEuUmVhZFNoYXJlZFN0YXRlUmVzcG9uc2USYAoRVXBkYXRlU2hhcmVkU3RhdGUSJC5jb2duYXRlLnYxLlVwZGF0ZVNoYXJlZFN0YXRlUmVxdWVzdBolLmNvZ25hdGUudjEuVXBkYXRlU2hhcmVkU3RhdGVSZXNwb25zZRJeChJQdWJsaXNoUmVtb3RlT2ZmZXISJS5jb2duYXRlLnYxLlB1Ymxpc2hSZW1vdGVPZmZlclJlcXVlc3QaIS5jb2duYXRlLnYxLlJlbW90ZUNhcGFiaWxpdHlPZmZlchJdChBMaXN0UmVtb3RlT2ZmZXJzEiMuY29nbmF0ZS52MS5MaXN0UmVtb3RlT2ZmZXJzUmVxdWVzdBokLmNvZ25hdGUudjEuTGlzdFJlbW90ZU9mZmVyc1Jlc3BvbnNlEmAKEVJldm9rZVJlbW90ZU9mZmVyEiQuY29nbmF0ZS52MS5SZXZva2VSZW1vdGVPZmZlclJlcXVlc3QaJS5jb2duYXRlLnYxLlJldm9rZVJlbW90ZU9mZmVyUmVzcG9uc2ViBnByb3RvMw", [file_google_protobuf_struct, file_cognate_v1_artifact, file_cognate_v1_capability, file_cognate_v1_continuation, file_cognate_v1_event, file_cognate_v1_execution]);
+  fileDesc("Chhjb2duYXRlL3YxL3J1bnRpbWUucHJvdG8SCmNvZ25hdGUudjEipQEKE1N0cmVhbUV2ZW50c1JlcXVlc3QSGwoOYWZ0ZXJfcG9zaXRpb24YASABKARIAIgBARITCgZydW5faWQYAiABKAlIAYgBARIOCgZmb2xsb3cYAyABKAgSGwoOY29ycmVsYXRpb25faWQYBCABKAlIAogBAUIRCg9fYWZ0ZXJfcG9zaXRpb25CCQoHX3J1bl9pZEIRCg9fY29ycmVsYXRpb25faWQiKwoWUmVhZFNoYXJlZFN0YXRlUmVxdWVzdBIRCgl0aHJlYWRfaWQYASABKAkiUQoXUmVhZFNoYXJlZFN0YXRlUmVzcG9uc2USJQoFc3RhdGUYASABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSDwoHdmVyc2lvbhgCIAEoBCKjAQoYVXBkYXRlU2hhcmVkU3RhdGVSZXF1ZXN0EhEKCXRocmVhZF9pZBgBIAEoCRInCgZ1cGRhdGUYAiABKAsyFy5jb2duYXRlLnYxLlN0YXRlVXBkYXRlEhcKD2lkZW1wb3RlbmN5X2tleRgDIAEoCRIdChBleHBlY3RlZF92ZXJzaW9uGAQgASgESACIAQFCEwoRX2V4cGVjdGVkX3ZlcnNpb24iUwoZVXBkYXRlU2hhcmVkU3RhdGVSZXNwb25zZRIlCgVzdGF0ZRgBIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZRIPCgd2ZXJzaW9uGAIgASgEIiUKFVJlYWRQcm9qZWN0aW9uUmVxdWVzdBIMCgRuYW1lGAEgASgJIkUKD1Byb2plY3Rpb25FbnRyeRILCgNrZXkYASABKAkSJQoFdmFsdWUYAiABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUingEKFFByb2plY3Rpb25DaGVja3BvaW50EgwKBG5hbWUYASABKAkSDwoHdmVyc2lvbhgCIAEoCRIQCghwb3NpdGlvbhgDIAEoBBIOCgZzdGF0dXMYBCABKAkSFgoOZXJyb3JfcG9zaXRpb24YBSABKAQSFgoOZXJyb3JfZXZlbnRfaWQYBiABKAkSFQoNZXJyb3JfbWVzc2FnZRgHIAEoCSJ8ChZSZWFkUHJvamVjdGlvblJlc3BvbnNlEiwKB2VudHJpZXMYASADKAsyGy5jb2duYXRlLnYxLlByb2plY3Rpb25FbnRyeRI0CgpjaGVja3BvaW50GAIgASgLMiAuY29nbmF0ZS52MS5Qcm9qZWN0aW9uQ2hlY2twb2ludCLNAgoVUmVtb3RlQ2FwYWJpbGl0eU9mZmVyEgoKAmlkGAEgASgJEhAKCGxlYXNlX2lkGAIgASgJEg0KBWFnZW50GAMgASgJEhAKCHNjb3BlX2lkGAQgASgJEhIKCmNhcGFiaWxpdHkYBSABKAkSGAoQY29udHJhY3RfdmVyc2lvbhgGIAEoCRIqCgphdHRyaWJ1dGVzGAcgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhMKC2Rlc2NyaXB0aW9uGAggASgJEiwKDGlucHV0X3NjaGVtYRgJIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZRIyCg1vdXRwdXRfc2NoZW1hGAogASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlSACIAQESEgoKZXhwaXJlc19hdBgLIAEoBEIQCg5fb3V0cHV0X3NjaGVtYSKvAgoZUHVibGlzaFJlbW90ZU9mZmVyUmVxdWVzdBIQCghsZWFzZV9pZBgBIAEoCRINCgVhZ2VudBgCIAEoCRISCgpjYXBhYmlsaXR5GAMgASgJEhgKEGNvbnRyYWN0X3ZlcnNpb24YBCABKAkSKgoKYXR0cmlidXRlcxgFIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZRITCgtkZXNjcmlwdGlvbhgGIAEoCRIsCgxpbnB1dF9zY2hlbWEYByABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSMgoNb3V0cHV0X3NjaGVtYRgIIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZUgAiAEBEg4KBnR0bF9tcxgJIAEoBEIQCg5fb3V0cHV0X3NjaGVtYSIoChdMaXN0UmVtb3RlT2ZmZXJzUmVxdWVzdBINCgVhZ2VudBgBIAEoCSJNChhMaXN0UmVtb3RlT2ZmZXJzUmVzcG9uc2USMQoGb2ZmZXJzGAEgAygLMiEuY29nbmF0ZS52MS5SZW1vdGVDYXBhYmlsaXR5T2ZmZXIiLAoYUmV2b2tlUmVtb3RlT2ZmZXJSZXF1ZXN0EhAKCG9mZmVyX2lkGAEgASgJIhsKGVJldm9rZVJlbW90ZU9mZmVyUmVzcG9uc2UyoQoKDlJ1bnRpbWVTZXJ2aWNlEjgKCFN0YXJ0UnVuEhsuY29nbmF0ZS52MS5TdGFydFJ1blJlcXVlc3QaDy5jb2duYXRlLnYxLlJ1bhI0CgZHZXRSdW4SGS5jb2duYXRlLnYxLkdldFJ1blJlcXVlc3QaDy5jb2duYXRlLnYxLlJ1bhI6CglDYW5jZWxSdW4SHC5jb2duYXRlLnYxLkNhbmNlbFJ1blJlcXVlc3QaDy5jb2duYXRlLnYxLlJ1bhJECgxTdHJlYW1FdmVudHMSHy5jb2duYXRlLnYxLlN0cmVhbUV2ZW50c1JlcXVlc3QaES5jb2duYXRlLnYxLkV2ZW50MAESYAoRTGlzdENvbnRpbnVhdGlvbnMSJC5jb2duYXRlLnYxLkxpc3RDb250aW51YXRpb25zUmVxdWVzdBolLmNvZ25hdGUudjEuTGlzdENvbnRpbnVhdGlvbnNSZXNwb25zZRJmChNSZXNvbHZlQ29udGludWF0aW9uEiYuY29nbmF0ZS52MS5SZXNvbHZlQ29udGludWF0aW9uUmVxdWVzdBonLmNvZ25hdGUudjEuUmVzb2x2ZUNvbnRpbnVhdGlvblJlc3BvbnNlEj8KBkludm9rZRIZLmNvZ25hdGUudjEuSW52b2tlUmVxdWVzdBoaLmNvZ25hdGUudjEuSW52b2tlUmVzcG9uc2USQwoLR2V0QXJ0aWZhY3QSHi5jb2duYXRlLnYxLkdldEFydGlmYWN0UmVxdWVzdBoULmNvZ25hdGUudjEuQXJ0aWZhY3QSVwoOUmVhZFByb2plY3Rpb24SIS5jb2duYXRlLnYxLlJlYWRQcm9qZWN0aW9uUmVxdWVzdBoiLmNvZ25hdGUudjEuUmVhZFByb2plY3Rpb25SZXNwb25zZRJFCghMaXN0UnVucxIbLmNvZ25hdGUudjEuTGlzdFJ1bnNSZXF1ZXN0GhwuY29nbmF0ZS52MS5MaXN0UnVuc1Jlc3BvbnNlEk4KC1VwZGF0ZVN0YXRlEh4uY29nbmF0ZS52MS5VcGRhdGVTdGF0ZVJlcXVlc3QaHy5jb2duYXRlLnYxLlVwZGF0ZVN0YXRlUmVzcG9uc2USWgoPUmVhZFNoYXJlZFN0YXRlEiIuY29nbmF0ZS52MS5SZWFkU2hhcmVkU3RhdGVSZXF1ZXN0GiMuY29nbmF0ZS52MS5SZWFkU2hhcmVkU3RhdGVSZXNwb25zZRJgChFVcGRhdGVTaGFyZWRTdGF0ZRIkLmNvZ25hdGUudjEuVXBkYXRlU2hhcmVkU3RhdGVSZXF1ZXN0GiUuY29nbmF0ZS52MS5VcGRhdGVTaGFyZWRTdGF0ZVJlc3BvbnNlEl4KElB1Ymxpc2hSZW1vdGVPZmZlchIlLmNvZ25hdGUudjEuUHVibGlzaFJlbW90ZU9mZmVyUmVxdWVzdBohLmNvZ25hdGUudjEuUmVtb3RlQ2FwYWJpbGl0eU9mZmVyEl0KEExpc3RSZW1vdGVPZmZlcnMSIy5jb2duYXRlLnYxLkxpc3RSZW1vdGVPZmZlcnNSZXF1ZXN0GiQuY29nbmF0ZS52MS5MaXN0UmVtb3RlT2ZmZXJzUmVzcG9uc2USYAoRUmV2b2tlUmVtb3RlT2ZmZXISJC5jb2duYXRlLnYxLlJldm9rZVJlbW90ZU9mZmVyUmVxdWVzdBolLmNvZ25hdGUudjEuUmV2b2tlUmVtb3RlT2ZmZXJSZXNwb25zZWIGcHJvdG8z", [file_google_protobuf_struct, file_cognate_v1_artifact, file_cognate_v1_capability, file_cognate_v1_continuation, file_cognate_v1_event, file_cognate_v1_execution]);
 
 /**
  * @generated from message cognate.v1.StreamEventsRequest
@@ -189,6 +189,59 @@ export const ProjectionEntrySchema: GenMessage<ProjectionEntry> = /*@__PURE__*/
   messageDesc(file_cognate_v1_runtime, 6);
 
 /**
+ * The fold checkpoint describing how far the projection that produced `entries` has processed the
+ * store. Never ahead of the entries in the same response (DEBT-021): a client that has observed a
+ * store event at a position greater than `position` knows its view is stale and re-reads.
+ *
+ * @generated from message cognate.v1.ProjectionCheckpoint
+ */
+export type ProjectionCheckpoint = Message<"cognate.v1.ProjectionCheckpoint"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string version = 2;
+   */
+  version: string;
+
+  /**
+   * @generated from field: uint64 position = 3;
+   */
+  position: bigint;
+
+  /**
+   * "ok" or "error".
+   *
+   * @generated from field: string status = 4;
+   */
+  status: string;
+
+  /**
+   * @generated from field: uint64 error_position = 5;
+   */
+  errorPosition: bigint;
+
+  /**
+   * @generated from field: string error_event_id = 6;
+   */
+  errorEventId: string;
+
+  /**
+   * @generated from field: string error_message = 7;
+   */
+  errorMessage: string;
+};
+
+/**
+ * Describes the message cognate.v1.ProjectionCheckpoint.
+ * Use `create(ProjectionCheckpointSchema)` to create a new message.
+ */
+export const ProjectionCheckpointSchema: GenMessage<ProjectionCheckpoint> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_runtime, 7);
+
+/**
  * @generated from message cognate.v1.ReadProjectionResponse
  */
 export type ReadProjectionResponse = Message<"cognate.v1.ReadProjectionResponse"> & {
@@ -196,6 +249,11 @@ export type ReadProjectionResponse = Message<"cognate.v1.ReadProjectionResponse"
    * @generated from field: repeated cognate.v1.ProjectionEntry entries = 1;
    */
   entries: ProjectionEntry[];
+
+  /**
+   * @generated from field: cognate.v1.ProjectionCheckpoint checkpoint = 2;
+   */
+  checkpoint?: ProjectionCheckpoint | undefined;
 };
 
 /**
@@ -203,7 +261,7 @@ export type ReadProjectionResponse = Message<"cognate.v1.ReadProjectionResponse"
  * Use `create(ReadProjectionResponseSchema)` to create a new message.
  */
 export const ReadProjectionResponseSchema: GenMessage<ReadProjectionResponse> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 7);
+  messageDesc(file_cognate_v1_runtime, 8);
 
 /**
  * @generated from message cognate.v1.RemoteCapabilityOffer
@@ -270,7 +328,7 @@ export type RemoteCapabilityOffer = Message<"cognate.v1.RemoteCapabilityOffer"> 
  * Use `create(RemoteCapabilityOfferSchema)` to create a new message.
  */
 export const RemoteCapabilityOfferSchema: GenMessage<RemoteCapabilityOffer> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 8);
+  messageDesc(file_cognate_v1_runtime, 9);
 
 /**
  * @generated from message cognate.v1.PublishRemoteOfferRequest
@@ -327,7 +385,7 @@ export type PublishRemoteOfferRequest = Message<"cognate.v1.PublishRemoteOfferRe
  * Use `create(PublishRemoteOfferRequestSchema)` to create a new message.
  */
 export const PublishRemoteOfferRequestSchema: GenMessage<PublishRemoteOfferRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 9);
+  messageDesc(file_cognate_v1_runtime, 10);
 
 /**
  * @generated from message cognate.v1.ListRemoteOffersRequest
@@ -344,7 +402,7 @@ export type ListRemoteOffersRequest = Message<"cognate.v1.ListRemoteOffersReques
  * Use `create(ListRemoteOffersRequestSchema)` to create a new message.
  */
 export const ListRemoteOffersRequestSchema: GenMessage<ListRemoteOffersRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 10);
+  messageDesc(file_cognate_v1_runtime, 11);
 
 /**
  * @generated from message cognate.v1.ListRemoteOffersResponse
@@ -361,7 +419,7 @@ export type ListRemoteOffersResponse = Message<"cognate.v1.ListRemoteOffersRespo
  * Use `create(ListRemoteOffersResponseSchema)` to create a new message.
  */
 export const ListRemoteOffersResponseSchema: GenMessage<ListRemoteOffersResponse> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 11);
+  messageDesc(file_cognate_v1_runtime, 12);
 
 /**
  * @generated from message cognate.v1.RevokeRemoteOfferRequest
@@ -378,7 +436,7 @@ export type RevokeRemoteOfferRequest = Message<"cognate.v1.RevokeRemoteOfferRequ
  * Use `create(RevokeRemoteOfferRequestSchema)` to create a new message.
  */
 export const RevokeRemoteOfferRequestSchema: GenMessage<RevokeRemoteOfferRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 12);
+  messageDesc(file_cognate_v1_runtime, 13);
 
 /**
  * @generated from message cognate.v1.RevokeRemoteOfferResponse
@@ -391,7 +449,7 @@ export type RevokeRemoteOfferResponse = Message<"cognate.v1.RevokeRemoteOfferRes
  * Use `create(RevokeRemoteOfferResponseSchema)` to create a new message.
  */
 export const RevokeRemoteOfferResponseSchema: GenMessage<RevokeRemoteOfferResponse> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_runtime, 13);
+  messageDesc(file_cognate_v1_runtime, 14);
 
 /**
  * Runtime service (ADR-0011). Caller identity comes from transport authentication, never from messages (§32).

@@ -1,5 +1,5 @@
 // Transport-independent runtime service and agent authoring contract (spec §8, §10, §12, §22, §32; ADR-0011).
-import type { Json, StoredEvent } from "@godspeedai/cognate-events";
+import type { Json, ProjectionCheckpoint, StoredEvent } from "@godspeedai/cognate-events";
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import type { StateUpdate } from "./state.ts";
 
@@ -100,6 +100,14 @@ export class ContinuationClosedError extends Error {
 // ── Service ────────────────────────────────────────────────────────────────────
 
 export type RunStatus = "running" | "waiting" | "completed" | "failed" | "cancelled";
+
+/** A public projection read: the caller-tenant rows plus the fold checkpoint that produced them. The
+ * checkpoint is never ahead of the rows (DEBT-021) — a reader compares it against the position of the
+ * events it has observed to know whether its view is fresh. */
+export interface ProjectionRead {
+  readonly rows: readonly { readonly key: string; readonly value: Json }[];
+  readonly checkpoint: ProjectionCheckpoint | null;
+}
 
 export interface RunView {
   readonly runId: string;
@@ -231,7 +239,7 @@ export interface RuntimeService {
   ): Promise<{ readonly outcome: "transitioned" | "duplicate" | "already_terminal"; readonly continuation: ContinuationView }>;
   invoke(caller: Caller, request: { readonly capability: string; readonly input: Json; readonly correlationId?: string; readonly idempotencyKey?: string; readonly deadline?: number }): Promise<Json>;
   getArtifact(caller: Caller, request: { readonly artifactId: string; readonly representation?: string }): Promise<{ readonly id: string; readonly name: string; readonly mediaType: string; readonly contentHash: string; readonly bytes: Uint8Array }>;
-  readProjection(caller: Caller, request: { readonly name: string }): Promise<readonly { readonly key: string; readonly value: Json }[]>;
+  readProjection(caller: Caller, request: { readonly name: string }): Promise<ProjectionRead>;
   /**
    * Write a non-terminal run's shared state as the caller: appends a caller-sourced `state.changed` event that the
    * agent observes through `RunContext.state`. Validated against the current state (`invalid_argument` if a patch

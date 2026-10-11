@@ -182,7 +182,7 @@ describe("J-AIM-aimock", () => {
         expect(events.some((e) => e.eventType === "message.completed")).toBe(false);
 
         await app.runtime.idle();
-        const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+        const sessionRows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
         const sessionRow = sessionRows.find((r) => r.key === sessionId)?.value as { readonly lastStatus?: string } | undefined;
         expect(sessionRow?.lastStatus).toBe("failed");
 

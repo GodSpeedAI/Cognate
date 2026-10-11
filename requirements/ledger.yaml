@@ -704,6 +704,33 @@ requirements:
     dependencies: [CG-EVT-004]
     status: implemented
     evidence: .agents/evidence/2026-09-25-audit-closure.md
+  - id: CG-EVT-008
+    title: 'A PostgreSQL DurableStore persists authoritative state and passes the unchanged conformance kit.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13; 31.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'PostgreSQL store', invariant: 'Same contract, same atomicity, durability defaults unrelaxed'}
+    acceptance: [AC-EVT-008-01]
+    gate: {cwd: ., run: 'bun test ./packages/store-postgres/test/conformance.test.ts', proof_paths: ['packages/store-postgres/test/conformance.test.ts']}
+    dependencies: [CG-EVT-003]
+    status: implemented
+    evidence: .agents/evidence/2026-10-09-postgres-migration.md
+  - id: CG-EVT-009
+    title: 'Multiple processes write one PostgreSQL store safely: position order equals commit order, no loss or duplication.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '10; 13.1', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Multi-process writers', invariant: 'Allocation order is commit order; conflicts are typed; leases recover'}
+    acceptance: [AC-EVT-009-01]
+    gate: {cwd: ., run: 'bun test ./tests/integration/postgres-multiprocess.test.ts', proof_paths: ['tests/integration/postgres-multiprocess.test.ts', 'packages/store-postgres/test/commit-order.test.ts']}
+    dependencies: [CG-EVT-008]
+    status: implemented
+    evidence: .agents/evidence/2026-10-09-postgres-migration.md
+  - id: CG-EVT-010
+    title: 'An existing SQLite store migrates to PostgreSQL with verified content and refuses double import.'
+    source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13; 32', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
+    semantic_binding: {entity: 'Store migration', invariant: 'Identifiers, positions and order preserved; derived data rebuilt, never trusted'}
+    acceptance: [AC-EVT-010-01]
+    gate: {cwd: ., run: 'bun test ./packages/store-postgres/test/migrate-from-sqlite.test.ts', proof_paths: ['packages/store-postgres/test/migrate-from-sqlite.test.ts']}
+    dependencies: [CG-EVT-008]
+    status: implemented
+    evidence: .agents/evidence/2026-10-09-postgres-migration.md
   - id: CG-KRN-009
     title: 'A component definition is independent of its runtime occurrences.'
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '8.3', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
@@ -966,3 +993,12 @@ acceptance_contracts:
   - id: AC-ARC-003-01
     requirement: CG-ARC-003
     expected: 'No package requires RxJS; the repository defines no sea grammar; DomainForge and RealityTrace are consumed as pinned releases or an external CLI tag; proto messages carry no domain ontology.'
+  - id: AC-EVT-008-01
+    requirement: CG-EVT-008
+    expected: 'The unchanged store conformance kit passes on PostgreSQL against a live server, including durability across reopen and erasure redaction of derived idempotency snapshots.'
+  - id: AC-EVT-009-01
+    requirement: CG-EVT-009
+    expected: 'Separate processes commit one store concurrently with position order equal to commit order, typed conflicts, disjoint outbox claims, lease recovery after kill, cross-process commit notifications, and all-or-nothing crash atomicity.'
+  - id: AC-EVT-010-01
+    requirement: CG-EVT-010
+    expected: 'A rich SQLite store migrates in one transaction with canonical-JSON digests verified through the public store API, idempotency replay verified, double import refused, dry-run writing nothing, and the source untouched.'

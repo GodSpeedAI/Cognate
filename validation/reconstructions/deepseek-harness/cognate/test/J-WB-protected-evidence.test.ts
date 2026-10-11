@@ -65,7 +65,7 @@ describe("J-WB-protected-evidence", () => {
         await expect(app.runtime.service.invoke(SYSTEM, { capability: "authority.elevate", input: { workspaceId, path: "src/greet.ts" } as never })).rejects.toThrow(/human decision/);
         await expect(inv(client, "authority.elevate", { workspaceId, path: "src/*.ts" })).rejects.toThrow(/globs cannot be elevated/);
         await inv(client, "authority.elevate", { workspaceId, path: "src/greet.ts" });
-        await waitUntil("elevation row", async () => ((await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "workbench" })).some((r) => r.key === `elevation/${workspaceId}`)));
+        await waitUntil("elevation row", async () => (((await app.runtime.service.readProjection({ actor: { id: "operator", kind: "user" }, tenant: "local" }, { name: "workbench" })).rows).some((r) => r.key === `elevation/${workspaceId}`)));
 
         // Elevation never means "allowed": the check now says approval is required.
         const check = (await inv(client, "authority.check", { workspaceId, taskId, tool: "edit", args: { file_path: "src/greet.ts" } })) as { outcome: string; rule: string };
