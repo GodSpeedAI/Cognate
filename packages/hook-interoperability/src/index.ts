@@ -181,6 +181,19 @@ export interface HookDispatchResult {
   readonly effect: HookEffect;
   readonly receipts: readonly HookReceipt[];
 }
+/**
+ * Conservative matcher subset. Unsupported native regex semantics MUST NOT silently
+ * widen a hook's activation domain. Rich matchers require a harness-specific
+ * conformance-tested evaluator, not JavaScript's unbounded user-supplied RegExp.
+ */
+export function matchHook(hook: HookDefinition, invocation: HookInvocation): boolean {
+  if (!hook.matcher || hook.matcher === "*") return true;
+  if (!invocation.toolName || !invocation.phase.startsWith("tool.")) return false;
+  const patterns = hook.matcher.split("|");
+  if (!patterns.length || patterns.length > 32) return false;
+  if (!patterns.every(pattern => /^[A-Za-z0-9_.:\-]+$/.test(pattern))) return false;
+  return patterns.includes(invocation.toolName);
+}
 export async function dispatchHooks(
   hooks: readonly HookDefinition[],
   invocation: HookInvocation,
@@ -195,6 +208,7 @@ export async function dispatchHooks(
     if (hook.phase !== invocation.phase) { receipt(hook.fidelity === "unmapped" ? "unmapped" : "not_applicable"); continue; }
     if (hook.fidelity !== "exact") { receipt("unmapped", "mapping requires explicit semantic conformance"); continue; }
     if (!hook.enabled) { receipt("disabled"); continue; }
+    if (!matchHook(hook, invocation)) { receipt("not_applicable", "matcher did not match or native syntax is unsupported"); continue; }
     if (hook.trust !== "trusted") { receipt("untrusted"); continue; }
     if (!options.authorization || !(await options.authorization.authorize(hook, invocation))) { receipt("unauthorized"); continue; }
     if (!options.executor) { receipt("no_executor"); continue; }

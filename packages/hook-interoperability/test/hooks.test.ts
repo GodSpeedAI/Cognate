@@ -26,13 +26,25 @@ describe("hook semantics and effect governance", () => {
   });
   test("approved guard failures fail closed; opaque native command never enters receipt", async () => {
     const trusted = inventory.hooks.map(h => ({ ...h, trust: "trusted" as const }));
-    const result = await dispatchHooks(trusted, { phase: "tool.before", sessionId: "s" }, {
+    const result = await dispatchHooks(trusted, { phase: "tool.before", sessionId: "s", toolName: "Bash" }, {
       authorization: { authorize: () => true },
       executor: { invoke: async () => { throw new Error("secret-hook-token"); } },
     });
     expect(result.effect.kind).toBe("deny");
     expect(JSON.stringify(result.receipts)).not.toContain("secret-hook-token");
     expect(JSON.stringify(result.receipts)).not.toContain("guard.sh");
+  });
+  test("tool matcher prevents unrelated tool execution and unsafe matcher widening", async () => {
+    let calls = 0;
+    const trusted = inventory.hooks.map(h => ({...h, trust: "trusted" as const}));
+    const options = {authorization: { authorize: () => true }, executor: {async invoke() { calls++; return {kind:"deny" as const,reason:"blocked"};}}};
+    const unrelated = await dispatchHooks(trusted, {phase:"tool.before",sessionId:"s",toolName:"Read"}, options);
+    expect(unrelated.effect.kind).toBe("allow");
+    const missing = await dispatchHooks(trusted, {phase:"tool.before",sessionId:"s"}, options);
+    expect(missing.effect.kind).toBe("allow");
+    const unsupported = await dispatchHooks(trusted.map(h => ({...h,matcher:".*"})), {phase:"tool.before",sessionId:"s",toolName:"Bash"}, options);
+    expect(unsupported.effect.kind).toBe("allow");
+    expect(calls).toBe(0);
   });
   test("unknown events remain explicitly unresolved", () => {
     const inv = parseDeclarativeHooks({ hooks: { SurprisingEvent: [{ hooks: [{ type: "command", command: "hello" }] }] } }, { harness: "claude", scope: "user", sourcePath: "/home/settings.json" });
