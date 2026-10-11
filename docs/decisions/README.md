@@ -25,6 +25,7 @@ that concern.
 | [ADR-0010](ADR-0010-mcp.md) | MCP tools as an authorized adapter over capabilities | Accepted (Phase 0 characterization complete) | `mcp` is implemented, proven over stdio; `CG-MCP-001` passes, [DEBT-013](../../.agents/DEBT.md) closed |
 | [ADR-0011](ADR-0011-runtime-service-contract-package.md) | A transport-independent `runtime-api` package owning `RuntimeService` and the agent surface | Accepted | Implemented; it is what makes Connect replaceable (`CG-WIR-003`) |
 | [ADR-0012](ADR-0012-cognate-package-naming.md) | SDK packages publish as `@godspeedai/cognate-<module>`; superseded names deprecated, umbrella `@godspeedai/cognate` | Accepted | 36 packages live on npm (0.1.0/0.1.1); `docs/package-naming.md` holds the old→new mapping; [DEBT-016](../../.agents/DEBT.md) narrowed |
+| [ADR-0013](ADR-0013-postgresql-authoritative-store.md) | PostgreSQL joins SQLite as an authoritative DurableStore (`@godspeedai/cognate-store-postgres`); position order equals commit order via a counter-row lock; projection reads carry their checkpoint; erasure redacts derived idempotency snapshots | Accepted | Multi-process proof and store/runtime conformance green on PostgreSQL 18.1 (pg0); CI matrix added to verify.yml; evidence in `.agents/evidence/2026-10-09-postgres-migration.md` |
 
 ## What the records share
 
