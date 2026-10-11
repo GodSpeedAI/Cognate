@@ -19,3 +19,7 @@ credential adapter and a governed subscription-backed Responses provider.
 This package never reads credentials from other applications (Codex, OpenCode, …) and never
 places tokens in URLs, logs, or durable events. A bearer token typed into a field is not an
 OAuth sign-in; use `@godspeedai/cognate-provider-auth` sources for that case.
+
+Conformance: `bun test packages/provider-openai-oauth/test`.
+
+License: Apache-2.0.
