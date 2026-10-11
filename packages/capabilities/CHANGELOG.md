@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-capabilities-v0.1.2...cognate-capabilities-v0.2.0) (2026-10-11)
+
+
+### Features
+
+* provider protocols, typed judgment, and governed agent hook interoperability ([#32](https://github.com/GodSpeedAI/Cognate/issues/32)) ([c8f0e77](https://github.com/GodSpeedAI/Cognate/commit/c8f0e77ba3e0242cf88d248b57a2522c14f0e42f))
+
 ## [0.1.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-capabilities-v0.1.1...cognate-capabilities-v0.1.2) (2026-10-09)
 
 

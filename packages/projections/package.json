@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-projections",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Checkpointed, idempotent, rebuildable projections over the durable event log (spec §11).",
   "type": "module",
   "license": "Apache-2.0",

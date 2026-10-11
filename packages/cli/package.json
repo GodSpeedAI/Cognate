@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-cli",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "`cognate create` (starter generation with profiles) and `cognate dev` (runtime + Connect + AG-UI + UI server) (spec §37 Phase 10).",
   "type": "module",
   "license": "Apache-2.0",

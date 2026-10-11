@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-continuations-v0.1.2...cognate-continuations-v0.2.0) (2026-10-11)
+
+
+### Miscellaneous Chores
+
+* **cognate-continuations:** Synchronize cognate SDK packages versions
+
 ## [0.1.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-continuations-v0.1.1...cognate-continuations-v0.1.2) (2026-10-09)
 
 

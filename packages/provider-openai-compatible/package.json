@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-provider-openai-compatible",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "ModelProvider for OpenAI-compatible chat completion endpoints (llama.cpp, vLLM, Ollama's /v1, hosted APIs) over fetch; no SDK.",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-memory-v0.1.2...cognate-store-memory-v0.2.0) (2026-10-11)
+
+
+### Miscellaneous Chores
+
+* **cognate-store-memory:** Synchronize cognate SDK packages versions
+
 ## [0.1.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-memory-v0.1.1...cognate-store-memory-v0.1.2) (2026-10-09)
 
 
