@@ -1,0 +1,6 @@
+{
+  "name":"@godspeedai/cognate-provider-typesafe","version":"0.1.0","description":"Native TypeSafe/System One typed decision provider, not a chat completion shim.","type":"module","license":"Apache-2.0",
+  "repository":{"type":"git","url":"git+https://github.com/GodSpeedAI/Cognate.git","directory":"packages/provider-typesafe"},
+  "engines":{"bun":">=1.4.0"},"publishConfig":{"access":"public"},"files":["src"],"exports":{".":"./src/index.ts"},
+  "dependencies":{"@godspeedai/cognate-capabilities":"workspace:*","@godspeedai/cognate-events":"workspace:*","@godspeedai/cognate-provider-auth":"workspace:*"}
+}

@@ -28,6 +28,8 @@ export interface ToolCall {
 
 export interface ModelRequest {
   readonly messages: readonly ModelMessage[];
+  /** Constraint text carried above the conversation (e.g. plan-backed Responses `instructions`). */
+  readonly instructions?: string;
   readonly tools?: readonly ToolDefinition[];
   /** Stream ordered progress through the invoking capability context when supported. */
   readonly stream?: boolean;
