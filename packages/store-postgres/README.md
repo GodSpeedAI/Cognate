@@ -61,9 +61,10 @@ await handle.close();
   not relax them.
 - `erasePayload` deletes the payload and keeps a tombstone envelope, as the store contract
   requires. PostgreSQL MVCC keeps the deleted bytes in dead tuples and WAL until autovacuum and
-  WAL recycling; run `VACUUM <schema>.payloads` when an operator needs the physical pages
-  reclaimed promptly, and treat backups/WAL archives as retaining erased content per your
-  retention policy.
+  WAL recycling; run `VACUUM <schema>.payloads` (or `just db-vacuum`) when an operator needs the
+  physical pages reclaimed promptly. WAL segments recycle once checkpoints pass `max_wal_size`, so
+  erased bytes in WAL age out on the same schedule — treat backups and archived WAL as retaining
+  erased content per your retention policy.
 - Ordering comparisons (record ids, projection keys) use byte order (`COLLATE "C"`), matching the
   other stores' code-point ordering.
 

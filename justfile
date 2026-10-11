@@ -74,6 +74,10 @@ db-backup:
 db-restore *args:
     bun scripts/db.ts restore {{args}}
 
+# Reclaim dead bytes left by erased payloads (spec §32 operator action); safe while apps run
+db-vacuum:
+    bun scripts/db.ts vacuum
+
 # Build a user-space OpenSSH (sshd) into .tmp/openssh for the live remote-workspace gate (no root, no system install)
 setup-openssh:
     bun scripts/setup-openssh.ts

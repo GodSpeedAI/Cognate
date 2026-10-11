@@ -4,6 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import postgres from "postgres";
 import { openPostgresStore, resolvePg0Url } from "@godspeedai/cognate-store-postgres";
 
 const INSTANCE = "cognate-dev";
@@ -54,6 +55,25 @@ switch (command) {
     await handle.close();
     break;
   }
+  case "vacuum": {
+    // Physical-erasure operator action (spec §32 note): the authoritative state is already erased;
+    // VACUUM reclaims the dead bytes PostgreSQL retains until then. Plain VACUUM (no FULL) takes
+    // only a brief lock and runs fine while applications stay connected.
+    const url = await resolvePg0Url({ name: rest[0] ?? INSTANCE });
+    // Opening the store verifies the schema is reachable, then the vacuum runs through a bare pool.
+    const probe = await openPostgresStore({ url, schema: SCHEMA, pollMs: 0 });
+    await probe.close();
+    const closer = postgres(url, { max: 1, onnotice: () => {} });
+    try {
+      for (const table of ["events", "payloads"]) {
+        await closer.unsafe(`VACUUM (ANALYZE) ${SCHEMA}.${table}`);
+      }
+    } finally {
+      await closer.end({ timeout: 5 });
+    }
+    console.log(`db: vacuumed ${SCHEMA}.events and ${SCHEMA}.payloads`);
+    break;
+  }
   case "backup": {
     const dump = bundledPgDump();
     if (!dump) {
@@ -93,6 +113,6 @@ switch (command) {
     break;
   }
   default:
-    console.log("usage: bun scripts/db.ts <up|down|status|migrate|backup|restore> [args]");
+    console.log("usage: bun scripts/db.ts <up|down|status|migrate|backup|restore|vacuum> [args]");
     process.exit(command ? 1 : 0);
 }

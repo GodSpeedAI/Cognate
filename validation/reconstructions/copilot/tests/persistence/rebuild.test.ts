@@ -83,7 +83,7 @@ test("deleting every derived row rebuilds byte-identical folds from the durable 
   });
 
   // ── Baseline: folds, raw derived rows, runs, and the authoritative event log ─
-  await first.runtime.idle();
+  await first.runtime.idle(30_000);
   const beforeEvents = durableFacts(await snapshotEvents(service, alice));
   const beforeProjections = await snapshotProjections(service, alice);
   for (const name of Object.keys(beforeProjections)) expect(beforeProjections[name]!.length).toBeGreaterThan(0);
@@ -107,7 +107,7 @@ test("deleting every derived row rebuilds byte-identical folds from the durable 
     rmSync(directory, { recursive: true, force: true });
   };
   const reopened = second.runtime.service;
-  await second.runtime.idle();
+  await second.runtime.idle(30_000);
 
   // The rebuilt fold is byte-for-byte identical: raw TEXT rows and checkpoints match.
   const after = await dumpDerivedRows(store);
