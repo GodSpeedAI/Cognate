@@ -67,6 +67,10 @@ jobs:
         run: |
           export PATH="$HOME/.cargo/bin:$PWD/.tmp/realitytrace/bin:$PATH"
           just verify
+      - name: Provider and agent interoperability conformance
+        run: |
+          bun test packages/hook-interoperability packages/agent-discovery packages/provider-auth packages/provider-openai-responses packages/provider-anthropic-compatible packages/provider-typesafe
+          bun test validation/reconstructions/deepseek-harness/cognate/test/J-CFG-model-provider.test.ts
       - name: PostgreSQL-backed suites
         run: |
           bun test packages/store-postgres
