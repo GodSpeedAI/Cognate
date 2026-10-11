@@ -4,6 +4,7 @@ import { allowCapabilities, type Policy } from "@godspeedai/cognate-kernel-api";
 import { localProvider } from "@godspeedai/cognate-provider-local";
 import { modelComponent } from "@godspeedai/cognate-provider-openai-compatible";
 import type { Projection } from "@godspeedai/cognate-projections";
+import { storeConfigFor } from "./store.ts";
 import type { AgentDefinition, Caller } from "@godspeedai/cognate-runtime-api";
 import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { loadJourneyABindings, loadJourneyCBindings } from "./domain.ts";
@@ -81,8 +82,9 @@ export interface JourneyAApp {
   close(): Promise<void>;
 }
 
-/** Real SQLite runtime and normal AG-UI adapter for J-A; no CopilotKit runtime is involved. */
-export async function createJourneyAApp(store: string): Promise<JourneyAApp> {
+/** Real PostgreSQL-backed runtime and normal AG-UI adapter for J-A; no CopilotKit runtime is involved. */
+export async function createJourneyAApp(dataPath: string): Promise<JourneyAApp> {
+  const store = storeConfigFor(dataPath, "copilot");
   // The model declares conversation lifecycle affordances. RuntimeService start/list APIs and
   // durable events realize those actions here; `model.generate` is the only kernel capability
   // this thin agent needs, so no no-op conversation providers are introduced.

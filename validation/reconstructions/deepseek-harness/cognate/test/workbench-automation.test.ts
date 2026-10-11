@@ -815,7 +815,7 @@ describe("nextFire — DST handling (croner-aligned)", () => {
     const results: Date[] = [];
 
     // Generate 200 consecutive fire times by feeding each result back as `after`
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 800; i++) {
       const next = nextFire(schedule, current);
       results.push(next);
       current = next;

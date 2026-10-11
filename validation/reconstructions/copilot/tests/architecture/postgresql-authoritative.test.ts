@@ -1,9 +1,9 @@
-// Phase 13 check 8: SQLite remains authoritative. The reconstruction server must open its
-// runtime home on a SQLite-backed store: createRuntime from @godspeedai/cognate-runtime-bun accepts a
-// SQLite file path, ":memory:", or an explicit DurableStore object ({ store }) — this pins the
-// server to the file-backed form (a .sqlite path derived from its home directory) and forbids
-// memory-store-as-authority wiring (":memory:", a memory DurableStore object, or a store-memory
-// import).
+// Phase 13 check 8 (as revised for the PostgreSQL migration): PostgreSQL is the authoritative
+// store. The reconstruction server wires createRuntime with the storeConfigFor helper — an explicit
+// `postgres` connection (COGNATE_POSTGRES_URL) or the pg0-managed local instance — with the schema
+// derived from its data directory. Memory-store-as-authority wiring stays forbidden, and the
+// framework-side manifest keeps both store packages (the SQLite store remains supported for
+// single-process apps).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
@@ -26,32 +26,30 @@ function callArguments(text: string, callee: string): string {
   throw new Error(`unbalanced parentheses in ${callee}(...) call`);
 }
 
-describe("Phase 13 §8: SQLite remains authoritative", () => {
+describe("Phase 13 §8: PostgreSQL is the authoritative store", () => {
   const serverText = readFileSync(SERVER, "utf8");
 
   test("server wires createRuntime from @godspeedai/cognate-runtime-bun", () => {
-    expect(serverText).toMatch(/import\s+\{[^}]*createRuntime[^}]*\}\s+from\s+"@cognate\/runtime-bun"/);
+    expect(serverText).toMatch(/import\s+\{[^}]*createRuntime[^}]*\}\s+from\s+"@godspeedai\/cognate-runtime-bun"/);
   });
 
-  test("createRuntime receives a store that is a SQLite file path, not :memory: and not an injected memory store", () => {
+  test("createRuntime receives the storeConfigFor(home) schema config, not :memory: and not an injected memory store", () => {
     const args = callArguments(serverText, "createRuntime");
-    const storeMatch = /store:\s*([^,\n}]+)/.exec(args);
-    expect(storeMatch).not.toBeNull();
-    const storeValue = storeMatch![1]!.trim();
-    // The file-backed form: an identifier that resolves to join(home, "<name>.sqlite").
-    expect(storeValue).toMatch(/^[A-Za-z_$][\w$.]*$/); // a plain identifier, not an object literal
-    expect(storeValue).not.toBe("undefined");
+    // The server wires `store,` (shorthand for the storeConfigFor result), never a bare path or
+    // an inline memory store.
+    expect(args).toMatch(/\bstore\s*,|store:\s*storeConfigFor/);
     const literalArgs = JSON.stringify(args);
     expect(literalArgs).not.toContain(":memory:");
     expect(args).not.toMatch(/(?:new\s+\w*[Mm]emory\w*|createMemoryStore|MemoryDurableStore)\s*\(/);
   });
 
-  test("the store path is derived from the runtime home as a .sqlite file", () => {
-    expect(serverText).toMatch(/join\(\s*home\s*,\s*["'][^"']*\.sqlite["']\s*\)/);
+  test("the store schema is derived from the runtime home via storeConfigFor", () => {
+    expect(serverText).toMatch(/storeConfigFor\(\s*home\s*,\s*["']copilot["']\s*\)/);
+    expect(serverText).toMatch(/from\s+"\.\/store\.ts"/);
   });
 
   test("server imports no memory store package", () => {
-    expect(serverText).not.toMatch(/@cognate\/store-memory/);
+    expect(serverText).not.toMatch(/@godspeedai\/cognate-store-memory/);
   });
 
   test("framework-side: runtime-bun ships the SQLite store (authority lives in SQLite, not cognition)", () => {

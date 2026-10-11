@@ -35,7 +35,7 @@ import {
   snapshotEvents,
   snapshotProjections,
   snapshotRuns,
-  sqliteIntegrity,
+  storeIntegrity,
   untilRunStatus,
 } from "./support.ts";
 
@@ -158,7 +158,7 @@ test("reconstruction settlement survives a clean restart on the same home", asyn
   expect(secondWrite).toEqual({ state: { todos: [{ id: "agent", text: "agent todo" }, { id: "user", text: "user todo" }] }, version: 2 });
 
   // ── Baseline settlement evidence ─────────────────────────────────────────────
-  await first.runtime.idle();
+  await first.runtime.idle(30_000);
   const baselineEvents = await snapshotEvents(service, alice);
   const beforeEvents = durableFacts(baselineEvents);
   expect(beforeEvents.length).toBeGreaterThan(0);
@@ -182,7 +182,7 @@ test("reconstruction settlement survives a clean restart on the same home", asyn
     rmSync(directory, { recursive: true, force: true });
   };
   const reopened = second.runtime.service;
-  await second.runtime.idle();
+  await second.runtime.idle(30_000);
 
   // Durable events: the reopened log begins with exactly the pre-restart log, positions intact.
   const afterEvents = await snapshotEvents(reopened, alice);
@@ -215,7 +215,7 @@ test("reconstruction settlement survives a clean restart on the same home", asyn
   // New settlement appends beyond the pre-restart positions: durable positions never regress.
   const chat2 = await reopened.startRun(alice, { agent: JOURNEY_K_AGENT, input: { message: "chat after restart" }, idempotencyKey: "restart-chat-2", correlationId: "thread:restart-chat-2" });
   await untilRunStatus(reopened, alice, chat2.runId, "completed");
-  await second.runtime.idle();
+  await second.runtime.idle(30_000);
   const finalEvents = await snapshotEvents(reopened, alice);
   assertPositionsNeverRegress(finalEvents);
   expect(durableFacts(finalEvents).slice(0, beforeEvents.length)).toEqual(beforeEvents);
@@ -279,7 +279,7 @@ for (;;) {
     await proc.exited;
 
     // The store survives the kill intact, and the committed wait is still there.
-    expect(sqliteIntegrity(store)).toBe("ok");
+    expect(await storeIntegrity(store)).toBe("ok");
     const reopened = await createRemainingJourneysApp(store);
     const service = reopened.runtime.service;
     const events = await snapshotEvents(service, alice);

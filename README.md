@@ -1114,6 +1114,7 @@ Cognate is a modular workspace. Every package below exists in `packages/` with i
 
 @godspeedai/cognate-store-memory
 @godspeedai/cognate-store-sqlite
+@godspeedai/cognate-store-postgres
 
 @godspeedai/cognate-cognitive-api
 @godspeedai/cognate-cognitive-memory

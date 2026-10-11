@@ -15,7 +15,8 @@ import { bootApp, bootAimock, withTempHome } from "./helpers.ts";
 type SettingsRow = Record<string, unknown>;
 
 async function readSettings(app: AppServer): Promise<SettingsRow | undefined> {
-  const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" });
+  await app.runtime.idle(); // let the projection fold cover every committed write
+  const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "settings" })).rows;
   return rows.find((r) => r.key === "current")?.value as SettingsRow | undefined;
 }
 
@@ -140,6 +141,9 @@ describe("J-SET-settings", () => {
           const continuations = await app.runtime.service.listContinuations(LOCAL_OPERATOR, { runId: askRun.runId });
           return continuations.some((c) => c.status === "OPEN");
         });
+        // The continuation record and the run's `run.waiting` marker commit in separate decisions;
+        // poll for the run view to fold the waiting status.
+        await waitForCondition(async () => (await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: askRun.runId })).status === "waiting");
         const waiting = await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: askRun.runId });
         expect(waiting.status).toBe("waiting");
         // Resolve (deny is enough — the branch is covered by J-D) so the run settles.
@@ -182,7 +186,7 @@ describe("J-SET-settings", () => {
         await waitForCompletion(app, overrideRun.runId);
 
         // The `sessions` projection folds each session's current access mode from its run inputs.
-        const sessionRows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" });
+        const sessionRows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "sessions" })).rows;
         const askRow = sessionRows.find((r) => r.key === sessionIdAsk)?.value as { readonly accessMode?: string } | undefined;
         const overrideRow = sessionRows.find((r) => r.key === sessionIdOverride)?.value as { readonly accessMode?: string } | undefined;
         const noAskRow = sessionRows.find((r) => r.key === sessionIdNoAsk)?.value as { readonly accessMode?: string } | undefined;

@@ -46,6 +46,38 @@ gates:
 setup-realitytrace:
     cargo install realitytrace --version 0.3.0 --locked --root .tmp/realitytrace
 
+# Install the pinned, checksum-verified pg0 binary (v0.15.2: PostgreSQL 18.1 + pgvector) into .tmp/pg0
+db-setup:
+    bun scripts/setup-pg0.ts
+
+# Start the local pg0 PostgreSQL instance used by store-postgres tests and apps (starts if needed)
+db-up:
+    bun scripts/db.ts up
+
+# Stop the local pg0 PostgreSQL instance (data persists under ~/.pg0/instances)
+db-down:
+    bun scripts/db.ts down
+
+# Show the local pg0 instance status and connection URI
+db-status:
+    bun scripts/db.ts status
+
+# Apply the store-postgres versioned schema migrations to the local instance
+db-migrate:
+    bun scripts/db.ts migrate
+
+# Dump the Cognate schema from the local instance into .tmp/backups/
+db-backup:
+    bun scripts/db.ts backup
+
+# Restore a backup file written by db-backup into the local instance
+db-restore *args:
+    bun scripts/db.ts restore {{args}}
+
+# Reclaim dead bytes left by erased payloads (spec §32 operator action); safe while apps run
+db-vacuum:
+    bun scripts/db.ts vacuum
+
 # Build a user-space OpenSSH (sshd) into .tmp/openssh for the live remote-workspace gate (no root, no system install)
 setup-openssh:
     bun scripts/setup-openssh.ts

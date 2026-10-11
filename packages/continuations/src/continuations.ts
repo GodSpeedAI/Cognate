@@ -373,6 +373,64 @@ export class ContinuationService {
     return this.terminalFallback(id);
   }
 
+  /**
+   * Erasure cascade (spec §32, DEBT-014): redact every continuation of one run in place. The record's
+   * `payload` and `resolution.input` are tombstoned (matching, timing, and status metadata survive),
+   * a `continuation.redacted` event is appended, and the transition events that carried payload or
+   * resolution copies are erased through the store (their envelope, and the transition idempotency
+   * snapshots, are redacted by `erasePayload` itself). Idempotent: already-redacted continuations are
+   * skipped, so an interrupted propagation can simply be re-run.
+   */
+  async redactForRun(runId: string, marker: { readonly reason: string; readonly erasedAt?: string }): Promise<number> {
+    const erasedAt = marker.erasedAt ?? new Date().toISOString();
+    const records = await this.store.listRecords(COLLECTION, { runId });
+    let redacted = 0;
+    for (const stored of records) {
+      const record = this.toRecord(stored);
+      // Erase the transition events that carried payload or resolution copies. erasePayload redacts
+      // the transition idempotency snapshots too (their event_ids name these very events).
+      for (const eventId of [record.createdEventId, record.resolution?.eventId]) {
+        if (!eventId) continue;
+        const event = await this.store.getEvent(eventId);
+        if (event && !event.erasure) await this.store.erasePayload(eventId, marker.reason, "erasure-cascade");
+      }
+      if (record.payload !== null || record.resolution?.input != null) {
+        const newValue: Record<string, Json> = {
+          ...stored.value,
+          payload: null,
+          resolution: record.resolution ? { ...record.resolution, input: null } : null,
+          erasure: { reason: marker.reason, erasedAt },
+        };
+        try {
+          const streamId = `continuation-${record.id}`;
+          await this.store.commit({
+            appends: [{
+              streamId,
+              expectedVersion: await this.store.streamVersion(streamId),
+              events: [{
+                eventType: "continuation.redacted",
+                schemaVersion: 1,
+                occurredAt: erasedAt,
+                tenant: record.tenant,
+                correlationId: record.correlationId,
+                causationId: null,
+                runId: record.runId,
+                scopeId: record.scopeId,
+                payload: { reason: marker.reason, erasedAt },
+              }],
+            }],
+            records: [{ collection: COLLECTION, id: record.id, expectedVersion: stored.version, value: newValue }],
+          });
+          redacted += 1;
+        } catch (error) {
+          if (error instanceof RecordConflictError || error instanceof ConcurrencyError) continue; // a concurrent redaction won; re-run resumes
+          throw error;
+        }
+      }
+    }
+    return redacted;
+  }
+
   // --- internals ---
 
   private toRecord(stored: StoredRecord): ContinuationRecord {
@@ -476,6 +534,13 @@ export class ContinuationService {
     });
 
     if (outcome.kind === "duplicate") {
+      // An erased-and-redacted transition replays a tombstone result, not a record snapshot; the
+      // duplicate outcome still holds, carrying the continuation's current (redacted) state.
+      const snapshot = outcome.result as Record<string, Json> | null;
+      if (snapshot && snapshot.__erased !== undefined) {
+        const current = await this.store.getRecord(COLLECTION, id);
+        if (current) return { kind: "duplicate", record: this.toRecord(current) };
+      }
       return { kind: "duplicate", record: this.recordFromSnapshot(outcome.result as Record<string, Json>) };
     }
     return { kind: "committed", record: this.recordFromSnapshot(resultSnapshot as Record<string, Json>) };

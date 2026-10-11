@@ -36,7 +36,7 @@ describe("Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui a
   });
 
   test("the boundary exists: application source imports @godspeedai/cognate-ag-ui (server + adapter composition)", () => {
-    const importers = importersOf(APP_SRC, /^@cognate\/ag-ui$/);
+    const importers = importersOf(APP_SRC, /^@godspeedai\/cognate-ag-ui$/);
     expect(importers.map(rel)).toContain("validation/reconstructions/copilot/cognate/src/server.ts");
   });
 
@@ -61,7 +61,7 @@ describe("Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui a
 });
 
 describe("Phase 13 §6: Astryx exists only in presentation implementation", () => {
-  const ASTRYX = /^@cognate\/ui-astryx(?:\/[\w./-]*)?$/;
+  const ASTRYX = /^@godspeedai\/cognate-ui-astryx(?:\/[\w./-]*)?$/;
 
   test("@godspeedai/cognate-ui-astryx is imported only from UI/presentation files", () => {
     const offenders: string[] = [];
@@ -87,13 +87,13 @@ describe("Phase 13 §6: Astryx exists only in presentation implementation", () =
 
 describe("Phase 13 §7: Cordis remains hidden behind Cognate", () => {
   test("reconstruction app imports neither @godspeedai/cognate-kernel-cordis nor cordis", () => {
-    const offenders = [...importersOf(APP_SRC, /^(?:@cognate\/kernel-cordis|cordis)(?:\/[\w./-]*)?$/), ...importersOf(APP_TEST, /^(?:@cognate\/kernel-cordis|cordis)(?:\/[\w./-]*)?$/)];
+    const offenders = [...importersOf(APP_SRC, /^(?:@godspeedai\/cognate-kernel-cordis|cordis)(?:\/[\w./-]*)?$/), ...importersOf(APP_TEST, /^(?:@godspeedai\/cognate-kernel-cordis|cordis)(?:\/[\w./-]*)?$/)];
     expect(offenders.map(rel)).toEqual([]);
   });
 
   test("kernel access in the app goes through @godspeedai/cognate-kernel-api / runtime packages", () => {
-    const kernelApi = importersOf(APP_SRC, /^@cognate\/kernel-api$/);
-    const runtime = importersOf(APP_SRC, /^@cognate\/runtime-(?:api|bun)$/);
+    const kernelApi = importersOf(APP_SRC, /^@godspeedai\/cognate-kernel-api$/);
+    const runtime = importersOf(APP_SRC, /^@godspeedai\/cognate-runtime-(?:api|bun)$/);
     expect(kernelApi.length + runtime.length).toBeGreaterThan(0);
   });
 
@@ -103,8 +103,10 @@ describe("Phase 13 §7: Cordis remains hidden behind Cognate", () => {
       .map((path) => ({ path, text: readFileSync(path, "utf8") }));
     expect(manifests.length).toBeGreaterThan(10);
     const cordisConsumers = manifests.filter((m) => /"cordis"\s*:/.test(m.text)).map((m) => m.path);
-    const kernelCordisConsumers = manifests.filter((m) => /"@cognate\/kernel-cordis"\s*:/.test(m.text)).map((m) => m.path);
+    const kernelCordisConsumers = manifests.filter((m) => /"@godspeedai\/cognate-kernel-cordis"\s*:/.test(m.text)).map((m) => m.path);
     expect(cordisConsumers.map(rel)).toEqual(["packages/kernel-cordis/package.json"]);
-    expect(kernelCordisConsumers.map(rel)).toEqual(["packages/runtime-bun/package.json"]);
+    // Framework packages only: the kernel adapter, the runtime composition root, and the execution
+    // world provider (governed operations). Application source stays free of cordis (asserted above).
+    expect(kernelCordisConsumers.map(rel)).toEqual(["packages/runtime-bun/package.json", "packages/execution/package.json"]);
   });
 });

@@ -80,7 +80,12 @@ export function serveRuntime(options: ServeOptions): RuntimeServer {
         request = new Request(request.url, { method: request.method, headers, body: request.body ?? undefined, duplex: request.body ? "half" : undefined } as RequestInit);
       }
 
-      return connectFetch(request);
+      const response = await connectFetch(request);
+      // Bun's fetch caches repeated identical unary POST responses (DEBT-027); the header protects
+      // every client — including hand-rolled createConnectTransport calls without a fetch override.
+      const headers = new Headers(response.headers);
+      headers.set("cache-control", "no-store");
+      return new Response(response.body, { status: response.status, headers });
     },
   });
 
@@ -92,9 +97,15 @@ export function serveRuntime(options: ServeOptions): RuntimeServer {
   };
 }
 
-/** A fetch-based Connect transport usable from Bun and browsers. */
+/** A fetch-based Connect transport usable from Bun and browsers.
+ *
+ * Bun's fetch caches repeated identical unary POST responses (observed on Bun 1.4.0: a client
+ * re-reading a projection kept receiving its first response until the cache entry was bypassed;
+ * recorded as DEBT-027), so this helper defaults to `cache: "no-store"` — a Bun runtime has no HTTP
+ * cache to benefit from anyway. Pass `fetch` explicitly to override. */
 export function connectTransport(baseUrl: string, options?: { readonly useBinaryFormat?: boolean }): Transport {
-  return createConnectTransport({ baseUrl, useBinaryFormat: options?.useBinaryFormat ?? false });
+  const fetchNoCache = ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: "no-store" })) as typeof globalThis.fetch;
+  return createConnectTransport({ baseUrl, useBinaryFormat: options?.useBinaryFormat ?? false, fetch: fetchNoCache });
 }
 
 /** Test/dev authenticator: `Bearer <tenant>:<principalId>`. Not for production use. */

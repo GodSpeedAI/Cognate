@@ -1,0 +1,31 @@
+{
+  "name": "@godspeedai/cognate-store-postgres",
+  "version": "0.1.2",
+  "description": "Authoritative DurableStore on PostgreSQL (spec \u00a713); multi-process writers.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/store-postgres"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@godspeedai/cognate-events": "workspace:*",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@godspeedai/cognate-store-sqlite": "workspace:*"
+  }
+}

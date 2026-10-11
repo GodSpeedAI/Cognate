@@ -63,6 +63,8 @@ describe("J-D-approval", () => {
           const continuations = await app.runtime.service.listContinuations(LOCAL_OPERATOR, { runId: run.runId });
           return continuations.some((c) => c.status === "OPEN");
         });
+        // The continuation record and the run's waiting marker commit in separate decisions; poll.
+        await waitForCondition(async () => (await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: run.runId })).status === "waiting");
         const pending = await app.runtime.service.getRun(LOCAL_OPERATOR, { runId: run.runId });
         expect(pending.status).toBe("waiting");
         const continuations = await app.runtime.service.listContinuations(LOCAL_OPERATOR, { runId: run.runId });

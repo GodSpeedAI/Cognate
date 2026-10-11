@@ -1159,3 +1159,1164 @@ Ran 12 tests across 11 files. [6.26s]
 
 reference restored: .tmp/ref/copilotkit exists=true
 finished: 2026-10-05T16:06:41.298Z
+
+=== reference-removed run ===
+started: 2026-10-10T01:21:46.625Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+(last 60 of 84 lines)
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [792.22ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [386.17ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [429.59ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [336.86ms]
+
+ 11 pass
+ 1 fail
+ 270 expect() calls
+Ran 12 tests across 11 files. [6.91s]
+
+--- retry (exit 0) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [508.85ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [694.10ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [368.89ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [277.41ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [373.81ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [357.08ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [421.08ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [415.61ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [434.41ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [347.80ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [325.61ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [305.69ms]
+
+ 12 pass
+ 0 fail
+ 277 expect() calls
+Ran 12 tests across 11 files. [5.14s]
+
+[retry] cd validation/reconstructions/copilot && bun test tests/architecture/ exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 1
+output tail:
+(last 60 of 221 lines)
+(fail) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [1.50ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.04ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [3.32ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.66ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [4.62ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [2.70ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [6.83ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [5.71ms]
+46 | 
+47 |   test("the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact", () => {
+48 |     const manifest = JSON.parse(readFileSync(join(ROOT, "packages/domainforge/package.json"), "utf8")) as {
+49 |       dependencies?: Record<string, string>;
+50 |     };
+51 |     expect(manifest.dependencies?.["@godspeedai/domainforge"]).toBe("0.18.2");
+                                                                    ^
+error: expect(received).toBe(expected)
+
+Expected: "0.18.2"
+Received: "0.19.0"
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/tests/architecture/domainforge-realitytrace-unchanged.test.ts:51:64)
+(fail) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.36ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.03ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.76ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.21ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.08ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.58ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [8.21ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [3.63ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.53ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.49ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+
+7 tests failed:
+(fail) Phase 13 §8: SQLite remains authoritative > server wires createRuntime from @godspeedai/cognate-runtime-bun [0.47ms]
+(fail) Phase 13 §8: SQLite remains authoritative > createRuntime receives a store that is a SQLite file path, not :memory: and not an injected memory store [0.27ms]
+(fail) Phase 13 §8: SQLite remains authoritative > the store path is derived from the runtime home as a .sqlite file [0.44ms]
+(fail) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > the boundary exists: application source imports @godspeedai/cognate-ag-ui (server + adapter composition) [1.00ms]
+(fail) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @godspeedai/cognate-kernel-api / runtime packages [1.24ms]
+(fail) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [1.50ms]
+(fail) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.36ms]
+
+ 34 pass
+ 2 skip
+ 7 fail
+ 119 expect() calls
+Ran 43 tests across 9 files. [1427.00ms]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T01:22:01.729Z
+
+=== reference-removed run ===
+started: 2026-10-10T01:22:42.246Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [478.95ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [486.71ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [376.16ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [298.58ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [379.55ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [371.67ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [453.83ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [396.45ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [427.65ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [357.56ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [362.98ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [321.26ms]
+
+ 11 pass
+ 1 fail
+ 254 expect() calls
+Ran 12 tests across 11 files. [4.99s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T01:22:53.138Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:24:27.418Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1787.05ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1211.63ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [898.90ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [735.85ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [742.59ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1066.48ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1615.93ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [876.59ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [1116.69ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [783.84ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [806.45ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [830.20ms]
+
+ 11 pass
+ 1 fail
+ 301 expect() calls
+Ran 12 tests across 11 files. [13.17s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:24:56.250Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:25:46.937Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1905.73ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1918.74ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [808.89ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [575.33ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [656.12ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1084.32ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [694.72ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [634.93ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [827.35ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [727.40ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1244.27ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [1829.20ms]
+
+ 12 pass
+ 0 fail
+ 323 expect() calls
+Ran 12 tests across 11 files. [14.21s]
+
+[retry] cd validation/reconstructions/copilot && bun test tests/architecture/ exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 1
+output tail:
+(last 60 of 165 lines)
+- Expected  - 0
++ Received  + 1
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/tests/architecture/boundaries.test.ts:108:44)
+(fail) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [1.85ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.05ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [7.56ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.89ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [18.84ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [8.61ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [17.77ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [13.63ms]
+46 | 
+47 |   test("the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact", () => {
+48 |     const manifest = JSON.parse(readFileSync(join(ROOT, "packages/domainforge/package.json"), "utf8")) as {
+49 |       dependencies?: Record<string, string>;
+50 |     };
+51 |     expect(manifest.dependencies?.["@godspeedai/domainforge"]).toBe("0.18.2");
+                                                                    ^
+error: expect(received).toBe(expected)
+
+Expected: "0.18.2"
+Received: "0.19.0"
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/tests/architecture/domainforge-realitytrace-unchanged.test.ts:51:64)
+(fail) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.25ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.17ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.97ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.20ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [10.91ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [17.19ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [15.61ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.59ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [7.01ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+
+3 tests failed:
+(fail) Phase 13 §8: PostgreSQL is the authoritative store > createRuntime receives the storeConfigFor(home) schema config, not :memory: and not an injected memory store [0.56ms]
+(fail) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [1.85ms]
+(fail) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the DomainForge external pin (@godspeedai/domainforge 0.18.2) is intact [0.25ms]
+
+ 38 pass
+ 2 skip
+ 3 fail
+ 120 expect() calls
+Ran 43 tests across 9 files. [3.21s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:26:08.540Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:28:32.233Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1051.10ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1269.22ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [962.55ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [646.92ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [921.98ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [968.88ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1194.90ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [836.77ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [850.43ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [830.20ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [879.18ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [622.61ms]
+
+ 11 pass
+ 1 fail
+ 290 expect() calls
+Ran 12 tests across 11 files. [11.83s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:28:58.788Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:29:39.728Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1101.42ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1341.41ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [866.00ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [546.80ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [912.11ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [992.52ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1121.94ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [992.38ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [1300.04ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1597.20ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1165.47ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [1061.83ms]
+
+ 11 pass
+ 1 fail
+ 302 expect() calls
+Ran 12 tests across 11 files. [13.69s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:30:08.817Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:32:02.354Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1588.97ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1416.59ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [865.19ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [573.54ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [772.96ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [949.98ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1215.64ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [806.85ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [992.96ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [805.14ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [721.71ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [727.06ms]
+
+ 11 pass
+ 1 fail
+ 300 expect() calls
+Ran 12 tests across 11 files. [12.24s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:32:31.248Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:33:11.344Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1005.95ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1189.47ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [864.33ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [644.90ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [3235.10ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1865.83ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1485.61ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [1490.20ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [1533.59ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1175.45ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1002.42ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [929.93ms]
+
+ 11 pass
+ 1 fail
+ 331 expect() calls
+Ran 12 tests across 11 files. [17.07s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:33:43.721Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:35:33.624Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [3191.84ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [3436.76ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [2125.85ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [1272.07ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [2004.45ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [2461.32ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [2384.31ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [1867.76ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [2348.52ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1732.11ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1495.05ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [1466.91ms]
+
+ 11 pass
+ 1 fail
+ 377 expect() calls
+Ran 12 tests across 11 files. [27.25s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:36:36.121Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:37:50.642Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+[retry] cd validation/reconstructions/copilot/cognate && bun test test exited 1; re-running once cleanly
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 1
+output tail:
+(last 60 of 102 lines)
+--- retry (exit 1) ---
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [1125.60ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+126 |   const document = fixtureViewDocument(VIEW);
+127 |   expect(new TextDecoder().decode(artifact.bytes)).toBe(document);
+128 |   expect((renderEvent!.payload as { props?: { viewId?: unknown } }).props?.viewId).toBe(fixtureViewId(VIEW));
+129 |   // Waits are position-ordered: the tool wait commits before the interaction wait can exist.
+130 |   expect(runEvents.filter((event) => event.eventType === "run.waiting").map((event) => (event.payload as { type?: unknown }).type))
+131 |     .toEqual([`remote:${MCP_TOOL_CONTRACT}`, `mcp:${MCP_APP_OPERATION}`]);
+           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "remote:mcp.create_view",
+-   "mcp:approve-view",
+  ]
+
+- Expected  - 1
++ Received  + 0
+
+      at <anonymous> (/home/sprime01/projects/cognate/validation/reconstructions/copilot/cognate/test/J-H-open-ended-mcp.test.tsx:131:6)
+(fail) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [1386.72ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [897.21ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [644.13ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [1012.48ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1377.98ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1835.30ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [1197.98ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [2293.83ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1469.44ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1306.65ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [750.75ms]
+
+ 11 pass
+ 1 fail
+ 319 expect() calls
+Ran 12 tests across 11 files. [16.07s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:38:25.512Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:41:23.242Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [3933.52ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [2985.08ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [1748.37ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [1246.16ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [1994.02ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1149.82ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1162.66ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [1448.72ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [1997.49ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1643.46ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [900.06ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [980.13ms]
+
+ 12 pass
+ 0 fail
+ 388 expect() calls
+Ran 12 tests across 11 files. [22.75s]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [1.61ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [4.52ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [1.53ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [3.45ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [2.09ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [1.70ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [5.66ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [437.52ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [516.65ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [3481.26ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [1.81ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > the boundary exists: application source imports @godspeedai/cognate-ag-ui (server + adapter composition) [4.81ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [1.18ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [3.52ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @godspeedai/cognate-ui-astryx is imported only from UI/presentation files [1.75ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @godspeedai/cognate-ui-astryx is absent from agents/domain logic files [0.69ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @godspeedai/cognate-kernel-cordis nor cordis [2.29ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @godspeedai/cognate-kernel-api / runtime packages [1.86ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [6.24ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.08ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [25.72ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [0.97ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [19.64ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [14.44ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [52.73ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [41.08ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the framework's external DomainForge pin is a single declared version [0.18ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [2.90ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.95ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.22ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [1.61ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [11.38ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [4.04ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [1.85ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.92ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 122 expect() calls
+Ran 43 tests across 9 files. [4.73s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:41:50.810Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:45:40.889Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [2783.92ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [2560.73ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [1066.15ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [641.22ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [1089.57ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1222.50ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1110.67ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [1050.82ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [1051.21ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1202.97ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1401.34ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [1122.65ms]
+
+ 12 pass
+ 0 fail
+ 351 expect() calls
+Ran 12 tests across 11 files. [17.77s]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [3.02ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [4.51ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [0.58ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [0.97ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.34ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.88ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [1.77ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [407.56ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [164.08ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [2539.24ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [2.26ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > the boundary exists: application source imports @godspeedai/cognate-ag-ui (server + adapter composition) [2.12ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [2.13ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [1.28ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @godspeedai/cognate-ui-astryx is imported only from UI/presentation files [1.08ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @godspeedai/cognate-ui-astryx is absent from agents/domain logic files [0.38ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @godspeedai/cognate-kernel-cordis nor cordis [0.98ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @godspeedai/cognate-kernel-api / runtime packages [1.12ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [7.39ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.07ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [17.45ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [1.23ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [12.12ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [3.86ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [32.52ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [23.47ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the framework's external DomainForge pin is a single declared version [0.14ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.04ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [0.90ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.26ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.09ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.73ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [12.95ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [6.48ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.72ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.89ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 122 expect() calls
+Ran 43 tests across 9 files. [3.30s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:46:02.027Z
+
+=== reference-removed run ===
+started: 2026-10-10T13:47:36.955Z
+stash: .tmp/ref/copilotkit -> .tmp/ref/.copilotkit-ref-stash
+command: cd validation/reconstructions/copilot/cognate && bun test test
+exit code: 0
+output tail:
+bun test v1.4.0 (34cbb9a40)
+
+test/J-D-agent-context.test.tsx:
+(pass) J-D-agent-context supplies mounted context as immutable invocation input that unmount removes [2221.72ms]
+
+test/J-H-open-ended-mcp.test.tsx:
+(pass) J-H-open-ended-mcp settles an MCP tool call, its sandboxed app interaction and offer revocation durably [3380.12ms]
+
+test/J-A-chat-turn.test.tsx:
+(pass) J-A-chat-turn > streams durable events into the thread projection and renders terminal assistant text [1306.20ms]
+(pass) J-A-chat-turn > projects the same deterministic chat run through the ordinary AG-UI endpoint [739.43ms]
+
+test/J-E-controlled-rendering.test.tsx:
+(pass) J-E-controlled-rendering derives pending and terminal from recorded invocation events alone [926.19ms]
+
+test/J-H-declarative-ui.test.tsx:
+(pass) J-H-declarative-ui lets only catalog-validated renders display and only declared operations act [1109.32ms]
+
+test/J-G-runtime-interrupt.test.tsx:
+(pass) J-G-runtime-interrupt settles a pending interrupt by resume or cancel, distinct from a tool result [1392.42ms]
+
+test/J-B-front-capability.test.tsx:
+(pass) J-B-front-capability > mount discovers a live offer, applies it in the browser, revokes on unmount, and publishes a new lease on remount [1325.01ms]
+
+test/J-J-rich-thread.test.tsx:
+(pass) J-J-rich-thread replays chat, tool wait and render from durable state without reauthorizing the offer [1239.75ms]
+
+test/J-C-shared-state.test.tsx:
+(pass) J-C-shared-state streams an agent canvas write, commits a terminal user edit, and exposes it to a distinct next run [1204.69ms]
+
+test/J-F-tool-human-decision.test.tsx:
+(pass) J-F-tool-human-decision returns a human answer to a waiting tool and the run continues [1182.83ms]
+
+test/J-K-live-recovery.test.tsx:
+(pass) J-K-live-recovery resumes a partially read stream from a cursor with a snapshot anchor and no loss [1045.86ms]
+
+ 12 pass
+ 0 fail
+ 358 expect() calls
+Ran 12 tests across 11 files. [19.23s]
+
+command: cd validation/reconstructions/copilot && bun test tests/architecture/
+exit code: 0
+output tail:
+(last 60 of 73 lines)
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > manifests under the reconstruction declare no @copilotkit/* / copilotkit dependency [4.27ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the reconstruction's dependency closure carries no @copilotkit/* / copilotkit [5.62ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > repo-root lockfile: the copilot workspace entry itself declares no @copilotkit/* dependency [1.20ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/src name no copilotkit package [2.48ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/cognate/test name no copilotkit package [0.74ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/capture name no copilotkit package [0.37ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > source import specifiers under validation/reconstructions/copilot/tests name no copilotkit package [3.01ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the server entry (bundled, target bun) contains no copilotkit specifier [328.43ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graph of the browser UI entry (bundled, target browser) contains no copilotkit specifier [469.67ms]
+(pass) Phase 13 §1: no @copilotkit/* or copilotkit dependency > resolved module graphs of every journey test entry contain no copilotkit specifier [3831.07ms]
+
+tests/architecture/no-copied-source.test.ts:
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+tests/architecture/boundaries.test.ts:
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > application source under cognate/src has no direct @ag-ui/* import [3.28ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > the boundary exists: application source imports @godspeedai/cognate-ag-ui (server + adapter composition) [1.44ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > packages/ag-ui wraps the real AG-UI protocol packages (direct @ag-ui/* allowed only there) [3.92ms]
+(pass) Phase 13 §5: AG-UI exists only behind the @godspeedai/cognate-ag-ui adapter boundary > test trees are the only other sanctioned @ag-ui/* location (protocol-only usage) [2.25ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @godspeedai/cognate-ui-astryx is imported only from UI/presentation files [2.04ms]
+(pass) Phase 13 §6: Astryx exists only in presentation implementation > @godspeedai/cognate-ui-astryx is absent from agents/domain logic files [0.87ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > reconstruction app imports neither @godspeedai/cognate-kernel-cordis nor cordis [1.00ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > kernel access in the app goes through @godspeedai/cognate-kernel-api / runtime packages [1.21ms]
+(pass) Phase 13 §7: Cordis remains hidden behind Cognate > framework-side: cordis is consumed only by @godspeedai/cognate-kernel-cordis, and kernel-cordis only by @godspeedai/cognate-runtime-bun [3.74ms]
+
+tests/architecture/kernel-primitives.test.ts:
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > scan set is non-empty and covers the kernel packages [0.06ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > packages/**/src (except packages/profile composition) defines no reference-named primitive [14.33ms]
+(pass) Phase 13 §4: no CopilotKit-specific kernel primitive > kernel packages (kernel-api, kernel-cordis, runtime-api, runtime-bun) contain no /copilot/i at all [1.14ms]
+
+tests/architecture/domainforge-realitytrace-unchanged.test.ts:
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/domainforge [25.47ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git diff --stat HEAD touches no files under packages/realitytrace [12.33ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > git status --porcelain shows no working-tree change under packages/domainforge or packages/realitytrace [61.37ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > no commit touching packages/domainforge or packages/realitytrace has a copilot-reconstruction subject [23.24ms]
+(pass) Phase 13 §10: DomainForge and RealityTrace required no reconstruction-specific modification > the framework's external DomainForge pin is a single declared version [0.21ms]
+
+tests/architecture/no-reference-imports.test.ts:
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > reference location is pinned by the reconstruction's own manifest [0.06ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/src reaches .tmp/ref/copilotkit [1.08ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/cognate/test reaches .tmp/ref/copilotkit [0.33ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/capture reaches .tmp/ref/copilotkit [0.12ms]
+(pass) Phase 13 §2: no import resolves into the pinned reference checkout > no specifier or resolved path under validation/reconstructions/copilot/tests reaches .tmp/ref/copilotkit [0.95ms]
+
+tests/architecture/sea-unchanged.test.ts:
+(pass) Phase 13 §9: .sea grammar unchanged > git status --porcelain shows no working-tree change under .sea/, packages/domainforge/ or packages/realitytrace/ [9.68ms]
+(pass) Phase 13 §9: .sea grammar unchanged > git diff --stat HEAD -- .sea packages/domainforge packages/realitytrace is empty [5.11ms]
+(pass) Phase 13 §9: .sea grammar unchanged > the reconstruction's .sea/interaction/** contains only validation models and catalog docs, never grammar definitions [0.74ms]
+(pass) Phase 13 §9: .sea grammar unchanged > no reconstruction source file writes to .sea/** [1.86ms]
+
+2 tests skipped:
+(skip) COPILOT_ARCH_SKIP_REFERENCE_REMOVED=1: reference-removed check skipped (inner run of the same suite)
+(skip) Phase 13 §3: no copied reference source > FAILED-GATE: reference checkout /home/sprime01/projects/cognate/.tmp/ref/copilotkit is absent — this test cannot verify absence of copied source without it. Check 8 (reference-removed) separately covers the reference-absent scenario.
+
+ 41 pass
+ 2 skip
+ 0 fail
+ 122 expect() calls
+Ran 43 tests across 9 files. [4.91s]
+
+reference restored: .tmp/ref/copilotkit exists=true
+finished: 2026-10-10T13:48:01.174Z

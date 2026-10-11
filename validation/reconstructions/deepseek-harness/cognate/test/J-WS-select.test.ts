@@ -17,7 +17,7 @@ describe("J-WS-select", () => {
         expect(first.workspaceId).toBeTruthy();
 
         await app.runtime.idle();
-        const rows = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" });
+        const rows = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })).rows;
         const record = rows.find((r) => r.key === `record/${first.workspaceId}`)?.value as { readonly id: string; readonly root: string } | undefined;
         expect(record?.root).toBe(first.root);
         const current = rows.find((r) => r.key === "current")?.value;
@@ -27,7 +27,7 @@ describe("J-WS-select", () => {
         const second = (await client.invoke("workspace.select", { path: workspaceDir })) as { readonly workspaceId: string };
         expect(second.workspaceId).toBe(first.workspaceId);
         await app.runtime.idle();
-        const rowsAfter = await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" });
+        const rowsAfter = (await app.runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" })).rows;
         const recordCount = rowsAfter.filter((r) => r.key.startsWith("record/")).length;
         expect(recordCount).toBe(1);
       } finally {

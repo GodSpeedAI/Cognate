@@ -34,9 +34,20 @@ export type PendingEvent = NewEvent & { readonly eventId: string; readonly strea
 /** Outbox topic whose items represent RealityTrace observations; `inspect` reports their observation ids. */
 export const OBSERVATION_OUTBOX_TOPIC = "observation.deliver";
 
+/** Where the runtime's authoritative state lives (spec §13). SQLite stays the zero-dependency default;
+ * PostgreSQL removes the single-writer limit (multi-process runtimes share one database). */
+export type RuntimeStoreConfig =
+  /** SQLite database file path, or `":memory:"` for an in-memory SQLite database. */
+  | string
+  | { readonly store: DurableStore }
+  | { readonly sqlite: { readonly path: string } }
+  | { readonly postgres: { readonly url: string; readonly schema?: string } }
+  | { readonly postgresPg0: { readonly name?: string; readonly schema?: string; readonly bin?: string } };
+
 export interface RuntimeOptions {
-  /** SQLite file path, `":memory:"` for an in-memory SQLite database, or an explicit store. */
-  readonly store: string | { readonly store: DurableStore };
+  /** Where durable state lives: a SQLite path (default form), an explicit store, a PostgreSQL
+   * connection (`postgres`), or a pg0-managed local instance (`postgresPg0` starts it if needed). */
+  readonly store: RuntimeStoreConfig;
   /** Kernel invocation policy for capabilities (default-deny if omitted). */
   readonly policy: Policy;
   readonly actions: ActionPolicy;
