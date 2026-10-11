@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-profile-harness-v0.1.2...cognate-profile-harness-v0.2.0) (2026-10-11)
+
+
+### Miscellaneous Chores
+
+* **cognate-profile-harness:** Synchronize cognate SDK packages versions
+
 ## [0.1.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-profile-harness-v0.1.1...cognate-profile-harness-v0.1.2) (2026-10-09)
 
 
