@@ -8,6 +8,13 @@
         "@fontsource-variable/inter": "5.3.0",
         "@fontsource-variable/jetbrains-mono": "5.3.0",
         "@fontsource-variable/space-grotesk": "5.3.0",
+        "@godspeedai/cognate-agent-discovery": "workspace:*",
+        "@godspeedai/cognate-hook-interoperability": "workspace:*",
+        "@godspeedai/cognate-provider-anthropic-compatible": "workspace:*",
+        "@godspeedai/cognate-provider-auth": "workspace:*",
+        "@godspeedai/cognate-provider-openai-responses": "workspace:*",
+        "@godspeedai/cognate-provider-typesafe": "workspace:*",
+        "@godspeedai/cognate-provider-wire": "workspace:*",
         "@godspeedai/cognate": "workspace:*",
         "@godspeedai/cognate-a2a": "workspace:*",
         "@godspeedai/cognate-ag-ui": "workspace:*",
@@ -62,6 +69,54 @@
         "react-dom": "19.3.0",
         "typescript": "7.0.2",
         "yaml": "2.9.1",
+      },
+    },
+    "packages/agent-discovery": {
+      "name": "@godspeedai/cognate-agent-discovery",
+      "version": "0.1.0",
+      "dependencies": {
+        "@godspeedai/cognate-hook-interoperability": "workspace:*",
+      },
+    },
+    "packages/hook-interoperability": {
+      "name": "@godspeedai/cognate-hook-interoperability",
+      "version": "0.1.0",
+    },
+    "packages/provider-anthropic-compatible": {
+      "name": "@godspeedai/cognate-provider-anthropic-compatible",
+      "version": "0.1.0",
+      "dependencies": {
+        "@godspeedai/cognate-capabilities": "workspace:*",
+        "@godspeedai/cognate-provider-auth": "workspace:*",
+        "@godspeedai/cognate-provider-wire": "workspace:*",
+      },
+    },
+    "packages/provider-auth": {
+      "name": "@godspeedai/cognate-provider-auth",
+      "version": "0.1.0",
+    },
+    "packages/provider-openai-responses": {
+      "name": "@godspeedai/cognate-provider-openai-responses",
+      "version": "0.1.0",
+      "dependencies": {
+        "@godspeedai/cognate-capabilities": "workspace:*",
+        "@godspeedai/cognate-provider-auth": "workspace:*",
+        "@godspeedai/cognate-provider-wire": "workspace:*",
+      },
+    },
+    "packages/provider-typesafe": {
+      "name": "@godspeedai/cognate-provider-typesafe",
+      "version": "0.1.0",
+      "dependencies": {
+        "@godspeedai/cognate-capabilities": "workspace:*",
+        "@godspeedai/cognate-provider-auth": "workspace:*",
+      },
+    },
+    "packages/provider-wire": {
+      "name": "@godspeedai/cognate-provider-wire",
+      "version": "0.1.0",
+      "dependencies": {
+        "@godspeedai/cognate-capabilities": "workspace:*",
       },
     },
     "packages/a2a": {
@@ -589,6 +644,9 @@
         "@godspeedai/cognate-projections": "workspace:*",
         "@godspeedai/cognate-protocol-connect": "workspace:*",
         "@godspeedai/cognate-protocol-connect-bun": "workspace:*",
+        "@godspeedai/cognate-provider-anthropic-compatible": "workspace:*",
+        "@godspeedai/cognate-provider-auth": "workspace:*",
+        "@godspeedai/cognate-provider-openai-responses": "workspace:*",
         "@godspeedai/cognate-provider-openai-compatible": "workspace:*",
         "@godspeedai/cognate-react": "workspace:*",
         "@godspeedai/cognate-realitytrace": "workspace:*",
@@ -725,6 +783,20 @@
     "@godspeedai/cognate-protocol-connect": ["@godspeedai/cognate-protocol-connect@workspace:packages/protocol-connect"],
 
     "@godspeedai/cognate-protocol-connect-bun": ["@godspeedai/cognate-protocol-connect-bun@workspace:packages/protocol-connect-bun"],
+
+    "@godspeedai/cognate-agent-discovery": ["@godspeedai/cognate-agent-discovery@workspace:packages/agent-discovery"],
+
+    "@godspeedai/cognate-hook-interoperability": ["@godspeedai/cognate-hook-interoperability@workspace:packages/hook-interoperability"],
+
+    "@godspeedai/cognate-provider-anthropic-compatible": ["@godspeedai/cognate-provider-anthropic-compatible@workspace:packages/provider-anthropic-compatible"],
+
+    "@godspeedai/cognate-provider-auth": ["@godspeedai/cognate-provider-auth@workspace:packages/provider-auth"],
+
+    "@godspeedai/cognate-provider-openai-responses": ["@godspeedai/cognate-provider-openai-responses@workspace:packages/provider-openai-responses"],
+
+    "@godspeedai/cognate-provider-typesafe": ["@godspeedai/cognate-provider-typesafe@workspace:packages/provider-typesafe"],
+
+    "@godspeedai/cognate-provider-wire": ["@godspeedai/cognate-provider-wire@workspace:packages/provider-wire"],
 
     "@godspeedai/cognate-provider-local": ["@godspeedai/cognate-provider-local@workspace:packages/provider-local"],
 
