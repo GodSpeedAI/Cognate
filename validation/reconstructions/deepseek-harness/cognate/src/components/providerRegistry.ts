@@ -1,25 +1,33 @@
-// Builds a live `ModelProvider` from saved (non-secret) config plus the secret store, and hot-swaps
-// the mounted `model.generate` component: dispose the old fiber, mount the new one. No restart.
 import type { ModelProvider } from "@godspeedai/cognate-capabilities";
 import type { ComponentHandle, Kernel, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { openAICompatible } from "@godspeedai/cognate-provider-openai-compatible";
+import { openAIResponses } from "@godspeedai/cognate-provider-openai-responses";
+import { anthropicCompatible } from "@godspeedai/cognate-provider-anthropic-compatible";
+import { apiKeySource } from "@godspeedai/cognate-provider-auth";
 import { streamingProviderComponent } from "./modelProvider.ts";
 import type { SecretStore } from "../secrets.ts";
 
+/** Legacy openai-compatible remains accepted for persisted configurations. */
+export type ModelWireProtocol = "openai-compatible" | "openai-completions" | "openai-responses" | "anthropic-messages";
 export interface ModelConfig {
   readonly providerId: string;
   readonly baseURL: string;
-  readonly protocol: "openai-compatible";
+  readonly protocol: ModelWireProtocol;
   readonly model: string;
 }
-
 export function buildProvider(config: ModelConfig, secrets: SecretStore): ModelProvider {
-  return openAICompatible({
-    id: config.providerId,
-    baseURL: config.baseURL,
-    model: config.model,
-    apiKey: async () => (await secrets.get(`model-provider:${config.providerId}`)) ?? "",
-  });
+  const key = async () => (await secrets.get("model-provider:" + config.providerId)) ?? "";
+  switch (config.protocol) {
+    case "openai-compatible":
+    case "openai-completions":
+      return openAICompatible({id:config.providerId,baseURL:config.baseURL,model:config.model,apiKey:key});
+    case "openai-responses":
+      return openAIResponses({id:config.providerId,baseURL:config.baseURL,model:config.model,credentials:apiKeySource(key)});
+    case "anthropic-messages":
+      return anthropicCompatible({id:config.providerId,baseURL:config.baseURL,model:config.model,credentials:apiKeySource(key,"x-api-key")});
+    default:
+      throw new Error("model.configure: unsupported wire protocol");
+  }
 }
 
 export class ProviderRegistry {
@@ -27,24 +35,17 @@ export class ProviderRegistry {
   #semanticRef: SemanticRef | undefined;
   #handle: ComponentHandle | undefined;
   #current: ModelConfig | undefined;
-
   constructor(kernel: Kernel, semanticRef?: SemanticRef) {
-    this.#kernel = kernel;
-    this.#semanticRef = semanticRef;
+    this.#kernel = kernel; this.#semanticRef = semanticRef;
   }
-
-  get current(): ModelConfig | undefined {
-    return this.#current;
-  }
-
-  /** Mount `config` as the live `model.generate` provider; dispose whatever was mounted before. */
+  get current(): ModelConfig | undefined { return this.#current; }
   async swap(config: ModelConfig, secrets: SecretStore): Promise<void> {
     const provider = buildProvider(config, secrets);
     const nextHandle = await this.#kernel.mount(streamingProviderComponent(provider, this.#semanticRef));
-    await nextHandle.waitFor("ACTIVE", 5000);
+    await nextHandle.waitFor("ACTIVE",5000);
     const previous = this.#handle;
     this.#handle = nextHandle;
     this.#current = config;
-    if (previous) await previous.dispose(`hot-swap to provider ${config.providerId}`);
+    if(previous) await previous.dispose("hot-swap to provider " + config.providerId);
   }
 }

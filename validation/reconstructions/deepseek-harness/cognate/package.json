@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@connectrpc/connect": "2.2.0",
     "@godspeedai/cognate-capabilities": "workspace:*",
     "@godspeedai/cognate-cli": "workspace:*",
     "@godspeedai/cognate-client": "workspace:*",
@@ -22,13 +23,15 @@
     "@godspeedai/cognate-projections": "workspace:*",
     "@godspeedai/cognate-protocol-connect": "workspace:*",
     "@godspeedai/cognate-protocol-connect-bun": "workspace:*",
+    "@godspeedai/cognate-provider-anthropic-compatible": "workspace:*",
+    "@godspeedai/cognate-provider-auth": "workspace:*",
     "@godspeedai/cognate-provider-openai-compatible": "workspace:*",
+    "@godspeedai/cognate-provider-openai-responses": "workspace:*",
     "@godspeedai/cognate-react": "workspace:*",
     "@godspeedai/cognate-realitytrace": "workspace:*",
     "@godspeedai/cognate-runtime-api": "workspace:*",
     "@godspeedai/cognate-runtime-bun": "workspace:*",
     "@godspeedai/cognate-ui-astryx": "workspace:*",
-    "@connectrpc/connect": "2.2.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
