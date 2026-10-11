@@ -26,7 +26,7 @@ export interface JudgmentProvider {
   evaluate(request: JudgmentRequest, signal?: AbortSignal): Promise<JudgmentResponse>;
 }
 export function judgmentContract(provider: JudgmentProvider): CapabilityContract {
-  return { id: "judgment.evaluate", version: "1.0.0", attributes: { provider: provider.id, model: provider.model, modes: ["choice", "score", "noul"] } };
+  return { id: "judgment.evaluate", version: "1.0.0", attributes: { provider: provider.id, model: provider.model, modes: "choice,score,noul" } };
 }
 
 /** Adapts a typed decision source to the Cognate kernel without emulating model.generate. */

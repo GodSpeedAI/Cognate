@@ -8,7 +8,7 @@ export interface TypeSafeOptions {
   readonly baseURL: string;
   readonly model: string;
   readonly credentials: CredentialSource;
-  readonly fetch?: typeof fetch;
+  readonly fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   readonly timeoutMs?: number;
 }
 function isRecord(v: unknown): v is Record<string,unknown> { return !!v && typeof v==="object" && !Array.isArray(v); }
