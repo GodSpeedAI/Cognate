@@ -1,6 +1,6 @@
 import { ModelProviderError, type ModelRequest, type ModelResponse, type ModelProvider, type ModelDelta, type ToolCall } from "@godspeedai/cognate-capabilities";
 import { credentialHeaders, type CredentialSource } from "@godspeedai/cognate-provider-auth";
-import { sendJson, readSSE, requestSignal } from "@godspeedai/cognate-provider-wire";
+import { sendJson, readSSE, requestSignal, type HttpFetch } from "@godspeedai/cognate-provider-wire";
 
 export interface AnthropicCompatibleOptions {
   readonly id: string;
@@ -8,7 +8,7 @@ export interface AnthropicCompatibleOptions {
   readonly model: string;
   readonly credentials: CredentialSource;
   readonly anthropicVersion?: string;
-  readonly fetch?: typeof fetch;
+  readonly fetch?: HttpFetch;
   readonly timeoutMs?: number;
   readonly contextLimit?: number;
 }

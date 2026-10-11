@@ -1,13 +1,13 @@
 import { ModelProviderError, type ModelRequest, type ModelResponse, type ModelProvider, type ModelDelta, type ToolCall } from "@godspeedai/cognate-capabilities";
 import { credentialHeaders, assertSubscriptionUse, type CredentialSource, type SubscriptionGrant, type UsageMode } from "@godspeedai/cognate-provider-auth";
-import { sendJson, readSSE, requestSignal } from "@godspeedai/cognate-provider-wire";
+import { sendJson, readSSE, requestSignal, type HttpFetch } from "@godspeedai/cognate-provider-wire";
 
 export interface OpenAIResponsesOptions {
   readonly id: string;
   readonly baseURL: string;
   readonly model: string;
   readonly credentials: CredentialSource;
-  readonly fetch?: typeof fetch;
+  readonly fetch?: HttpFetch;
   readonly timeoutMs?: number;
   /** When plan-backed, require an explicit usage-mode resolver on every request. */
   readonly subscription?: { readonly grant: SubscriptionGrant; readonly usageMode: () => UsageMode };
