@@ -41,7 +41,7 @@ function finalResponse(raw:any,fallbackModel:string):ModelResponse {
     if(block.type==="text") text.push(block.text??"");
     if(block.type==="tool_use") toolCalls.push({id:block.id,name:block.name,arguments:block.input??{}});
   }
-  const reason:ModelResponse["finishReason"]=raw.stop_reason==="max_tokens"?"length":raw.stop_reason==="tool_use"?"tool_calls":raw.stop_reason==="end_turn"||raw.stop_reason==="stop_sequence"?"stop":"error";
+  const reason:ModelResponse["finishReason"]=raw.stop_reason==="max_tokens"?"length":raw.stop_reason==="tool_use"?"tool_calls":raw.stop_reason==="end_turn"||raw.stop_reason==="stop_sequence"?"stop":raw.stop_reason==="refusal"?"content_filter":"error";
   return {message:{role:"assistant",content:text.join("")},toolCalls,finishReason:reason,model:raw.model??fallbackModel,
     ...(raw.usage?{usage:{inputTokens:raw.usage.input_tokens??0,outputTokens:raw.usage.output_tokens??0}}:{})};
 }
@@ -67,7 +67,7 @@ export function anthropicCompatible(options:AnthropicCompatibleOptions):ModelPro
       const parts=new Map<number, {type:string;id?:string;name?:string;text:string;args:string;input?:unknown}>();
       let model=options.model, stopReason:string|undefined, usage:{inputTokens:number;outputTokens:number}|undefined;
       let sawStop=false;
-      for await(const event of readSSE(response)) {
+      for await(const event of readSSE(response,signal)) {
         let data:any;
         try{data=JSON.parse(event.data);}catch{throw new ModelProviderError("malformed_response","invalid Anthropic event");}
         const type=data.type??event.event;
@@ -109,7 +109,7 @@ export function anthropicCompatible(options:AnthropicCompatibleOptions):ModelPro
           toolCalls.push(call);yield {type:"tool_call",call};
         }
       }
-      const finishReason:ModelResponse["finishReason"]=stopReason==="max_tokens"?"length":stopReason==="tool_use"?"tool_calls":stopReason==="end_turn"||stopReason==="stop_sequence"?"stop":"error";
+      const finishReason:ModelResponse["finishReason"]=stopReason==="max_tokens"?"length":stopReason==="tool_use"?"tool_calls":stopReason==="end_turn"||stopReason==="stop_sequence"?"stop":stopReason==="refusal"?"content_filter":"error";
       yield {type:"done",response:{message:{role:"assistant",content:content.join("")},toolCalls,finishReason,model,...(usage?{usage}:{})}};
     },
   };

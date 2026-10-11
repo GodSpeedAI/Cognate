@@ -17,8 +17,9 @@ export async function sendJson(url: string, body: unknown, headers: Record<strin
   return response;
 }
 export interface SSEEvent { readonly event: string; readonly data: string; }
-/** UTF-8 SSE framing across arbitrary chunk boundaries; ignores comments, never executes content. */
-export async function* readSSE(response: Response): AsyncIterable<SSEEvent> {
+/** UTF-8 SSE framing across arbitrary chunk boundaries; ignores comments, never executes content.
+ *  An aborted signal surfaces as `cancelled` (never `unavailable`, which callers may retry). */
+export async function* readSSE(response: Response, signal?: AbortSignal): AsyncIterable<SSEEvent> {
   if (!response.body) throw new ModelProviderError("malformed_response","missing event stream");
   const reader = response.body.getReader(), decoder = new TextDecoder();
   let buffer="";
@@ -49,6 +50,7 @@ export async function* readSSE(response: Response): AsyncIterable<SSEEvent> {
       }
     }
   } catch {
+    if (signal?.aborted) throw new ModelProviderError("cancelled","model event stream cancelled");
     throw new ModelProviderError("unavailable","model event stream interrupted");
   } finally { reader.releaseLock(); }
 }

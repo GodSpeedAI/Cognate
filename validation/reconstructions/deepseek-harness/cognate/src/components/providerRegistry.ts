@@ -42,7 +42,14 @@ export class ProviderRegistry {
   async swap(config: ModelConfig, secrets: SecretStore): Promise<void> {
     const provider = buildProvider(config, secrets);
     const nextHandle = await this.#kernel.mount(streamingProviderComponent(provider, this.#semanticRef));
-    await nextHandle.waitFor("ACTIVE",5000);
+    try {
+      await nextHandle.waitFor("ACTIVE",5000);
+    } catch (error) {
+      // Roll back cleanly: the replacement never became ACTIVE, so dispose it and leave the
+      // previous provider mounted and usable (hot-swap failure must not take the app down).
+      await nextHandle.dispose("hot-swap failed before activation").catch(() => {});
+      throw error;
+    }
     const previous = this.#handle;
     this.#handle = nextHandle;
     this.#current = config;

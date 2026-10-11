@@ -22,6 +22,7 @@ function wireInput(request: ModelRequest): unknown[] {
 }
 function body(options:OpenAIResponsesOptions,request:ModelRequest,stream:boolean):Record<string,unknown> {
   const out:Record<string,unknown>={model:options.model,input:wireInput(request),stream,store:false};
+  if(request.instructions) out.instructions=request.instructions;
   if(request.tools?.length) out.tools=request.tools.map(t=>({type:"function",name:t.name,description:t.description,parameters:t.inputSchema}));
   if(request.maxTokens!==undefined) out.max_output_tokens=request.maxTokens;
   if(request.temperature!==undefined) out.temperature=request.temperature;
@@ -65,7 +66,7 @@ export function openAIResponses(options:OpenAIResponsesOptions):ModelProvider {
       const response=await post(request,true,signal);
       let completed=false;
       let yieldedText=false;
-      for await(const event of readSSE(response)) {
+      for await(const event of readSSE(response,signal)) {
         if(event.data==="[DONE]") break;
         let payload:any;
         try {payload=JSON.parse(event.data);} catch {throw new ModelProviderError("malformed_response","invalid Responses event JSON");}
