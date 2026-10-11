@@ -9,7 +9,7 @@ import type { SettingsPatch } from "../settings.ts";
 import { WORKBENCH_EVENTS } from "../workbench/types.ts";
 
 export type AgentConfigInput =
-  | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible"; readonly model: string }
+  | { readonly kind: "model.configured"; readonly providerId: string; readonly baseURL: string; readonly protocol: "openai-compatible" | "openai-completions" | "openai-responses" | "anthropic-messages"; readonly model: string }
   /** `root` is provider-owned and opaque above the execution-world boundary; `executionWorldId`
    *  names where that root lives (see `@godspeedai/cognate-execution`). */
   | { readonly kind: "workspace.added"; readonly workspaceId: string; readonly root: string; readonly title: string; readonly executionWorldId: string }

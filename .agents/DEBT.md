@@ -219,3 +219,17 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Consequence:** Live-read patterns (DEBT-021 convergence, polling UIs) silently stall on Bun when transports are built directly.
 **Recommended action:** Done framework-side, both halves: `connectTransport` defaults to `cache: "no-store"` (client half) and `serveRuntime` sets `cache-control: no-store` on every response (server half — protects hand-rolled transports too; regression test `packages/protocol-connect-bun/test/no-store.test.ts`). Remaining: re-test on a Bun release that stops caching POSTs, then drop both overrides.
 **Exit criterion:** The pinned Bun serves fresh responses for repeated identical unary POSTs without the override; the default is then removed.
+
+## DEBT-028 — SIWC plan-backed inference is Level-2 proven only; live sign-in pending
+**Status:** Open
+**Requirement(s):** none (packages/provider-openai-oauth)
+**Observed (2026-10-11):** The SIWC adapter, its governed plan-backed Responses provider, and a 12-test fake-issuer conformance suite (state/nonce mismatch, foreign signature, wrong audience, expiry, missing plan scope, single-flight rotation, replay-is-terminal, revocation, automation consent, preview-constraint bodies, leak checks) are complete, but no live ChatGPT sign-in has been performed: no issued `oaiapp_` client, no real JWKS validation, no production `/v1/responses` request. OpenAI's eligibility/terms for this distribution context were checked against the docs on 2026-10-11 (open-source/locally hosted apps in scope; preview limits enforced in code) but the operator must confirm at sign-in time.
+**Consequence:** Plan-backed inference against production is unproven; token lifetimes/claims in the wild may drift from the documented protocol the adapter encodes.
+**Exit criterion:** An operator performs one live sign-in on a machine with a system browser, revokes from ChatGPT Settings, and the recorded evidence shows validated production JWKS tokens plus one settled plan-backed streaming request with `store:false`; or OpenAI's terms are found to exclude this context and the capability is documented as disabled.
+
+## DEBT-029 — Settings → Models wizard lacks a browser-level protocol-selection test
+**Status:** Open
+**Requirement(s):** none (DeepSeek harness reconstruction)
+**Observed (2026-10-11):** The protocol workflow (select → create → reload → edit → re-key preserves protocol; unsupported protocol rejected) is covered by server-level journeys (J-CFG) and a ProviderRegistry rollback unit; no Playwright test drives the wizard's protocol dropdown itself, so a UI regression that re-hardcodes the submitted protocol would pass the journeys and fail only in the browser.
+**Consequence:** UI-only regressions in the workflow are not caught by the automated gates.
+**Exit criterion:** A workbench E2E selects "Anthropic Messages" in the wizard, saves, and asserts the durable `model.configured` event records `anthropic-messages`.

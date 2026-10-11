@@ -597,17 +597,42 @@ function WorkspaceChooser() {
  *  control itself. Picking one pre-fills the Custom model API form's Base URL/Provider ID/Display
  *  name fields (this app has no live per-provider defaults database beyond this).
  */
-const THIRD_PARTY_PRESETS: readonly { readonly id: string; readonly label: string; readonly baseURL: string }[] = [
-  { id: "openai", label: "OpenAI", baseURL: "https://api.openai.com/v1" },
-  { id: "openrouter", label: "OpenRouter", baseURL: "https://openrouter.ai/api/v1" },
-  { id: "azure-openai", label: "Azure OpenAI", baseURL: "https://your-resource.openai.azure.com/openai/deployments/your-deployment" },
-  { id: "groq", label: "Groq", baseURL: "https://api.groq.com/openai/v1" },
-  { id: "mistral", label: "Mistral", baseURL: "https://api.mistral.ai/v1" },
-  { id: "together", label: "Together AI", baseURL: "https://api.together.xyz/v1" },
-  { id: "fireworks", label: "Fireworks AI", baseURL: "https://api.fireworks.ai/inference/v1" },
+const THIRD_PARTY_PRESETS: readonly {
+  readonly id: string;
+  readonly label: string;
+  readonly baseURL: string;
+  /** Sensible wire default for the preset; the operator can still change it in the form. */
+  readonly protocol: (typeof API_PROTOCOL_OPTIONS)[number];
+}[] = [
+  { id: "openai", label: "OpenAI", baseURL: "https://api.openai.com/v1", protocol: "OpenAI Responses" },
+  { id: "openrouter", label: "OpenRouter", baseURL: "https://openrouter.ai/api/v1", protocol: "OpenAI Chat Completions" },
+  { id: "azure-openai", label: "Azure OpenAI", baseURL: "https://your-resource.openai.azure.com/openai/deployments/your-deployment", protocol: "OpenAI Chat Completions" },
+  { id: "groq", label: "Groq", baseURL: "https://api.groq.com/openai/v1", protocol: "OpenAI Chat Completions" },
+  { id: "mistral", label: "Mistral", baseURL: "https://api.mistral.ai/v1", protocol: "OpenAI Chat Completions" },
+  { id: "together", label: "Together AI", baseURL: "https://api.together.xyz/v1", protocol: "OpenAI Chat Completions" },
+  { id: "fireworks", label: "Fireworks AI", baseURL: "https://api.fireworks.ai/inference/v1", protocol: "OpenAI Chat Completions" },
+  { id: "anthropic", label: "Anthropic", baseURL: "https://api.anthropic.com/v1", protocol: "Anthropic Messages" },
 ];
 
 const API_PROTOCOL_OPTIONS = ["OpenAI Chat Completions", "OpenAI Responses", "Anthropic Messages"] as const;
+
+/** UI display name ↔ wire protocol value persisted by `model.configure`. "openai-compatible" is a
+ *  legacy wire value that only arrives from old persisted configs; it edits as OpenAI Chat
+ *  Completions (its actual semantics) and stays valid until the operator changes protocol. */
+const PROTOCOL_WIRE_VALUES = {
+  "OpenAI Chat Completions": "openai-completions",
+  "OpenAI Responses": "openai-responses",
+  "Anthropic Messages": "anthropic-messages",
+} as const satisfies Readonly<Record<(typeof API_PROTOCOL_OPTIONS)[number], WireProtocolValue>>;
+type WireProtocolValue = "openai-compatible" | "openai-completions" | "openai-responses" | "anthropic-messages";
+function protocolToWire(display: (typeof API_PROTOCOL_OPTIONS)[number]): Exclude<WireProtocolValue, "openai-compatible"> {
+  return PROTOCOL_WIRE_VALUES[display];
+}
+function wireToProtocol(wire: string): (typeof API_PROTOCOL_OPTIONS)[number] {
+  if (wire === "openai-responses") return "OpenAI Responses";
+  if (wire === "anthropic-messages") return "Anthropic Messages";
+  return "OpenAI Chat Completions";
+}
 
 interface ModelRow {
   readonly id: string;
@@ -1385,7 +1410,8 @@ function SettingsModels({
       setProviderId(config.providerId);
       setDisplayName(config.providerId);
       setBaseURL(config.baseURL);
-      setProtocol(API_PROTOCOL_OPTIONS[0]);
+      // Editing preserves the provider's actual protocol; only an explicit operator change alters it.
+      setProtocol(wireToProtocol(config.protocol));
       setApiKey("");
       setModels([{ id: crypto.randomUUID(), modelId: config.model, displayName: config.model }]);
     } else {
@@ -1415,6 +1441,7 @@ function SettingsModels({
       setProviderId(preset.id);
       setDisplayName(preset.label);
       setBaseURL(preset.baseURL);
+      setProtocol(preset.protocol);
       setAddTab("custom");
     }
   }, []);
@@ -1452,7 +1479,7 @@ function SettingsModels({
       await client.invoke("model.configure", {
         providerId,
         baseURL,
-        protocol: "openai-compatible",
+        protocol: protocolToWire(protocol),
         model: models[0]!.modelId,
         apiKey,
       });
@@ -1462,7 +1489,7 @@ function SettingsModels({
     } finally {
       setBusy(false);
     }
-  }, [client, providerId, displayName, baseURL, apiKey, models]);
+  }, [client, providerId, displayName, baseURL, apiKey, models, protocol]);
 
   const applyRowKey = useCallback(async () => {
     if (!config) return;
@@ -1470,10 +1497,11 @@ function SettingsModels({
     setError(undefined);
     setSaved(false);
     try {
+      // Re-keying must not silently rewrite the wire protocol: reuse the configured one.
       await client.invoke("model.configure", {
         providerId: config.providerId,
         baseURL: config.baseURL,
-        protocol: "openai-compatible",
+        protocol: config.protocol,
         model: config.model,
         apiKey: rowApiKey,
       });
@@ -1553,6 +1581,9 @@ function SettingsModels({
                         <CheckIcon aria-hidden="true" />
                         {config.providerId} — {config.model}
                       </span>
+                      <span className="provider-card-protocol" title="Wire protocol">
+                        {wireToProtocol(config.protocol)}
+                      </span>
                       <span className="provider-card-key-status" title="API key configured">
                         <CheckIcon aria-hidden="true" /> API key configured
                       </span>
@@ -1588,6 +1619,7 @@ function SettingsModels({
                           Base URL: <code>{config.baseURL}</code>
                         </div>
                         <div>Model: {config.model}</div>
+                        <div>API protocol: {wireToProtocol(config.protocol)}</div>
                       </div>
                     )}
                     {error && (

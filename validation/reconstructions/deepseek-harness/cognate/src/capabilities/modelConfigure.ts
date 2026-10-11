@@ -7,14 +7,14 @@
 import { randomUUID } from "node:crypto";
 import type { Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
-import type { ModelConfig, ProviderRegistry } from "../components/providerRegistry.ts";
+import type { ModelConfig, ModelWireProtocol, ProviderRegistry } from "../components/providerRegistry.ts";
 import type { SecretStore } from "../secrets.ts";
 import { AGENT_CONFIG } from "../agents/agentConfig.ts";
 
 export interface ModelConfigureInput {
   readonly providerId: string;
   readonly baseURL: string;
-  readonly protocol: "openai-compatible";
+  readonly protocol: ModelWireProtocol;
   readonly model: string;
   /** Write-only; never echoed, never recorded. */
   readonly apiKey: string;
@@ -34,8 +34,9 @@ export function modelConfigureComponent(options: {
       fiber.provide({ id: "model.configure", version: "1.0.0", semanticRef: options.semanticRef }, async (rawInput) => {
         const input = rawInput as ModelConfigureInput;
         if (!input.providerId || !input.baseURL || !input.model) throw new Error("model.configure: providerId, baseURL, and model are required");
+        if (!["openai-compatible","openai-completions","openai-responses","anthropic-messages"].includes(input.protocol)) throw new Error("model.configure: unsupported wire protocol");
         await options.secrets.put(`model-provider:${input.providerId}`, input.apiKey ?? "");
-        const config: ModelConfig = { providerId: input.providerId, baseURL: input.baseURL, protocol: "openai-compatible", model: input.model };
+        const config: ModelConfig = { providerId: input.providerId, baseURL: input.baseURL, protocol: input.protocol, model: input.model };
         await options.registry.swap(config, options.secrets);
         const service = options.getService();
         await service.startRun(options.systemCaller, {
