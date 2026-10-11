@@ -58,6 +58,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed:** `@ruvector/core` 0.1.32 under Bun: query-time `filter` accepts an undocumented grammar and silently ignores a plausible expression; metadata round-trips only as a JSON string; omitting `storagePath` persists to `./ruvector.db` in the working directory (no in-memory mode, contrary to its README); vectors must be `Float32Array`; graph/temporal/causal retrieval needs separate untested packages (`@ruvector/graph-node`).
 **Consequence:** The RuVector adapter advertises `vector_search` only; tenant/scope filtering happens in Cognate (per-tenant index or post-filter before disclosure), never in RuVector; the adapter must always pass an explicit storage path.
 **Exit criterion:** A fixture proves a working metadata filter or graph package, and the adapter's capability flags are extended with tests.
+**Progress (2026-10-09):** the adjacent PostgreSQL-extension question is settled for the pg0 distribution — ruvector-postgres cannot install into PostgreSQL 18 (supports 14–17); pgvector 0.8.5 (bundled in pg0) is the PG-native vector path if one is needed later. Core-adapter scope unchanged. Evidence: `.agents/evidence/2026-10-09-ruvector-postgres-pg0.md`.
 
 ## DEBT-008 — SONA is not an adaptive ranker
 **Status:** Closed (2026-09-25) — operator chose a Cognate-owned UCB1 ranker instead of an external library; AK-008 revised to characterize it and its gate (`packages/capabilities/test/adaptive-ranker.test.ts`) passes. SONA stays rejected (ADR-0005 addendum).
@@ -123,6 +124,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Requirement(s):** CG-WIR-002, CG-PRF-003
 **Observed:** `runtime-bun` drives run execution, resume delivery, the `run.execute` outbox, and continuation expiry from one loop ticking every 10 ms (default `tickMs`), including a scan of open continuations for expiry; runs execute one after another within a tick; one process per database (DEBT-011).
 **Consequence:** Latency floor of one tick; throughput bounded by serial execution; idle CPU wake-ups. Acceptable for local/dev profiles, not measured for load.
+**Progress (2026-10-09):** PostgreSQL-backed runtimes sharpen this debt's consequence: with the store behind TCP, each poll round trip costs real latency, and `runtime.idle()`'s 10 s poll-sleep budget was observed to expire under heavy parallel load in the copilot persistence suite (passes standalone and on rerun; test call sites now pass 30 s). The event-driven wake-up rework below is also the fix for that flake — the PG suite is its acceptance environment.
 **Exit criterion:** Event-driven wake-ups (commit listeners, timers for next expiry) with bounded concurrent execution, plus a load test recording throughput and latency.
 
 ## DEBT-016 — `cognate create` still needs a source checkout; provenance unavailable
@@ -201,6 +203,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed (2026-10-03):** The WebMCP adapter calls `navigator.modelContext.provideContext`; the browser test installs a polyfill with that shape. Native browser support was not exercised. Separately, the console's approval card renders from `tool.approval.requested`, before `continuation.opened`, so an immediate click can find nothing to resolve (found by `E2E-cognitive-console`; the test waits for the continuation). `useProjection` staleness (DEBT-021) is hedged with a 1.5 s refresh.
 **Consequence:** A fast human click on a fresh approval card can be a silent no-op; native WebMCP behaviour is unproven.
 **Exit criterion:** The card disables its buttons until the continuation is open; the adapter is run in a browser that ships WebMCP.
+**Progress (2026-10-09):** the projection-staleness hedge this entry leans on is obsolete — DEBT-021 closed (projection reads carry checkpoints; the client converges by checkpoint). The 1.5 s console refresh can be dropped when this entry's remaining work is picked up; the approval-card/continuation ordering and native-WebMCP halves stay open.
 
 ## DEBT-026 — Remote execution worlds: residual risks
 **Status:** Open
