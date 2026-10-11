@@ -71,6 +71,7 @@
     "@godspeedai/cognate-provider-auth": "workspace:*",
     "@godspeedai/cognate-provider-local": "workspace:*",
     "@godspeedai/cognate-provider-openai-compatible": "workspace:*",
+    "@godspeedai/cognate-provider-openai-oauth": "workspace:*",
     "@godspeedai/cognate-provider-openai-responses": "workspace:*",
     "@godspeedai/cognate-provider-typesafe": "workspace:*",
     "@godspeedai/cognate-provider-wire": "workspace:*",

@@ -69,8 +69,8 @@ jobs:
           just verify
       - name: Provider and agent interoperability conformance
         run: |
-          bun test packages/hook-interoperability packages/agent-discovery packages/provider-auth packages/provider-openai-responses packages/provider-anthropic-compatible packages/provider-typesafe
-          bun test validation/reconstructions/deepseek-harness/cognate/test/J-CFG-model-provider.test.ts
+          bun test packages/hook-interoperability packages/agent-discovery packages/provider-auth packages/provider-openai-responses packages/provider-anthropic-compatible packages/provider-typesafe packages/provider-wire packages/provider-openai-oauth
+          bun test validation/reconstructions/deepseek-harness/cognate/test/J-CFG-model-provider.test.ts validation/reconstructions/deepseek-harness/cognate/test/providerRegistry.test.ts
       - name: PostgreSQL-backed suites
         run: |
           bun test packages/store-postgres
