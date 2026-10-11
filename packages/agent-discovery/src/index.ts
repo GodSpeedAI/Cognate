@@ -11,6 +11,11 @@ import {
   mapNativeEvent, parseDeclarativeHooks, type HarnessId,
   type HookDefinition, type HookInventory, type HookScope,
 } from "@godspeedai/cognate-hook-interoperability";
+import { discoverMcpServers, type McpInspection, type McpServerDefinition } from "./mcp.ts";
+import { probeVersion, probeAllowed, type VersionProbe } from "./probes.ts";
+
+export { discoverMcpServers, probeVersion, probeAllowed };
+export type { McpInspection, McpServerDefinition, VersionProbe };
 
 export interface AgentDefinition {
   readonly id: HarnessId;
@@ -27,6 +32,8 @@ export interface AgentEnvironment {
   readonly skills: readonly string[];
   readonly extensions: readonly string[];
   readonly hooks: HookInventory;
+  /** Inspectable MCP server definitions (evidence only; never dialed or spawned). */
+  readonly mcpServers: readonly McpServerDefinition[];
   /** Inert paths and observations only; presence does not imply authentication or capability. */
   readonly evidence: readonly string[];
   readonly unverified: readonly string[];
@@ -93,6 +100,8 @@ async function declarativeHookFiles(id: HarnessId, home: string, project?: strin
   if (id === "claude") {
     add(join(home, ".claude/settings.json"), "user");
     if (project) { add(join(project, ".claude/settings.json"), "project"); add(join(project, ".claude/settings.local.json"), "local"); }
+    // Enterprise managed settings take precedence in Claude Code; inspect when present.
+    for (const managed of ["/etc/claude-code/managed-settings.json"]) add(managed, "managed");
   }
   if (id === "gemini") {
     add(join(home, ".gemini/settings.json"), "user");
@@ -103,6 +112,25 @@ async function declarativeHookFiles(id: HarnessId, home: string, project?: strin
     if (project) add(join(project, ".codex/hooks.json"), "project");
   }
   return entries;
+}
+
+/** Depth-limited scan of Claude's plugin cache for plugin-declared hook definitions. */
+async function claudePluginHooks(home: string): Promise<{ path: string; pluginId: string }[]> {
+  const root = join(home, ".claude", "plugins");
+  const found: { path: string; pluginId: string }[] = [];
+  try {
+    const topLevel = await readdir(root, { withFileTypes: true });
+    for (const entry of topLevel) {
+      if (!entry.isDirectory()) continue;
+      for (const relative of ["hooks/hooks.json", ".claude-plugin/hooks.json"]) {
+        const path = join(root, entry.name, relative);
+        if (await isFile(path)) found.push({ path, pluginId: entry.name });
+      }
+    }
+  } catch {
+    // No plugin cache: no plugin hooks discoverable here (an unresolved note, not an error).
+  }
+  return found;
 }
 
 function hookExecutable(path: string, event: string, scope: HookScope): HookDefinition {
@@ -129,6 +157,19 @@ async function discoverHooks(id: HarnessId, home: string, project?: string): Pro
       unresolved.push(`${item.path}: invalid or unreadable hook configuration`);
     }
   }
+  if (id === "claude") {
+    for (const plugin of await claudePluginHooks(home)) {
+      try {
+        const value: unknown = JSON.parse(await readFile(plugin.path, "utf8"));
+        const inv = parseDeclarativeHooks(value, { harness: id, scope: "plugin", sourcePath: plugin.path, pluginId: plugin.pluginId });
+        // Plugin-contributed hooks are configuration evidence, not user-endorsed trust.
+        hooks.push(...inv.hooks.map(hook => ({ ...hook, trust: hook.trust === "unknown" ? "unknown" as const : hook.trust })));
+        unresolved.push(...inv.unresolved.map(x => `${plugin.path}: ${x}`));
+      } catch {
+        unresolved.push(`${plugin.path}: invalid or unreadable plugin hook configuration`);
+      }
+    }
+  }
   if (id === "cline") {
     const dirs = [join(home, "Documents/Cline/Hooks"), ...(project ? [join(project, ".clinerules/hooks")] : [])];
     for (const dir of dirs) for (const name of await listNames(dir)) {
@@ -138,7 +179,7 @@ async function discoverHooks(id: HarnessId, home: string, project?: string): Pro
     unresolved.push("Cline hook enablement requires inspecting the host's active settings; file presence is not activation");
   }
   if (id === "codex") unresolved.push("Codex config.toml and managed/plugin hooks are not statically enumerated by this resolver");
-  if (id === "claude") unresolved.push("Claude plugin hooks and managed settings require separate effective-config inspection");
+  if (id === "claude") unresolved.push("Claude runtime-observed hook activation is not statically discoverable; marketplace plugins outside the plugin cache are not scanned");
   if (id === "gemini") unresolved.push("Gemini extension hooks and system settings require separate effective-config inspection");
   if (id === "opencode") unresolved.push("OpenCode lifecycle hooks may be registered dynamically by plugins");
   if (id === "pi") unresolved.push("Pi hooks may be registered dynamically by extensions");
@@ -154,14 +195,18 @@ export async function inspectAgent(def: AgentDefinition, options: DiscoveryOptio
   const skills = (await Promise.all([...def.skillRoots, ...(options.extraSkillRoots ?? [])].flatMap(root => candidatePaths(root, home, project)).map(async root => (await listNames(root)).map(name => join(root, name))))).flat();
   const extensions = (await Promise.all(def.extensionRoots.flatMap(root => candidatePaths(root, home, project)).map(async root => (await listNames(root)).map(name => join(root, name))))).flat();
   const hooks = await discoverHooks(def.id, home, project);
+  const mcp = await discoverMcpServers(def.id, home, project);
   const configured = configPaths.length > 0;
   const found = executablePaths.length > 0;
   const status = found && configured ? "executable_and_configured" : found ? "executable_present" : configured ? "configured" : "not_detected";
   return {
     id: def.id, status, executablePaths, configPaths: dedupe(configPaths),
-    skills: dedupe(skills), extensions: dedupe(extensions), hooks,
-    evidence: dedupe([...executablePaths, ...configPaths, ...hooks.hooks.flatMap(h => h.evidence)]),
-    unverified: ["Version, current session, authentication, active plugins, remote-host executability and capability are not inferred from presence."],
+    skills: dedupe(skills), extensions: dedupe(extensions), hooks, mcpServers: mcp.servers,
+    evidence: dedupe([...executablePaths, ...configPaths, ...mcp.servers.map(s => s.sourcePath), ...hooks.hooks.flatMap(h => h.evidence)]),
+    unverified: [
+      "Version, current session, authentication, active plugins, remote-host executability and capability are not inferred from presence.",
+      ...mcp.unresolved,
+    ],
   };
 }
 /** Includes undetected entries for truthful inventory; caller may filter for display. */

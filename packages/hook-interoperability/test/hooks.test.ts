@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dispatchHooks, mapNativeEvent, parseDeclarativeHooks } from "../src/index.ts";
+import { dispatchHooks, mapNativeEvent, parseDeclarativeHooks, resolveEffectiveHooks } from "../src/index.ts";
 
 describe("hook semantics and effect governance", () => {
   const inventory = parseDeclarativeHooks({
@@ -50,5 +50,37 @@ describe("hook semantics and effect governance", () => {
     const inv = parseDeclarativeHooks({ hooks: { SurprisingEvent: [{ hooks: [{ type: "command", command: "hello" }] }] } }, { harness: "claude", scope: "user", sourcePath: "/home/settings.json" });
     expect(inv.discovery).toBe("partial");
     expect(inv.hooks[0]?.fidelity).toBe("unmapped");
+  });
+});
+
+describe("effective configuration layering", () => {
+  const layer = (scope: "managed" | "local" | "project" | "user", command: string, sourcePath: string) =>
+    parseDeclarativeHooks(
+      { hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command }] }] } },
+      { harness: "claude", scope, sourcePath },
+    );
+
+  test("scoped layers merge additively, dedupe identical ids, first (highest) occurrence wins", () => {
+    const managed = layer("managed", "managed-guard.sh", "/etc/claude-code/managed-settings.json");
+    const local = layer("local", "local-guard.sh", "/work/.claude/settings.local.json");
+    const user = layer("user", "user-guard.sh", "/home/.claude/settings.json");
+    const sameAsUser = layer("user", "user-guard.sh", "/home/.claude/settings.json"); // identical -> same id
+    const effective = resolveEffectiveHooks([managed, local, user, sameAsUser]);
+    expect(effective.hooks).toHaveLength(3); // union, duplicate id collapsed
+    expect(effective.hooks.map((h) => h.origin.scope).sort()).toEqual(["local", "managed", "user"]);
+    expect(effective.hooks.find((h) => h.origin.scope === "managed")?.native).toMatchObject({ command: "managed-guard.sh" });
+    expect(effective.discovery).toBe("complete");
+  });
+
+  test("an unresolved layer keeps the effective inventory partial: runtime hooks may still exist", () => {
+    const user = layer("user", "user-guard.sh", "/home/.claude/settings.json");
+    const partial: typeof user = { ...user, discovery: "partial", unresolved: ["plugin hooks not inspected"] };
+    const effective = resolveEffectiveHooks([user, partial]);
+    expect(effective.discovery).toBe("partial");
+    expect(effective.unresolved.join(" ")).toContain("plugin hooks");
+  });
+
+  test("refuses to fabricate an effective view from zero layers", () => {
+    expect(() => resolveEffectiveHooks([])).toThrow("no layers");
   });
 });

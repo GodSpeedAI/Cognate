@@ -153,6 +153,33 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/**
+ * Merges scoped inventories (callers pass them highest precedence first) into one effective
+ * inventory. Declarative hook scopes are additive in Claude/Codex/Gemini — a project hook does
+ * not remove a user hook — so merging is a union deduplicated by hook id. The first occurrence
+ * of an id (highest-precedence source) wins and its origin carries the scope it came from.
+ * Runtime/plugin registrations that could not be inspected remain an explicit unresolved note:
+ * an empty merged result is never reported as "complete".
+ */
+export function resolveEffectiveHooks(layers: readonly HookInventory[]): HookInventory {
+  if (!layers.length) throw new Error("resolveEffectiveHooks: no layers provided");
+  const harness = layers[0]!.harness;
+  const byId = new Map<string, HookDefinition>();
+  const unresolved: string[] = [];
+  let allComplete = true;
+  for (const layer of layers) {
+    if (layer.discovery !== "complete") allComplete = false;
+    unresolved.push(...layer.unresolved);
+    for (const hook of layer.hooks) if (!byId.has(hook.id)) byId.set(hook.id, hook);
+  }
+  return {
+    harness,
+    discovery: allComplete ? "complete" : "partial",
+    hooks: [...byId.values()],
+    unresolved,
+  };
+}
+
 export type HookEffect =
   | { readonly kind: "allow" }
   | { readonly kind: "deny"; readonly reason: string }
