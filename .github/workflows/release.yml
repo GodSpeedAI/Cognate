@@ -1,24 +1,16 @@
-# Release automation: Release Please (manifest mode) + npm trusted publishing.
+# One public GitHub release per Cognate SDK version, independent npm packages.
 #
-# One workflow handles both halves because events created by GITHUB_TOKEN do
-# not trigger other workflows: when a release PR merges, this run's
-# release-please step creates the GitHub releases/tags and the publish job
-# runs in the SAME run, gated on its outputs.
+# Release Please still manages each package version in one linked-versions PR.
+# Exactly one component (packages/cognate) owns the public GitHub release vX.Y.Z.
+# The other components use private-to-the-repository component-prefixed GIT tags
+# for Release Please history, NOT extra GitHub Releases. This avoids tag collisions.
 #
-#  - release-please job: opens/updates one combined release PR for all
-#    packages (release-please-config.json), then — when releases are created —
-#    reports which paths were released via `paths_released`.
-#  - publish job: per released path, resolves workspace:* ranges
-#    (scripts/prepare-npm-package.mjs), guards against re-publishing an
-#    existing version, and publishes with the npm CLI's OIDC credentials
-#    (id-token: write). No npm token secret is involved.
+# IMPORTANT: skip-github-release means Release Please does not create component
+# tags. The tag-components job below creates those Git tags at the release SHA.
+# Existing historic component-prefixed tags and releases are deliberately retained.
 #
-# First-run bootstrap: npm trusted publishers cannot be configured for
-# packages that do not exist yet. Publish 0.1.0 once from a logged-in
-# session, then add the trusted publisher per package on npmjs.com
-# (repo GodSpeedAI/Cognate, workflow release.yml, environment release).
-# This repository is PRIVATE: npm provenance attestations are not generated.
-
+# GITHUB_TOKEN-generated tags/releases do not trigger separate GitHub workflows.
+# All release and npm publish actions run in this workflow.
 name: release
 
 on:
@@ -31,7 +23,7 @@ permissions:
 
 jobs:
   release-please:
-    name: release-please (manifest)
+    name: release-please (SDK manifest)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,29 +31,88 @@ jobs:
       issues: write
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
-      paths_released: ${{ steps.release.outputs.paths_released }}
+      cognate_release_created: ${{ steps.release.outputs['packages/cognate--release_created'] }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bootstrap unprefixed v0.2.0 tag from existing umbrella release
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Historical releases used cognate-v0.2.0. Release Please must see
+          # an equivalent plain version tag before the tag policy changes.
+          if git rev-parse --verify -q refs/tags/v0.2.0 >/dev/null; then
+            echo 'v0.2.0 already exists'
+          elif git rev-parse --verify -q 'refs/tags/cognate-v0.2.0^{commit}' >/dev/null; then
+            git tag v0.2.0 'cognate-v0.2.0^{}'
+            git push origin refs/tags/v0.2.0
+            echo 'Bootstrapped v0.2.0 from cognate-v0.2.0'
+          else
+            echo 'Cannot find historical umbrella tag cognate-v0.2.0. Refusing to invent release history.' >&2
+            exit 1
+          fi
+      - name: Check unified SDK release configuration
+        run: node scripts/check-unified-release-config.mjs
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  tag-components:
+    name: Tag SDK packages and finalize one public release
+    needs: release-please
+    if: needs.release-please.outputs.cognate_release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      paths: ${{ steps.plan.outputs.paths }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: plan
+        name: Check one SDK version and emit npm publish paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/check-unified-release-config.mjs
+          node scripts/plan-sdk-release.mjs > .sdk-release-plan.json
+          echo "paths=$(node -p 'JSON.stringify(require("./.sdk-release-plan.json").paths)')" >> "$GITHUB_OUTPUT"
+          cat .sdk-release-plan.json
+      - name: Create internal component tags, without per-package GitHub Releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          node -e 'const p = require("./.sdk-release-plan.json"); for (const t of p.tags) console.log(t)' |
+          while IFS= read -r tag; do
+            if git show-ref --tags --verify --quiet "refs/tags/$tag"; then
+              echo "$tag already exists; retaining existing history"
+              continue
+            fi
+            git tag -a "$tag" -m "Cognate SDK package $tag" "$GITHUB_SHA"
+            git push origin "refs/tags/$tag"
+            echo "Created internal tag $tag"
+          done
+      - name: Normalize public GitHub release title to version only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(node -p 'require("./.sdk-release-plan.json").version')
+          gh release edit "v$version" --title "v$version"
+
   publish:
     name: publish ${{ matrix.path }}
-    needs: release-please
-    # NPM_TRUSTED_PUBLISHING_READY is a repository VARIABLE (not secret), set
-    # to 'true' after every released package has a trusted publisher configured
-    # on npmjs.com (repo GodSpeedAI/Cognate, workflow release.yml, environment
-    # release). npm trusted publishers cannot be configured for packages that
-    # do not exist yet, so the first release must be published once from a
-    # logged-in npm session; until the variable is set this job skips instead
-    # of failing on missing OIDC configuration.
-    if: needs.release-please.outputs.releases_created == 'true' && vars.NPM_TRUSTED_PUBLISHING_READY == 'true'
+    needs: [release-please, tag-components]
+    if: needs.release-please.outputs.cognate_release_created == 'true' && vars.NPM_TRUSTED_PUBLISHING_READY == 'true'
     runs-on: ubuntu-latest
     environment: release
-    # Serializes publications across runs; a queued publish is never cancelled
-    # mid-`npm publish`, and failed runs are safe to re-run (see guard below).
     concurrency:
       group: npm-publish
       cancel-in-progress: false
@@ -70,7 +121,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        path: ${{ fromJSON(needs.release-please.outputs.paths_released) }}
+        path: ${{ fromJSON(needs.tag-components.outputs.paths) }}
       max-parallel: 1
       fail-fast: false
     steps:

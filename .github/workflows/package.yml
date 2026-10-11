@@ -19,6 +19,8 @@ on:
       - "scripts/inspect-npm-tarballs.mjs"
       - "scripts/check-readmes.mjs"
       - "docs/package-readme-standard.md"
+      - "scripts/check-unified-release-config.mjs"
+      - "scripts/plan-sdk-release.mjs"
       - "release-please-config.json"
       - ".release-please-manifest.json"
       - ".github/workflows/package.yml"
@@ -49,6 +51,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Check unified GitHub release configuration
+        run: node scripts/check-unified-release-config.mjs
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
