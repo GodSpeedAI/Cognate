@@ -14,9 +14,10 @@ Cognate is a single **linked-version SDK product** with individual installable `
 
 1. Release Please maintains one combined version-bump PR for all published paths.
 2. After merge, it creates the one public GitHub Release from `packages/cognate` on the internal `cognate-vX.Y.Z` tag. A workflow step then creates the unified `vX.Y.Z` tag at the same commit and moves the release onto it, retitled to `vX.Y.Z`.
-3. A dedicated job validates that every package **and** the manifest has the same version, then writes missing component Git tags to the release commit. If versions diverge, it fails and blocks automated npm publication.
-4. The package matrix iterates every registered package and skips versions already on npm. It uses npm OIDC trusted publishing for new versions. No hard-coded list of package paths in YAML.
-5. `scripts/check-unified-release-config.mjs` prevents future changes from silently re-enabling per-package GitHub Releases or omitting SDK packages.
+3. On release-merge pushes the release-pr phase is **skipped** (`skip-github-pull-request` gated on the `chore(main): release` commit title): the component tags are minted by the tag-components job only after the release-lease job, so running release-pr in that same job races the minting — every component resolves its latest release from a tag that does not exist yet, all components look never-released, and release-lease opens a spurious changelog-only PR that would prepend duplicate sections to every changelog (observed once as #38). Regular pushes build release PRs normally.
+4. A dedicated job validates that every package **and** the manifest has the same version, then writes missing component Git tags to the release commit. If versions diverge, it fails and blocks automated npm publication.
+5. The package matrix iterates every registered package and skips versions already on npm. It uses npm OIDC trusted publishing for new versions. No hard-coded list of package paths in YAML.
+6. `scripts/check-unified-release-config.mjs` prevents future changes from silently re-enabling per-package GitHub Releases, omitting SDK packages, or dropping the release-pr phase skip.
 
 ## Initial npm bootstrap
 

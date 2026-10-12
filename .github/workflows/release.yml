@@ -59,6 +59,13 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # On a release-merge push, the github-release phase cuts the umbrella release and the
+          # tag-components job mints the component tags only afterwards. Running the release-pr
+          # phase in that same job races the tag minting: every component resolves its latest
+          # release from the manifest version's tag, which does not exist yet, so all components
+          # look never-released and release-please opens a spurious changelog-only PR (observed
+          # as #38). Skip the release-pr phase there; regular pushes build release PRs normally.
+          skip-github-pull-request: ${{ startsWith(github.event.head_commit.message, 'chore(main): release') }}
 
   tag-components:
     name: Tag SDK packages and finalize one public release
