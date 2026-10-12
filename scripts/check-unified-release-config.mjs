@@ -34,7 +34,7 @@ for(const p of paths){
 // minting, every component resolves its latest release from a not-yet-existing tag and a
 // spurious changelog-only PR opens (observed as #38).
 const workflow=readFileSync(".github/workflows/release.yml","utf8");
-if(!/skip-github-pull-request:\s*\$\{\{\s*startsWith\(github\.event\.head_commit\.message,\s*'chore\(main\): release'\)/.test(workflow))
+if(!/skip-github-pull-request:\s*["']?\$\{\{\s*startsWith\(github\.event\.head_commit\.message,\s*'chore\(main\): release'\)/.test(workflow))
   errors.push("release.yml must skip the release-pr phase on release-merge pushes (skip-github-pull-request gated on the head commit message) or every release opens a spurious changelog-only PR");
 if(errors.length){console.error(errors.join("\n"));process.exit(1)}
 console.log(`Unified release config OK: ${paths.length} SDK packages, one public GitHub Release, individual component tags`);
