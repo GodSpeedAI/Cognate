@@ -1,28 +1,27 @@
 # Current status
 
-**Status revision:** 48
+**Status revision:** 49
 
-**Stage:** Provider protocols end to end, SIWC OAuth adapter, discovery/hook depth, and the guarded TypeSafe ranker (PR #32 branch)
+**Stage:** Synchronize nine published SDK package versions, validate unified release architecture, fix CI always-auth warning (PR #34)
 
-**Summary:** Settings -> Models now submits the actually selected wire protocol (create, edit, re-key, presets, hot-swap rollback with the old provider kept usable), proven by two new J-CFG journeys plus a ProviderRegistry rollback unit. provider-wire gained byte-boundary SSE/cancellation conformance; the Responses and Anthropic adapters settle only on response.completed / message_stop, classify failures without echoing upstream text, and map stop reasons honestly (refusal -> content_filter). New packages/provider-openai-oauth implements SIWC per the official docs fetched 2026-10-11: dynamic client registration, PKCE S256, loopback callback on 127.0.0.1 with state/nonce validation, RS256/ES256 ID-token validation against discovery JWKS, atomic 0600 credential records with single-flight rotating refresh, terminal-refresh recovery, revocation, secret-free automation consent, and a plan-backed Responses provider enforcing the SIWC preview constraints (store:false, stream:true, instructions instead of system items) — 12 fake-issuer conformance tests, no live sign-in yet. agent-discovery inspects MCP definitions per harness and Claude plugin-cache hooks inertly and gains an allowlisted --version probe; hook-interoperability resolves effective hook configuration across scoped layers without ever reporting uninspected runtime hooks as absent. TypeSafe/System One bridges into the selector's Ranker boundary via a guarded tournament shortlist that can order but never widen the eligible set.
+**Summary:** Synchronized all nine newly registered Cognate SDK packages (agent-discovery, hook-interoperability, provider-anthropic-compatible, provider-auth, provider-openai-oauth, provider-openai-responses, provider-typesafe, provider-wire, store-postgres) to published version 0.2.0 in their respective package.json manifests and .release-please-manifest.json. Validated that all nine exist on npm at 0.2.0 and install cleanly in an unlinked clean-room environment outside the monorepo along with cognate and cognate-cli. Passed clean-room capability, continuation, event persistence, and CLI usage smoke tests. Verified the unified release architecture (one public GitHub release vX.Y.Z, internal component tags, 45 linked packages) via check-unified-release-config.mjs and plan-sdk-release.mjs. Resolved the CI always-auth deprecation warning by removing redundant registry-url in package.yml and deleting obsolete always-auth config in release.yml while preserving secure npm OIDC trusted publishing.
 
 **Verified:**
-- just verify: 81/81 gates (dependency gate re-run after declaring cognate-events in provider-typesafe); just typecheck clean
-- provider suites: wire 9 + Responses 11 + Anthropic 10 + auth 6 + typesafe 12 = 48/48
-- packages/provider-openai-oauth: 12/12 fake-issuer conformance (state/nonce mismatch, foreign signature, wrong audience, expiry, missing plan scope, rotation + concurrency, replay terminal, revocation, automation gate, preview constraints, leak checks)
-- packages/agent-discovery + packages/hook-interoperability: 14/14 (MCP fixtures, plugin hooks, version probes, effective layering)
-- harness: J-CFG 3/3 (protocol persist/reload/re-key, unsupported-protocol rejection), providerRegistry 3/3, J-SET/J-B/J-AIM green
-- CI verify.yml conformance step extended to provider-wire + provider-openai-oauth and the harness registry unit
+- just verify: 81/81 gates pass; just typecheck clean; 45 READMEs pass
+- all 9 packages independently verified on public npm registry at version 0.2.0
+- clean-room installation of published @godspeedai/cognate@0.2.0, @godspeedai/cognate-cli@0.2.0, store-postgres, and all 8 provider/interop modules outside the monorepo passes smoke test
+- node scripts/check-unified-release-config.mjs: 45 packages registered, 1 public GitHub release owner, all in linked-versions
+- node scripts/plan-sdk-release.mjs: all 45 package manifests and manifest entries match SDK 0.2.0
+- provider suites: 70/70 tests pass; model provider/registry tests: 6/6 pass; PostgreSQL suites: 77/77 pass
 
 **Limits:**
-- SIWC is Level-2 evidence only: no live ChatGPT sign-in; plan-backed production inference unproven pending an operator-driven, eligibility-gated live sign-in
-- Settings → Models wizard lacks a browser-level (Playwright) protocol-selection test; server journeys + units cover it
-- Effective hook state remains configuration evidence; runtime-observed activation (Claude plugin runtime, OpenCode/Pi dynamic) explicitly unresolved
+- NPM trusted publishing OIDC configuration on npmjs.com for newly added package names must be completed by the repository owner before release.yml can publish subsequent versions automatically
+- SIWC is Level-2 evidence only: no live ChatGPT sign-in
+- Effective hook state remains configuration evidence; runtime-observed activation explicitly unresolved
 - MCP inspection is static evidence only; servers are never dialed, so reachability/auth is unverified
-- Anthropic `pause_turn` maps to finishReason `error`; streaming tool calls settle at `response.completed`, not incrementally
 
-**Next:** Optional: browser-level wizard test; live SIWC operator gate; then PR #32 review/merge. Do not publish or merge without operator authorization.
+**Next:** Push changes to PR #34 branch fix/register-new-sdk-packages, verify GitHub Actions CI completes green, update PR description, and merge PR #34 into main.
 
 **Evidence:**
+- .agents/evidence/2026-10-11-sdk-package-registration-and-release.md
 - .agents/evidence/2026-10-11-provider-protocol-siwc.md
-- .agents/evidence/2026-10-09-postgres-migration.md (prior stage, revision 47)

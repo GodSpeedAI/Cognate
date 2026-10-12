@@ -130,6 +130,8 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Remove obsolete always-auth configuration
+        run: npm config delete always-auth 2>/dev/null || true
       - name: Resolve workspace dependency ranges
         run: node scripts/prepare-npm-package.mjs "${{ matrix.path }}"
       - name: Skip packages already on the registry (idempotent recovery)
