@@ -128,6 +128,8 @@ the implementation, the decision still stands and the current status is in the l
 |---|---|
 | [documentation-map.md](documentation-map.md) | this file: page purpose, reader need, canonical concepts, prerequisites |
 | [source-map.md](source-map.md) | concept, capability, workflow, and subsystem → implementation |
+| [releases.md](releases.md) | Release engineering: one SDK GitHub release per version, component tags, npm publication and recovery |
+| [release-unregistered-packages.md](release-unregistered-packages.md) | Release engineering: bootstrap and verify newly registered npm SDK modules |
 
 ## Pages outside `docs/`
 

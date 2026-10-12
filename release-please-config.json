@@ -16,6 +16,7 @@
         "cognate",
         "cognate-a2a",
         "cognate-ag-ui",
+        "cognate-agent-discovery",
         "cognate-artifacts",
         "cognate-capabilities",
         "cognate-cli",
@@ -30,6 +31,7 @@
         "cognate-execution",
         "cognate-execution-ssh",
         "cognate-execution-wsl",
+        "cognate-hook-interoperability",
         "cognate-kernel-api",
         "cognate-kernel-cordis",
         "cognate-mcp",
@@ -40,8 +42,14 @@
         "cognate-proto",
         "cognate-protocol-connect",
         "cognate-protocol-connect-bun",
+        "cognate-provider-anthropic-compatible",
+        "cognate-provider-auth",
         "cognate-provider-local",
         "cognate-provider-openai-compatible",
+        "cognate-provider-openai-oauth",
+        "cognate-provider-openai-responses",
+        "cognate-provider-typesafe",
+        "cognate-provider-wire",
         "cognate-react",
         "cognate-realitytrace",
         "cognate-runtime-api",
@@ -54,41 +62,140 @@
     }
   ],
   "packages": {
-    "packages/a2a": {},
-    "packages/ag-ui": {},
-    "packages/artifacts": {},
-    "packages/capabilities": {},
-    "packages/cli": {},
-    "packages/client": {},
-    "packages/cognate": {},
-    "packages/cognitive-api": {},
-    "packages/cognitive-memory": {},
-    "packages/cognitive-ruvector": {},
-    "packages/cognitive-rvf": {},
-    "packages/continuations": {},
-    "packages/domainforge": {},
-    "packages/events": {},
-    "packages/execution": {},
-    "packages/execution-ssh": {},
-    "packages/execution-wsl": {},
-    "packages/kernel-api": {},
-    "packages/kernel-cordis": {},
-    "packages/mcp": {},
-    "packages/profile": {},
-    "packages/projections": {},
-    "packages/proto": {},
-    "packages/protocol-connect": {},
-    "packages/protocol-connect-bun": {},
-    "packages/provider-local": {},
-    "packages/provider-openai-compatible": {},
-    "packages/react": {},
-    "packages/realitytrace": {},
-    "packages/runtime-api": {},
-    "packages/runtime-bun": {},
-    "packages/store-memory": {},
-    "packages/store-sqlite": {},
-    "packages/ui-astryx": {},
-    "profiles/copilot": {},
-    "profiles/harness": {}
+    "packages/a2a": {
+      "skip-github-release": true
+    },
+    "packages/ag-ui": {
+      "skip-github-release": true
+    },
+    "packages/agent-discovery": {
+      "skip-github-release": true
+    },
+    "packages/artifacts": {
+      "skip-github-release": true
+    },
+    "packages/capabilities": {
+      "skip-github-release": true
+    },
+    "packages/cli": {
+      "skip-github-release": true
+    },
+    "packages/client": {
+      "skip-github-release": true
+    },
+    "packages/cognate": {
+      "include-component-in-tag": false
+    },
+    "packages/cognitive-api": {
+      "skip-github-release": true
+    },
+    "packages/cognitive-memory": {
+      "skip-github-release": true
+    },
+    "packages/cognitive-ruvector": {
+      "skip-github-release": true
+    },
+    "packages/cognitive-rvf": {
+      "skip-github-release": true
+    },
+    "packages/continuations": {
+      "skip-github-release": true
+    },
+    "packages/domainforge": {
+      "skip-github-release": true
+    },
+    "packages/events": {
+      "skip-github-release": true
+    },
+    "packages/execution": {
+      "skip-github-release": true
+    },
+    "packages/execution-ssh": {
+      "skip-github-release": true
+    },
+    "packages/execution-wsl": {
+      "skip-github-release": true
+    },
+    "packages/hook-interoperability": {
+      "skip-github-release": true
+    },
+    "packages/kernel-api": {
+      "skip-github-release": true
+    },
+    "packages/kernel-cordis": {
+      "skip-github-release": true
+    },
+    "packages/mcp": {
+      "skip-github-release": true
+    },
+    "packages/profile": {
+      "skip-github-release": true
+    },
+    "packages/projections": {
+      "skip-github-release": true
+    },
+    "packages/proto": {
+      "skip-github-release": true
+    },
+    "packages/protocol-connect": {
+      "skip-github-release": true
+    },
+    "packages/protocol-connect-bun": {
+      "skip-github-release": true
+    },
+    "packages/provider-anthropic-compatible": {
+      "skip-github-release": true
+    },
+    "packages/provider-auth": {
+      "skip-github-release": true
+    },
+    "packages/provider-local": {
+      "skip-github-release": true
+    },
+    "packages/provider-openai-compatible": {
+      "skip-github-release": true
+    },
+    "packages/provider-openai-oauth": {
+      "skip-github-release": true
+    },
+    "packages/provider-openai-responses": {
+      "skip-github-release": true
+    },
+    "packages/provider-typesafe": {
+      "skip-github-release": true
+    },
+    "packages/provider-wire": {
+      "skip-github-release": true
+    },
+    "packages/react": {
+      "skip-github-release": true
+    },
+    "packages/realitytrace": {
+      "skip-github-release": true
+    },
+    "packages/runtime-api": {
+      "skip-github-release": true
+    },
+    "packages/runtime-bun": {
+      "skip-github-release": true
+    },
+    "packages/store-memory": {
+      "skip-github-release": true
+    },
+    "packages/store-postgres": {
+      "skip-github-release": true
+    },
+    "packages/store-sqlite": {
+      "skip-github-release": true
+    },
+    "packages/ui-astryx": {
+      "skip-github-release": true
+    },
+    "profiles/copilot": {
+      "skip-github-release": true
+    },
+    "profiles/harness": {
+      "skip-github-release": true
+    }
   }
 }
