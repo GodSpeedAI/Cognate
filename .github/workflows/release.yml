@@ -98,13 +98,25 @@ jobs:
             git push origin "refs/tags/$tag"
             echo "Created internal tag $tag"
           done
-      - name: Normalize public GitHub release title to version only
+      - name: Move the public release onto the unified vX.Y.Z tag
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           version=$(node -p 'require("./.sdk-release-plan.json").version')
+          # The umbrella releases in component-in-tag mode (cognate-vX.Y.Z) because Release
+          # Please's linked-versions plugin silently drops component-less strategies from the
+          # group. The public release lives on the unified vX.Y.Z tag instead.
+          if git show-ref --tags --verify --quiet "refs/tags/v$version"; then
+            echo "v$version already exists; retaining existing history"
+          else
+            git tag "v$version" "$GITHUB_SHA"
+            git push origin "refs/tags/v$version"
+            echo "Created unified tag v$version"
+          fi
+          release_id=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/cognate-v$version" --jq .id)
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/$release_id" -f tag_name="v$version"
           gh release edit "v$version" --title "v$version"
 
   publish:

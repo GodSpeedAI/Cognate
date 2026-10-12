@@ -8,7 +8,13 @@ const umbrella = "packages/cognate";
 const paths = Object.keys(config.packages);
 const errors = [];
 if (!paths.includes(umbrella)) errors.push("umbrella packages/cognate missing");
-if (config.packages[umbrella]?.["include-component-in-tag"] !== false) errors.push("umbrella must own unprefixed vX.Y.Z tags");
+// The umbrella must stay in component-in-tag mode: Release Please's linked-versions plugin
+// silently drops any strategy whose getComponent() is falsy, and getComponent() is falsy
+// whenever include-component-in-tag is false — so the "unified unprefixed tag" setting
+// removed the umbrella from the group and the cognate_release_created publish gate never
+// fired (observed: "Found 44 group components", 44/45 bumped, npm diverged from git).
+// The release workflow owns the unified vX.Y.Z tag instead.
+if (config.packages[umbrella]?.["include-component-in-tag"] !== true) errors.push("umbrella must keep include-component-in-tag: true — linked-versions drops component-less strategies and the publish gate never fires; the workflow moves the release onto the unified vX.Y.Z tag");
 if (config.packages[umbrella]?.["skip-github-release"]) errors.push("umbrella must create the one GitHub Release");
 for (const p of paths) {
   if (!Object.hasOwn(manifest,p)) errors.push(`Missing manifest path: ${p}`);
