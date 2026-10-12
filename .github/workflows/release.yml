@@ -65,7 +65,7 @@ jobs:
           # release from the manifest version's tag, which does not exist yet, so all components
           # look never-released and release-please opens a spurious changelog-only PR (observed
           # as #38). Skip the release-pr phase there; regular pushes build release PRs normally.
-          skip-github-pull-request: ${{ startsWith(github.event.head_commit.message, 'chore(main): release') }}
+          skip-github-pull-request: "${{ startsWith(github.event.head_commit.message, 'chore(main): release') }}"
 
   tag-components:
     name: Tag SDK packages and finalize one public release
