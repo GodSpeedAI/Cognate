@@ -29,5 +29,12 @@ for(const p of paths){
   const component=pkg.name.replace(/^@godspeedai\//,"");
   if(!group?.components?.includes(component)) errors.push(`Component missing from linked-versions: ${component}`);
 }
+// The release-pr phase must be skipped on release-merge pushes: component tags are minted by
+// the tag-components job after the release-please job, so running release-pr there races the
+// minting, every component resolves its latest release from a not-yet-existing tag and a
+// spurious changelog-only PR opens (observed as #38).
+const workflow=readFileSync(".github/workflows/release.yml","utf8");
+if(!/skip-github-pull-request:\s*\$\{\{\s*startsWith\(github\.event\.head_commit\.message,\s*'chore\(main\): release'\)/.test(workflow))
+  errors.push("release.yml must skip the release-pr phase on release-merge pushes (skip-github-pull-request gated on the head commit message) or every release opens a spurious changelog-only PR");
 if(errors.length){console.error(errors.join("\n"));process.exit(1)}
 console.log(`Unified release config OK: ${paths.length} SDK packages, one public GitHub Release, individual component tags`);
