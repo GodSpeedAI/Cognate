@@ -84,7 +84,7 @@
       "skip-github-release": true
     },
     "packages/cognate": {
-      "include-component-in-tag": false
+      "include-component-in-tag": true
     },
     "packages/cognitive-api": {
       "skip-github-release": true

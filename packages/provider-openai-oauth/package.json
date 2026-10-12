@@ -1,26 +1,14 @@
 {
   "name": "@godspeedai/cognate-provider-openai-oauth",
-  "version": "0.3.0",
+  "version": "0.2.0",
   "description": "Sign in with ChatGPT (SIWC) OAuth/OIDC credential adapter: dynamic client registration, PKCE sign-in, validated tokens, rotating refresh, and governed subscription inference.",
   "type": "module",
   "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
-    "directory": "packages/provider-openai-oauth"
-  },
-  "engines": {
-    "bun": ">=1.4.0"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "src"
-  ],
-  "exports": {
-    ".": "./src/index.ts"
-  },
+  "repository": { "type": "git", "url": "git+https://github.com/GodSpeedAI/Cognate.git", "directory": "packages/provider-openai-oauth" },
+  "engines": { "bun": ">=1.4.0" },
+  "publishConfig": { "access": "public" },
+  "files": ["src"],
+  "exports": { ".": "./src/index.ts" },
   "dependencies": {
     "@godspeedai/cognate-capabilities": "workspace:*",
     "@godspeedai/cognate-provider-auth": "workspace:*",
