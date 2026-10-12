@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-v0.2.0...cognate-execution-v0.3.0) (2026-10-12)
+
+
+### Miscellaneous Chores
+
+* **cognate-execution:** Synchronize cognate SDK packages versions
+
 ## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-v0.1.2...cognate-execution-v0.2.0) (2026-10-11)
 
 
