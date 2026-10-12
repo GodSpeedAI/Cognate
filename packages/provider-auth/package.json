@@ -1,24 +1,5 @@
 {
-  "name": "@godspeedai/cognate-provider-auth",
-  "version": "0.3.0",
-  "description": "Ephemeral credential-source and usage authorization boundary for model providers.",
-  "type": "module",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
-    "directory": "packages/provider-auth"
-  },
-  "engines": {
-    "bun": ">=1.4.0"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "src"
-  ],
-  "exports": {
-    ".": "./src/index.ts"
-  }
+  "name":"@godspeedai/cognate-provider-auth","version":"0.2.0","description":"Ephemeral credential-source and usage authorization boundary for model providers.","type":"module","license":"Apache-2.0",
+  "repository":{"type":"git","url":"git+https://github.com/GodSpeedAI/Cognate.git","directory":"packages/provider-auth"},
+  "engines":{"bun":">=1.4.0"},"publishConfig":{"access":"public"},"files":["src"],"exports":{".":"./src/index.ts"}
 }

@@ -1,12 +1,5 @@
 # Changelog
 
-## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cli-v0.2.0...cognate-cli-v0.3.0) (2026-10-12)
-
-
-### Miscellaneous Chores
-
-* **cognate-cli:** Synchronize cognate SDK packages versions
-
 ## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cli-v0.1.2...cognate-cli-v0.2.0) (2026-10-11)
 
 

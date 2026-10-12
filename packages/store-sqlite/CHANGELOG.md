@@ -1,12 +1,5 @@
 # Changelog
 
-## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.2.0...cognate-store-sqlite-v0.3.0) (2026-10-12)
-
-
-### Miscellaneous Chores
-
-* **cognate-store-sqlite:** Synchronize cognate SDK packages versions
-
 ## [0.2.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.1.2...cognate-store-sqlite-v0.2.0) (2026-10-11)
 
 
