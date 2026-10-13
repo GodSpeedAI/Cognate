@@ -15,6 +15,9 @@ import {
   type SemanticProjection,
   type SemanticRelation,
   type SemanticValue,
+  type SemanticWorldOptions,
+  type DomainModelIdentity,
+  type WorldLoadResult,
 } from "./types.ts";
 
 /** Internal signal for a computed-id collision, classified before the generic error mapper. */
@@ -74,13 +77,50 @@ export function classifyParseError(err: unknown): SemanticError {
   return { kind: "unknown", message };
 }
 
-/** Parse a `.sea` source with the pinned Graph binding and produce the Cognate projection. Never throws. */
+/** Parse one standalone `.sea` source. Imports require loadSemanticWorld, never concatenation. */
 export function loadSemanticProjection(source: string, options: { readonly uri: string }): LoadResult {
   const projectionSource = { uri: options.uri, digest: sha256(source) };
-
   try {
-    const graph = Graph.parse(source);
+    return { ok: true, projection: projectGraph(Graph.parse(source), projectionSource) };
+  } catch (err) {
+    return { ok: false, error: classifyParseError(err) };
+  }
+}
 
+/**
+ * Resolve one canonical multi-module world using DomainForge's native source-map resolver.
+ * Graph.parse(source) cannot resolve imports, and Cognate must never implement its own resolver.
+ * This requires the DomainForge native binding that provides Graph.parseSourceMap; fail closed
+ * rather than returning a partial graph if an older pinned binding is installed.
+ */
+export function loadSemanticWorld(options: SemanticWorldOptions): WorldLoadResult {
+  try {
+    const factory = Graph as typeof Graph & {
+      parseSourceMap?: (entryLogicalPath: string, sourcesJson: string) => Graph;
+    };
+    if (typeof factory.parseSourceMap !== "function") {
+      throw new Error("binding unavailable: DomainForge Graph.parseSourceMap is required for composed worlds");
+    }
+    const sourcesJson = JSON.stringify(options.sources);
+    const graph = factory.parseSourceMap(options.entry, sourcesJson);
+    const identityJson = Graph.domainModelIdentityJson(options.entry, sourcesJson, options.registryContentHash);
+    const worldRef = Graph.worldRefFromIdentityJson(options.worldName, identityJson);
+    Graph.verifyWorldRef(worldRef, identityJson);
+    const identity = JSON.parse(identityJson) as DomainModelIdentity;
+    // References are pinned to DomainForge's verified resolved-world digest, not a locally
+    // concatenated file hash; changing an imported file therefore changes every reference.
+    const projection = projectGraph(graph, {
+      uri: worldRef,
+      digest: worldRef.slice(worldRef.lastIndexOf("@") + 1),
+    });
+    return { ok: true, projection, worldRef, identity };
+  } catch (err) {
+    return { ok: false, error: classifyParseError(err) };
+  }
+}
+
+/** Deterministic view over a DomainForge-built Graph; never grants capabilities or authority. */
+function projectGraph(graph: Graph, projectionSource: { readonly uri: string; readonly digest: string }): SemanticProjection {
     const objects: SemanticObject[] = [];
     const relations: SemanticRelation[] = [];
     const seenIds = new Map<string, string>(); // computed id -> native id, to detect collisions
@@ -237,10 +277,7 @@ export function loadSemanticProjection(source: string, options: { readonly uri: 
       unmapped: UNSUPPORTED_KINDS,
     };
 
-    return { ok: true, projection };
-  } catch (err) {
-    return { ok: false, error: classifyParseError(err) };
-  }
+    return projection;
 }
 
 function sortDeep(value: unknown): unknown {
