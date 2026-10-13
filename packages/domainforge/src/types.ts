@@ -46,6 +46,33 @@ export type SemanticError =
 
 export type LoadResult = { readonly ok: true; readonly projection: SemanticProjection } | { readonly ok: false; readonly error: SemanticError };
 
+/** A complete DomainForge source map. Paths are logical module ids, not filesystem paths. */
+export interface SemanticWorldOptions {
+  readonly entry: string;
+  readonly sources: Readonly<Record<string, string>>;
+  readonly worldName: string;
+  readonly registryContentHash?: string;
+}
+
+/** DomainForge's verified identity for the complete resolved model, not a Cognate-derived hash. */
+export interface DomainModelIdentity {
+  readonly identity_scheme_version: string;
+  readonly producer: string;
+  readonly producer_version: string;
+  readonly language_schema_version: string;
+  readonly compiler_interpretation_version: string;
+  readonly canonicalization_version: string;
+  readonly source_set_hash: string;
+  readonly content_hash: string;
+  readonly semantic_closure_hash: string;
+  readonly semantic_pack_set_hash: string | null;
+  readonly registry_content_hash: string | null;
+}
+
+export type WorldLoadResult =
+  | { readonly ok: true; readonly projection: SemanticProjection; readonly worldRef: string; readonly identity: DomainModelIdentity }
+  | { readonly ok: false; readonly error: SemanticError };
+
 export interface MappingRow {
   readonly kind: string;
   readonly supported: boolean;
