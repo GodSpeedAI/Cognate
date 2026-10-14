@@ -33,13 +33,11 @@ resolved. GitHub release run `38300385888` reports success for every publish job
 non-secret readiness variable `NPM_TRUSTED_PUBLISHING_READY` is true. These are observations of
 the existing release, not a promise about future npm trust settings or network availability.
 
-The audit found no independent human APPROVED review; only CodeRabbit COMMENTED reviews.
-The author `SPRIME01` is the only repository collaborator and organization admin returned by the
-read-only GitHub audit. There is no CODEOWNERS file, repository team or requested reviewer.
-An organization owner must grant a named independent reviewer access before approval can be
-obtained; the operator has been asked to identify that reviewer. No access changes were made.
-Independent GitHub approval and final operator authorization remain mandatory. No merge,
-release trigger, npm publication or new dependency consumption was performed.
+The operator explicitly removed the independent GitHub reviewer requirement. No reviewer-access
+change or additional approval is required. The remaining conditions are verified actionable review
+fixes, green latest-head CI and clean-room packaging, linked release readiness, documented limits,
+and final operator authorization before merge or publication. No merge, release trigger, npm
+publication or new dependency consumption was performed.
 
 Observed check receipts at that previous head:
 
