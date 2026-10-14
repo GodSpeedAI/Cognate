@@ -93,6 +93,8 @@ const report = await dispatcher.drain();
 
 Throw `PermanentDeliveryError` from `deliver` to poison an item immediately instead of retrying. Poisoned items stay visible via `store.listOutbox({ status: "poisoned" })` until an operator calls `store.requeueOutbox`. Delivery targets must deduplicate by `item.id` — at-least-once delivery means a retry can deliver twice.
 
+Built-in stores also provide optional fenced claim methods (`claimOutboxLeased`, `renewOutboxLease`, and `settleOutboxLease`). They bind renewal and settlement to an owner and monotonically increasing generation, so a worker whose lease expired or was requeued cannot acknowledge a later claim. `OutboxDispatcher` uses these methods when available, heartbeats active deliveries, and aborts work after losing its claim. Its `concurrency` option defaults to one; values above one require fenced lease support. Older adapters remain compatible through the existing methods but do not provide stale-worker protection; run their dispatcher in one process only. See [the lease contract](../../docs/contracts/fenced-outbox-leases.md) for clock and delivery limits.
+
 ## Conformance kit for store implementers
 
 Implementing a store means implementing it correctly; run the kit unchanged in your test suite:
@@ -100,7 +102,7 @@ Implementing a store means implementing it correctly; run the kit unchanged in y
 ```ts
 import { storeConformance } from "@godspeedai/cognate-events/conformance";
 
-storeConformance("my-store", myStoreFactory, { persistent: true });
+storeConformance("my-store", myStoreFactory, { persistent: true, fencedOutbox: true });
 ```
 
 Pass `persistent: false` for stores that do not survive a reopen; persistent stores are additionally tested to keep every committed decision across one. Reference implementations: [`@godspeedai/cognate-store-memory`](https://www.npmjs.com/package/@godspeedai/cognate-store-memory) and [`@godspeedai/cognate-store-sqlite`](https://www.npmjs.com/package/@godspeedai/cognate-store-sqlite).

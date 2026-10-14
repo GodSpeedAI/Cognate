@@ -117,7 +117,7 @@ function mapRecordRow(row: Row): StoredRecord {
 }
 
 function mapOutboxRow(row: Row): OutboxItem {
-  return {
+  const item: OutboxItem = {
     id: row.id,
     topic: row.topic,
     payload: json(row.payload_text),
@@ -128,6 +128,8 @@ function mapOutboxRow(row: Row): OutboxItem {
     receipt: row.receipt_text == null ? null : json(row.receipt_text),
     createdAt: row.created_at,
   };
+  if (row.lease_owner != null) return { ...item, lease: { ownerId: row.lease_owner, generation: num(row.lease_generation), expiresAt: num(row.claimed_until) } };
+  return item;
 }
 
 function mapCheckpointRow(row: Row): ProjectionCheckpoint {
@@ -307,6 +309,10 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
       if (request.idempotency) {
         const settled = await readIdempotencyRecord(tx, request.idempotency);
         if (settled) {
+          // The counter lock serialized this lookup, but a duplicate appends no facts. Undo
+          // its still-uncommitted reservation while retaining the lock, so replay cannot
+          // consume event positions. No other allocator can observe or use this reservation.
+          if(eventCount>0)await tx`UPDATE ${t.meta} SET next_position = next_position - ${eventCount} WHERE id = ${POSITION_COUNTER_ID}`;
           outcome = settled;
           return;
         }
@@ -429,9 +435,9 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     throw new PostgresStoreError("store-postgres: commit resolved without an outcome");
   }
 
-  async function eventsByIds(ids: readonly string[]): Promise<StoredEvent[]> {
+  async function eventsByIds(ids: readonly string[], executor: Executor = sql): Promise<StoredEvent[]> {
     if (ids.length === 0) return [];
-    const rows = await sql`${eventSelect} WHERE e.event_id IN ${sql([...ids])}`;
+    const rows = await executor`${eventSelect} WHERE e.event_id IN ${sql([...ids])}`;
     const byId = new Map<string, Row>(rows.map((row: Row) => [row.event_id, row]));
     return ids.filter((id) => byId.has(id)).map((eventId) => mapEventRow(byId.get(eventId)));
   }
@@ -443,7 +449,9 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     if (rows.length === 0) return undefined;
     const row = rows[0]!;
     if (row.fingerprint !== idempotency.fingerprint) throw new IdempotencyMismatchError(idempotency.scope, idempotency.key);
-    return { kind: "duplicate", events: await eventsByIds(json<string[]>(row.event_ids)), result: json<Json>(row.result) };
+    // A serialized duplicate may hold the position-counter lock. Re-entering the pool here
+    // deadlocks when every other connection waits for that lock; reuse its transaction.
+    return { kind: "duplicate", events: await eventsByIds(json<string[]>(row.event_ids), executor), result: json<Json>(row.result) };
   }
 
   // ── Store surface ───────────────────────────────────────────────────────────────
@@ -534,29 +542,79 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
       // transaction ever waits behind another.
       const rows = await sql`WITH candidates AS (
           SELECT seq FROM ${t.outbox}
-          WHERE topic = ${options.topic} AND status = 'pending' AND claimed_until <= ${options.now}
+          WHERE topic = ${options.topic} AND status = 'pending' AND claimed_until <= ${options.now} AND lease_generation = 0
           ORDER BY seq LIMIT ${options.limit} FOR UPDATE SKIP LOCKED
         )
-        UPDATE ${t.outbox} o SET attempts = o.attempts + 1, claimed_until = ${options.now + options.leaseMs}
+        UPDATE ${t.outbox} o SET attempts = o.attempts + 1, claimed_until = ${options.now + options.leaseMs}, lease_owner = NULL
         FROM candidates WHERE o.seq = candidates.seq
         RETURNING o.*, o.payload::text AS payload_text, o.receipt::text AS receipt_text`;
       return rows.map(mapOutboxRow);
     },
 
+    async claimOutboxLeased(options) {
+      assertOpen();
+      const rows = await sql`WITH candidates AS (
+          SELECT seq FROM ${t.outbox}
+          WHERE topic = ${options.topic} AND status = 'pending' AND claimed_until <= ${options.now}
+          ORDER BY seq LIMIT ${options.limit} FOR UPDATE SKIP LOCKED
+        )
+        UPDATE ${t.outbox} o SET attempts = o.attempts + 1, claimed_until = ${options.now + options.leaseMs},
+          lease_owner = ${options.ownerId}, lease_generation = o.lease_generation + 1
+        FROM candidates WHERE o.seq = candidates.seq
+        RETURNING o.*, o.payload::text AS payload_text, o.receipt::text AS receipt_text`;
+      return rows.map(mapOutboxRow);
+    },
+
+    async renewOutboxLease(lease) {
+      assertOpen();
+      const rows = await sql`UPDATE ${t.outbox} SET claimed_until = ${lease.now + lease.leaseMs}
+        WHERE id = ${lease.id} AND status = 'pending' AND lease_owner = ${lease.ownerId}
+          AND lease_generation = ${lease.generation} AND claimed_until > ${lease.now}
+        RETURNING id`;
+      return rows.length === 1;
+    },
+
+    async settleOutboxLease(lease, settlement) {
+      assertOpen();
+      let rows;
+      if (settlement.kind === "delivered") {
+        rows = await sql`UPDATE ${t.outbox} SET status = 'delivered', receipt = ${jsonb(settlement.receipt)}, last_error = NULL,
+          lease_owner = NULL, lease_generation = lease_generation + 1
+          WHERE id = ${lease.id} AND status = 'pending' AND lease_owner = ${lease.ownerId}
+            AND lease_generation = ${lease.generation} AND claimed_until > ${lease.now} RETURNING id`;
+      } else if (settlement.kind === "retry") {
+        rows = await sql`UPDATE ${t.outbox} SET last_error = ${settlement.error}, claimed_until = ${settlement.retryAt},
+          lease_owner = NULL, lease_generation = lease_generation + 1
+          WHERE id = ${lease.id} AND status = 'pending' AND lease_owner = ${lease.ownerId}
+            AND lease_generation = ${lease.generation} AND claimed_until > ${lease.now} RETURNING id`;
+      } else {
+        rows = await sql`UPDATE ${t.outbox} SET status = 'poisoned', last_error = ${settlement.error},
+          lease_owner = NULL, lease_generation = lease_generation + 1
+          WHERE id = ${lease.id} AND status = 'pending' AND lease_owner = ${lease.ownerId}
+            AND lease_generation = ${lease.generation} AND claimed_until > ${lease.now} RETURNING id`;
+      }
+      return rows.length === 1;
+    },
+
     async settleOutbox(id: string, settlement: OutboxSettlement): Promise<void> {
       assertOpen();
+      let rows;
       if (settlement.kind === "delivered") {
-        await sql`UPDATE ${t.outbox} SET status = 'delivered', receipt = ${jsonb(settlement.receipt)} WHERE id = ${id}`;
+        rows = await sql`UPDATE ${t.outbox} SET status = 'delivered', receipt = ${jsonb(settlement.receipt)} WHERE id = ${id} AND lease_owner IS NULL AND lease_generation = 0 RETURNING id`;
       } else if (settlement.kind === "retry") {
-        await sql`UPDATE ${t.outbox} SET last_error = ${settlement.error}, claimed_until = ${settlement.retryAt} WHERE id = ${id}`;
+        rows = await sql`UPDATE ${t.outbox} SET last_error = ${settlement.error}, claimed_until = ${settlement.retryAt} WHERE id = ${id} AND lease_owner IS NULL AND lease_generation = 0 RETURNING id`;
       } else {
-        await sql`UPDATE ${t.outbox} SET status = 'poisoned', last_error = ${settlement.error} WHERE id = ${id}`;
+        rows = await sql`UPDATE ${t.outbox} SET status = 'poisoned', last_error = ${settlement.error} WHERE id = ${id} AND lease_owner IS NULL AND lease_generation = 0 RETURNING id`;
+      }
+      if (rows.length === 0) {
+        const current = await sql`SELECT lease_owner, lease_generation FROM ${t.outbox} WHERE id = ${id}`;
+        if (current.length > 0 && (current[0]!.lease_owner != null || num(current[0]!.lease_generation) > 0)) throw new Error(`outbox item ${id} uses fenced leases`);
       }
     },
 
     async requeueOutbox(id: string, now: number): Promise<void> {
       assertOpen();
-      await sql`UPDATE ${t.outbox} SET status = 'pending', claimed_until = ${now} WHERE id = ${id}`;
+      await sql`UPDATE ${t.outbox} SET status = 'pending', claimed_until = ${now}, lease_owner = NULL, lease_generation = CASE WHEN lease_generation > 0 THEN lease_generation + 1 ELSE 0 END WHERE id = ${id}`;
     },
 
     async listOutbox(options?: { readonly topic?: string; readonly status?: OutboxStatus }): Promise<OutboxItem[]> {

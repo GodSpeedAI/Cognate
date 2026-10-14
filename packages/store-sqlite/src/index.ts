@@ -99,7 +99,7 @@ export function buildListRecordsQuery(collection: string, where?: { readonly [fi
 }
 
 function mapOutboxRow(row: Row): OutboxItem {
-  return {
+  const item: OutboxItem = {
     id: row.id,
     topic: row.topic,
     payload: JSON.parse(row.payload as string),
@@ -110,6 +110,8 @@ function mapOutboxRow(row: Row): OutboxItem {
     receipt: row.receipt != null ? JSON.parse(row.receipt as string) : null,
     createdAt: row.created_at,
   };
+  if (row.lease_owner != null) return { ...item, lease: { ownerId: row.lease_owner, generation: row.lease_generation, expiresAt: row.claimed_until } };
+  return item;
 }
 
 function mapCheckpointRow(row: Row): ProjectionCheckpoint {
@@ -264,23 +266,52 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
   });
 
   const claimOutboxTxn = db.transaction((topic: string, now: number, limit: number, leaseMs: number): OutboxItem[] => {
-    const rows = db.query("SELECT * FROM outbox WHERE topic = ? AND status = 'pending' AND claimed_until <= ? ORDER BY rowid LIMIT ?").all(topic, now, limit) as Row[];
+    const rows = db.query("SELECT * FROM outbox WHERE topic = ? AND status = 'pending' AND claimed_until <= ? AND lease_generation = 0 ORDER BY rowid LIMIT ?").all(topic, now, limit) as Row[];
     const claimedUntil = now + leaseMs;
     const items: OutboxItem[] = [];
     for (const row of rows) {
-      db.query("UPDATE outbox SET attempts = attempts + 1, claimed_until = ? WHERE id = ?").run(claimedUntil, row.id);
-      items.push(mapOutboxRow({ ...row, attempts: row.attempts + 1, claimed_until: claimedUntil }));
+      db.query("UPDATE outbox SET attempts = attempts + 1, claimed_until = ?, lease_owner = NULL WHERE id = ? AND lease_generation = 0").run(claimedUntil, row.id);
+      items.push(mapOutboxRow({ ...row, attempts: row.attempts + 1, claimed_until: claimedUntil, lease_owner: null }));
     }
     return items;
   });
 
-  const settleOutboxTxn = db.transaction((id: string, settlement: OutboxSettlement): void => {
+  const claimOutboxLeasedTxn = db.transaction((topic: string, ownerId: string, now: number, limit: number, leaseMs: number): OutboxItem[] => {
+    const rows = db.query("SELECT * FROM outbox WHERE topic = ? AND status = 'pending' AND claimed_until <= ? ORDER BY rowid LIMIT ?").all(topic, now, limit) as Row[];
+    const expiresAt = now + leaseMs;
+    return rows.map((row) => {
+      const generation = row.lease_generation + 1;
+      db.query("UPDATE outbox SET attempts = attempts + 1, claimed_until = ?, lease_owner = ?, lease_generation = ? WHERE id = ?").run(expiresAt, ownerId, generation, row.id);
+      return mapOutboxRow({ ...row, attempts: row.attempts + 1, claimed_until: expiresAt, lease_owner: ownerId, lease_generation: generation });
+    });
+  });
+
+  const renewOutboxLeaseTxn = db.transaction((id: string, ownerId: string, generation: number, now: number, leaseMs: number): boolean => {
+    const result = db.query("UPDATE outbox SET claimed_until = ? WHERE id = ? AND status = 'pending' AND lease_owner = ? AND lease_generation = ? AND claimed_until > ?").run(now + leaseMs, id, ownerId, generation, now);
+    return result.changes === 1;
+  });
+
+  const settleOutboxLeaseTxn = db.transaction((id: string, ownerId: string, generation: number, now: number, settlement: OutboxSettlement): boolean => {
+    let result;
     if (settlement.kind === "delivered") {
-      db.query("UPDATE outbox SET status = 'delivered', receipt = ? WHERE id = ?").run(JSON.stringify(settlement.receipt), id);
+      result = db.query("UPDATE outbox SET status = 'delivered', receipt = ?, last_error = NULL, lease_owner = NULL, lease_generation = lease_generation + 1 WHERE id = ? AND status = 'pending' AND lease_owner = ? AND lease_generation = ? AND claimed_until > ?").run(JSON.stringify(settlement.receipt), id, ownerId, generation, now);
     } else if (settlement.kind === "retry") {
-      db.query("UPDATE outbox SET last_error = ?, claimed_until = ? WHERE id = ?").run(settlement.error, settlement.retryAt, id);
+      result = db.query("UPDATE outbox SET last_error = ?, claimed_until = ?, lease_owner = NULL, lease_generation = lease_generation + 1 WHERE id = ? AND status = 'pending' AND lease_owner = ? AND lease_generation = ? AND claimed_until > ?").run(settlement.error, settlement.retryAt, id, ownerId, generation, now);
     } else {
-      db.query("UPDATE outbox SET status = 'poisoned', last_error = ? WHERE id = ?").run(settlement.error, id);
+      result = db.query("UPDATE outbox SET status = 'poisoned', last_error = ?, lease_owner = NULL, lease_generation = lease_generation + 1 WHERE id = ? AND status = 'pending' AND lease_owner = ? AND lease_generation = ? AND claimed_until > ?").run(settlement.error, id, ownerId, generation, now);
+    }
+    return result.changes === 1;
+  });
+
+  const settleOutboxTxn = db.transaction((id: string, settlement: OutboxSettlement): void => {
+    const row = db.query("SELECT lease_owner, lease_generation FROM outbox WHERE id = ?").get(id) as { lease_owner: string | null; lease_generation: number } | null;
+    if (row?.lease_owner != null || (row?.lease_generation ?? 0) > 0) throw new Error(`outbox item ${id} uses fenced leases`);
+    if (settlement.kind === "delivered") {
+      db.query("UPDATE outbox SET status = 'delivered', receipt = ? WHERE id = ? AND lease_owner IS NULL AND lease_generation = 0").run(JSON.stringify(settlement.receipt), id);
+    } else if (settlement.kind === "retry") {
+      db.query("UPDATE outbox SET last_error = ?, claimed_until = ? WHERE id = ? AND lease_owner IS NULL AND lease_generation = 0").run(settlement.error, settlement.retryAt, id);
+    } else {
+      db.query("UPDATE outbox SET status = 'poisoned', last_error = ? WHERE id = ? AND lease_owner IS NULL AND lease_generation = 0").run(settlement.error, id);
     }
   });
 
@@ -423,6 +454,21 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
       return claimOutboxTxn.immediate(options.topic, options.now, options.limit, options.leaseMs);
     },
 
+    async claimOutboxLeased(options) {
+      assertOpen();
+      return claimOutboxLeasedTxn.immediate(options.topic, options.ownerId, options.now, options.limit, options.leaseMs);
+    },
+
+    async renewOutboxLease(lease) {
+      assertOpen();
+      return renewOutboxLeaseTxn.immediate(lease.id, lease.ownerId, lease.generation, lease.now, lease.leaseMs);
+    },
+
+    async settleOutboxLease(lease, settlement) {
+      assertOpen();
+      return settleOutboxLeaseTxn.immediate(lease.id, lease.ownerId, lease.generation, lease.now, settlement);
+    },
+
     async settleOutbox(id: string, settlement: OutboxSettlement): Promise<void> {
       assertOpen();
       settleOutboxTxn.immediate(id, settlement);
@@ -430,7 +476,7 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
 
     async requeueOutbox(id: string, now: number): Promise<void> {
       assertOpen();
-      db.query("UPDATE outbox SET status = 'pending', claimed_until = ? WHERE id = ?").run(now, id);
+      db.query("UPDATE outbox SET status = 'pending', claimed_until = ?, lease_owner = NULL, lease_generation = CASE WHEN lease_generation > 0 THEN lease_generation + 1 ELSE 0 END WHERE id = ?").run(now, id);
     },
 
     async listOutbox(options?: { readonly topic?: string; readonly status?: OutboxStatus }): Promise<OutboxItem[]> {

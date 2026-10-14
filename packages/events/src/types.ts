@@ -79,6 +79,32 @@ export interface OutboxItem extends OutboxIntent {
   readonly lastError: string | null;
   readonly receipt: Json;
   readonly createdAt: string;
+  /** Present on claims made through the optional fenced lease API. */
+  readonly lease?: OutboxLease;
+}
+
+/** A claim identity. Generation increases every time a row is reclaimed or manually requeued. */
+export interface OutboxLease {
+  readonly ownerId: string;
+  readonly generation: number;
+  readonly expiresAt: number;
+}
+
+export interface OutboxLeaseClaim {
+  readonly topic: string;
+  readonly ownerId: string;
+  /** Caller-observed epoch milliseconds; see docs/contracts/fenced-outbox-leases.md. */
+  readonly now: number;
+  readonly limit: number;
+  readonly leaseMs: number;
+}
+
+export interface OutboxLeaseIdentity {
+  readonly id: string;
+  readonly ownerId: string;
+  readonly generation: number;
+  /** Caller-observed epoch milliseconds. */
+  readonly now: number;
 }
 
 export type OutboxSettlement =
@@ -152,6 +178,10 @@ export interface DurableStore {
 
   claimOutbox(options: { readonly topic: string; readonly now: number; readonly limit: number; readonly leaseMs: number }): Promise<OutboxItem[]>;
   settleOutbox(id: string, settlement: OutboxSettlement): Promise<void>;
+  /** Optional fenced extension. Older adapters may omit all three methods. */
+  claimOutboxLeased?(options: OutboxLeaseClaim): Promise<OutboxItem[]>;
+  renewOutboxLease?(lease: OutboxLeaseIdentity & { readonly leaseMs: number }): Promise<boolean>;
+  settleOutboxLease?(lease: OutboxLeaseIdentity, settlement: OutboxSettlement): Promise<boolean>;
   /** Operator replay path for a poisoned item. */
   requeueOutbox(id: string, now: number): Promise<void>;
   listOutbox(options?: { readonly topic?: string; readonly status?: OutboxStatus }): Promise<OutboxItem[]>;

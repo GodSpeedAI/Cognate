@@ -1,0 +1,14 @@
+# Bounded native run execution
+
+Proposed additive SDK contract: `RuntimeOptions.execution.maxConcurrentRuns` defaults to one and accepts integers 1–64. Capacity above one requires an explicit `execution.resourceKeys(run)` eligibility policy; returning an empty array explicitly declares independence. Run-local chains still serialize replay and continuation delivery. Independent runs may overlap up to this bound. The policy is a trusted synchronous function over the stored RunView; runs with any common key cannot execute concurrently in the same process. Keys do not grant authority. Throwing or malformed admission fails closed. The caller must canonicalize resource identities, including filesystem aliases, before returning keys.
+
+The same execution gate covers started, recovered and resumed runs. Run and continuation outbox dispatch share one process-local pre-claim admission budget at the configured capacity. A denied permit leaves the item unclaimed; empty claims and every settlement/error path release it. Tick order alternates between the two topics so an empty first topic cannot starve the other at capacity one. Direct recovery holds no outbox claim and still uses the execution gate. Resource acquisition lasts for one agent execution entry and releases when it completes or suspends. Resource keys should be derived from frozen run input and must cover every shared writable resource. This mechanism is process-local and cannot establish distributed run-write ownership or OS isolation.
+
+Compatibility: default capacity one preserves current scheduling. Existing providers, run inputs and event formats remain valid. Agents using process-global mutable state must remain serialized or declare resource keys; concurrent operation is an explicitly granted affordance. Workbench must not consume this source checkout as its runtime dependency. A published linked SDK release and application eligibility tests are required for integration.
+
+Acceptance: capacities 1/2/4/8 show exact observed maxima with distinguishable outputs; conflicting workspace keys serialize while independent keys overlap; cancellation, continuation, deterministic replay and service conformance pass. No exactly-once external effect claim is made.
+
+Injected legacy/custom stores without the complete fenced claim/renew/settle trio are rejected
+before opening runtime resources when capacity is above one. Otherwise the background dispatcher
+would reject only during draining, leaving accepted runs queued without an executable configuration.
+Default capacity one retains legacy-adapter compatibility.

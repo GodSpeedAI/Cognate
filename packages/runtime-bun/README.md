@@ -124,12 +124,14 @@ kept current automatically), `cognition` (index completed runs and recall them v
 
 ## Limitations
 
-- **One process, one writer.** All runs live in the process that opened the store; executions
-  within a tick run sequentially, so a slow agent delays others. To scale out, split runtimes per
-  store file.
+- **One runtime execution owner per store.** PostgreSQL supports multiple durable-store writers;
+  that does not establish distributed run ownership. Run execution defaults to serial. Opt-in
+  `execution.maxConcurrentRuns` admits bounded independent runs in one process and requires a
+  trusted `execution.resourceKeys` eligibility policy above one. Shared resource keys serialize;
+  callers must canonicalize aliases. Do not start competing runtimes against the same runnable work.
 - **Steps are at-least-once.** A step that was in flight during a crash re-executes after restart.
-  Keep steps idempotent, and put irreversible external calls behind a `ctx.waitFor` continuation so
-  they happen once, resolved deliberately.
+  Keep steps idempotent, and use native commitment receipts and explicit reconciliation for external
+  actions. A continuation or permission gate alone does not establish exactly-once physical effects.
 - **Polling, not pushing, inside the process.** Background work (run execution, resume delivery,
   continuation expiry) runs on a loop every `tickMs`.
 - **Erasure has copies.** `runtime.erase` removes an event's payload from the log, derived views,
