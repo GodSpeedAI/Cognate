@@ -167,5 +167,6 @@ the implementation, the decision still stands and the current status is in the l
 - [evidence/fenced-outbox-leases.md](evidence/fenced-outbox-leases.md) — store conformance and stale-owner regression evidence.
 - [evidence/postgres-idempotency-pool.md](evidence/postgres-idempotency-pool.md) — saturated connection-pool replay deadlock and transaction-local fix.
 - [runtime-concurrency.md](runtime-concurrency.md) — bounded run admission, resource contention and limits.
+- [contracts/linux-bubblewrap-world.md](contracts/linux-bubblewrap-world.md) — opt-in Linux child-process containment and explicitly unclosed production requirements.
 - [source-map.md](source-map.md) — concept to implementation.
 - [README.md](README.md) — intent-based navigation.

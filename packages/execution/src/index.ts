@@ -46,6 +46,8 @@ export type {
 
 export { localExecutionWorld, resolveLocal } from "./local.ts";
 export type { LocalExecutionWorldOptions } from "./local.ts";
+export { bubblewrapExecutionWorld } from "./bubblewrap.ts";
+export type { BubblewrapExecutionWorldOptions } from "./bubblewrap.ts";
 
 export { memoryExecutionWorld, resolveMemory } from "./memory.ts";
 export type { MemoryExecutionWorldOptions } from "./memory.ts";
