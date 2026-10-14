@@ -16,6 +16,10 @@ const nativeAvailable = typeof (Graph as typeof Graph & { parseSourceMap?: unkno
 const load = (files = sources) => loadSemanticWorld({ entry: "domain/organization.sea", sources: files, worldName: "godspeed.org" });
 
 describe("canonical multi-source organizational world", () => {
+  test("native binding required before composed-world integration can be released", () => {
+    expect(nativeAvailable).toBe(true);
+  });
+
   test.skipIf(nativeAvailable)("older native bindings refuse composed worlds instead of returning an incomplete graph", () => {
     expect(load()).toMatchObject({ ok: false, error: { kind: "binding_unavailable" } });
   });
