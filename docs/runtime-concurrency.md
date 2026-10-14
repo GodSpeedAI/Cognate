@@ -7,3 +7,8 @@ The same execution gate covers started, recovered and resumed runs. Outbox/conti
 Compatibility: default capacity one preserves current scheduling. Existing providers, run inputs and event formats remain valid. Agents using process-global mutable state must remain serialized or declare resource keys; concurrent operation is an explicitly granted affordance. Workbench must not consume this source checkout as its runtime dependency. A published linked SDK release and application eligibility tests are required for integration.
 
 Acceptance: capacities 1/2/4/8 show exact observed maxima with distinguishable outputs; conflicting workspace keys serialize while independent keys overlap; cancellation, continuation, deterministic replay and service conformance pass. No exactly-once external effect claim is made.
+
+Injected legacy/custom stores without the complete fenced claim/renew/settle trio are rejected
+before opening runtime resources when capacity is above one. Otherwise the background dispatcher
+would reject only during draining, leaving accepted runs queued without an executable configuration.
+Default capacity one retains legacy-adapter compatibility.

@@ -47,6 +47,9 @@ describe("bounded independent native runs", () => {
       await expect(createRuntime({store:":memory:",agents:[],policy,actions,execution:{maxConcurrentRuns}} as RuntimeOptions)).rejects.toThrow("maxConcurrentRuns");
     }
     await expect(createRuntime({store:":memory:",agents:[],policy,actions,execution:{maxConcurrentRuns:2}})).rejects.toThrow("eligibility policy");
+    for(const store of [{},{claimOutboxLeased:async()=>[]}]){
+      await expect(createRuntime({store:{store:store as never},agents:[],policy,actions,execution:{maxConcurrentRuns:2,resourceKeys:()=>[]}})).rejects.toThrow("complete fenced outbox");
+    }
   });
 
   test("cancelling one overlapping capability does not cancel another tenant or cross its output",async()=>{
