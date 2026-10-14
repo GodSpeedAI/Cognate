@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-v0.3.0...cognate-execution-v0.4.0) (2026-10-14)
+
+
+### Features
+
+* **execution:** add opt-in Linux namespace execution world ([920c4c9](https://github.com/GodSpeedAI/Cognate/commit/920c4c9c4649c6a321dfc7389bd7075ec0602efe))
+* native fenced dispatch, bounded runs and Linux execution world ([c6e3207](https://github.com/GodSpeedAI/Cognate/commit/c6e32079844dd36dd6c20d3516f8c6ac2f2c67f0))
+
+
+### Bug Fixes
+
+* **runtime:** share admission across run and continuation dispatch ([52a8eaf](https://github.com/GodSpeedAI/Cognate/commit/52a8eaf369959f12023dd7b96fb76552f10557e2))
+
 ## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-v0.2.0...cognate-execution-v0.3.0) (2026-10-12)
 
 
