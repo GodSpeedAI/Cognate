@@ -18,6 +18,11 @@ Manual requeue clears the owner and advances the generation, immediately fencing
 
 Generation zero marks a row that has never entered the fenced protocol. Once a row has a positive generation, that is a persistent enrollment marker: requeue advances it rather than resetting it. Legacy claims only select generation-zero rows, and legacy settlement rejects enrolled rows even after requeue clears the owner. This prevents an old adapter from bypassing a fenced claim's ownership check. Legacy-only rows retain the prior claim and settlement behavior.
 
+That compatibility protection describes the upgraded adapter's legacy API methods. An old binary
+that issues the previous SQL directly cannot enforce the new enrollment rule. Do not mix old and
+new delivery processors against the same outbox. Database-backed worker-version admission remains
+a prerequisite for supported mixed-process execution; this extension does not supply it.
+
 The common store API accepts `now` to keep memory, SQLite, and PostgreSQL behavior deterministic and conformance-testable. The dispatcher supplies its local clock. This is not authoritative wall time across machines; clock skew may cause premature or delayed reclaim. Fencing still prevents an old generation from settling after a newer claim or manual requeue. A future cross-adapter authoritative-time contract requires a store-time abstraction and is outside this slice.
 
 ## Delivery guarantees and boundary

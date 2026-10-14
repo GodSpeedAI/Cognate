@@ -23,6 +23,11 @@ sensitive host data is already data inside the workspace. The provider does not 
 application, authenticate callers, make arbitrary external effects exactly once, or establish a
 production deployment. Independent security review remains required.
 
+Binding a home or credential directory as the workspace explicitly exposes its contents at
+`/workspace`; the provider does not classify secrets. Workspace selection needs its own authority
+policy. The host-home paths are absent from the namespace, which is a narrower guarantee than
+claiming every operator-selected file is safe to disclose.
+
 The test host uses Ubuntu package `0.11.1-1ubuntu0.3`, newer than the distro fix
 `0.11.1-1ubuntu0.2` for [CVE-2026-87766](https://ubuntu.com/security/notices/USN-8779-1).
 The upstream `--version` string alone is insufficient evidence of a distro backport.
