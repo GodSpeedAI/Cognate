@@ -26,6 +26,12 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const capacity=options.execution?.maxConcurrentRuns ?? 1;
   if(!Number.isInteger(capacity) || capacity<1 || capacity>64)throw new Error("execution.maxConcurrentRuns must be an integer between 1 and 64");
   if(capacity>1 && typeof options.execution?.resourceKeys!=="function")throw new Error("Concurrent execution requires an explicit execution.resourceKeys eligibility policy");
+  if(capacity>1 && typeof options.store!=="string" && "store" in options.store){
+    const injected=options.store.store;
+    if(typeof injected.claimOutboxLeased!=="function" || typeof injected.renewOutboxLease!=="function" || typeof injected.settleOutboxLease!=="function"){
+      throw new Error("Concurrent execution requires a store with complete fenced outbox lease support");
+    }
+  }
   const slots=new ExecutionSlots(capacity);
   // The runtime closes only stores it opened itself; an injected store is owned by its creator.
   // (The PostgreSQL store's close() ends its pool and LISTEN connection, so one call covers both.)

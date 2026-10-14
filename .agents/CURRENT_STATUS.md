@@ -1,39 +1,35 @@
 # Current status
 
-**Status revision:** 56
+**Status revision:** 57
 
-**Summary:** PR42 preserves tested native dispatch/concurrency, PostgreSQL pool fix and opt-in Linux ports. CI and clean-room packaging pass; no new SDK release or production/multiprocess closure is claimed.
+**Summary:** PR42's final admission guard rejects legacy injected stores before allocating parallel runtime resources; native regression passes96tests. Supported release and distributed/production work remain open.
 
-The isolated `feature/durable-dispatch-debt` branch is pushed in
-[Cognate PR #42](https://github.com/GodSpeedAI/Cognate/pull/42). Code/evidence commits are
-`ab4dd2a`, `920c4c9`, `06a520b` and `48ad057`. GitHub verification and clean-room packaging pass
-on `06a520b`; later documentation-only changes pass five tests/26 assertions. No supported new SDK
-release has been published, and Workbench remains on published 0.2.0.
+The final review found that unsupported injected stores could be accepted by a parallel runtime
+and then fail asynchronously in outbox draining. Startup now rejects a missing/partial fenced
+claim/renew/settle API before allocating resources. Default serial compatibility remains unchanged.
 
-Native owner/generation-fenced outbox renewal/settlement covers all built-in stores and prevents
-mixed upgraded-API bypass. Old binaries issuing old SQL are not fenced automatically. Default run
-capacity one remains compatible; opt-in concurrency requires trusted eligibility/resource keys.
-Native capacities one/two/four/eight, resource conflicts, cancellation, continuations and actual
-PostgreSQL are tested. Run-local ordering is retained.
+Locked install and typecheck pass. Runtime/service/continuations pass **96 tests, zero failures,
+373 assertions**, including native PostgreSQL concurrency and two new fail-fast compatibility
+assertions. Existing dispatch/store conformance, saturated-pool and actual Linux containment
+evidence remains in the linked contract documents. Full SDK verification passed 81/81 gates before
+this narrow startup change; CI includes the changed concurrency suite.
 
-Workbench's membership regression exposed a PostgreSQL pool deadlock in transactional duplicate
-receipt loading. The fix reuses the transaction executor. A two-connection/twenty-same-key test
-fails before the fix and passes three repetitions afterward. Full PostgreSQL adapter: 42 tests/
-192 assertions. Runtime/service/continuations: 96/371. Latest full SDK verification: 81/81 gates,
-including the pool regression.
+The source branch is `feature/durable-dispatch-debt` in
+[Cognate PR #42](https://github.com/GodSpeedAI/Cognate/pull/42). Prior commits `ab4dd2a`, `920c4c9`,
+`06a520b`, `48ad057` and `a0b462a` are pushed. CI verification/clean-room packaging passed
+`a0b462a`; the final guard needs current-head CI and review before the supported release workflow.
 
-The opt-in Linux execution-world ports pass ten actual OS tests/29 assertions on a verified
-distro-patched bwrap binary. Tests cover namespace filesystem operations, host-secret and symlink
-refusal, denied access to an otherwise reachable host listener, denied nested namespaces, nested
-Bun children, timeout/abort cleanup, output limits and binary mismatch. The operator must audit
-runtime mounts and workspace contents. Host application code remains trusted; there are no aggregate
-CPU/memory/process/disk quotas or production authentication/certification.
+No new SDK release is claimed. Workbench remains on published 0.2.0 with no local runtime link.
+Outbox fencing still does not establish distributed run-write ownership, store-time leases,
+worker-version admission or physically exactly-once external actions. Old delivery binaries must
+not share a fenced outbox without a compatibility guard.
 
-Outbox fencing is not distributed run-write ownership, store-time compatibility or physically
-exactly-once external actions. Native commitment ambiguity still needs reconciliation. Multiple
-runtime owners are not supported. Production identity/session/tenant integration and independent
+The opt-in Linux provider has ten actual OS tests/29 assertions, including denied reachable TCP,
+host-secret/path refusal, nested Bun/user-namespace behavior, abort/timeout cleanup, output bounds
+and binary mismatch. It contains child processes only; configured workspace contents remain an
+operator grant, and aggregate quotas, production identity/session/tenant integration and independent
 security review remain open.
 
-The sibling checkout's operator status modifications are untouched. This temporary task worktree
-may be removed after its pushed source/status is verified. Resume through the upstream branch,
-review/release workflow and plan; no development checkout is a consumer runtime dependency.
+The sibling checkout's operator status changes remain untouched. The owned temporary worktree was
+reopened solely for this final reviewed guard and will be removed after its exact remote head is
+verified. Continue through the pushed branch and supported review/release workflow.
