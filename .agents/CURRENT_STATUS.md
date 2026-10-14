@@ -1,37 +1,39 @@
 # Current status
 
-**Status revision:** 55
+**Status revision:** 56
 
-**Summary:** Native dispatch, bounded run admission, transaction-local PostgreSQL replay and opt-in Linux namespace ports are tested; no new release or production-trust closure is claimed.
+**Summary:** PR42 preserves tested native dispatch/concurrency, PostgreSQL pool fix and opt-in Linux ports. CI and clean-room packaging pass; no new SDK release or production/multiprocess closure is claimed.
 
-The isolated `feature/durable-dispatch-debt` branch preserves the original sibling's status changes.
-Commit `ab4dd2a` is pushed. No new SDK release has been published; Workbench remains on published
-0.2.0 until supported integration passes.
+The isolated `feature/durable-dispatch-debt` branch is pushed in
+[Cognate PR #42](https://github.com/GodSpeedAI/Cognate/pull/42). Code/evidence commits are
+`ab4dd2a`, `920c4c9`, `06a520b` and `48ad057`. GitHub verification and clean-room packaging pass
+on `06a520b`; later documentation-only changes pass five tests/26 assertions. No supported new SDK
+release has been published, and Workbench remains on published 0.2.0.
 
-Native outbox owner/generation renewal and settlement now cover all built-in stores. Enrolled rows
-cannot bypass fencing through legacy APIs. Bounded run admission preserves default capacity one;
-higher capacity requires a trusted resource eligibility policy. Conflicting resources serialize,
-and independent runs overlap at configured capacities one/two/four/eight with run-local ordering.
+Native owner/generation-fenced outbox renewal/settlement covers all built-in stores and prevents
+mixed upgraded-API bypass. Old binaries issuing old SQL are not fenced automatically. Default run
+capacity one remains compatible; opt-in concurrency requires trusted eligibility/resource keys.
+Native capacities one/two/four/eight, resource conflicts, cancellation, continuations and actual
+PostgreSQL are tested. Run-local ordering is retained.
 
-Workbench's membership regression exposed a real PostgreSQL pool-starvation deadlock in duplicate
-receipt loading. Reads now stay on the owning transaction. The saturated-pool test fails before
-the fix and passes three repeated runs afterward; the full adapter passes 42 tests/192 assertions.
-Runtime/service/continuation tests pass 96/371. The latest full verification passes all 81 gates,
-now including that pool regression.
+Workbench's membership regression exposed a PostgreSQL pool deadlock in transactional duplicate
+receipt loading. The fix reuses the transaction executor. A two-connection/twenty-same-key test
+fails before the fix and passes three repetitions afterward. Full PostgreSQL adapter: 42 tests/
+192 assertions. Runtime/service/continuations: 96/371. Latest full SDK verification: 81/81 gates,
+including the pool regression.
 
-The opt-in Linux execution-world provider uses the existing filesystem/process ports with new
-namespaces, denied network, explicit read-only public runtime mounts, one writable workspace,
-minimal environment and verified patched binary hash. Both filesystem effects and nested Bun
-children run inside the namespace. The explicit real-OS gate passes ten tests/28 assertions,
-including symlink/host-secret refusal, egress and nested namespace denial, timeout/abort descendant
-cleanup, output limits and changed-binary refusal.
+The opt-in Linux execution-world ports pass ten actual OS tests/29 assertions on a verified
+distro-patched bwrap binary. Tests cover namespace filesystem operations, host-secret and symlink
+refusal, denied access to an otherwise reachable host listener, denied nested namespaces, nested
+Bun children, timeout/abort cleanup, output limits and binary mismatch. The operator must audit
+runtime mounts and workspace contents. Host application code remains trusted; there are no aggregate
+CPU/memory/process/disk quotas or production authentication/certification.
 
-This is child-process containment, not host-application containment or production certification.
-Aggregate CPU/memory/process/disk quotas, production authentication and independent security review
-remain required. Outbox fencing still does not fence distributed run writes or establish physically
-exactly-once external effects; caller-clock skew remains documented. No multiprocess runtime mode
-is advertised.
+Outbox fencing is not distributed run-write ownership, store-time compatibility or physically
+exactly-once external actions. Native commitment ambiguity still needs reconciliation. Multiple
+runtime owners are not supported. Production identity/session/tenant integration and independent
+security review remain open.
 
-Next: publish reviewable commits, follow the linked-version release procedure, then verify a
-clean-room Workbench consumer. Keep distributed ownership and production identity work separately
-gated. The task plan and contract/evidence documents contain exact commands and scope.
+The sibling checkout's operator status modifications are untouched. This temporary task worktree
+may be removed after its pushed source/status is verified. Resume through the upstream branch,
+review/release workflow and plan; no development checkout is a consumer runtime dependency.
