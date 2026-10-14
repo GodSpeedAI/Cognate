@@ -91,11 +91,13 @@ describe("shared application state is bidirectional (spec §29.1)", () => {
     const handler = createAgUiHandler({ service: runtime.service, defaultAgent: "agent.waitsForCallerState", authenticate: () => alice });
     const server = Bun.serve({ port: 0, fetch: handler });
     try {
-      await fetch(`${server.url.origin}/agui`, {
+      const response = await fetch(`${server.url.origin}/agui`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ threadId: "t-seed", runId: "r-1", messages: [{ id: "m1", role: "user", content: "hi" }], tools: [], context: [], state: { seeded: true } }),
       });
+      const stream = await response.text();
+      expect(stream).toContain("RUN_FINISHED");
       const [run] = await runtime.service.listRuns(alice, { correlationId: "agui-thread:t-seed" });
       const [c] = await runtime.service.listContinuations(alice, { runId: run!.runId, status: "OPEN" });
       await runtime.service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: null, idempotencyKey: "go" });
@@ -111,11 +113,13 @@ describe("shared application state is bidirectional (spec §29.1)", () => {
     const handler = createAgUiHandler({ service: runtime.service, defaultAgent: "agent.waitsForCallerState", authenticate: () => alice });
     const server = Bun.serve({ port: 0, fetch: handler });
     try {
-      await fetch(`${server.url.origin}/agui`, {
+      const response = await fetch(`${server.url.origin}/agui`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ threadId: "t-empty", runId: "r-2", messages: [{ id: "m1", role: "user", content: "hi" }], tools: [], context: [], state: {} }),
       });
+      const stream = await response.text();
+      expect(stream).toContain("RUN_FINISHED");
       const [run] = await runtime.service.listRuns(alice, { correlationId: "agui-thread:t-empty" });
       const [c] = await runtime.service.listContinuations(alice, { runId: run!.runId, status: "OPEN" });
       await runtime.service.resolveContinuation(alice, { continuationId: c!.id, action: "resume", input: null, idempotencyKey: "go" });
