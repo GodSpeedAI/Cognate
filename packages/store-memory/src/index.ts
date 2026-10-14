@@ -26,6 +26,12 @@ function clone<T>(value: T): T {
   return value === undefined ? value : structuredClone(value);
 }
 
+function settleOutboxItem(item: OutboxItem, settlement: OutboxSettlement): OutboxItem {
+  if (settlement.kind === "delivered") return { ...item, status: "delivered", receipt: settlement.receipt, lastError: null };
+  if (settlement.kind === "retry") return { ...item, status: "pending", availableAt: settlement.retryAt, lastError: settlement.error };
+  return { ...item, status: "poisoned", lastError: settlement.error };
+}
+
 function recordKey(collection: string, id: string): string {
   return `${collection}\u0000${id}`;
 }
@@ -47,6 +53,7 @@ interface State {
   streamVersions: Map<string, number>;
   records: Map<string, StoredRecord>;
   outbox: Map<string, OutboxItem>;
+  outboxLeaseGenerations: Map<string, number>;
   outboxOrder: string[];
   idempotency: Map<string, IdempotencyEntry>;
   projections: Map<string, ProjectionCheckpoint>;
@@ -108,6 +115,7 @@ export function createMemoryStore(): DurableStore {
     streamVersions: new Map(),
     records: new Map(),
     outbox: new Map(),
+    outboxLeaseGenerations: new Map(),
     outboxOrder: [],
     idempotency: new Map(),
     projections: new Map(),
@@ -287,32 +295,62 @@ export function createMemoryStore(): DurableStore {
         if (!item) continue;
         if (item.topic !== options.topic) continue;
         if (item.status !== "pending") continue;
+        if ((state.outboxLeaseGenerations.get(id) ?? 0) > 0) continue;
         if (item.availableAt > options.now) continue;
-        const updated: OutboxItem = { ...item, attempts: item.attempts + 1, availableAt: options.now + options.leaseMs };
+        const { lease: _lease, ...unleased } = item;
+        const updated: OutboxItem = { ...unleased, attempts: item.attempts + 1, availableAt: options.now + options.leaseMs };
         state.outbox.set(id, updated);
         claimed.push(updated);
       }
       return clone(claimed);
     },
 
+    async claimOutboxLeased(options) {
+      const claimed: OutboxItem[] = [];
+      for (const id of state.outboxOrder) {
+        if (claimed.length >= options.limit) break;
+        const item = state.outbox.get(id);
+        if (!item || item.topic !== options.topic || item.status !== "pending" || item.availableAt > options.now) continue;
+        const generation = (state.outboxLeaseGenerations.get(id) ?? 0) + 1;
+        state.outboxLeaseGenerations.set(id, generation);
+        const expiresAt = options.now + options.leaseMs;
+        const updated: OutboxItem = { ...item, attempts: item.attempts + 1, availableAt: expiresAt, lease: { ownerId: options.ownerId, generation, expiresAt } };
+        state.outbox.set(id, updated);
+        claimed.push(updated);
+      }
+      return clone(claimed);
+    },
+
+    async renewOutboxLease(lease) {
+      const item = state.outbox.get(lease.id);
+      if (!item || item.status !== "pending" || item.lease?.ownerId !== lease.ownerId || item.lease.generation !== lease.generation || item.lease.expiresAt <= lease.now) return false;
+      const expiresAt = lease.now + lease.leaseMs;
+      state.outbox.set(lease.id, { ...item, availableAt: expiresAt, lease: { ...item.lease, expiresAt } });
+      return true;
+    },
+
+    async settleOutboxLease(lease, settlement) {
+      const item = state.outbox.get(lease.id);
+      if (!item || item.status !== "pending" || item.lease?.ownerId !== lease.ownerId || item.lease.generation !== lease.generation || item.lease.expiresAt <= lease.now) return false;
+      const { lease: _lease, ...unleased } = item;
+      state.outbox.set(lease.id, settleOutboxItem({ ...unleased, availableAt: settlement.kind === "retry" ? settlement.retryAt : unleased.availableAt }, settlement));
+      return true;
+    },
+
     async settleOutbox(id, settlement: OutboxSettlement) {
       const item = state.outbox.get(id);
       if (!item) throw new NotFoundError(`outbox item ${id} not found`);
-      let updated: OutboxItem;
-      if (settlement.kind === "delivered") {
-        updated = { ...item, status: "delivered", receipt: settlement.receipt, lastError: null };
-      } else if (settlement.kind === "retry") {
-        updated = { ...item, status: "pending", availableAt: settlement.retryAt, lastError: settlement.error };
-      } else {
-        updated = { ...item, status: "poisoned", lastError: settlement.error };
-      }
-      state.outbox.set(id, updated);
+      if (item.lease || (state.outboxLeaseGenerations.get(id) ?? 0) > 0) throw new Error(`outbox item ${id} uses fenced leases`);
+      state.outbox.set(id, settleOutboxItem(item, settlement));
     },
 
     async requeueOutbox(id, now) {
       const item = state.outbox.get(id);
       if (!item) throw new NotFoundError(`outbox item ${id} not found`);
-      state.outbox.set(id, { ...item, status: "pending", availableAt: now });
+      const generation = state.outboxLeaseGenerations.get(id) ?? 0;
+      if (generation > 0) state.outboxLeaseGenerations.set(id, generation + 1);
+      const { lease: _lease, ...unleased } = item;
+      state.outbox.set(id, { ...unleased, status: "pending", availableAt: now });
     },
 
     async listOutbox(options) {

@@ -28,6 +28,163 @@ for (const storeCase of storeCases) {
       expect((await store.listOutbox({ status: "delivered" })).map((i) => i.receipt)).toEqual([{ accepted: "m1" }, { accepted: "m2" }]);
     });
 
+    test("retains serial delivery with an older adapter that lacks fenced methods", async () => {
+      const { store } = await open();
+      await intents(store, "legacy");
+      const legacy = new Proxy(store, { get(target, key) {
+        if (key === "claimOutboxLeased" || key === "renewOutboxLease" || key === "settleOutboxLease") return undefined;
+        return Reflect.get(target, key, target);
+      } }) as DurableStore;
+      const dispatcher = new OutboxDispatcher(legacy, { topic: "mail", backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 }, now: () => 0, deliver: async (item) => ({ accepted: item.id }) });
+      expect(await dispatcher.drain()).toEqual({ delivered: ["legacy"], retried: [], poisoned: [] });
+      await intents(store, "legacy-parallel");
+      const parallel = new OutboxDispatcher(legacy, { topic: "mail", concurrency: 2, backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 }, now: () => 0, deliver: async () => null });
+      await expect(parallel.drain()).rejects.toThrow("requires fenced lease support");
+    });
+
+    test("uses fenced leases, renews active deliveries, and bounds parallel work", async () => {
+      const { store } = await open();
+      await intents(store, "m1", "m2");
+      let active = 0;
+      let maximum = 0;
+      let renewals = 0;
+      const renew = store.renewOutboxLease!.bind(store);
+      const instrumented = new Proxy(store, { get(target, key) { if (key === "renewOutboxLease") return async (...args: Parameters<typeof renew>) => { renewals++; return renew(...args); }; return Reflect.get(target, key, target); } });
+      const dispatcher = new OutboxDispatcher(instrumented, { topic: "mail", concurrency: 2, leaseMs: 15, backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 }, now: () => 0, deliver: async (item) => {
+        active++;
+        maximum = Math.max(maximum, active);
+        await Bun.sleep(40);
+        active--;
+        return { accepted: item.id };
+      } });
+      expect(await dispatcher.drain()).toMatchObject({ delivered: ["m1", "m2"] });
+      expect(maximum).toBe(2);
+      expect(renewals).toBeGreaterThan(0);
+      expect((await store.listOutbox({ status: "delivered" })).map((item) => item.receipt)).toEqual([{ accepted: "m1" }, { accepted: "m2" }]);
+    });
+
+    test("waits for sibling workers after a transient claim failure", async () => {
+      const { store } = await open();
+      await intents(store, "sibling");
+      const claim = store.claimOutboxLeased!.bind(store);
+      let claims = 0;
+      const instrumented = new Proxy(store, { get(target, key) {
+        if (key === "claimOutboxLeased") return async (...args: Parameters<typeof claim>) => {
+          claims++;
+          if (claims === 1) throw new Error("transient claim failure");
+          return claim(...args);
+        };
+        return Reflect.get(target, key, target);
+      } });
+      let releaseSibling!: () => void;
+      let markSiblingStarted!: () => void;
+      const siblingStarted = new Promise<void>((resolve) => { markSiblingStarted = resolve; });
+      let siblingSettled = false;
+      const dispatcher = new OutboxDispatcher(instrumented, {
+        topic: "mail",
+        concurrency: 2,
+        batchSize: 2,
+        backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 },
+        deliver: async () => {
+          markSiblingStarted();
+          await new Promise<void>((resolve) => { releaseSibling = resolve; });
+          siblingSettled = true;
+          return { accepted: true };
+        },
+      });
+
+      let drainRejected = false;
+      const observed = dispatcher.drain().catch((error: unknown) => { drainRejected = true; throw error; });
+      await siblingStarted;
+      await Bun.sleep(10);
+      expect(drainRejected).toBe(false);
+      releaseSibling();
+      await expect(observed).rejects.toThrow("transient claim failure");
+      expect(siblingSettled).toBe(true);
+      expect(await store.listOutbox({ status: "delivered" })).toHaveLength(1);
+    });
+
+    test("overlapping drains share capacity and admit newly queued work", async () => {
+      const { store } = await open();
+      await intents(store, "slow");
+      const started: string[] = [];
+      const releases = new Map<string, () => void>();
+      const entered = new Map<string, () => void>();
+      const waitFor = (id: string) => new Promise<void>((resolve) => entered.set(id, resolve));
+      const dispatcher = new OutboxDispatcher(store, { topic: "mail", concurrency: 2, batchSize: 1, leaseMs: 1_000, backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 }, deliver: async (item) => {
+        started.push(item.id);
+        entered.get(item.id)?.();
+        await new Promise<void>((resolve) => releases.set(item.id, resolve));
+        return item.id;
+      } });
+
+      const slowStarted = waitFor("slow");
+      const firstDrain = dispatcher.drain();
+      await slowStarted;
+      await intents(store, "queued");
+      const queuedStarted = waitFor("queued");
+      const secondDrain = dispatcher.drain();
+      await queuedStarted;
+      expect(started).toEqual(["slow", "queued"]);
+      releases.get("slow")?.();
+      releases.get("queued")?.();
+      expect(await firstDrain).toMatchObject({ delivered: ["slow"] });
+      expect(await secondDrain).toMatchObject({ delivered: ["queued"] });
+    });
+
+    test("a completed slot refills before another delivery finishes", async () => {
+      const { store } = await open();
+      await intents(store, "first", "second", "third");
+      const started: string[] = [];
+      const releases = new Map<string, () => void>();
+      const entered = new Map<string, () => void>();
+      const waitFor = (id: string) => new Promise<void>((resolve) => entered.set(id, resolve));
+      const dispatcher = new OutboxDispatcher(store, { topic: "mail", concurrency: 2, leaseMs: 1_000, backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 }, deliver: async (item) => {
+        started.push(item.id);
+        entered.get(item.id)?.();
+        await new Promise<void>((resolve) => releases.set(item.id, resolve));
+        return item.id;
+      } });
+
+      const firstStarted = waitFor("first");
+      const secondStarted = waitFor("second");
+      const thirdStarted = waitFor("third");
+      const draining = dispatcher.drain();
+      await firstStarted;
+      await secondStarted;
+      releases.get("first")?.();
+      await thirdStarted;
+      expect(started).toEqual(["first", "second", "third"]);
+      releases.get("second")?.();
+      releases.get("third")?.();
+      expect(await draining).toMatchObject({ delivered: ["first", "second", "third"] });
+    });
+
+    test("aborts and reports delivery when a fenced claim is superseded", async () => {
+      const { store } = await open();
+      if (!store.requeueOutbox || !store.claimOutboxLeased) throw new Error("store lacks fenced outbox leases");
+      await intents(store, "lost");
+      let started!: () => void;
+      const didStart = new Promise<void>((resolve) => { started = resolve; });
+      let signal: AbortSignal | undefined;
+      const dispatcher = new OutboxDispatcher(store, { topic: "mail", concurrency: 1, batchSize: 1, leaseMs: 150, backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 }, now: () => Date.now(), deliver: async (_item, deliverySignal) => {
+        signal = deliverySignal;
+        started();
+        await new Promise<void>((resolve) => {
+          if (deliverySignal.aborted) resolve();
+          else deliverySignal.addEventListener("abort", () => resolve(), { once: true });
+        });
+        return "late";
+      } });
+      const draining = dispatcher.drain();
+      await didStart;
+      await store.requeueOutbox("lost", Date.now());
+      await Bun.sleep(100);
+      expect(signal?.aborted).toBe(true);
+      expect(await draining).toMatchObject({ lost: ["lost"] });
+      expect((await store.listOutbox({ status: "delivered" }))).toHaveLength(0);
+    });
+
     test("transient failures retry with bounded exponential backoff, then poison", async () => {
       const { store } = await open();
       await intents(store, "flaky");

@@ -43,5 +43,5 @@ storeConformance(
       },
     };
   },
-  { persistent: true },
+  { persistent: true, fencedOutbox: true },
 );

@@ -2,7 +2,7 @@ import type { CognitiveIndex, Embedder, IndexDocument } from "@godspeedai/cognat
 import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@godspeedai/cognate-events";
 import type { Component, Kernel, Policy, Principal } from "@godspeedai/cognate-kernel-api";
 import type { Projection } from "@godspeedai/cognate-projections";
-import type { AgentDefinition, Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
+import type { AgentDefinition, Caller, RuntimeService, RunView } from "@godspeedai/cognate-runtime-api";
 import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
 
@@ -66,6 +66,14 @@ export interface RuntimeOptions {
   readonly outboxFor?: (event: PendingEvent) => readonly OutboxIntent[];
   /** Background work loop interval (run execution, resume delivery, expiry). Default 10 ms. */
   readonly tickMs?: number;
+  /** Explicit single-process execution admission; defaults to serial compatibility. */
+  readonly execution?: {
+    readonly maxConcurrentRuns?: number;
+    /** Required above capacity one. Returning [] explicitly declares independent eligibility.
+     * Trusted resource identities derived from frozen run inputs, never model-granted authority.
+     * Runs sharing a key serialize in this process; this is not a distributed lock or OS isolation. */
+    readonly resourceKeys?: (run: RunView) => readonly string[];
+  };
   readonly system?: Principal;
 }
 

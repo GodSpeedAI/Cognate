@@ -22,4 +22,4 @@ storeConformance("store-sqlite", async () => {
       rmSync(dir, { recursive: true, force: true });
     },
   };
-}, { persistent: true });
+}, { persistent: true, fencedOutbox: true });

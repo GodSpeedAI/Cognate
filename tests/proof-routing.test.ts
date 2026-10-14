@@ -11,7 +11,7 @@ writeFileSync(
   `requirements:
   - {id: T-MISSING, title: missing proof, status: candidate, gate: {cwd: ., run: 'true', proof_paths: [does/not/exist.test.ts]}}
   - {id: T-PASS, title: passing proof, status: implemented, gate: {cwd: ., run: 'true', proof_paths: [package.json]}}
-  - {id: T-FAIL, title: failing proof, status: candidate, gate: {cwd: ., run: 'false', proof_paths: [package.json]}}
+  - {id: T-FAIL, title: failing proof, status: candidate, gate: {cwd: ., run: 'echo gate-failure-evidence >&2; exit 1', proof_paths: [package.json]}}
 acceptance_contracts:
   - {requirement: T-MISSING, expected: proof exists}
 `,
@@ -36,11 +36,12 @@ test("a gate propagates its proof command's exit code", async () => {
 });
 
 test("--all reports every gate and fails while any is unmet", async () => {
-  const { exit, stdout } = await gate("--all");
+  const { exit, stdout, stderr } = await gate("--all");
   expect(exit).toBe(1);
   expect(stdout).toContain("FAIL  T-MISSING");
   expect(stdout).toContain("PASS  T-PASS");
   expect(stdout).toContain("1/3 gates pass");
+  expect(stderr).toContain("gate-failure-evidence");
 });
 
 test("an unknown requirement id is rejected", async () => {

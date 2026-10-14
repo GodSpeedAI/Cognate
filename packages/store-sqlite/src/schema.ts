@@ -125,6 +125,13 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX records_runs_agent_idx ON records (json_extract(value, '$.agent')) WHERE collection = 'runs';
     `,
   },
+  {
+    version: 4,
+    sql: `
+      ALTER TABLE outbox ADD COLUMN lease_owner TEXT;
+      ALTER TABLE outbox ADD COLUMN lease_generation INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];
 
 /** Apply any migration not yet recorded in `schema_versions`, inside one transaction. */
