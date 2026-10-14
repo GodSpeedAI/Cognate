@@ -1,35 +1,37 @@
 # Current status
 
-**Status revision:** 57
+**Status revision:** 58
 
-**Summary:** PR42's final admission guard rejects legacy injected stores before allocating parallel runtime resources; native regression passes96tests. Supported release and distributed/production work remain open.
+**Summary:** Native SDK review checkpoint includes bounded admission, fenced delivery and transaction-local gap-free duplicate replay; tested source is pushed, supported release remains pending.
 
-The final review found that unsupported injected stores could be accepted by a parallel runtime
-and then fail asynchronously in outbox draining. Startup now rejects a missing/partial fenced
-claim/renew/settle API before allocating resources. Default serial compatibility remains unchanged.
+The final PostgreSQL regression now appends a distinct fact after twenty same-key commits.
+It exposed unused reservations: the following fact was position 11 instead of 2. The duplicate
+path now restores only its uncommitted reservation while retaining the counter lock; committed
+facts and historical positions are unchanged. Full adapter: **42 tests, zero failures,
+193 assertions**. The final runtime concurrency and multi-process store-writer regressions pass;
+this is not distributed runtime execution.
 
-Locked install and typecheck pass. Runtime/service/continuations pass **96 tests, zero failures,
-373 assertions**, including native PostgreSQL concurrency and two new fail-fast compatibility
-assertions. Existing dispatch/store conformance, saturated-pool and actual Linux containment
-evidence remains in the linked contract documents. Full SDK verification passed 81/81 gates before
-this narrow startup change; CI includes the changed concurrency suite.
+Parallel admission also rejects injected stores without the complete fenced API before opening
+resources. Runtime/service/continuations: **96 tests, zero failures, 373 assertions**. Default
+capacity one remains compatible. Built-in store fencing, explicit resource eligibility, native
+capacities one/two/four/eight, cancellation and continuation evidence remain in the contracts.
 
-The source branch is `feature/durable-dispatch-debt` in
-[Cognate PR #42](https://github.com/GodSpeedAI/Cognate/pull/42). Prior commits `ab4dd2a`, `920c4c9`,
-`06a520b`, `48ad057` and `a0b462a` are pushed. CI verification/clean-room packaging passed
-`a0b462a`; the final guard needs current-head CI and review before the supported release workflow.
+Source is pushed in [Cognate PR #42](https://github.com/GodSpeedAI/Cognate/pull/42) on
+`feature/durable-dispatch-debt`. Main source commits are `ab4dd2a`, `920c4c9`, `06a520b`,
+`48ad057`, `a0b462a`, `a59a7da` and `7221260`. CI verification and clean-room packaging passed
+`a59a7da`; latest-code CI and human review precede the supported linked-version release.
+No new release is claimed, and Workbench still pins published 0.2.0.
 
-No new SDK release is claimed. Workbench remains on published 0.2.0 with no local runtime link.
-Outbox fencing still does not establish distributed run-write ownership, store-time leases,
-worker-version admission or physically exactly-once external actions. Old delivery binaries must
-not share a fenced outbox without a compatibility guard.
+All 81 existing SDK gates passed before the final narrow fixes; CI includes both changed
+PostgreSQL/concurrency suites. The opt-in Linux provider has ten actual OS tests/29 assertions:
+host-secret/path refusal, denied otherwise-reachable TCP, nested namespace/Bun behavior,
+timeout/abort cleanup, output limits and binary mismatch. It contains child processes only.
 
-The opt-in Linux provider has ten actual OS tests/29 assertions, including denied reachable TCP,
-host-secret/path refusal, nested Bun/user-namespace behavior, abort/timeout cleanup, output bounds
-and binary mismatch. It contains child processes only; configured workspace contents remain an
-operator grant, and aggregate quotas, production identity/session/tenant integration and independent
-security review remain open.
+Outbox fencing does not provide run-write ownership, authoritative store-time leases, compatible
+worker admission or physically exactly-once effects. Old SQL delivery binaries cannot safely
+share a fenced outbox. Aggregate resource quotas, production identity/session/tenant integration
+and independent security review remain open. Configured workspace contents are an operator grant.
 
-The sibling checkout's operator status changes remain untouched. The owned temporary worktree was
-reopened solely for this final reviewed guard and will be removed after its exact remote head is
-verified. Continue through the pushed branch and supported review/release workflow.
+The sibling operator's working status modifications are untouched. Remove only the clean
+task-owned worktree after verifying its remote head; source remains in the pushed branch and PR.
+Continue through review/publication and then supported consumer tests.
