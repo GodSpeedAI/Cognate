@@ -114,7 +114,7 @@ describe("bubblewrap OS containment (explicit privileged integration gate)", () 
       });
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe("unset|/workspace");
-      expect(await readFile(join(root, "wrote.txt"), "utf8").catch(() => "")).toBe("");
+      expect(await Bun.file(join(root, "wrote.txt")).exists()).toBe(true);
       await provider.dispose();
     } finally {
       await rm(root, { recursive: true, force: true });

@@ -33,6 +33,15 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     }
   }
   const slots=new ExecutionSlots(capacity);
+  // Run and resume topics share one pre-claim budget. ExecutionSlots separately enforces
+  // run-local/resource exclusion for every execution path, including direct recovery.
+  let admittedDeliveries = 0;
+  const deliveryAdmission = { tryAcquire(): (() => void) | undefined {
+    if (admittedDeliveries >= capacity) return undefined;
+    admittedDeliveries++;
+    let released = false;
+    return () => { if (!released) { released = true; admittedDeliveries--; } };
+  } };
   // The runtime closes only stores it opened itself; an injected store is owned by its creator.
   // (The PostgreSQL store's close() ends its pool and LISTEN connection, so one call covers both.)
   const config = options.store;
@@ -58,7 +67,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   await invoker.attach(kernel, options.components ?? []);
 
   // Authorization happens in the service against `actions`; the continuation layer trusts its caller.
-  const continuations = new ContinuationService(store, { policy: { authorize: () => ({ allow: true, reason: "authorized by runtime service" }) }, delivery: DELIVERY, deliveryConcurrency: capacity });
+  const continuations = new ContinuationService(store, { policy: { authorize: () => ({ allow: true, reason: "authorized by runtime service" }) }, delivery: DELIVERY, deliveryConcurrency: capacity, deliveryAdmission });
 
   let closed = false;
   const chains = new Map<string, Promise<void>>();
@@ -110,6 +119,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const runDispatcher = new OutboxDispatcher(store, {
     topic: RUN_EXECUTE_TOPIC,
     concurrency: capacity,
+    admission: deliveryAdmission,
     backoff: DELIVERY,
     deliver: async (item) => {
       await execute((item.payload as { runId: string }).runId);
@@ -117,12 +127,21 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     },
   });
 
+  let resumeFirst = false;
   async function tick(): Promise<void> {
     for (const record of await continuations.expireDue()) pending.add(record.runId);
     // Dispatchers reserve a bounded set of slots across overlapping drains. A new runnable
     // arrival can fill a free slot while an earlier long-running delivery is still executing.
-    trackDelivery(continuations.dispatchResumes());
-    trackDelivery(runDispatcher.drain());
+    // Rotate priority: even an empty topic briefly reserves capacity while its claim is
+    // in flight. A fixed first topic could otherwise starve the other at capacity one.
+    if (resumeFirst) {
+      trackDelivery(continuations.dispatchResumes());
+      trackDelivery(runDispatcher.drain());
+    } else {
+      trackDelivery(runDispatcher.drain());
+      trackDelivery(continuations.dispatchResumes());
+    }
+    resumeFirst = !resumeFirst;
     const recover=[...pending];
     for(const runId of recover)pending.delete(runId);
     for(const runId of recover)trackDelivery(execute(runId));

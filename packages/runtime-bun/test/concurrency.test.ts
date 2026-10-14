@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { AgentDefinition, Caller, RunView } from "@godspeedai/cognate-runtime-api";
 import { openPostgresStore } from "@godspeedai/cognate-store-postgres";
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { createRuntime, type RuntimeOptions } from "../src/index.ts";
 
 const caller: Caller = {tenant:"test",actor:{id:"human",kind:"user"}};
@@ -8,6 +9,60 @@ const policy = {authorize:()=>({allow:true as const,policyId:"test",reason:"test
 const actions = {authorize:()=>({allow:true as const,reason:"test"})};
 
 describe("bounded independent native runs", () => {
+  for (const capacity of [1, 2]) test(`run and continuation claims share capacity ${capacity}`, async () => {
+    const store = openSqliteStore({ path: ":memory:" });
+    const claimed = new Set<string>();
+    const deliveries = new Map<string, number>();
+    let peakClaims = 0, active = 0, peakExecution = 0;
+    const claim = store.claimOutboxLeased!.bind(store);
+    const settle = store.settleOutboxLease!.bind(store);
+    store.claimOutboxLeased = async input => {
+      const items = await claim(input);
+      for (const item of items) {
+        claimed.add(item.id);
+        deliveries.set(item.id, (deliveries.get(item.id) ?? 0) + 1);
+      }
+      peakClaims = Math.max(peakClaims, claimed.size);
+      return items;
+    };
+    store.settleOutboxLease = async (input, outcome) => {
+      const result = await settle(input, outcome);
+      if (result) claimed.delete(input.id);
+      return result;
+    };
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const agent: AgentDefinition = { id: "agent.mixed", version: "1.0.0", async run(input, ctx) {
+      if ((input as { wait?: boolean }).wait) await ctx.waitFor("resume", { type: "test", condition: { kind: "test" }, payload: null });
+      return ctx.step("work", async () => {
+        active++; peakExecution = Math.max(peakExecution, active);
+        try { await gate; return input; } finally { active--; }
+      });
+    } };
+    const runtime = await createRuntime({ store: { store }, agents: [agent], policy, actions,
+      execution: { maxConcurrentRuns: capacity, resourceKeys: () => [] } });
+    try {
+      await Promise.all(Array.from({ length: capacity }, (_, i) => runtime.service.startRun(caller,
+        { agent: agent.id, input: { wait: true }, idempotencyKey: `waiting:${i}` })));
+      await runtime.idle();
+      await Promise.all(Array.from({ length: capacity }, (_, i) => runtime.service.startRun(caller,
+        { agent: agent.id, input: { blocking: i }, idempotencyKey: `blocking:${i}` })));
+      for (let i = 0; active < capacity && i < 100; i++) await Bun.sleep(5);
+      expect(active).toBe(capacity);
+      const waits = await runtime.service.listContinuations(caller, { status: "OPEN" });
+      await Promise.all(waits.map(wait => runtime.service.resolveContinuation(caller,
+        { continuationId: wait.id, action: "resume", input: null, idempotencyKey: `mixed:${wait.id}` })));
+      await runtime.service.startRun(caller, { agent: agent.id, input: { queued: true }, idempotencyKey: "queued" });
+      await Bun.sleep(50);
+      expect(peakClaims).toBeLessThanOrEqual(capacity);
+      release();
+      await runtime.idle();
+      expect(peakExecution).toBe(capacity);
+      expect(claimed.size).toBe(0);
+      expect([...deliveries.values()].every(count => count === 1)).toBe(true);
+      expect((await store.listOutbox({ status: "delivered" })).some(item => item.topic === "continuation.resume")).toBe(true);
+    } finally { release(); await runtime.close(); await store.close(); }
+  });
   for (const capacity of [1,2,4,8]) test(`capacity ${capacity} preserves run-local output and limits overlap`, async () => {
     let active=0, peak=0;
     const agent: AgentDefinition = {id:"agent.slow",version:"1.0.0",async run(input,ctx){
