@@ -13,6 +13,8 @@ test("same-key replay stays on its transaction connection under saturated Postgr
     expect(outcomes.filter(outcome=>outcome.kind==="duplicate")).toHaveLength(19);
     const events=await handle.store.readAll();expect(events).toHaveLength(1);
     expect(outcomes.every(outcome=>outcome.events[0]?.eventId===events[0]?.eventId)).toBe(true);
+    const following=await handle.store.commit({...request,idempotency:{...request.idempotency!,key:"following-key"},appends:[{...request.appends![0]!,streamId:"following-stream"}]});
+    expect(following.events[0]?.position).toBe(2);
   }finally{
     if(timer)clearTimeout(timer);
     await handle.close();
