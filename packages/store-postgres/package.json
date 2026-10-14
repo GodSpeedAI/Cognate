@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-store-postgres",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Authoritative DurableStore on PostgreSQL (spec §13); multi-process writers.",
   "type": "module",
   "license": "Apache-2.0",

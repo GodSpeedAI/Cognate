@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-cognitive-ruvector",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "RuVector-backed CognitiveIndex (reference cognitive implementation; vector_search only per ADR-0004 / DEBT-007).",
   "type": "module",
   "license": "Apache-2.0",
