@@ -20,6 +20,17 @@ pass **225 tests, zero failures and 772 assertions**. Seventeen optional CEP tes
 this command does not establish their external integration. Source review by a separate agent
 found no permit leak or deadlock in the reviewed paths; this is not GitHub human approval.
 
+Latest-head CI on `ff505ae` then exposed a timing race in the existing AG-UI shared-state tests:
+they inspected continuations after HTTP headers rather than waiting for the SSE `RUN_FINISHED`
+event. Before correction, stress testing observed two failures in 100 repetitions. Both tests now
+consume the stream and assert its settled marker before inspecting state; twenty repeated file
+runs pass **100 tests / 160 assertions**. No runtime behavior or timeout was weakened. The gate
+runner now drains captured output and includes failed-command diagnostics; its regression failed
+before the change and passes with it (five tests / sixteen assertions).
+The final isolated `just verify` passes **81/81 gates**, exit zero, in about 49 seconds, including
+typecheck, documentation and all implemented ledger gates. PostgreSQL was started for this run and
+restored to its prior stopped state. Fresh CI and packaging are required for the pushed correction.
+
 ## Read-only release audit
 
 Before these review corrections, PR head `7d9b80f13b079a2fb5139f4bfbe525710146819e` had successful

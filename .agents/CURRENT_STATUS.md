@@ -1,8 +1,8 @@
 # Current status
 
-**Status revision:** 60
+**Status revision:** 61
 
-**Summary:** Operator removed the independent GitHub reviewer gate; shared admission corrections are pushed. Latest-head CI, packaging, linked release readiness and final operator authorization remain required.
+**Summary:** Independent reviewer gate removed by operator. All 81 SDK verification gates pass after AG-UI settled-stream test correction; fresh exact-head CI and packaging precede final merge/release authorization.
 
 The [review and release gate evidence](../docs/evidence/pr42-release-readiness.md) records the
 three actionable CodeRabbit corrections, exact regressions and read-only release audit. Run and
@@ -12,9 +12,9 @@ including direct recovery. Worker failures wait for sibling settlement before su
 
 Targeted events, continuations and runtime tests with real PostgreSQL: **225 pass, zero fail,
 772 assertions**, with seventeen optional external CEP tests skipped. SDK typecheck passes.
-The actual Linux OS suite passes ten tests / 29 assertions. The prior full 81-gate baseline remains
-recorded. A fresh local run reached 80/81 gates; the sole documentation-map omission is corrected
-and its narrow gate will be rerun.
+The actual Linux OS suite passes ten tests / 29 assertions. The final isolated full run passes **81/81 gates**, exit zero, in about 49 seconds.
+The AG-UI tests now await settled SSE streams rather than HTTP headers; twenty repeated file runs
+pass 100 tests / 160 assertions. Failed gate diagnostics are retained rather than discarded.
 
 Read-only audit confirms all 45 linked npm packages have latest 0.3.0, including the nine historical
 publication failures. Release run 38300385888 now reports successful publish jobs and the readiness

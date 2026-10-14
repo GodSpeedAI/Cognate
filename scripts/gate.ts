@@ -39,7 +39,18 @@ async function runGate(requirement: Requirement, quiet: boolean): Promise<{ exit
     stdout: quiet ? "pipe" : "inherit",
     stderr: quiet ? "pipe" : "inherit",
   });
-  const exit = await proc.exited;
+  // Drain both pipes while the process runs, and retain diagnostics on failure. Whole-ledger
+  // CI otherwise reports only "status drift", concealing the failing assertion or fixture.
+  const [exit, stdout, stderr] = await Promise.all([
+    proc.exited,
+    quiet ? new Response(proc.stdout).text() : Promise.resolve(""),
+    quiet ? new Response(proc.stderr).text() : Promise.resolve(""),
+  ]);
+  if (quiet && exit !== 0) {
+    console.error(`${requirement.id}: proof command failed (last 16,384 characters per stream)`);
+    if (stdout) console.error(stdout.slice(-16_384));
+    if (stderr) console.error(stderr.slice(-16_384));
+  }
   return { exit, reason: exit === 0 ? "passed" : `exit ${exit}` };
 }
 
