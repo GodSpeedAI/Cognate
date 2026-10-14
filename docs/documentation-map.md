@@ -163,5 +163,9 @@ the implementation, the decision still stands and the current status is in the l
 
 ## Related
 
+- [contracts/fenced-outbox-leases.md](contracts/fenced-outbox-leases.md) — additive native delivery lease and compatibility contract.
+- [evidence/fenced-outbox-leases.md](evidence/fenced-outbox-leases.md) — store conformance and stale-owner regression evidence.
+- [evidence/postgres-idempotency-pool.md](evidence/postgres-idempotency-pool.md) — saturated connection-pool replay deadlock and transaction-local fix.
+- [runtime-concurrency.md](runtime-concurrency.md) — bounded run admission, resource contention and limits.
 - [source-map.md](source-map.md) — concept to implementation.
 - [README.md](README.md) — intent-based navigation.

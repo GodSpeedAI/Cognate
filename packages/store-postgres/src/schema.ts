@@ -156,5 +156,12 @@ export function migrations(): Migration[] {
         `CREATE INDEX records_runs_agent_idx ON records ((value -> 'agent')) WHERE collection = 'runs'`,
       ],
     },
+    {
+      version: 4,
+      statements: [
+        `ALTER TABLE outbox ADD COLUMN lease_owner text`,
+        `ALTER TABLE outbox ADD COLUMN lease_generation bigint NOT NULL DEFAULT 0`,
+      ],
+    },
   ];
 }

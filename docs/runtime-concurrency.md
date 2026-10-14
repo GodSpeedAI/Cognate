@@ -1,0 +1,9 @@
+# Bounded native run execution
+
+Proposed additive SDK contract: `RuntimeOptions.execution.maxConcurrentRuns` defaults to one and accepts integers 1–64. Capacity above one requires an explicit `execution.resourceKeys(run)` eligibility policy; returning an empty array explicitly declares independence. Run-local chains still serialize replay and continuation delivery. Independent runs may overlap up to this bound. The policy is a trusted synchronous function over the stored RunView; runs with any common key cannot execute concurrently in the same process. Keys do not grant authority. Throwing or malformed admission fails closed. The caller must canonicalize resource identities, including filesystem aliases, before returning keys.
+
+The same execution gate covers started, recovered and resumed runs. Outbox/continuation dispatch must use bounded delivery so it does not pre-lease an unlimited queue. Resource acquisition lasts for one agent execution entry and releases when it completes or suspends. Resource keys should be derived from frozen run input and must cover every shared writable resource. This mechanism is process-local and cannot establish distributed ownership or OS isolation.
+
+Compatibility: default capacity one preserves current scheduling. Existing providers, run inputs and event formats remain valid. Agents using process-global mutable state must remain serialized or declare resource keys; concurrent operation is an explicitly granted affordance. Workbench must not consume this source checkout as its runtime dependency. A published linked SDK release and application eligibility tests are required for integration.
+
+Acceptance: capacities 1/2/4/8 show exact observed maxima with distinguishable outputs; conflicting workspace keys serialize while independent keys overlap; cancellation, continuation, deterministic replay and service conformance pass. No exactly-once external effect claim is made.
