@@ -12,6 +12,12 @@ export interface Backoff {
   readonly maxAttempts: number;
 }
 
+/** Process-local reservation shared by related dispatchers, acquired before a durable claim.
+ * An unavailable permit leaves work unclaimed; release must be idempotent. This is not ownership fencing. */
+export interface OutboxAdmission {
+  tryAcquire(): (() => void) | undefined;
+}
+
 export interface OutboxDispatcherOptions {
   readonly topic: string;
   /** Deliver one item; the target deduplicates by `item.id`. Return a receipt. Throw to retry; throw PermanentDeliveryError to poison. */
@@ -21,6 +27,7 @@ export interface OutboxDispatcherOptions {
   readonly batchSize?: number;
   /** Maximum number of simultaneous deliveries. Defaults to one. Requires fenced lease support above one. */
   readonly concurrency?: number;
+  readonly admission?: OutboxAdmission;
   readonly now?: () => number;
 }
 
@@ -132,12 +139,15 @@ export class OutboxDispatcher {
     const worker = async () => {
       while (claimedCount < batchSize) {
         if (this.activeReservations >= concurrency) return;
+        const releaseAdmission = this.options.admission?.tryAcquire();
+        if (this.options.admission && !releaseAdmission) return;
         this.activeReservations++;
         let held = true;
         const release = () => {
           if (!held) return;
           held = false;
           this.activeReservations--;
+          releaseAdmission?.();
         };
         try {
           if (claimedCount >= batchSize) return;
@@ -156,7 +166,9 @@ export class OutboxDispatcher {
         }
       }
     };
-    await Promise.all(Array.from({ length: concurrency }, () => worker()));
+    const outcomes = await Promise.allSettled(Array.from({ length: concurrency }, () => worker()));
+    const failure = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === "rejected");
+    if (failure) throw failure.reason;
 
     return { delivered, retried, poisoned, ...(lost.length ? { lost } : {}) };
   }

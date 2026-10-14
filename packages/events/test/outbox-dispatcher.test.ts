@@ -63,6 +63,47 @@ for (const storeCase of storeCases) {
       expect((await store.listOutbox({ status: "delivered" })).map((item) => item.receipt)).toEqual([{ accepted: "m1" }, { accepted: "m2" }]);
     });
 
+    test("waits for sibling workers after a transient claim failure", async () => {
+      const { store } = await open();
+      await intents(store, "sibling");
+      const claim = store.claimOutboxLeased!.bind(store);
+      let claims = 0;
+      const instrumented = new Proxy(store, { get(target, key) {
+        if (key === "claimOutboxLeased") return async (...args: Parameters<typeof claim>) => {
+          claims++;
+          if (claims === 1) throw new Error("transient claim failure");
+          return claim(...args);
+        };
+        return Reflect.get(target, key, target);
+      } });
+      let releaseSibling!: () => void;
+      let markSiblingStarted!: () => void;
+      const siblingStarted = new Promise<void>((resolve) => { markSiblingStarted = resolve; });
+      let siblingSettled = false;
+      const dispatcher = new OutboxDispatcher(instrumented, {
+        topic: "mail",
+        concurrency: 2,
+        batchSize: 2,
+        backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 },
+        deliver: async () => {
+          markSiblingStarted();
+          await new Promise<void>((resolve) => { releaseSibling = resolve; });
+          siblingSettled = true;
+          return { accepted: true };
+        },
+      });
+
+      let drainRejected = false;
+      const observed = dispatcher.drain().catch((error: unknown) => { drainRejected = true; throw error; });
+      await siblingStarted;
+      await Bun.sleep(10);
+      expect(drainRejected).toBe(false);
+      releaseSibling();
+      await expect(observed).rejects.toThrow("transient claim failure");
+      expect(siblingSettled).toBe(true);
+      expect(await store.listOutbox({ status: "delivered" })).toHaveLength(1);
+    });
+
     test("overlapping drains share capacity and admit newly queued work", async () => {
       const { store } = await open();
       await intents(store, "slow");

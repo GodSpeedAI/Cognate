@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ConcurrencyError, fingerprint, OutboxDispatcher, PermanentDeliveryError, RecordConflictError } from "@godspeedai/cognate-events";
-import type { DrainReport, DurableStore, Json, OutboxIntent, StoredRecord } from "@godspeedai/cognate-events";
+import type { DrainReport, DurableStore, Json, OutboxAdmission, OutboxIntent, StoredRecord } from "@godspeedai/cognate-events";
 import type {
   ContinuationAction,
   ContinuationPolicy,
@@ -19,6 +19,8 @@ export interface ContinuationServiceOptions {
   readonly delivery?: { readonly baseMs: number; readonly maxMs: number; readonly maxAttempts: number };
   /** Bounded independent handler deliveries; default one preserves serial compatibility. */
   readonly deliveryConcurrency?: number;
+  /** Optional shared pre-claim admission with other native outbox topics. */
+  readonly deliveryAdmission?: OutboxAdmission;
 }
 
 const COLLECTION = "continuations";
@@ -305,6 +307,7 @@ export class ContinuationService {
       topic: RESUME_TOPIC,
       backoff,
       concurrency: this.options.deliveryConcurrency,
+      admission: this.options.deliveryAdmission,
       now: this.now,
       deliver: async (item) => {
         const { continuationId } = item.payload as { continuationId: string };
