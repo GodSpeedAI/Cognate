@@ -35,7 +35,8 @@ Explicit OS gate:
 COGNATE_BWRAP_TESTS=1 bun test --timeout 15000 packages/execution/test/bubblewrap.test.ts
 ```
 
-Observed on WSL2 Linux/Bun 1.4.0: ten tests pass, zero failures, 28 assertions. Tests exercise native
-filesystem reads/writes, symlink/host-secret refusal, denied TCP egress, denied nested user namespaces,
+Observed on WSL2 Linux/Bun 1.4.0: ten tests pass, zero failures, 29 assertions. Tests exercise native
+filesystem reads/writes, fail-fast symlink/host-secret refusal, denied access to an otherwise reachable
+host TCP listener, denied nested user namespaces,
 nested Bun children, timeout and cancellation cleanup, bounded output and binary mismatch. A broad
 host-root read-only smoke test was used only for initial capability detection; it is not this policy.

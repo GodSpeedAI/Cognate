@@ -138,8 +138,12 @@ describe("bubblewrap OS containment (explicit privileged integration gate)", () 
       const write = await provider.process.exec({ argv: ["/usr/bin/touch", "/workspace/escape"], cwd: root });
       expect(write.exitCode).not.toBe(0);
       expect(await readFile(sentinel, "utf8")).toBe("unchanged");
-      const network = await provider.process.exec({ argv: ["/usr/bin/bash", "-lc", "echo > /dev/tcp/1.1.1.1/53"], cwd: root, timeoutMs: 1_000 });
-      expect(network.exitCode).not.toBe(0);
+      const host=Bun.serve({hostname:"127.0.0.1",port:0,fetch:()=>new Response("host listener")});
+      try{
+        expect(await (await fetch(`http://127.0.0.1:${host.port}`)).text()).toBe("host listener");
+        const network = await provider.process.exec({ argv: ["/usr/bin/bash", "-c", `echo > /dev/tcp/127.0.0.1/${host.port}`], cwd: root, timeoutMs: 1_000 });
+        expect(network.exitCode).not.toBe(0);
+      }finally{host.stop(true);}
       await provider.dispose();
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -177,7 +181,7 @@ describe("bubblewrap OS containment (explicit privileged integration gate)", () 
     try{
       const secret=join(outside,"secret");await writeFile(secret,"not exposed");
       const provider=await bubblewrapExecutionWorld({workspaceRoot:root,executablePath:"/usr/bin/bwrap",provenance,runtimeRoots,bunExecutable:process.execPath});
-      const code=`const p=Bun.spawn(["/usr/bin/bash","-c",${JSON.stringify(`test ! -r '${secret}'; test ! -r /proc/1/root${secret}; touch /workspace/nested-proof`)}],{stdout:"pipe",stderr:"pipe"});process.exit(await p.exited);`;
+      const code=`const p=Bun.spawn(["/usr/bin/bash","-c",${JSON.stringify(`set -e; test ! -r '${secret}'; test ! -r /proc/1/root${secret}; touch /workspace/nested-proof`)}],{stdout:"pipe",stderr:"pipe"});process.exit(await p.exited);`;
       const result=await provider.process.exec({argv:["bun","-e",code],cwd:root});
       expect(result.exitCode,result.stderr).toBe(0);
       expect(await Bun.file(join(root,"nested-proof")).exists()).toBe(true);
