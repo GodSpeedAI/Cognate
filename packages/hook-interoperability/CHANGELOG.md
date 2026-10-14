@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-hook-interoperability-v0.3.0...cognate-hook-interoperability-v0.4.0) (2026-10-14)
+
+
+### Miscellaneous Chores
+
+* **cognate-hook-interoperability:** Synchronize cognate SDK packages versions
+
 ## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-hook-interoperability-v0.2.0...cognate-hook-interoperability-v0.3.0) (2026-10-12)
 
 
