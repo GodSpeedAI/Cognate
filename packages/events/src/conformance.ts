@@ -21,6 +21,8 @@ export function event(eventType: string, payload: NewEvent["payload"] = {}, over
 export interface StoreKitOptions {
   /** Persistent stores must also pass reopen/durability tests. */
   readonly persistent: boolean;
+  /** Assert that this store implements the optional fenced outbox lease extension. */
+  readonly fencedOutbox?: boolean;
 }
 
 export function storeConformance(name: string, factory: StoreFactory, options: StoreKitOptions): void {
@@ -199,6 +201,60 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       await store.claimOutbox({ topic: "t", now: 0, limit: 1, leaseMs: 100 });
       expect(await store.claimOutbox({ topic: "t", now: 50, limit: 1, leaseMs: 100 })).toHaveLength(0);
       expect(await store.claimOutbox({ topic: "t", now: 101, limit: 1, leaseMs: 100 })).toHaveLength(1);
+    });
+
+    if (options.fencedOutbox) test("fenced leases reject expired and superseded owners after reclaim", async () => {
+      const store = await open();
+      if (!store.claimOutboxLeased || !store.renewOutboxLease || !store.settleOutboxLease) throw new Error("store does not implement the fenced outbox lease extension");
+      await store.commit({ appends: [], outbox: [{ id: "fenced", topic: "t", payload: null }] });
+      const first = (await store.claimOutboxLeased({ topic: "t", ownerId: "worker-a", now: 0, limit: 1, leaseMs: 100 }))[0]!;
+      expect(first.lease).toEqual({ ownerId: "worker-a", generation: 1, expiresAt: 100 });
+      const oldLease = { id: first.id, ownerId: first.lease!.ownerId, generation: first.lease!.generation };
+      expect(await store.renewOutboxLease({ ...oldLease, now: 100, leaseMs: 100 })).toBe(false);
+      expect(await store.settleOutboxLease({ ...oldLease, now: 100 }, { kind: "delivered", receipt: "stale" })).toBe(false);
+
+      const second = (await store.claimOutboxLeased({ topic: "t", ownerId: "worker-b", now: 101, limit: 1, leaseMs: 100 }))[0]!;
+      expect(second.lease).toEqual({ ownerId: "worker-b", generation: 2, expiresAt: 201 });
+      expect(await store.renewOutboxLease({ ...oldLease, now: 102, leaseMs: 100 })).toBe(false);
+      expect(await store.settleOutboxLease({ ...oldLease, now: 102 }, { kind: "delivered", receipt: "stale" })).toBe(false);
+      const currentLease = { id: second.id, ownerId: second.lease!.ownerId, generation: second.lease!.generation };
+      expect(await store.renewOutboxLease({ ...currentLease, now: 150, leaseMs: 100 })).toBe(true);
+      expect(await store.settleOutboxLease({ ...currentLease, now: 249 }, { kind: "delivered", receipt: "current" })).toBe(true);
+      expect((await store.listOutbox({ status: "delivered" }))[0]).toMatchObject({ receipt: "current" });
+    });
+
+    if (options.fencedOutbox) test("manual requeue fences the active owner immediately", async () => {
+      const store = await open();
+      if (!store.claimOutboxLeased || !store.settleOutboxLease) throw new Error("store lacks fenced outbox lease methods");
+      await store.commit({ appends: [], outbox: [{ id: "requeued", topic: "t", payload: null }] });
+      const item = (await store.claimOutboxLeased({ topic: "t", ownerId: "worker-a", now: 0, limit: 1, leaseMs: 1000 }))[0]!;
+      await store.requeueOutbox(item.id, 1);
+      expect(await store.settleOutboxLease({ id: item.id, ownerId: "worker-a", generation: item.lease!.generation, now: 2 }, { kind: "delivered", receipt: null })).toBe(false);
+      const replacement = (await store.claimOutboxLeased({ topic: "t", ownerId: "worker-b", now: 2, limit: 1, leaseMs: 1000 }))[0]!;
+      expect(replacement.lease!.generation).toBeGreaterThan(item.lease!.generation);
+    });
+
+    if (options.fencedOutbox) test("concurrent fenced claimers receive disjoint items", async () => {
+      const store = await open();
+      if (!store.claimOutboxLeased) throw new Error("store does not implement the fenced outbox lease extension");
+      await store.commit({ appends: [], outbox: [{ id: "a", topic: "t", payload: null }, { id: "b", topic: "t", payload: null }] });
+      const [left, right] = await Promise.all([
+        store.claimOutboxLeased({ topic: "t", ownerId: "left", now: 0, limit: 1, leaseMs: 100 }),
+        store.claimOutboxLeased({ topic: "t", ownerId: "right", now: 0, limit: 1, leaseMs: 100 }),
+      ]);
+      expect([...left, ...right].map((item) => item.id).sort()).toEqual(["a", "b"]);
+      expect(left[0]!.lease!.ownerId).not.toBe(right[0]!.lease!.ownerId);
+    });
+
+    if (options.fencedOutbox) test("legacy APIs cannot reclaim or settle a fenced row after requeue", async () => {
+      const store = await open();
+      if (!store.claimOutboxLeased) throw new Error("store does not implement the fenced outbox lease extension");
+      await store.commit({ appends: [], outbox: [{ id: "mixed", topic: "t", payload: null }] });
+      await store.claimOutboxLeased({ topic: "t", ownerId: "fenced-worker", now: 0, limit: 1, leaseMs: 100 });
+      await store.requeueOutbox("mixed", 1);
+      await expect(store.claimOutbox({ topic: "t", now: 1, limit: 1, leaseMs: 100 })).resolves.toHaveLength(0);
+      await expect(store.settleOutbox("mixed", { kind: "delivered", receipt: "legacy-stale" })).rejects.toThrow(/fenced/);
+      expect(await store.listOutbox({ status: "pending" })).toMatchObject([{ id: "mixed", attempts: 1 }]);
     });
 
     test("poisoned items stay visible until an operator requeues them", async () => {

@@ -10,6 +10,7 @@ import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { COGNITION_PROJECTION, cognitionProjection, recallFor } from "./cognition.ts";
 import type { Core } from "./core.ts";
 import { executeOnce } from "./executor.ts";
+import { ExecutionSlots } from "./execution-slots.ts";
 import { foldRun, isTerminal, RESUME_HANDLER, RUN_EXECUTE_TOPIC, RUNS, runStream } from "./fold.ts";
 import type { Runtime, RuntimeOptions } from "./index.ts";
 import { inspectCorrelation } from "./inspect.ts";
@@ -22,6 +23,10 @@ const DELIVERY = { baseMs: 50, maxMs: 5_000, maxAttempts: 10 };
 const TOPICS = [RUN_EXECUTE_TOPIC, "continuation.resume"];
 
 export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
+  const capacity=options.execution?.maxConcurrentRuns ?? 1;
+  if(!Number.isInteger(capacity) || capacity<1 || capacity>64)throw new Error("execution.maxConcurrentRuns must be an integer between 1 and 64");
+  if(capacity>1 && typeof options.execution?.resourceKeys!=="function")throw new Error("Concurrent execution requires an explicit execution.resourceKeys eligibility policy");
+  const slots=new ExecutionSlots(capacity);
   // The runtime closes only stores it opened itself; an injected store is owned by its creator.
   // (The PostgreSQL store's close() ends its pool and LISTEN connection, so one call covers both.)
   const config = options.store;
@@ -47,14 +52,24 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   await invoker.attach(kernel, options.components ?? []);
 
   // Authorization happens in the service against `actions`; the continuation layer trusts its caller.
-  const continuations = new ContinuationService(store, { policy: { authorize: () => ({ allow: true, reason: "authorized by runtime service" }) }, delivery: DELIVERY });
+  const continuations = new ContinuationService(store, { policy: { authorize: () => ({ allow: true, reason: "authorized by runtime service" }) }, delivery: DELIVERY, deliveryConcurrency: capacity });
 
   let closed = false;
   const chains = new Map<string, Promise<void>>();
   const pending = new Set<string>();
+  const deliveries = new Set<Promise<void>>();
+  const trackDelivery=(job:Promise<unknown>):void=>{
+    const tracked=job.then(()=>{},()=>{}).finally(()=>deliveries.delete(tracked));
+    deliveries.add(tracked);
+  };
   const execute = (runId: string): Promise<void> => {
     const next = (chains.get(runId) ?? Promise.resolve()).then(async () => {
-      for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId)) === "done") return;
+      const view=foldRun(runId,await store.readStream(runStream(runId)));
+      if(closed || !view || isTerminal(view))return;
+      const release=await slots.acquire(options.execution?.resourceKeys?.(view) ?? []);
+      try{
+        for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId)) === "done") return;
+      }finally{release();}
     });
     const tracked = next.finally(() => {
       if (chains.get(runId) === tracked) chains.delete(runId);
@@ -88,6 +103,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
 
   const runDispatcher = new OutboxDispatcher(store, {
     topic: RUN_EXECUTE_TOPIC,
+    concurrency: capacity,
     backoff: DELIVERY,
     deliver: async (item) => {
       await execute((item.payload as { runId: string }).runId);
@@ -97,12 +113,13 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
 
   async function tick(): Promise<void> {
     for (const record of await continuations.expireDue()) pending.add(record.runId);
-    await continuations.dispatchResumes();
-    await runDispatcher.drain();
-    for (const runId of [...pending]) {
-      pending.delete(runId);
-      await execute(runId);
-    }
+    // Dispatchers reserve a bounded set of slots across overlapping drains. A new runnable
+    // arrival can fill a free slot while an earlier long-running delivery is still executing.
+    trackDelivery(continuations.dispatchResumes());
+    trackDelivery(runDispatcher.drain());
+    const recover=[...pending];
+    for(const runId of recover)pending.delete(runId);
+    for(const runId of recover)trackDelivery(execute(runId));
   }
 
   let ticking: Promise<void> | null = null;
@@ -290,7 +307,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   }
 
   async function quiescent(): Promise<boolean> {
-    if (ticking || pending.size > 0 || chains.size > 0) return false;
+    if (ticking || pending.size > 0 || chains.size > 0 || deliveries.size>0) return false;
     const now = Date.now();
     for (const topic of TOPICS) {
       const items = await store.listOutbox({ topic, status: "pending" });
@@ -342,6 +359,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       clearInterval(timer);
       if (approvalTimer) clearInterval(approvalTimer);
       await ticking;
+      await Promise.allSettled([...deliveries]);
       await Promise.allSettled([...chains.values()]);
       for (const runner of runners) await runner.stop();
       unregister();
