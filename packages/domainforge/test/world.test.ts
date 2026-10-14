@@ -13,7 +13,7 @@ const sources = {
   "domain/operations.sea": operations,
 };
 const nativeAvailable = typeof (Graph as typeof Graph & { parseSourceMap?: unknown }).parseSourceMap === "function";
-const load = (files = sources) => loadSemanticWorld({ entry: "domain/organization.sea", sources: files, worldName: "godspeed.org" });
+const load = (files: Readonly<Record<string, string>> = sources) => loadSemanticWorld({ entry: "domain/organization.sea", sources: files, worldName: "godspeed.org" });
 
 describe("canonical multi-source organizational world", () => {
   test("native binding required before composed-world integration can be released", () => {
@@ -35,7 +35,7 @@ describe("canonical multi-source organizational world", () => {
     ]);
     expect(result.worldRef).toMatch(/^world:godspeed\.org@sha256:[0-9a-f]{64}$/);
     expect(result.projection.source.uri).toBe(result.worldRef);
-    expect(result.projection.source.digest).toBe(result.worldRef.split("@")[1]);
+    expect(result.projection.source.digest).toBe(result.worldRef.split("@")[1]!);
     expect(result.identity.semantic_closure_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(load()).toEqual(result);
   });
