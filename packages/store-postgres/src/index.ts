@@ -309,6 +309,10 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
       if (request.idempotency) {
         const settled = await readIdempotencyRecord(tx, request.idempotency);
         if (settled) {
+          // The counter lock serialized this lookup, but a duplicate appends no facts. Undo
+          // its still-uncommitted reservation while retaining the lock, so replay cannot
+          // consume event positions. No other allocator can observe or use this reservation.
+          if(eventCount>0)await tx`UPDATE ${t.meta} SET next_position = next_position - ${eventCount} WHERE id = ${POSITION_COUNTER_ID}`;
           outcome = settled;
           return;
         }

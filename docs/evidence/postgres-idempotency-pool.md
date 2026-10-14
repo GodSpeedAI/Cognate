@@ -16,3 +16,10 @@ Transaction order, idempotency identity and recorded receipt content are unchang
 zero failures, twelve assertions in 921 ms. Each iteration uses twenty same-key commits and a
 two-connection PostgreSQL pool, asserting one commit, nineteen identical logical replays and one
 event. This is an upstream source fix; consumers need a supported published SDK release.
+
+The follow-up test appends another distinct fact after all twenty replays. Before the allocation
+fix its observed position was 11 rather than 2: serialized duplicates committed unused counter
+reservations (the count varies with which callers reach the transactional replay path).
+The duplicate path now restores its uncommitted reservation while still holding the counter lock.
+It does not rewind any committed fact or backfill historical gaps. The same regression checks the
+next fact's position, and the full PostgreSQL adapter suite remains the compatibility gate.
