@@ -1,0 +1,189 @@
+COLD-START REPORT: Cognate onboarding page (start.txt), Refund Desk
+=====================================================================
+Working folder: /tmp/claude-1000/-home-sprime01-projects-cognate/91e0ba2e-15d8-47d4-bef4-6c86664f2534/scratchpad/fc/cold/
+App folder:     .../fc/cold/refund-desk/
+Sources used:   start.txt (the page), the skills installed from GitHub, and node_modules of the npm packages.
+                Did NOT read cognate, cognate-workbench, or any firstbuild scratch build.
+
+OUTCOME
+-------
+Activated: YES, with caveats.
+- `bun test` in refund-desk: 6 pass, 0 fail (exit 0, ~160 ms of test time).
+- The five named journeys are covered by name: "small refund completes", "large refund waits for approval",
+  "approval completes it", "denial refunds nothing", "history records each step". A sixth test
+  checks that the validated .sea model loads through @godspeedai/cognate-domainforge.
+- The app is NOT the page's expected path. The page says "cognate create" needs a Cognate source checkout,
+  and the skill's workflow step 3 says to scaffold with it. I did not use cognate create. I hand-composed the
+  runtime with createRuntime from the npm packages, following the API reference's worked example.
+- The DomainForge model is partial. See Friction F5.
+
+TIME PER STEP (measured wall clock unless marked)
+-------------------------------------------------
+Step 1 prerequisites:       ~1 s (bun 1.4.0, git 2.53.0, node v26.8.2, npm 12.0.2 present; bunx missing)
+Step 2 install:             35 s (npx skills add ... -y, which cloned GitHub). Plus folder setup, ~1 s.
+Step 3 build:
+  - npm view checks:        ~10 s per package (6 lookups, ~60 s total)
+  - bun add (6 packages):   7 s
+  - .sea model:             4 validate iterations (not timed; agent work)
+  - app code + tests:       first bun test run, 1 fix to the test file, second run 0 s
+  - agent work (reading the skill references, writing code): not timed precisely; roughly 45 tool calls.
+Step 4 check (bun test):    0.16 s, 6/6 pass.
+Total: about 4 to 6 minutes of wall time, excluding agent reasoning. Treat as an estimate.
+
+TRANSCRIPT (command, exit code, key output)
+-------------------------------------------
+1. bun --version                      rc=0   1.4.0
+2. bunx --version                     rc=127 bunx: command not found   (page says use bun x; not needed)
+3. git --version                      rc=0   2.53.0
+4. node --version / npm --version     rc=0   v26.8.2 / 12.0.2
+5. snapshot ~/.claude/skills and ~/.agents/skills  (61 entries before)
+6. mkdir refund-desk && git init      rc=0
+7. npx skills add GodSpeedAI/Cognate --skill building-with-cognate --skill deriving-interaction-domain-models --skill domainforge-sea -a claude-code -y
+                                      rc=0, 35 s, "Installed 3 skills"
+   Files landed in refund-desk/.claude/skills/{building-with-cognate,deriving-interaction-domain-models,domainforge-sea}
+   plus refund-desk/skills-lock.json. Global skill dirs unchanged (diff of top-level listing: no change).
+   Note: the install log says "Review skills before use; they run with full agent permissions."
+8. Read the skill: building-with-cognate/SKILL.md, references/cli.md, deriving-.../SKILL.md,
+   domainforge-sea/SKILL.md, deriving-.../references/output-and-validation.md, building-.../references/idm-to-cognate.md,
+   building-.../references/cognate-api.md.
+9. domainforge --version              rc=0   domainforge 0.19.0  (~/.cargo/bin/domainforge, pre-existing; not installed by me)
+10. npm view @godspeedai/cognate-cli version -> 0.5.0 ; @godspeedai/cognate-runtime -> 404 ; @godspeedai/domainforge -> 0.21.1
+11. Wrote .sea/interaction/interaction-model.sea (Role x4, Entity x2, Resource "Money" USD, Flow, Relation, Policy, Metric)
+    domainforge validate (attempt 1)  rc=1  Syntax error 16:53 (quantity 50 "USD" is not accepted)
+    attempt 2                          rc=1  Undefined entity: Store (Flow endpoints need Entity, not Role)
+    attempt 3                          rc=1  Policy auto_refund_limit evaluation is UNKNOWN (unit mismatch in policy)
+    attempt 4                          rc=0  "Validation succeeded: 0 violations total"
+    domainforge fmt --check            rc=1  "Would reformat" (on a file that validates; formatter defect the skill already notes)
+12. bun add @godspeedai/cognate-runtime-bun @godspeedai/cognate-store-sqlite @godspeedai/cognate-runtime-api
+          @godspeedai/cognate-kernel-api @godspeedai/cognate-client @godspeedai/cognate-domainforge
+                                      rc=0, 7 s, 6 packages at 0.5.0 (20 packages total)
+    Note: store-sqlite was installed but not imported; createRuntime accepted a file path. Not verified whether it is needed.
+13. Wrote src/refund-desk.ts (createRuntime, allowCapabilities, one component for refund.issue, agent.refund with waitFor) and tests/refund-desk.test.ts.
+14. bun test (run 1)                  rc=1  history test: StoredEvent uses eventType, not type (my error).
+15. bun test (run 2, after fix)       rc=0  6 pass
+16. bun test --verbose                rc=0  6 pass (repeat)
+    Note: each test writes a SQLite file into refund-desk/data/ (no cleanup; low friction).
+
+FRICTION POINTS
+---------------
+Severity is the impact on a newcomer following the page. Quoted text is from the page or the skill.
+
+F1 [HIGH] Contradiction between skill references: cognate-api.md, section "Gaps", says
+   "No published @godspeedai/* npm packages yet (DEBT-016); every app is built from a local checkout".
+   The page says the npm path works, and it does (6 packages installed). An agent that reads this section
+   would refuse the page's path. Fix the skill text, not the page.
+
+F2 [HIGH] Page sentence: "Starting from a project template with cognate create currently needs a copy of the Cognate source.
+   This path doesn't." The skill's workflow step 3 says: "For a new app, generate a starter with `cognate create`".
+   The page is honest about the gap, but it gives no route for the agent. The skill's own recovery text is:
+   "If it asks for a Cognate source checkout, tell it to use the published npm packages." That does not say
+   how to build without a starter. I had to infer hand-composed createRuntime from cognate-api.md section 2.
+   Copy fix: add "Your agent will wire the app directly from the npm packages (no generator)." Also add to the
+   skill: a no-generator recipe with the package list.
+
+F3 [HIGH] Prerequisites are incomplete. Page Step 1 lists "Bun 1.4 or newer, git, Node.js and a coding agent".
+   But the deriving-interaction-domain-models skill says it "Requires ... the DomainForge CLI", and the
+   domainforge-sea skill assumes a `domainforge` binary. The page never mentions DomainForge or Rust/cargo.
+   A newcomer without the binary hits a blocker inside Step 3. Here the binary was already present
+   (domainforge 0.19.0 at ~/.cargo/bin). I did not time a cargo install; the domainforge-sea skill
+   suggests `cargo install --path domainforge-core`, which needs a repo checkout. That is a second blocker for
+   a newcomer. Copy fix: add a Step 1 line "DomainForge CLI (installed by your agent with cargo)" and
+   state the Rust requirement, or drop the requirement.
+
+F4 [HIGH] Version drift. cli.md says "current line: 0.1.x" and suggests `bunx @godspeedai/cognate-cli@0.1`.
+   npm has 0.5.0 for every @godspeedai/cognate-* package. The skill's pin would point at a line that doesn't
+   exist in the registry. Also, @godspeedai/domainforge is 0.21.1 on npm, but cognate-domainforge pins 0.19.0.
+   Fix the pin text in cli.md.
+
+F5 [HIGH] The IDM step is far heavier than the page implies. The page says only "Ask your agent" and
+   "Build your first app". The skill (deriving-interaction-domain-models, output-and-validation.md) requires
+   seven deliverables: a .sea model, a source translation map, a journey catalog, an interaction grammar summary,
+   an assumptions/unknowns file, a validation report, and a handoff, plus a canonicality conclusion. I produced
+   only the .sea file, the validation output, and validate.json. The rest is not written (partial completion).
+   Copy fix: say "Your agent will first write a small domain model in .sea (budget ~10 minutes), then the app."
+   Consider a skill flag for a "minimum viable IDM".
+
+F6 [MEDIUM] .sea syntax gaps the skills don't state (cost four validate attempts):
+   a. `Flow ... quantity 50 "USD"` does not parse (syntax error at the unit literal).
+   b. A Flow's endpoints must be Entity declarations, not Role declarations. The skill's example implies roles.
+   c. A Policy that compares a unitless quantity with "USD" evaluates UNKNOWN and fails validation.
+   d. domainforge fmt --check flags a file that validates. The skill mentions this defect but not that it blocks
+      the check step in the skill's "Evidence Requirements".
+
+F7 [MEDIUM] The package set is not named anywhere a newcomer would look. Page: "Use the published
+   @godspeedai/cognate-* packages from npm". cognate-api.md shows the imports but no install list. I guessed six
+   packages. Copy fix: list the exact packages in the page or skill, e.g.
+   "bun add @godspeedai/cognate-runtime-bun @godspeedai/cognate-kernel-api @godspeedai/cognate-runtime-api @godspeedai/cognate-client @godspeedai/cognate-domainforge".
+
+F8 [MEDIUM] Stale or dangling references in the skill. idm-to-cognate.md points at `.agents/skills/...`, `docs/...`,
+   and "ADR-0012" paths that exist only in a Cognate checkout. The skill also says `cognate dev` loads `domain/*.sea`,
+   which doesn't apply to a hand-composed app.
+
+F9 [MEDIUM] The step-3 "It failed" recovery text is the only guidance for an agent that goes off-path. It did not
+   help me directly, because I did not need it. An agent that follows the skill literally would hit F2 and stop.
+
+F10 [LOW] Page Step 2 says "Run both commands in an empty folder". The first command is a three-part chain
+   (mkdir && cd && git init), so "both" is ambiguous. Clarify the wording.
+
+F11 [LOW] bunx is absent on this machine. The page's check is `bun --version` (fine), but the "It failed" text
+   for Step 1 says "use bun x". Works, but it is noise.
+
+F12 [LOW] Test runs leave SQLite files in data/ (no cleanup). The page's SQLITE_CANTOPEN advice (create the folder)
+   was not needed because the app creates it. Consider a test cleanup helper in the template copy.
+
+F13 [LOW] Step 2 install writes skills-lock.json at the project root. This is not mentioned on the page. The skill
+   install also says "they run with full agent permissions". Worth one line of warning.
+
+PAGE CHECK (Step 4)
+-------------------
+Page Expected: "passing tests for small refund completes, large refund waits for approval, approval completes it,
+denial refunds nothing, and the history records each step."
+Result: all five behaviours are present by name and pass. Output matches. The sixth test is an extra (IDM load).
+The check matches; no recovery text was needed for Step 4.
+
+RECOVERY TEXT USED
+------------------
+- Step 1 "It failed": not needed. bun 1.4.0 was already present. The bunx note was not used.
+- Step 2 "It failed": not needed. The install worked the first time.
+- Step 3 "It failed": not used as written, because the install and the request both worked. The "source checkout"
+  branch would have applied to `cognate create`, which I skipped (see F2). The text does not explain how to continue
+  without create; I inferred it.
+- Step 4 "It failed": not needed. Tests passed.
+
+SUGGESTED COPY FIXES FOR THE PAGE
+---------------------------------
+1. Step 1: add "DomainForge CLI (the agent installs it; needs Rust/cargo if missing)."
+2. Step 2: change "Run both commands in an empty folder" to "Run these commands in an empty folder, one after the other."
+3. Step 3: after "Use the published @godspeedai/cognate-* packages from npm", add:
+   "Your agent will not use cognate create. It wires the app from the packages directly, and it writes a small
+   domain model in .sea first."
+4. Step 3: add a time expectation: "Expect the model step to take a few minutes."
+5. Step 4: no change needed.
+6. Add an explicit line that the ".claude/skills/" folder and "skills-lock.json" are created in the project folder.
+
+SKILL FIXES (not page copy, but they block the page's path)
+-----------------------------------------------------------
+- cognate-api.md "Gaps": remove "No published @godspeedai/* npm packages yet".
+- cli.md: fix "current line: 0.1.x" and the @0.1 pin to match npm (0.5.0 at time of test).
+- building-with-cognate SKILL.md step 3: add a no-generator route (createRuntime + package list).
+- domainforge-sea: note that flows need entities, that quantity units are not accepted, and that fmt --check
+  can fail on a valid file.
+
+FILES WRITTEN (all inside W)
+----------------------------
+refund-desk/.claude/skills/*        (installed by npx skills add)
+refund-desk/skills-lock.json        (installed)
+refund-desk/.sea/interaction/interaction-model.sea
+refund-desk/.sea/interaction/validation/domainforge-output.txt, validate.json
+refund-desk/src/refund-desk.ts
+refund-desk/tests/refund-desk.test.ts
+refund-desk/package.json, bun.lock  (from bun add)
+refund-desk/data/*.sqlite           (test databases)
+REPORT.txt, install.log, bunadd.log, bunTest1/2/3.log, before/after skill listings
+
+NOT DONE (honest gaps)
+----------------------
+- Full IDM deliverable set (translation map, journey catalog, grammar summary, assumptions, handoff, canonicality
+  conclusion). Not written.
+- No cognate dev run; no UI check. The page's success criterion is bun test only.
+- DomainForge 0.19.0 was not compared with the 0.21.1 npm package.
