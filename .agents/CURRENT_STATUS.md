@@ -1,8 +1,8 @@
 # Current status
 
-**Status revision:** 64
+**Status revision:** 65
 
-**Summary:** PR44 and its linked release are operator-authorized. Incorrect distro-binary patch provenance is withdrawn; explicit attestation and a verified upstream 0.12.0 fixture pass actual OS tests and 81/81 full gates. The corrected head must pass CI and packaging before merge/publication.
+**Summary:** Authorized PR44 now repairs native recovery retry and rejects writable namespace launchers. All 33 runtime/PostgreSQL/OS tests and 81/81 full gates pass with verified upstream 0.12.0. Exact-head CI and review reconciliation still precede merge/publication.
 
 SDK 0.4.0 is published completely: all 45 npm names and gitHeads match release commit 467a5f.
 Workbench's published upgrade and native capacity characterization pass all 1,104 tests and keep
@@ -25,6 +25,14 @@ withdraws the claim that Ubuntu 0.11.1-1ubuntu0.3 contains the cited CVE fix: US
 OS tests now require an explicit reviewed attestation path. Official upstream signed tag v0.12.0
 was built without system installation; the corrected fixture passes ten tests/29 assertions and
 full 81/81 gates with the OS gate enabled. Exact-head CI/packaging must pass after this correction.
+
+Fresh CodeRabbit review identified lost recovery retries. Recovered/expired-wait work now uses the
+same durable run.execute dispatcher, preserving pending backoff and retrying transient eligibility
+failure without another restart. PostgreSQL regressions pass for running and RESUMED recovery.
+Canonical launcher/Bun paths inside a writable workspace are denied before launch; the marker
+regression fails before the guard and passes afterward. Final combined tests: **33/173**; full
+gates: **81/81**, with patched OS tests enabled. Independent source review found no blocker after
+bookkeeping cleanup. User-approved merge/publication still waits for latest-head CI/review.
 
 Shutdown aborts cooperative provider work without cancelling durable objectives; committed steps
 and open waits survive restart. Recovery also handles an acknowledged RESUMED continuation before

@@ -1,4 +1,5 @@
 // Composition root: store, kernel, continuations, artifacts, projections, cognition, and the background loop.
+import { randomUUID } from "node:crypto";
 import { ArtifactService } from "@godspeedai/cognate-artifacts";
 import { ContinuationService } from "@godspeedai/cognate-continuations";
 import { type DurableStore, type Json, NotFoundError, OutboxDispatcher } from "@godspeedai/cognate-events";
@@ -38,7 +39,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   // same primitive/capacity so metadata resolution cannot fan out without limit.
   const eligibilitySlots = new ExecutionSlots(capacity);
   // Run and resume topics share one pre-claim budget. ExecutionSlots separately enforces
-  // run-local/resource exclusion for every execution path, including direct recovery.
+  // run-local/resource exclusion for every execution path.
   let admittedDeliveries = 0;
   const deliveryAdmission = { tryAcquire(): (() => void) | undefined {
     if (admittedDeliveries >= capacity) return undefined;
@@ -133,6 +134,11 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   };
   const chains = new Map<string, Promise<void>>();
   const pending = new Set<string>();
+  // A runtime epoch gives recovery attempts fresh durable intent IDs after prior intents have
+  // already been delivered. Existing pending run.execute intents retain their persisted backoff.
+  const recoveryEpoch = randomUUID();
+  let recoverySequence = 0;
+  const recoveryOutboxByRun = new Map<string, string>();
   const deliveries = new Set<Promise<void>>();
   const trackDelivery=(job:Promise<unknown>):void=>{
     const tracked=job.then(()=>{},()=>{}).finally(()=>deliveries.delete(tracked));
@@ -186,14 +192,47 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     admission: deliveryAdmission,
     backoff: DELIVERY,
     deliver: async (item) => {
-      await execute((item.payload as { runId: string }).runId);
+      const runId = (item.payload as { runId: string }).runId;
+      await execute(runId);
+      if (recoveryOutboxByRun.get(runId) === item.id) recoveryOutboxByRun.delete(runId);
       return { executed: true };
     },
   });
 
+  async function persistRecoveryIntents(): Promise<void> {
+    if (pending.size === 0 && recoveryOutboxByRun.size === 0) return;
+    const pendingItems = await store.listOutbox({ topic: RUN_EXECUTE_TOPIC, status: "pending" });
+    const pendingItemIds = new Set(pendingItems.map((item) => item.id));
+    for (const [runId, id] of recoveryOutboxByRun) {
+      if (pendingItemIds.has(id)) pending.delete(runId);
+      else recoveryOutboxByRun.delete(runId);
+    }
+    const candidates = [...pending].filter((runId) => !recoveryOutboxByRun.has(runId)).slice(0, 100);
+    if (candidates.length === 0) return;
+    const pendingRunItems = new Map<string, string>();
+    for (const item of pendingItems) {
+      const runId = (item.payload as { runId?: unknown } | null)?.runId;
+      if (typeof runId === "string" && !pendingRunItems.has(runId)) pendingRunItems.set(runId, item.id);
+    }
+    const intents: { id: string; topic: string; payload: Json }[] = [];
+    const selected = new Map<string, string>();
+    for (const runId of candidates) {
+      const existing = pendingRunItems.get(runId);
+      const id = existing ?? `${RUN_EXECUTE_TOPIC}:recovery:${recoveryEpoch}:${++recoverySequence}:${runId}`;
+      selected.set(runId, id);
+      if (!existing) intents.push({ id, topic: RUN_EXECUTE_TOPIC, payload: { runId } });
+    }
+    if (intents.length > 0) await store.commit({ appends: [], outbox: intents });
+    for (const [runId, id] of selected) {
+      recoveryOutboxByRun.set(runId, id);
+      pending.delete(runId);
+    }
+  }
+
   let resumeFirst = false;
   async function tick(): Promise<void> {
     for (const record of await continuations.expireDue()) pending.add(record.runId);
+    await persistRecoveryIntents();
     // Dispatchers reserve a bounded set of slots across overlapping drains. A new runnable
     // arrival can fill a free slot while an earlier long-running delivery is still executing.
     // Rotate priority: even an empty topic briefly reserves capacity while its claim is
@@ -206,9 +245,6 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       trackDelivery(continuations.dispatchResumes());
     }
     resumeFirst = !resumeFirst;
-    const recover=[...pending];
-    for(const runId of recover)pending.delete(runId);
-    for(const runId of recover)trackDelivery(execute(runId));
   }
 
   let ticking: Promise<void> | null = null;

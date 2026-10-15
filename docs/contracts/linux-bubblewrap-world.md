@@ -52,10 +52,11 @@ The test harness does not infer trust from an installed version or silently mark
 evidence as a pass. The JSON is a host/operator declaration, not a signature or an independent
 verification service; only configure it after reviewing the actual binary and its provenance.
 
-The default non-OS run exercises three invalid-configuration guards; seven privileged OS tests are
+The default non-OS run exercises five invalid-configuration guards; seven privileged OS tests are
 skipped unless the explicit gate and valid operator JSON are both supplied. Unit-only placeholder
-provenance is confined to the three tests that reject configuration before resolving or launching
-an executable. It is never used by an OS test.
+provenance is confined to tests that reject configuration before launching an executable. It is
+never used by an OS test. Canonical launcher and optional Bun paths must be outside the writable
+workspace; a workspace-local executable is rejected before it can run.
 
 Explicit OS gate:
 
@@ -102,3 +103,8 @@ seconds** on WSL2 Linux/Bun 1.4.0. Full `just verify` also passes **81/81 gates*
 enabled. These are bounded filesystem/network/process behavior checks, not a complete security
 review or production trust boundary. The attestation remains an explicit operator responsibility;
 the SDK does not download, vendor, or automatically trust a system binary.
+
+After the writable-executable guards and recovery retry repairs, the combined native
+admission/concurrency/shutdown/OS suite passes **33 tests, zero failures, 173 assertions in 8.39
+seconds**, including all twelve Bubblewrap tests. Full `just verify` again passes **81/81 gates**
+with the reviewed 0.12.0 OS fixture enabled.

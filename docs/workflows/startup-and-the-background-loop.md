@@ -49,14 +49,16 @@ resumption, and continuation expiry all happen because it ticks.
 ## The background loop
 
 `kick()` coalesces: if a tick is already running it sets a flag and returns, so overlapping kicks
-never stack. One `tick()` does four things, in order:
+never stack. One `tick()` prepares recovery and starts bounded deliveries:
 
 ```text
-1. continuations.expireDue()      → mark runs whose wait expired
-2. continuations.dispatchResumes()→ deliver continuation.resume outbox items to the handler
-3. runDispatcher.drain()          → deliver run.execute outbox items (this is what starts runs)
-4. execute(runId) for each queued run
+1. continuations.expireDue()       → mark runs whose wait expired
+2. persistRecoveryIntents()        → reuse pending run.execute work or persist a recovery intent
+3. dispatch run.execute and continuation.resume with shared admission capacity
 ```
+
+The two delivery topics alternate priority. Recovery uses the same durable dispatcher retry/backoff
+as new runs, retaining an existing pending intent's retry time instead of bypassing it.
 
 `execute(runId)` serializes per run through a promise chain, so two kicks cannot execute the same
 run concurrently. It calls `executeOnce` up to 5 times, because one attempt may end in

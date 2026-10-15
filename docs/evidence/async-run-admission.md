@@ -38,3 +38,24 @@ CVE fix. The test harness now requires a reviewed attestation file instead of au
 installed binary. Official upstream 0.12.0 was built in an isolated task directory; its actual OS
 suite passes ten tests/29 assertions, and full `just verify` passes 81/81 with the OS gate enabled.
 The corrected head must pass CI/packaging before the authorized merge and linked publication.
+
+PR #44 follow-up review found that startup recovery re-entered active runs directly; an eligibility
+failure was swallowed by the recovery tracker and could strand a run until another restart. Recovery
+now writes a runtime-epoch `run.execute` outbox intent and uses the existing bounded dispatcher
+backoff. It reuses any pending intent for that run, preserving its `availableAt`; previously
+delivered/poisoned work receives a new intent identity. PostgreSQL regressions cover a recovered
+running run whose first eligibility lookup fails then succeeds, preservation of a seeded pending
+backoff, and a `RESUMED` continuation recovered after shutdown with a transient lookup failure.
+On 2026-10-15, the combined async-admission, concurrency, and shutdown-recovery PostgreSQL suites
+passed 21 tests / 141 assertions; the bubblewrap unit suite passed 5 tests (7 OS-gated tests skipped),
+`bun run typecheck` passed, and scoped `git diff --check` passed. The overlap regression now uses a
+real allowed runtime root and verifies the precise rejection before any launch.
+
+Final source review also identified poisoned-recovery bookkeeping that could remain resident when
+no new recovery was pending; pruning now runs for outstanding tracked intents as well. Canonical
+namespace launcher/Bun executables inside the writable workspace are rejected before launch. The
+workspace-launcher regression executes its marker before the fix and is rejected afterward.
+Combined PostgreSQL/runtime/OS verification passes **33 tests, zero failures, 173 assertions in
+8.39 seconds**. Full `just verify` passes **81/81 gates** with the patched OS fixture enabled after
+all source repairs. The operator's merge/release approval remains recorded; exact-head CI and
+review reconciliation still precede publication.
