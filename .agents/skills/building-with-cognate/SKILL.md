@@ -14,7 +14,7 @@ Build software as: **validated interaction model → explicit bindings → deter
 
 ## Tooling
 
-Invoke the Cognate CLI only as `cognate <command>`. Resolve what `cognate` means (the published [`@godspeedai/cognate-cli`](https://www.npmjs.com/package/@godspeedai/cognate-cli) package; `create` still needs `--source <checkout>`) from [references/cli.md](references/cli.md) before first use. Keep install paths and version pins out of every other file in this skill.
+Invoke the Cognate CLI only as `cognate <command>`. There are two routes, both described in [references/cli.md](references/cli.md), which says how to take each one and when to prefer it. Route one scaffolds an app with the published [`@godspeedai/cognate-cli`](https://www.npmjs.com/package/@godspeedai/cognate-cli) (`create` still needs `--source <checkout>`). Route two depends directly on the published `@godspeedai/cognate-*` packages, with no checkout. Resolve the route from `cli.md` before first use. Keep install paths and version pins out of every other file in this skill.
 
 ## References (load as needed)
 
@@ -29,15 +29,27 @@ Inside the Cognate repo, `docs/documentation-map.md` routes to deeper docs, and 
 
 ### 1. Plan in tranches
 
-Before coding, write a plan that decomposes the work into tranches. Each tranche is a vertical slice that covers one or more canonical journeys end to end: model, agent and capabilities, surface, and test. Order the tranches by dependency and risk. The first tranche proves the thinnest complete journey. Record the plan where the host repository keeps plans; a Cognate checkout uses `.agents/plans/`.
+Before coding, write a plan that decomposes the work into tranches. Each tranche is a vertical slice that covers one or more canonical journeys end to end: model, agent and capabilities, surface, and test. Order the tranches by dependency and risk. The first tranche proves the thinnest complete journey. Record the plan where the host repository keeps plans; a Cognate checkout uses `.agents/plans/`. If the host repository has no `.agents/plans/`, record the plan in the app's `docs/plan.md` (or its README) rather than inventing a plan location.
 
 ### 2. Model the domain (IDM in `.sea`)
 
-Run the deriving-interaction-domain-models workflow over the available evidence, such as specs, the product being recreated, its docs, and its observed behaviour. Output goes to `.sea/interaction/`, including `interaction-model.sea`, the journey catalog, the translation map, the assumptions, and the handoff. Validate with the DomainForge CLI per domainforge-sea. Do not implement a journey that is absent from the catalog. Add the journey to the model first.
+Run the deriving-interaction-domain-models workflow over the available evidence, such as specs, the product being recreated, its docs, and its observed behaviour. Output goes to `.sea/interaction/`, including `interaction-model.sea`, the journey catalog, the translation map, the assumptions, and the handoff. Validate with the DomainForge CLI per domainforge-sea. If the DomainForge CLI is not installed, see domainforge-sea for installing it. As a fallback, parse-check a model with `loadSemanticProjection` from `@godspeedai/cognate-domainforge`. Save this as `check-sea.ts` and run `bun check-sea.ts <file.sea>`. It exits 0 on success, 1 with the typed error on an invalid model, and 2 with no argument:
+
+```ts
+import { readFileSync } from "node:fs";
+import { loadSemanticProjection } from "@godspeedai/cognate-domainforge";
+const file = process.argv[2];
+if (!file) { console.error("usage: bun check-sea.ts <file.sea>"); process.exit(2); }
+const result = loadSemanticProjection(readFileSync(file, "utf8"), { uri: file });
+if (!result.ok) { console.error(`invalid .sea ${file}: ${JSON.stringify(result.error)}`); process.exit(1); }
+console.log(`ok ${file}`);
+```
+
+Do not implement a journey that is absent from the catalog. Add the journey to the model first.
 
 ### 3. Scaffold, project, and bind
 
-For a new app, generate a starter with `cognate create` using the profile closest to the product (see `cli.md`), and place the validated model where the starter loads `.sea` from. Load the model with `@godspeedai/domainforge` (`loadSemanticProjection`), and treat the resulting semantic objects as read-only. Nothing becomes a capability implicitly. Bind semantic IDs to capability contracts explicitly with `bindCapabilities`, and record every binding in the handoff so names stay traceable. Use the mapping in `idm-to-cognate.md` to decide what each IDM element becomes. With the installed DomainForge 0.19.0 binding, Entity, Resource, Flow, Role, Relation, the programmatic ResourceInstance collection, SEA entity instances, policies, metrics, patterns, concept changes, dimensions, units, mappings, and projections all reach the projection as read-only objects (DEBT-003 closed). Policies remain read-only referenced constraints: Cognate does not evaluate them or turn them into capabilities or permissions. Hand-implement any runtime checks the app needs, and name them after their `.sea` declarations.
+For a new app, generate a starter with `cognate create` using the profile closest to the product (see `cli.md`), and place the validated model where the starter loads `.sea` from. Load the model with `@godspeedai/cognate-domainforge` (`loadSemanticProjection`), and treat the resulting semantic objects as read-only. Nothing becomes a capability implicitly. Bind semantic IDs to capability contracts explicitly with `bindCapabilities`, and record every binding in the handoff so names stay traceable. Use the mapping in `idm-to-cognate.md` to decide what each IDM element becomes. With the installed DomainForge 0.19.0 binding, Entity, Resource, Flow, Role, Relation, the programmatic ResourceInstance collection, SEA entity instances, policies, metrics, patterns, concept changes, dimensions, units, mappings, and projections all reach the projection as read-only objects (DEBT-003 closed). Policies remain read-only referenced constraints: Cognate does not evaluate them or turn them into capabilities or permissions. Hand-implement any runtime checks the app needs, and name them after their `.sea` declarations.
 
 ### 4. Implement journey by journey
 
@@ -57,7 +69,7 @@ Each canonical journey needs at least one test. The test runs the real runtime w
 
 ### 6. Verify and record
 
-- Run the narrow tests, then the host repository's full gate. In a Cognate checkout that is `just verify` and `just gates`.
+- Run the narrow tests, then the host repository's full gate. In a Cognate checkout that is `just verify` and `just gates`. For a standalone app, the full gate is its own `typecheck` and `test` scripts.
 - Re-validate the `.sea` model.
 - Update the model's handoff and validation record.
 - Report exact commands and their pass/fail results.

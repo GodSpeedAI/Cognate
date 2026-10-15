@@ -3,8 +3,8 @@
 Generate a real Cognate app with the CLI, run it, and see the same durable runtime you built by
 hand in the previous tutorial — with UI, Connect, and AG-UI attached.
 
-**Prerequisites.** Bun 1.4.x and a clone of this repository. Nothing is published to a package
-registry ([DEBT-016](../../.agents/DEBT.md)), so every command below uses a local checkout.
+**Prerequisites.** Bun 1.4.x and a clone of this repository. The SDK packages are on npm, but
+`create` still needs a checkout for `--source` ([DEBT-016](../../.agents/DEBT.md)), so every command below uses a local checkout.
 
 **Time.** About ten minutes, most of it `bun install`.
 
@@ -103,7 +103,7 @@ Behind that page:
 curl -s -X POST http://127.0.0.1:3000/cognate.v1.RuntimeService/StartRun \
   -H 'content-type: application/json' \
   -H 'authorization: Bearer tenant-a:alice' \
-  -d '{"agent":"agent.copilot","input":"hello","idempotencyKey":"k1"}' | jq
+  -d '{"agent":"agent.copilot","input":{"message":"hello"},"idempotencyKey":"k1"}' | jq
 ```
 
 The `authorization` header is how the caller is established. It is never read from the body.

@@ -24,7 +24,9 @@ If a gate that should pass fails, run it directly — the gate command is in the
 | Symptom | Cause | Recovery | Source |
 |---|---|---|---|
 | `cognate: usage: cognate create …` | no or unknown subcommand | the usage line lists both commands | `packages/cli/src/bin.ts:55` |
-| `cognate create: --source is required` | packages are unpublished (DEBT-016) | pass a Cognate checkout | `packages/cli/src/bin.ts:33` |
+| `cognate create: --source is required` | `create` vendors packages from a checkout; the npm CLI tarball ships only `src/` (DEBT-016) | pass a Cognate checkout | `packages/cli/src/bin.ts:33` |
+| `bunx: command not found` | `bunx` is not on PATH in every shell | use `bun x @godspeedai/cognate-cli@0.5` (same package) | shell `PATH`; checked with bun 1.4.0 |
+| `SQLITE_CANTOPEN unable to open database file` | the store's parent directory does not exist; `openSqliteStore` does not create it | create the directory first (`mkdir -p`); `cognate dev` creates `.cognate/` itself | `packages/store-sqlite/src/index.ts:128` |
 | `cognate create: cannot find source package "X" under --source` | `--source` is not a full checkout | point at the repository root | `packages/cli/src/index.ts:71` |
 | `bun pm pack failed in <dir>` | the package manifest is unreadable | run `bun pm pack` manually in that directory | `packages/cli/src/index.ts:85` |
 | `unsupported: sona (…)` | a known-unsupported `--with` name | informational; SONA stays rejected (ADR-0005) | `packages/cli/src/index.ts:30` |
@@ -75,6 +77,7 @@ If a gate that should pass fails, run it directly — the gate command is in the
 | `ConcurrencyError` surfaces from `cancelRun` | contention on the run stream | the service retries up to 5 times; beyond that, re-issue | `packages/runtime-bun/src/service.ts:139` |
 | a run is stuck `running` after a hard kill | it was queued for recovery at startup | automatic; the recovery scan re-queues it | `packages/runtime-bun/src/runtime.ts:124` |
 | `run.recall` results hold content erasure did not remove | DEBT-014 | keep personal content out of what you recall into | `packages/runtime-bun/README.md` |
+| StartRun returns 200 `RUNNING`, then `GetRun` shows `RUN_STATUS_FAILED` with `undefined is not an object (evaluating 'lastUserContent(request).toLowerCase')` | the starter agent takes an object input; a bare string such as `"input":"hello"` fails in the local provider | send an object: `"input":{"message":"hello"}` | `packages/provider-local/src/index.ts:11` |
 
 ## Continuations and commitments
 
