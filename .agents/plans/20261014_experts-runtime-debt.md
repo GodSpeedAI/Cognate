@@ -19,5 +19,11 @@ Observed gates: events/memory/SQLite 73 passing; PostgreSQL outbox conformance 2
 runtime/service/continuations 96 passing; Linux provider ten passing; upstream `just verify` 81/81
 before the containment slice. Re-run complete verification before committing the final tree.
 
-Workbench stays on its published 0.2.0 dependencies until these additive contracts are released and
-the application integration passes. Local source checkout success is not a dependency release.
+Workbench now uses published SDK 0.4.0; its compatibility and application verification passed before
+this follow-up. The separate awaitable resource-eligibility slice adds trusted synchronous or
+asynchronous resource-key lookup before run-slot admission, bounds lookup concurrency, and aborts
+pending lookups on cancellation or shutdown. Its malformed-result, retry, recovery, cancellation,
+and capacity behavior is covered in `packages/runtime-bun/test/async-admission.test.ts` and
+`docs/evidence/async-run-admission.md`. This slice remains unpublished and is not a Workbench
+dependency; integrate it only after its exact-head CI, packaging, and supported release pass. Local
+source checkout success is not a dependency release.
