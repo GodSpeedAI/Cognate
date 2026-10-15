@@ -1,33 +1,29 @@
 # Current status
 
-**Status revision:** 61
+**Status revision:** 62
 
-**Summary:** Independent reviewer gate removed by operator. All 81 SDK verification gates pass after AG-UI settled-stream test correction; fresh exact-head CI and packaging precede final merge/release authorization.
+**Summary:** SDK 0.4.0 is completely published and Workbench compatibility passes. A separate awaitable resource-eligibility extension adds bounded metadata lookups and cancellation; current source awaits exact-head CI and a supported release.
 
-The [review and release gate evidence](../docs/evidence/pr42-release-readiness.md) records the
-three actionable CodeRabbit corrections, exact regressions and read-only release audit. Run and
-continuation topics now share admission before claiming; alternating priority prevents starvation
-at capacity one. Actual execution and resource exclusion still use the native execution gate,
-including direct recovery. Worker failures wait for sibling settlement before surfacing.
+SDK 0.4.0 is published completely: all 45 npm names and gitHeads match release commit 467a5f.
+Workbench's published upgrade passes all 1,101 tests and keeps its default serialized execution.
 
-Targeted events, continuations and runtime tests with real PostgreSQL: **225 pass, zero fail,
-772 assertions**, with seventeen optional external CEP tests skipped. SDK typecheck passes.
-The actual Linux OS suite passes ten tests / 29 assertions. The final isolated full run passes **81/81 gates**, exit zero, in about 49 seconds.
-The AG-UI tests now await settled SSE streams rather than HTTP headers; twenty repeated file runs
-pass 100 tests / 160 assertions. Failed gate diagnostics are retained rather than discarded.
+This separate branch permits trusted asynchronous resource lookup before native execution admission.
+Lookup concurrency is bounded using the native slot primitive. Pending lookup registers the same
+per-run controller used for cancellation; cancellation and shutdown release the wait even if the
+callback ignores its signal, and late rejection is observed. Invalid results fail closed with durable
+retry errors. The callback cannot grant authority and must remain side-effect free.
 
-Read-only audit confirms all 45 linked npm packages have latest 0.3.0, including the nine historical
-publication failures. Release run 38300385888 now reports successful publish jobs and the readiness
-variable is true. CI and packaging passed previous pushed head 7d9b80f; new source requires fresh
-checks. The operator removed the independent GitHub reviewer requirement. The remaining gates require
-final authorization: **do not merge or publish**. npm linked publication is not transactional.
+Final runtime/admission with real PostgreSQL: **16 pass, zero fail, 100 assertions**.
+Outbox/continuations: **54 pass, zero fail, 242 assertions**. Typecheck passes. The full 81-gate
+verification passed before the final invalid-result guard, whose targeted tests pass; exact-head CI
+and packaging remain required. A malformed local cached Buf binary was repaired without dependency
+or fixture-lock drift. Independent source review found no blocking finding.
+
+This extension is unpublished and is not a Workbench dependency. Failed eligibility is recorded
+on the native retryable outbox; RunView remains running until a real terminal event. Application
+policy owns canonical resource identity and must block unknown metadata.
 
 Outbox fencing is not distributed run-write fencing. Caller-clock leases, old SQL writers,
-process ownership, worker-version admission and ambiguous external effects retain documented
-limitations. The opt-in Linux world contains child processes only and is not a complete production
-security boundary. Aggregate quotas, production identity/tenant integration and independent review
-remain outstanding. Workbench continues using published Cognate 0.2.0.
-
-The sibling operator's working status modifications are untouched. The task-owned worktree remains
-available for review fixes; it is never a production dependency. The full Workbench debt mission
-remains incomplete.
+worker ownership and ambiguous physical effects retain documented limitations. Linux child
+containment is not a complete production security boundary. Aggregate quotas, production identity,
+tenant isolation and independent security review remain open. Sibling user changes are preserved.
