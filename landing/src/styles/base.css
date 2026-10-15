@@ -1,0 +1,81 @@
+/* Base typography and page ground. Scale: 1.333 ratio; body 18px/1.6 desktop, 17px mobile. */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+@media (max-width: 767px) {
+  body {
+    font-size: 17px;
+  }
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.15;
+  margin: 0 0 var(--space-3);
+}
+
+h1 {
+  font-size: clamp(40px, 6vw, 76px);
+}
+
+h2 {
+  font-size: clamp(28px, 3.4vw, 42px);
+}
+
+h3 {
+  font-size: 24px;
+}
+
+p {
+  max-width: 68ch;
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--ink);
+  text-decoration-color: var(--signal);
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}

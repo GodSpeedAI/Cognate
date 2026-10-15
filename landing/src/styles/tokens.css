@@ -1,0 +1,70 @@
+/*
+ * Design tokens, implementing actualize/artifacts/direction/creative-direction.md exactly.
+ * Light is primary. Dark ("drawing on slate") is derived from the same system and applies
+ * when the reader prefers it, or when [data-theme="dark"] is set explicitly.
+ */
+
+:root {
+  --paper: oklch(97.2% 0.008 85);
+  --paper-2: oklch(94% 0.01 85);
+  --ink: oklch(22% 0.015 255);
+  --ink-2: oklch(42% 0.015 255);
+  --rule: oklch(82% 0.012 85);
+  --signal: oklch(58% 0.17 45);
+  --human: oklch(52% 0.11 165);
+  --part-model: oklch(92% 0.035 250);
+  --part-act: oklch(92% 0.035 200);
+  --part-control: oklch(92% 0.035 305);
+  --part-work: oklch(92% 0.035 90);
+  --part-history: oklch(92% 0.035 150);
+
+  --font-display: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
+  --font-text: 'Hanken Grotesk Variable', system-ui, sans-serif;
+  --font-mono: 'Martian Mono Variable', ui-monospace, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  --radius-cartridge: 10px;
+  --radius-small: 4px;
+  --text-frame: 1200px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: oklch(19% 0.012 250);
+    --paper-2: oklch(23% 0.014 250);
+    --ink: oklch(93% 0.01 85);
+    --ink-2: oklch(76% 0.012 85);
+    --rule: oklch(36% 0.014 250);
+    --signal: oklch(72% 0.15 50);
+    --human: oklch(74% 0.1 165);
+    --part-model: oklch(34% 0.035 250);
+    --part-act: oklch(34% 0.035 200);
+    --part-control: oklch(34% 0.035 305);
+    --part-work: oklch(34% 0.035 90);
+    --part-history: oklch(34% 0.035 150);
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: oklch(19% 0.012 250);
+  --paper-2: oklch(23% 0.014 250);
+  --ink: oklch(93% 0.01 85);
+  --ink-2: oklch(76% 0.012 85);
+  --rule: oklch(36% 0.014 250);
+  --signal: oklch(72% 0.15 50);
+  --human: oklch(74% 0.1 165);
+  --part-model: oklch(34% 0.035 250);
+  --part-act: oklch(34% 0.035 200);
+  --part-control: oklch(34% 0.035 305);
+  --part-work: oklch(34% 0.035 90);
+  --part-history: oklch(34% 0.035 150);
+}

@@ -1,0 +1,43 @@
+---
+// Text equivalent of the exploded view, rendered on the server from the same data.
+// It is open by default so no-JS and reduced-motion readers get the full list.
+import { parts } from '../data/parts';
+import { dependsOn, edgeWord, kindLabel, partById, titleCase, usedBy } from '../lib/graph';
+
+const rows = parts.map((p) => {
+  const needs = dependsOn(p.id).map((e) => `${e.to} ${titleCase(partById(e.to)?.label ?? '')} (${edgeWord(e.kind)})`);
+  const neededBy = usedBy(p.id).map((e) => `${e.from} ${titleCase(partById(e.from)?.label ?? '')} (${edgeWord(e.kind)})`);
+  return {
+    id: p.id,
+    label: titleCase(p.label),
+    job: p.job,
+    kind: `${kindLabel(p.kind)}${p.branchOnly ? '; in development (branch)' : ''}`,
+    needs: needs.length > 0 ? needs.join(', ') : 'none verified',
+    neededBy: neededBy.length > 0 ? neededBy.join(', ') : 'none verified',
+  };
+});
+---
+
+<details class="parts-text" open>
+  <summary>Read the parts list</summary>
+  <ol class="layers">
+    <li><strong>L1 Interface.</strong> The real Workbench screen, shown as the top plate.</li>
+    <li><strong>L2 Agents.</strong> The three agents Workbench registers: config, coding and cognitive.</li>
+    <li>
+      <strong>L3 Capabilities.</strong>
+      <ol class="parts">
+        {
+          rows.map((r) => (
+            <li id={r.id}>
+              <span class="mono">{r.id}</span> <strong>{r.label}.</strong> {r.job}. <span class="kind">{r.kind}.</span>
+              <span class="edges">
+                Depends on: {r.needs}. Used by: {r.neededBy}.
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </li>
+    <li><strong>L4 Durable record.</strong> The event log, stored in PostgreSQL.</li>
+  </ol>
+</details>

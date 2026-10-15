@@ -1,0 +1,179 @@
+---
+import Base from '../layouts/Base.astro';
+import SequenceC from '../components/SequenceC';
+import SequenceG from '../components/SequenceG';
+import CompositionDemo from '../components/CompositionDemo';
+import RunDemo from '../components/RunDemo';
+import BuildSteps from '../components/BuildSteps';
+import Onboarding from '../components/Onboarding';
+import PartsText from '../components/PartsText.astro';
+import Rail from '../components/Rail';
+import { captures } from '../data/captures';
+
+const byFile = (name: string) => captures.find((c) => c.file.includes(name))!;
+const contract = byFile('e2e-03');
+const blocked = byFile('e2e-05');
+const review = byFile('e2e-07');
+const accepted = byFile('e2e-08');
+const description =
+  'Describe the software you want. Your coding agent builds it with Cognate. AI agents can then work inside it, within permissions you set. Open source, Apache-2.0.';
+---
+
+<Base title="Cognate — the agentic application framework" description={description}>
+  <a class="skip" href="#start">Skip to: Build your first app</a>
+  <header class="topbar">
+    <a class="wordmark" href="#top">Cognate</a>
+    <nav aria-label="Primary">
+      <a href="#parts">How it works</a>
+      <a href="#start">Build your first app</a>
+      <a href="https://github.com/GodSpeedAI/Cognate">GitHub</a>
+    </nav>
+    <span class="status-chip">v0 · 0.5.0 on npm</span>
+  </header>
+  <Rail client:load />
+
+  <main id="top">
+    <section class="beat hero" aria-labelledby="hero-title">
+      <p class="eyebrow">The agentic application framework</p>
+      <h1 id="hero-title">You steer the software. AI agents build it, and work within it.</h1>
+      <p class="sub">
+        Describe the application you want. Your coding agent assembles it from Cognate's capabilities. Inside it, AI agents can do real work within permissions you set, and pause for you when it matters.
+      </p>
+      <p class="ctas">
+        <a class="btn btn-primary" href="#start">Build your first app</a>
+        <a class="btn" href="#proof">See it taken apart</a>
+      </p>
+      <figure class="dialogue">
+        <p class="request"><span class="who">You</span> “Build me a refund desk. Small refunds can go through. Anything over $50 waits for me.”</p>
+        <p class="reply"><span class="who">Your coding agent (with the Building with Cognate skill)</span> “Here's the plan:</p>
+        <ol>
+          <li>Write down what the app must do, and who decides what.</li>
+          <li>Reuse Cognate's runtime, permissions and approvals.</li>
+          <li>Build the two capabilities it's missing: look up an order, issue a refund.</li>
+          <li>Make refunds over $50 pause for you.</li>
+          <li>Test every one of those, and show you the results.”</li>
+        </ol>
+        <figcaption>Illustration of a request</figcaption>
+      </figure>
+      <p class="footline"><span class="speed" aria-hidden="true">⚡</span> You stay the one who decides. A prompt is not an authority boundary, so Cognate checks permissions in code.</p>
+      <p class="transition">Does this hold up for a real application?</p>
+    </section>
+
+    <section class="beat" id="proof" aria-labelledby="proof-title">
+      <p class="kicker">Evidence</p>
+      <h2 id="proof-title">This app was built with Cognate.</h2>
+      <p>
+        Cognate-Workbench is a working application built with Cognate. It is an agent harness for coding and general work, where AI agents write and run code, plan, and carry out tasks in conversation with you. A person scopes a task with a contract that sets its goal, limits and acceptance checks. The agent does the work, and pauses for approval before risky steps. Then a person accepts the result, or doesn't.
+      </p>
+      <p class="distinction">Workbench is what was built. Cognate is what it was built from.</p>
+      <figure class="capture capture-large">
+        <img src={`/${contract.file}`} width={contract.width} height={contract.height} alt={contract.alt} decoding="async" />
+        <figcaption>{contract.caption}, captured by its own end-to-end test.</figcaption>
+      </figure>
+      <ul class="annotations" aria-label="What the capture shows">
+        <li><span class="mono">1</span> The contract: goal, authority, budget, acceptance</li>
+        <li><span class="mono">2</span> How done is it: “finished” is the bottom rung</li>
+        <li><span class="mono">3</span> Acceptance checks: a test, an independent check, a person</li>
+      </ul>
+      <div class="gallery">
+        <figure class="capture">
+          <img src={`/${blocked.file}`} width={blocked.width} height={blocked.height} alt={blocked.alt} loading="lazy" decoding="async" />
+          <figcaption>Blocked until authority is granted</figcaption>
+        </figure>
+        <figure class="capture">
+          <img src={`/${review.file}`} width={review.width} height={review.height} alt={review.alt} loading="lazy" decoding="async" />
+          <figcaption>Review gate</figcaption>
+        </figure>
+        <figure class="capture">
+          <img src={`/${accepted.file}`} width={accepted.width} height={accepted.height} alt={accepted.alt} loading="lazy" decoding="async" />
+          <figcaption>Accepted, on evidence</figcaption>
+        </figure>
+      </div>
+      <p class="side-note">Workbench is an example app. It is not Cognate.</p>
+    </section>
+
+    <section class="beat" id="parts" aria-labelledby="parts-title">
+      <p class="kicker">Take it apart</p>
+      <h2 id="parts-title">What Workbench is made of.</h2>
+      <p>
+        Underneath the screen there are four layers. In the capabilities layer sit named parts, and each one does one job. Some come straight from Cognate. Others Workbench built for itself, using the same pattern.
+      </p>
+      <p class="legend-chips" aria-label="Legend">
+        <span class="chip chip-cognate">From Cognate</span>
+        <span class="chip chip-workbench">Built in Workbench</span>
+        <span class="chip chip-branch">In development (branch)</span>
+      </p>
+      <SequenceC client:visible />
+      <PartsText />
+    </section>
+
+    <section class="beat" id="fit" aria-labelledby="fit-title">
+      <p class="kicker">How parts fit</p>
+      <h2 id="fit-title">Ask for the job. Any eligible part can do it.</h2>
+      <p>
+        A capability has a stable name and version, like <span class="mono">billing.quote@1</span>. Code asks for the name, not for a particular implementation. Any part that provides a compatible version can answer. Before any part runs, a permission check decides whether this caller may use it, and the default answer is no.
+      </p>
+      <CompositionDemo client:visible />
+    </section>
+
+    <section class="beat" id="build" aria-labelledby="build-title">
+      <p class="kicker">Building with an agent</p>
+      <h2 id="build-title">What your coding agent actually does.</h2>
+      <p>
+        The Building with Cognate skill gives your agent a method, and these are its steps. Here they are applied to the refund desk you asked for in the opening.
+      </p>
+      <BuildSteps client:visible />
+      <p class="closing">You don't need to know how to write any of this. You do need to read step 6.</p>
+    </section>
+
+    <section class="beat" id="operate" aria-labelledby="operate-title">
+      <p class="kicker">Agents at work, inside the app</p>
+      <h2 id="operate-title">The agent proposes. You decide.</h2>
+      <p>
+        Agents don't only build Cognate apps. They can work inside them. The refund agent looks up the order and proposes a refund. Over $50, it stops and waits durably, even across a restart, until a person decides. Every step is written to the app's history.
+      </p>
+      <RunDemo client:visible />
+      <h3>Finishing is not the same as accepting.</h3>
+      <p>
+        In Workbench, “Finished” only means the agent stopped. The work is accepted only after a person reviews the evidence. <span class="speed" aria-hidden="true">⚡</span> Completion without proof is theater.
+      </p>
+      <figure class="capture">
+        <img src={`/${accepted.file}`} width={accepted.width} height={accepted.height} alt="Workbench done-ladder: Finished, Produced, Tested, Ready for review and Accepted are checked, and all three criteria are closed." loading="lazy" decoding="async" />
+        <figcaption>Real screen from Cognate-Workbench</figcaption>
+      </figure>
+    </section>
+
+    <section class="beat" id="extend" aria-labelledby="extend-title">
+      <p class="kicker">It can grow</p>
+      <h2 id="extend-title">Need something new? Authorize the agent to add it.</h2>
+      <p>
+        Extension is a development step you start and review. The agent models the new job, builds it, binds it, tests it, and asks you to accept it. A running agent can only use capabilities it has been granted. It has no way to add parts to itself.
+      </p>
+      <SequenceG client:visible />
+      <p>
+        Real examples: Workbench's Expert Teams work added Experts, Teams and Schedules to the existing app. It is in development on a branch and not yet merged. In the refund desk, a receipt capability was added the same way, and tested.
+      </p>
+      <p class="caption-note">Same app, one more part, and the same structure.</p>
+    </section>
+
+    <section class="beat" id="start" aria-labelledby="start-title">
+      <p class="kicker">Your turn</p>
+      <h2 id="start-title">Build your first app.</h2>
+      <p>No account, no API key. You're done when your app's tests pass on your machine, not when the agent says it's finished.</p>
+      <Onboarding client:visible />
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Cognate is open source under Apache-2.0, made by GodSpeed AI.</p>
+    <p class="links">
+      <a href="https://github.com/GodSpeedAI/Cognate">GitHub</a>
+      <a href="https://www.npmjs.com/package/@godspeedai/cognate-cli">npm</a>
+      <a href="https://github.com/GodSpeedAI/Cognate#readme">README</a>
+      <a href="https://github.com/GodSpeedAI/Cognate/tree/main/docs">Docs</a>
+      <a href="https://github.com/GodSpeedAI/Cognate-Workbench">Cognate-Workbench</a>
+      <a href="https://github.com/GodSpeedAI/Cognate/blob/main/.agents/DEBT.md">Debt register</a>
+    </p>
+    <p>Workbench screenshots are real captures from Cognate-Workbench (Apache-2.0).</p>
+  </footer>
+</Base>

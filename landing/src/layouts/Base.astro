@@ -1,0 +1,49 @@
+---
+import '@fontsource-variable/newsreader';
+import '@fontsource-variable/hanken-grotesk';
+import '@fontsource-variable/martian-mono';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/exploded.css';
+import '../styles/page.css';
+
+interface Props {
+  title: string;
+  description: string;
+  noindex?: boolean;
+  /** Absolute OG image path on this site (1200x630). */
+  ogImage?: string;
+}
+
+const { title, description, noindex = false, ogImage = '/og.png' } = Astro.props;
+// No canonical link: there is no public URL yet (U7). Add <link rel="canonical"> when it exists.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    {noindex ? <meta name="robots" content="noindex" /> : <meta name="robots" content="index, follow" />}
+    <title>{title}</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
