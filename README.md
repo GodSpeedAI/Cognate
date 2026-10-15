@@ -201,7 +201,7 @@ The skill that drives this loop is in `.agents/skills/building-with-cognate/` an
 
 ## Cognate-Workbench: a real application built with Cognate
 
-[Cognate-Workbench](https://github.com/GodSpeedAI/Cognate-Workbench) is a browser cockpit for supervising a coding agent. It is a real application, and it is built on Cognate. It is an example of what Cognate can carry. It is not Cognate itself, and the two repositories are separate.
+[Cognate-Workbench](https://github.com/GodSpeedAI/Cognate-Workbench) is an agent harness for coding and general work: a workspace where AI agents write and run code, plan, and carry out tasks in conversation with you. People scope the work, approve risky steps and accept the results. It is a real application, and it is built on Cognate. It is an example of what Cognate can carry. It is not Cognate itself, and the two repositories are separate.
 
 Workbench is a single Bun process. It serves a React interface over Connect RPC and keeps its authoritative state in PostgreSQL. A task starts with a contract that names the goal, the authority, the budget and the acceptance criteria. In Workbench, "the agent finished" is not acceptance. Acceptance needs recorded evidence and a review decision. Completion without proof is theater, and Workbench is built so that the proof is a record, not a claim.
 
