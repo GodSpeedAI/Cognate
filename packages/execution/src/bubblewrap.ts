@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { realpathSync,statSync } from "node:fs";
 import { readFile,realpath } from "node:fs/promises";
-import { basename,dirname,resolve,sep } from "node:path";
+import { basename,dirname,isAbsolute,relative,resolve,sep } from "node:path";
 import { commandFileSystem } from "./command.ts";
 import { PathEscapeError,WorldUnavailableError,type ExecResult,type ExecSpec,type ExecutionWorldProvider,type FileSystemPort } from "./types.ts";
 
@@ -22,7 +22,7 @@ export interface BubblewrapExecutionWorldOptions {
 }
 const PUBLIC_ROOTS=new Set(["/usr/bin","/usr/lib","/usr/lib64","/bin","/lib","/lib64"]);
 const ENVIRONMENT=new Set(["LANG","LC_ALL","TZ","TERM"]);
-const inside=(root:string,path:string)=>path===root || path.startsWith(root+sep);
+const inside=(root:string,path:string)=>{const rel=relative(root,path);return rel==="" || (rel!==".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));};
 
 export async function bubblewrapExecutionWorld(options:BubblewrapExecutionWorldOptions):Promise<ExecutionWorldProvider>{
   const worldId=options.worldId ?? "linux-bubblewrap";

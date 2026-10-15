@@ -77,9 +77,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   let closed = false;
   const shutdown = new AbortController();
   const executionControllers = new Map<string, AbortController>();
-  const resourceKeysFor = async (runId: string, view: RunView): Promise<readonly string[] | undefined> => {
+  const acquireExecutionSlot = async (runId: string, view: RunView): Promise<(() => void) | undefined> => {
     const resolveKeys = options.execution?.resourceKeys;
-    if (!resolveKeys) return [];
     const controller = new AbortController();
     const signal = controller.signal;
     executionControllers.set(runId, controller);
@@ -96,35 +95,45 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     try {
       const current = foldRun(runId, await store.readStream(runStream(runId)));
       if (closed || signal.aborted || !current || isTerminal(current)) return undefined;
-      // A cancelled waiter may still be in this semaphore queue. Attach a release handler now so
-      // its eventual permit is returned even when the abort race lets execute() stop waiting.
-      const acquisition = eligibilitySlots.acquire([]).then((release) => {
+      let keys: readonly string[] = [];
+      if (resolveKeys) {
+        // A cancelled waiter may still be in this semaphore queue. Attach a release handler now so
+        // its eventual permit is returned even when the abort race lets execute() stop waiting.
+        const acquisition = eligibilitySlots.acquire([]).then((release) => {
+          if (closed || signal.aborted) { release(); return undefined; }
+          releaseEligibility = release;
+          return release;
+        });
+        const admitted = await Promise.race([acquisition, aborted]);
+        if (!admitted || closed || signal.aborted) return undefined;
+        // A callback that ignores cancellation may settle later, but its eventual rejection remains
+        // observed by this handler after the abort race has returned.
+        const lookup = Promise.resolve().then(async () => {
+          if (closed || signal.aborted) return { kind: "aborted" as const };
+          try { return { kind: "keys" as const, keys: await resolveKeys(view, signal) }; }
+          catch (error) { return { kind: "error" as const, error }; }
+        });
+        const result = await Promise.race([lookup, aborted]);
+        if (result.kind === "aborted") {
+          // Cancellation releases the caller immediately, but an uncancellable policy callback
+          // still occupies a real lookup slot until it settles. The outcome union observes late
+          // rejection, and the queued release preserves the configured concurrency bound.
+          const release = releaseEligibility;
+          releaseEligibility = undefined;
+          void lookup.then(() => release?.());
+          return undefined;
+        }
+        if (result.kind === "error") throw result.error;
+        if (!Array.isArray(result.keys)) throw new Error("execution.resourceKeys must resolve to an array");
+        keys = result.keys;
+      }
+      // Keep the run controller registered until both policy and execution-slot admission finish.
+      // If cancellation wins while queued, a later grant is immediately returned by this handler.
+      const acquisition = slots.acquire(keys).then((release) => {
         if (closed || signal.aborted) { release(); return undefined; }
-        releaseEligibility = release;
         return release;
       });
-      const admitted = await Promise.race([acquisition, aborted]);
-      if (!admitted || closed || signal.aborted) return undefined;
-      // A callback that ignores cancellation may settle later, but its eventual rejection remains
-      // observed by this handler after the abort race has returned.
-      const lookup = Promise.resolve().then(async () => {
-        if (closed || signal.aborted) return { kind: "aborted" as const };
-        try { return { kind: "keys" as const, keys: await resolveKeys(view, signal) }; }
-        catch (error) { return { kind: "error" as const, error }; }
-      });
-      const result = await Promise.race([lookup, aborted]);
-      if (result.kind === "aborted") {
-        // Cancellation releases the caller immediately, but an uncancellable policy callback
-        // still occupies a real lookup slot until it settles. The outcome union observes late
-        // rejection, and the queued release preserves the configured concurrency bound.
-        const release = releaseEligibility;
-        releaseEligibility = undefined;
-        void lookup.then(() => release?.());
-        return undefined;
-      }
-      if (result.kind === "error") throw result.error;
-      if (!Array.isArray(result.keys)) throw new Error("execution.resourceKeys must resolve to an array");
-      return result.keys;
+      return await Promise.race([acquisition, aborted.then(() => undefined)]);
     } finally {
       signal.removeEventListener("abort", onAbort);
       shutdown.signal.removeEventListener("abort", abortForShutdown);
@@ -138,6 +147,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   // already been delivered. Existing pending run.execute intents retain their persisted backoff.
   const recoveryEpoch = randomUUID();
   let recoverySequence = 0;
+  const recoveryReconciliationIntervalMs = 250;
+  let nextRecoveryReconciliationAt = 0;
   const recoveryOutboxByRun = new Map<string, string>();
   const deliveries = new Set<Promise<void>>();
   const trackDelivery=(job:Promise<unknown>):void=>{
@@ -148,10 +159,10 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     const next = (chains.get(runId) ?? Promise.resolve()).then(async () => {
       const view=foldRun(runId,await store.readStream(runStream(runId)));
       if(closed || !view || isTerminal(view))return;
-      const keys = await resourceKeysFor(runId, view);
-      if (closed || !keys) return;
-      const release=await slots.acquire(keys);
+      const release=await acquireExecutionSlot(runId, view);
+      if (!release) return;
       try{
+        if (closed) return;
         for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId)) === "done") return;
       }finally{release();}
     });
@@ -193,14 +204,25 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     backoff: DELIVERY,
     deliver: async (item) => {
       const runId = (item.payload as { runId: string }).runId;
-      await execute(runId);
-      if (recoveryOutboxByRun.get(runId) === item.id) recoveryOutboxByRun.delete(runId);
-      return { executed: true };
+      try {
+        await execute(runId);
+        return { executed: true };
+      } finally {
+        // The store retains pending retry/poison state; this map only correlates this process's
+        // currently delivered recovery intent and must not retain failed or exhausted attempts.
+        if (recoveryOutboxByRun.get(runId) === item.id) recoveryOutboxByRun.delete(runId);
+      }
     },
   });
 
   async function persistRecoveryIntents(): Promise<void> {
-    if (pending.size === 0 && recoveryOutboxByRun.size === 0) return;
+    // Reconcile only when a new recovery candidate exists. A tracked intent already has a
+    // durable retry schedule; rescanning the complete pending topic every timer tick is needless.
+    if (pending.size === 0) return;
+    const now = performance.now();
+    if (now < nextRecoveryReconciliationAt) return;
+    // Set the deadline before awaiting: a slow or failing store query must not hot-loop scans.
+    nextRecoveryReconciliationAt = now + recoveryReconciliationIntervalMs;
     const pendingItems = await store.listOutbox({ topic: RUN_EXECUTE_TOPIC, status: "pending" });
     const pendingItemIds = new Set(pendingItems.map((item) => item.id));
     for (const [runId, id] of recoveryOutboxByRun) {
