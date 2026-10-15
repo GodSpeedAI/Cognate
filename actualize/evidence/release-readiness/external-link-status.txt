@@ -1,0 +1,15 @@
+ERR AbortError  https://skills.sh/godspeedai/cognate/building-with-cognate
+ERR AbortError  https://github.com/GodSpeedAI/Cognate-Workbench
+200  https://github.com/casey/just
+200  https://github.com/GodSpeedAI
+200  https://github.com/GodSpeedAI/Cognate
+200  https://github.com/GodSpeedAI/Cognate/blob/dd13c8422220ecbac61a92bdd90829218844bc2e/packages/kernel-cordis/src/lease.ts#L56-L68
+404  https://github.com/GodSpeedAI/Cognate/blob/c3eaf4dfb23271eb82d9b964a6c2f5ed105af480/examples/refund-desk/domain/refund-desk.sea#L36-L38
+404  https://github.com/GodSpeedAI/Cognate/blob/c3eaf4dfb23271eb82d9b964a6c2f5ed105af480/examples/refund-desk/package.json#L11-L17
+404  https://github.com/GodSpeedAI/Cognate/blob/c3eaf4dfb23271eb82d9b964a6c2f5ed105af480/examples/refund-desk/src/refund-desk.ts#L61-L64
+404  https://github.com/GodSpeedAI/Cognate/blob/c3eaf4dfb23271eb82d9b964a6c2f5ed105af480/examples/refund-desk/src/refund-desk.ts#L126-L132
+404  https://github.com/GodSpeedAI/Cognate/blob/c3eaf4dfb23271eb82d9b964a6c2f5ed105af480/examples/refund-desk/test/refund-desk.test.ts#L42-L42
+ERR AbortError  https://www.npmjs.com/package/@godspeedai/cognate-cli
+200  https://github.com/GodSpeedAI/Cognate#readme
+200  https://github.com/GodSpeedAI/Cognate/tree/main/docs
+200  https://github.com/GodSpeedAI/Cognate/blob/main/.agents/DEBT.md

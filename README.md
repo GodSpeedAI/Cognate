@@ -42,7 +42,7 @@ npx skills add GodSpeedAI/Cognate \
   -a claude-code -y
 ```
 
-This installs three skills into your project (for Claude Code, under `.claude/skills/`). It does not install them globally. For other agents, change `-a` (see `npx skills add --help`).
+This installs three skills into your project (for Claude Code, under `.claude/skills/`; the installer also keeps a project copy under `.agents/skills/` and a `skills-lock.json`). It does not install them globally. For other agents, change `-a` (see `npx skills add --help`).
 *Coming soon:* a [skills.sh listing](https://skills.sh/godspeedai/cognate/building-with-cognate) *(placeholder; not live yet)*. The command above already works from GitHub.
 
 **2. Ask your agent for the app.** Paste this:
@@ -80,12 +80,15 @@ Refund Desk is a small support application. A support agent looks up an order an
 
 The app is in [`examples/refund-desk/`](examples/refund-desk/). Its seven tests pass locally (`bun install && bun test`). Here is how each part of the description maps to Cognate.
 
-**Capabilities are how the agent reaches orders and money.** The commerce component provides two named contracts, `orders.lookup` and `refunds.issue`:
+**Capabilities are how the agent reaches orders and money, and they come from the domain model.** The app loads `domain/refund-desk.sea` and binds two of its concepts to capability contracts explicitly. A commerce component then provides them:
 
 ```ts
 // examples/refund-desk/src/refund-desk.ts (excerpt)
-const lookup: CapabilityContract = { id: "orders.lookup", version: "1.0.0" };
-const issue: CapabilityContract = { id: "refunds.issue", version: "1.0.0" };
+const [lookup, issue] = bindCapabilities(loaded.projection, [
+  { semanticId: "refunds::Order", capability: { id: "orders.lookup", version: "1.0.0" } },
+  { semanticId: "refunds::Refund", capability: { id: "refunds.issue", version: "1.0.0" } },
+]);
+// ...
 return {
   id: "commerce",
   provides: [lookup, issue],
@@ -96,10 +99,10 @@ return {
 };
 ```
 
-**Permission is default no, and the app grants two names.** The runtime is created with an explicit policy. Only the two capabilities listed are allowed for the refund-desk caller:
+**Permission is default no, and the app grants three names.** The runtime is created with an explicit policy. Only the capabilities listed are allowed for the refund-desk caller: the two above, plus `notify.receipt`, which was added later as an extension:
 
 ```ts
-policy: allowCapabilities("refund-desk", ["orders.lookup", "refunds.issue"]),
+policy: allowCapabilities("refund-desk", ["orders.lookup", "refunds.issue", "notify.receipt"]),
 ```
 
 **The agent proposes, and a person decides when the amount is large.** The agent's logic is short. Small refunds are recorded as auto-approved. Large refunds call `ctx.waitFor`, which opens a durable continuation that the run cannot pass without a decision:

@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "active": false,
+  "goal": "Reposition Cognate as the agentic application framework: rewritten README, interactive narrative landing page in landing/, verified first-build onboarding",
+  "bar": "release",
+  "strict": true,
+  "phase": "idle",
+  "selection": {
+    "lenses": [
+      "recon-software",
+      "brand",
+      "direction",
+      "marketing",
+      "experience",
+      "illustration",
+      "motion-editorial",
+      "fidelity-qa",
+      "provenance-licensing",
+      "release-readiness"
+    ],
+    "satisfied": [],
+    "excluded": {
+      "recon-physical": "digital-only product; screenshots handled by recon-software",
+      "electronics": "software framework, no powered circuitry",
+      "embedded-systems": "software framework, no firmware targets",
+      "robotics": "software framework, no embodied loop",
+      "product-visualization": "no physical/3D product geometry",
+      "audio-sound": "landing page ships without audio",
+      "legacy-modernization": "no core framework rewrite in scope; SDK changes minimal"
+    },
+    "waves": [
+      [
+        "brand",
+        "fidelity-qa",
+        "provenance-licensing",
+        "recon-software",
+        "release-readiness"
+      ],
+      [
+        "direction",
+        "experience",
+        "marketing"
+      ],
+      [
+        "illustration",
+        "motion-editorial"
+      ]
+    ]
+  },
+  "selectionLogged": true,
+  "activeLenses": {},
+  "completed": {
+    "recon-software": 1,
+    "brand": 6,
+    "direction": 6,
+    "marketing": 6,
+    "experience": 6,
+    "illustration": 5,
+    "motion-editorial": 5,
+    "provenance-licensing": 3,
+    "fidelity-qa": 3,
+    "release-readiness": 2
+  },
+  "unreconciled": [],
+  "reconcile": null,
+  "modelVersion": 7,
+  "modelHash": "9b33d3c1b0356b12",
+  "stopBlocks": 0,
+  "lastBlockSig": "",
+  "startedAt": "2026-10-15T17:36:30.276Z",
+  "finishedAt": "2026-10-15T20:17:47.416Z",
+  "verdict": "go-with-exception",
+  "owner": "Sam Prime (GodSpeed AI)"
+}

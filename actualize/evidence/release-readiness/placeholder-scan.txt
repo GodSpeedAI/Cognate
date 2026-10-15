@@ -1,0 +1,26 @@
+README.md:46:*Coming soon:* a [skills.sh listing](https://skills.sh/godspeedai/cognate/building-with-cognate) *(placeholder; not live yet)*. The command above already works from GitHub.
+README.md:67:You should see all five behaviours pass. You're done when the tests pass on your machine. The agent saying it finished doesn't count. If your agent reaches for `cognate create` or asks for a Cognate source checkout, tell it to add the published `@godspeedai/cognate-*` packages with `bun add` and build the app directly. If something else fails, see [Troubleshooting](docs/troubleshooting.md).
+README.md:159:To add one yourself, see [How to: add a capability](docs/how-to/add-a-capability.md). The wider extension model is in [Extending Cognate](docs/extensions.md).
+README.md:301:| Build a first app | [Refund Desk](examples/refund-desk/README.md) and [getting started](docs/getting-started.md) |
+README.md:302:| Understand the model | [mental model](docs/mental-model.md), [concepts](docs/concepts.md), [architecture](docs/architecture.md) |
+README.md:303:| Extend the app | [add a capability](docs/how-to/add-a-capability.md), [extensions](docs/extensions.md), [add a projection](docs/how-to/add-a-projection.md) |
+README.md:304:| Why it is shaped this way | [design principles](docs/explanation/design-principles.md), [what you can build](docs/explanation/what-you-can-build.md), [under the hood](docs/explanation/under-the-hood.md) |
+README.md:305:| Compare or trace lineage | [comparisons and lineage](docs/comparisons.md) |
+README.md:306:| Look things up | [reference](docs/reference/), [commands and configuration](docs/reference/commands-and-configuration.md), [events and stores](docs/reference/events-and-stores.md) |
+README.md:307:| Subsystems and workflows | [subsystems](docs/subsystems/), [workflows](docs/workflows/) |
+README.md:308:| Decisions | [architecture decision records](docs/decisions/) |
+README.md:309:| Topic guides | [getting started](docs/getting-started.md), [concepts](docs/concepts.md), [architecture](docs/architecture.md), [semantics](docs/semantics.md), [cognition](docs/cognition.md), [RVF](docs/rvf.md), [evidence](docs/evidence.md), [UI](docs/ui.md), [protocols](docs/protocols.md), [extensions](docs/extensions.md), [security](docs/security.md) |
+README.md:310:| Trouble | [troubleshooting](docs/troubleshooting.md) |
+README.md:311:| Maps | [documentation map](docs/documentation-map.md), [source map](docs/source-map.md) |
+README.md:394:A change should extend Cognate without weakening the replaceability of the layers around it. [How to verify a change](docs/how-to/verify-a-change.md) describes the gates. Known gaps are tracked in the [debt register](.agents/DEBT.md).
+README.md:404:- Known limits are listed in the [debt register](.agents/DEBT.md) and in each package README.
+CONTRIBUTING.md:192:A passing `just verify` proves the substrate checked in so far, on your machine, under Bun 1.4.0. It does not mean the application builds for deployment, and it does not close the open debt in [.agents/DEBT.md](.agents/DEBT.md). [How to verify a change](docs/how-to/verify-a-change.md) explains what each gate proves and what it does not.
+CONTRIBUTING.md:275:Cognate is licensed under the **Apache License, Version 2.0** (see [LICENSE](LICENSE)). Some other components, including DomainForge, are available under permissive open-source licenses. Others, including SEA-Forge, have source-available or separately licensed portions.
+CONTRIBUTING.md:305:Cognate does not currently publish a `SECURITY.md` or other security reporting policy. Contact a maintainer privately through GitHub under the [GodSpeedAI](https://github.com/GodSpeedAI) organization before disclosing details, and do not open a public issue for the report.
+actualize/artifacts/marketing/copy-deck.md:92:- Step 2, **Give your agent the skill.** Commands: `mkdir refund-desk && cd refund-desk && git init` and `npx skills add GodSpeedAI/Cognate --skill building-with-cognate --skill deriving-interaction-domain-models --skill domainforge-sea -a claude-code -y` [C45]. Expected: "Installed 3 skills", with files under `.claude/skills/`. Note: Using another agent? Change `-a` (see `npx skills add --help`). Card: "skills.sh listing: coming soon" (placeholder link https://skills.sh/godspeedai/cognate/building-with-cognate) [C47]. Recovery: install takes about a minute because it downloads the repo. If it fails, copy `.agents/skills/building-with-cognate`, `deriving-interaction-domain-models` and `domainforge-sea` from GitHub into `.claude/skills/`.
+--- dist html:
+ugrep: error: error at position 202
+bf][\x80-\xbf]*){0,60}
+                      \___exceeds complexity limits
+
+
