@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PathEscapeError } from "../src/types.ts";
@@ -100,14 +101,44 @@ describe("bubblewrap execution-world contract", () => {
   });
 
   test("rejects a runtime root that overlaps the writable workspace", async () => {
+    await expect(bubblewrapExecutionWorld({
+      workspaceRoot: "/usr/lib",
+      executablePath: "/usr/bin/true",
+      provenance: unitOnlyProvenance,
+      runtimeRoots: ["/usr/lib"],
+    })).rejects.toThrow("Runtime root and writable workspace must not overlap");
+  });
+
+  test("rejects a launcher inside the writable workspace before executing it", async () => {
     const root = await mkdtemp(join(tmpdir(), "cognate-bwrap-"));
     roots.push(root);
+    const marker = join(tmpdir(), `cognate-bwrap-launched-${crypto.randomUUID()}`);
+    const launcher = join(root, "bwrap");
+    const contents = `#!/bin/sh\nprintf launched > '${marker}'\nexit 1\n`;
+    await writeFile(launcher, contents);
+    await chmod(launcher, 0o755);
+    const binarySha256 = createHash("sha256").update(contents).digest("hex");
     await expect(bubblewrapExecutionWorld({
       workspaceRoot: root,
-      executablePath: "/nonexistent/unit-only-bubblewrap",
+      executablePath: launcher,
+      provenance: { ...unitOnlyProvenance, binarySha256 },
+      runtimeRoots,
+    })).rejects.toThrow("launcher must be outside the writable workspace");
+    await expect(readFile(marker, "utf8")).rejects.toThrow();
+  });
+
+  test("rejects a Bun runtime file inside the writable workspace", async () => {
+    const root = await mkdtemp(join(tmpdir(), "cognate-bwrap-"));
+    roots.push(root);
+    const bunExecutable = join(root, "bun");
+    await writeFile(bunExecutable, "unit placeholder");
+    await expect(bubblewrapExecutionWorld({
+      workspaceRoot: root,
+      executablePath: "/usr/bin/true",
       provenance: unitOnlyProvenance,
-      runtimeRoots: [root],
-    })).rejects.toThrow(/runtime root|overlap/i);
+      runtimeRoots,
+      bunExecutable,
+    })).rejects.toThrow("Bun executable must be outside the writable workspace");
   });
 
   test.skipIf(!runOsTests)("filesystem rejects symlink traversal outside the workspace", async () => {

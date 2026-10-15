@@ -34,6 +34,7 @@ export async function bubblewrapExecutionWorld(options:BubblewrapExecutionWorldO
   const executable=await realpath(options.executablePath);
   const workspace=await realpath(options.workspaceRoot);
   if(workspace==="/" || !statSync(workspace).isDirectory())unavailable("A dedicated workspace directory is required");
+  if(inside(workspace,executable))unavailable("bubblewrap launcher must be outside the writable workspace");
   const mounts: string[]=[];
   for(const root of [...new Set(options.runtimeRoots)]){
     let source:string;
@@ -43,6 +44,7 @@ export async function bubblewrapExecutionWorld(options:BubblewrapExecutionWorldO
   }
   if(!mounts.length)unavailable("No usable runtime roots");
   const bunExecutable=options.bunExecutable ? await realpath(options.bunExecutable):undefined;
+  if(bunExecutable && inside(workspace,bunExecutable))unavailable("Bun executable must be outside the writable workspace");
   if(bunExecutable && !statSync(bunExecutable).isFile())unavailable("Bun executable must be a regular file");
   const timeoutMs=options.timeoutMs ?? 30_000;
   const outputLimit=options.maxOutputBytes ?? 1_048_576;

@@ -112,6 +112,142 @@ describe("awaitable execution eligibility", () => {
     }
   });
 
+  test("recovered PostgreSQL runs retry failed eligibility through the durable dispatcher", async () => {
+    const database = await openPostgresStore({
+      url: process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+      schema: `cognate_admission_recovery_${crypto.randomUUID().replaceAll("-", "")}`,
+      pollMs: 0,
+    });
+    let effects = 0;
+    const deliveredRun = `recovered-${crypto.randomUUID()}`;
+    const retryingRun = `retrying-${crypto.randomUUID()}`;
+    const runIds = [deliveredRun, retryingRun];
+    let deliveredLookups = 0;
+    let retryingLookups = 0;
+    const agent: AgentDefinition = { id: "agent.recovered-eligibility", version: "1.0.0", run: (_input, ctx) =>
+      ctx.step("effect", () => { effects++; return "ran"; }) };
+    try {
+      await database.store.commit({
+        appends: runIds.map((runId) => ({ streamId: runStream(runId), expectedVersion: 0, events: [{
+          eventType: "run.started", schemaVersion: 1, occurredAt: new Date().toISOString(),
+          tenant: caller.tenant, correlationId: runId, causationId: null, runId, scopeId: "test-scope",
+          payload: { input: null },
+          metadata: { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind },
+        }] })),
+        records: runIds.map((runId) => ({ collection: RUNS, id: runId, expectedVersion: 0, value: {
+          tenant: caller.tenant, agent: agent.id, correlationId: runId, startedBy: caller.actor.id, scopeId: "test-scope",
+        } })),
+        outbox: runIds.map((runId) => ({ id: `run.execute:${runId}`, topic: "run.execute", payload: { runId } })),
+      });
+      const originals = await database.store.claimOutbox({ topic: "run.execute", now: Date.now(), limit: 2, leaseMs: 1_000 });
+      expect(originals.map((item) => item.id).sort()).toEqual(runIds.map((runId) => `run.execute:${runId}`).sort());
+      await database.store.settleOutbox(`run.execute:${deliveredRun}`, { kind: "delivered", receipt: { seeded: true } });
+      await database.store.settleOutbox(`run.execute:${retryingRun}`, { kind: "retry", error: "seeded backoff", retryAt: Date.now() + 1_500 });
+
+      const runtime = await createRuntime({ store: { store: database.store }, agents: [agent], policy, actions,
+        execution: { resourceKeys: async (view) => {
+          if (view.runId === deliveredRun) {
+            deliveredLookups++;
+            if (deliveredLookups === 1) throw new Error("recovered metadata temporarily unavailable");
+          } else {
+            retryingLookups++;
+          }
+          return ["recovered:workspace"];
+        } } });
+      try {
+        for (let i = 0; i < 150 && (await runtime.service.getRun(caller, { runId: deliveredRun })).status !== "completed"; i++) await Bun.sleep(10);
+        expect(deliveredLookups).toBeGreaterThanOrEqual(2);
+        expect(retryingLookups).toBe(0);
+        expect((await runtime.service.getRun(caller, { runId: retryingRun })).status).toBe("running");
+        for (let i = 0; i < 300; i++) {
+          const states = await Promise.all(runIds.map((runId) => runtime.service.getRun(caller, { runId })));
+          if (states.every((view) => view.status === "completed")) break;
+          await Bun.sleep(10);
+        }
+        expect(effects).toBe(2);
+        for (const runId of runIds) expect((await runtime.service.getRun(caller, { runId })).status).toBe("completed");
+        expect(retryingLookups).toBe(1);
+        const delivered = await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" });
+        const recovery = delivered.filter((item) => (item.payload as { runId?: string } | null)?.runId === deliveredRun);
+        expect(recovery.length).toBeGreaterThanOrEqual(2);
+        expect(recovery.find((item) => item.id !== `run.execute:${deliveredRun}`)?.attempts).toBeGreaterThanOrEqual(2);
+        expect(delivered.some((item) => item.id.includes(":recovery:") && (item.payload as { runId?: string } | null)?.runId === retryingRun)).toBe(false);
+        expect(delivered.find((item) => item.id === `run.execute:${retryingRun}`)?.attempts).toBeGreaterThanOrEqual(2);
+      } finally { await runtime.close(); }
+    } finally {
+      await database.dropSchema();
+      await database.close();
+    }
+  });
+
+  test("PostgreSQL RESUMED recovery retries failed eligibility without another restart", async () => {
+    const database = await openPostgresStore({
+      url: process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+      schema: `cognate_admission_resumed_${crypto.randomUUID().replaceAll("-", "")}`,
+      pollMs: 0,
+    });
+    const resumedLookupEntered = deferred<void>();
+    const releaseResumedLookup = deferred<readonly string[]>();
+    const resumedLookupAborted = deferred<void>();
+    let firstRuntimeLookups = 0;
+    let secondRuntimeLookups = 0;
+    const agent: AgentDefinition = { id: "agent.resumed-eligibility-retry", version: "1.0.0", async run(_input, ctx) {
+      const answer = await ctx.waitFor("resume-retry", {
+        type: "test.resume-retry", condition: { kind: "resume-retry" }, payload: { marker: "persisted" },
+      });
+      return { answer };
+    } };
+    let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
+    try {
+      runtime = await createRuntime({ store: { store: database.store }, agents: [agent], policy, actions,
+        execution: { maxConcurrentRuns: 1, resourceKeys: (_run, signal) => {
+          firstRuntimeLookups++;
+          if (firstRuntimeLookups === 1) return [];
+          resumedLookupEntered.resolve();
+          signal?.addEventListener("abort", () => resumedLookupAborted.resolve(), { once: true });
+          return releaseResumedLookup.promise;
+        } } });
+      const run = await runtime.service.startRun(caller, { agent: agent.id, input: null, idempotencyKey: "resumed-eligibility-recovery" });
+      for (let i = 0; i < 200 && (await runtime.service.getRun(caller, { runId: run.runId })).status !== "waiting"; i++) await Bun.sleep(10);
+      const continuation = (await runtime.service.listContinuations(caller, { runId: run.runId, status: "OPEN" }))[0];
+      expect(continuation).toBeDefined();
+      await runtime.service.resolveContinuation(caller, {
+        continuationId: continuation!.id, action: "resume", input: { answer: "continue" }, idempotencyKey: "resume-for-eligibility-recovery",
+      });
+      await resumedLookupEntered.promise;
+      await runtime.close();
+      runtime = undefined;
+      await resumedLookupAborted.promise;
+      expect((await database.store.readStream(runStream(run.runId))).some((event) => event.eventType === "run.resumed")).toBe(false);
+      expect((await database.store.listOutbox({ topic: "continuation.resume", status: "delivered" })).some((item) =>
+        (item.payload as { continuationId?: string } | null)?.continuationId === continuation!.id)).toBe(true);
+      releaseResumedLookup.resolve([]);
+
+      runtime = await createRuntime({ store: { store: database.store }, agents: [agent], policy, actions,
+        execution: { maxConcurrentRuns: 1, resourceKeys: async () => {
+          secondRuntimeLookups++;
+          if (secondRuntimeLookups === 1) throw new Error("resumed metadata temporarily unavailable");
+          return [];
+        } } });
+      for (let i = 0; i < 300; i++) {
+        const view = await runtime.service.getRun(caller, { runId: run.runId });
+        if (view.status === "completed") break;
+        await Bun.sleep(10);
+      }
+      expect(secondRuntimeLookups).toBeGreaterThanOrEqual(2);
+      expect((await runtime.service.getRun(caller, { runId: run.runId })).status).toBe("completed");
+      expect((await runtime.service.getRun(caller, { runId: run.runId })).output).toEqual({ answer: { answer: "continue" } });
+      expect((await database.store.readStream(runStream(run.runId))).filter((event) => event.eventType === "run.resumed")).toHaveLength(1);
+      expect((await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" })).some((item) =>
+        item.id.startsWith("run.execute:recovery:") && (item.payload as { runId?: string } | null)?.runId === run.runId)).toBe(true);
+    } finally {
+      releaseResumedLookup.resolve([]);
+      await runtime?.close();
+      await database.dropSchema();
+      await database.close();
+    }
+  }, 30_000);
+
   test("cancellation while eligibility lookup is pending prevents agent work", async () => {
     const lookup = deferred<readonly string[]>();
     const entered = deferred<void>();
