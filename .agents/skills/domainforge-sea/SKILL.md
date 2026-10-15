@@ -77,6 +77,9 @@ Policy positive_flows as:
 Install or build:
 
 ```bash
+# From crates.io (Rust >= 1.89; ~1-2 min build; verified 2026-10-15 with 0.21.1):
+cargo install domainforge-core --features cli --locked
+# Or from a DomainForge checkout:
 cargo install --path domainforge-core --features cli --force
 domainforge --help
 domainforge --version

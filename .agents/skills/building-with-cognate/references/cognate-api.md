@@ -62,7 +62,7 @@ What matters for application code:
 
 - A generated app has `cognate.config.ts` (`export default { profile: "copilot" | "harness",
   instructions?: string }`) and a `domain/*.sea` directory. `cognate dev` parses `domain/*.sea`
-  through the DomainForge adapter (§13, `idm-to-cognate.md`) before serving anything.
+  through the DomainForge adapter (see `idm-to-cognate.md`) before serving anything.
 - State persists at `.cognate/app.sqlite`. Routes: `GET /health`, Connect `RuntimeService` at
   `/cognate.v1.RuntimeService/*`, `POST /agui` (copilot only), `GET /` (Astryx chat shell for
   copilot, health JSON for harness). Source: the generated app itself and the installed
@@ -80,6 +80,8 @@ interface AgentDefinition {
   run(input: Json, context: RunContext): Promise<Json>;
 }
 ```
+
+`run` must return `Promise<Json>`. An object with an optional key (`by?: string`) does not typecheck: `{ by: undefined }` fails with TS2322. Write `by: x ?? null` instead, as the refund-desk app does. `Json` is exported by `@godspeedai/cognate-runtime-bun` (`src/index.ts:115`) and `@godspeedai/cognate-kernel-api` (`src/types.ts:8`). `@godspeedai/cognate-runtime-api` does not export it (TS2305, verified): its `src/types.ts:2` imports `Json` from `@godspeedai/cognate-events` and does not re-export it.
 
 `RunContext` members (`@godspeedai/cognate-runtime-api/src/types.ts`; replay behavior in
 `docs/reference/runtime-service-and-agents.md`):
@@ -110,7 +112,7 @@ import { allowCapabilities } from "@godspeedai/cognate-kernel-api";
 
 const contract: CapabilityContract = { id: "billing.quote", version: "1.0.0", attributes: { currency: "usd" } };
 const billingQuote: Component = {
-  id: "billing", version: "1.0.0", provides: [contract],
+  id: "billing", provides: [contract],
   activate(fiber) {
     fiber.provide(contract, async (input, ctx) => {
       const { amount } = input as { amount: number };
@@ -157,6 +159,13 @@ Resolve from a client: `client.resolveContinuation(continuationId, "resume", { a
 `{outcome, continuation}` envelope or your own idempotency key/`expectedVersion`, call
 `runtime.service.resolveContinuation(caller, { continuationId, action, input, idempotencyKey, expectedVersion? })`.
 
+**A human "no" on an approval.** `"resume"` and `"cancel"` end the wait differently:
+
+- `"resume"` moves the continuation to `RESUMED` and returns `{ approved: false }` from `ctx.waitFor` (`packages/continuations/src/continuations.ts:128`, `resume()`). The agent decides what a "no" means and finishes normally. The refund-desk agent emits `refund.denied` and returns `status: "denied"`.
+- `"cancel"` moves it to `CANCELLED` (`continuations.ts:176`, `cancel()`, event `continuation.cancelled`). `ctx.waitFor` then throws `ContinuationClosedError` (`packages/runtime-bun/src/executor.ts:286`). Unless the agent catches it, the run ends in `run.failed` (`executor.ts:431`).
+
+**Recommendation:** for a human "no", call `"resume"` with `{ approved: false, by }`. The run records the denial and completes with its own output. Use `"cancel"` only to abort the whole run, such as on a timeout or an operator stop.
+
 Artifacts from an agent: `const id = await ctx.artifact({ name, mediaType, bytes, readers?, representations? })`
 (`ArtifactInput` in `@godspeedai/cognate-runtime-api/src/types.ts`); read with `client.artifact(id)`.
 
@@ -182,13 +191,17 @@ See `docs/how-to/add-a-capability.md` (full walkthrough with symptoms table) and
 interface CapabilityContract { id: string; version: string; attributes?: Attributes; semanticRef?: SemanticRef }
 interface Requirement       { capability: string; version?: string; attributes?: Attributes }
 interface Component {
-  id: string; version?: string;
-  requires?: readonly Requirement[];
-  provides?: readonly CapabilityContract[];
-  activate(fiber: FiberContext): ...;   // fiber.provide(contract, handler) IS the publication
-  retry?: { maxAttempts?: number; timeoutMs?: number; backoffMs?: number };
+  readonly id: string;                                        // no `version` field: adding one is TS2353
+  readonly requires?: Readonly<Record<string, Requirement>>;  // keyed by requirement name, not an array
+  readonly provides?: readonly CapabilityContract[];
+  readonly semanticRef?: SemanticRef;
+  readonly retry?: RetryPolicy;                               // types.ts:159, { maxAttempts, baseDelayMs, maxDelayMs }, all required
+  readonly activationTimeoutMs?: number;                      // default 30000
+  activate(fiber: FiberContext): void | Promise<void>;        // fiber.provide(contract, handler) IS the publication (types.ts:156)
 }
 ```
+
+The version belongs to each `CapabilityContract` (`version: string`, `types.ts:31-35`), not to the component. `fiber.provide` must name a contract listed in `provides`; otherwise it throws `UndeclaredCapabilityError` (`packages/kernel-cordis/src/fiber.ts:381`). The first build's TS2353 came from a sample that put `version` on the component.
 
 `isCompatible(requirement, contract)` (`@godspeedai/cognate-kernel-api/src/compat.ts`): same id; same major
 version with minor/patch ≥ required; every required attribute equal.
@@ -232,7 +245,9 @@ impl), full reference: `docs/reference/runtime-service-and-agents.md`.
 | `updateState` | `(caller, { runId, update, idempotencyKey, expectedVersion? })` → `{ state, version }` | see §7 |
 
 `Caller { actor: Principal; tenant: string }` is set by the transport authenticator — never read
-from a request body. `ServiceError` codes: `not_found | permission_denied | invalid_argument |
+from a request body. `Principal` is `{ id, kind }`, with `kind: "user" | "agent" | "service" | "system"` (`@godspeedai/cognate-kernel-api/src/types.ts:22-25`). App code builds its own `Caller` from its authenticator (`runtime-api/src/types.ts:151-154`). Do not import the conformance fixtures (`alice`, `mallory`, `bob`) from `@godspeedai/cognate-runtime-api/conformance`; they exist to test implementations.
+
+Stored events carry `eventType`, not `type` (`@godspeedai/cognate-events/src/types.ts:8` for `NewEvent.eventType`, `:27` for `StoredEvent`). Read the payload from `payload`. The refund-desk history reads `event.eventType`. `ServiceError` codes: `not_found | permission_denied | invalid_argument |
 failed_precondition | unavailable | deadline_exceeded | already_exists | unauthenticated |
 resource_exhausted` (`@godspeedai/cognate-runtime-api/src/types.ts`).
 
@@ -340,6 +355,10 @@ for an ephemeral database. One writer process (DEBT-011 — do not run two proce
 same file). Append-only triggers in the schema reject `UPDATE`/`DELETE` on `events` even via raw
 SQL. Pass `store: "<path>" | ":memory:" | { store: yourDurableStore }` to `createRuntime`.
 
+**The SQLite parent directory must exist.** `openSqliteStore` calls `new Database(path, { create: true })` (`packages/store-sqlite/src/index.ts:128`) and does not create the parent directory. A missing one fails with `SQLITE_CANTOPEN` (checked 2026-10-15). A string path to `createRuntime` goes through the same function (`packages/runtime-bun/src/runtime.ts:56`). Create the directory first with `await mkdir(dirname(path), { recursive: true })`. `cognate dev` does this for `.cognate/` (`packages/cli/src/index.ts:213`).
+
+**Keep domain facts durable.** Only the event log, projections, and shared state survive a restart. An in-memory `Map` does not. The refund-desk pattern reports `refundedCents: 0` after a restart while the log holds `refund.issued` (first-build evidence, F-6). Persist each business fact as an event (`ctx.emit`), and rebuild any in-memory structure on start by replaying `runtime.service.events(caller, { afterPosition: 0 })`, which yields the tenant's events in position order. Alternatively use a `Projection`, whose state and checkpoint are committed to the store (`packages/projections/src/runner.ts:79`) and whose public form is readable with `readProjection`. Per-run state belongs in shared state (§7). Treat any `Map` as a cache.
+
 ## 11. Projections
 
 ```ts
@@ -425,8 +444,7 @@ operation on `isRecorded(eventId)`. Correlation ids round-trip through `realityt
 
 ## Gaps
 
-- No published `@godspeedai/*` npm packages yet (DEBT-016); every app is built from a local checkout
-  — see `cli.md`.
+- `create` still needs a Cognate checkout for `--source` (DEBT-016). The SDK packages and the CLI are published at 0.5.0; an app can be built from npm alone (see `cli.md`).
 - `docs/getting-started.md` and `docs/reference/commands-and-configuration.md` both describe
   `cognate create --source <path>`; do not add a second description of that flag here — `cli.md`
   owns it.
