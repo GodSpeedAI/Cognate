@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.4.0...cognate-runtime-bun-v0.5.0) (2026-10-15)
+
+
+### Features
+
+* **runtime:** await authoritative admission and preserve shutdown recovery ([e90f511](https://github.com/GodSpeedAI/Cognate/commit/e90f511731cbe01cf204f7ec7675e1b03532c5c7))
+* **runtime:** await authoritative resource eligibility with cancellation ([7af8bf3](https://github.com/GodSpeedAI/Cognate/commit/7af8bf3a1ecee9a8a0c5d698c33ffb9d6aa356db))
+
+
+### Bug Fixes
+
+* **runtime:** persist recovery retries and protect trusted executables ([5c85e4c](https://github.com/GodSpeedAI/Cognate/commit/5c85e4ccdc1d715bd010f031eb5e05845f3d7472))
+* **runtime:** preserve cancellation across admission and bound recovery scans ([6963620](https://github.com/GodSpeedAI/Cognate/commit/696362090fb5bae0627dad0a37d7b508eaa63f8a))
+* **runtime:** retain admission capacity and recover interrupted shutdown work ([d0e4911](https://github.com/GodSpeedAI/Cognate/commit/d0e491105d7f76ecebed04302701c3f911b69926))
+
 ## [0.4.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.3.0...cognate-runtime-bun-v0.4.0) (2026-10-14)
 
 
