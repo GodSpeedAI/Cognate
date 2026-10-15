@@ -19,6 +19,10 @@ export interface RefundStep {
 
 export const refundHead = HEAD;
 
+// Beat D static outcome: the line where the policy check runs (packages/kernel-cordis/src/lease.ts, lines 56-68).
+// lease.ts is unchanged since dd13c84, which is on GitHub main, so this link resolves before the branch is pushed.
+export const leaseSource: SourceRef = { repo: COR, sha: 'dd13c8422220ecbac61a92bdd90829218844bc2e', path: 'packages/kernel-cordis/src/lease.ts', startLine: 56, endLine: 68 };
+
 export const refundSteps: readonly RefundStep[] = [
   {
     n: 1,
@@ -28,7 +32,7 @@ export const refundSteps: readonly RefundStep[] = [
   {
     n: 2,
     title: 'The agent writes down what the app must accomplish.',
-    body: 'A small domain model: who acts, what an order and a refund are, and the rule that refunds over $50 need approval. DomainForge makes business meaning executable.',
+    body: 'A small domain model: who acts, what an order and a refund are, and the rule that refunds over $50 need approval. It\'s written in DomainForge, GodSpeed\'s modelling language, so both people and the software can check the rules.',
     excerpt: [
       '// Business rule: a refund over $50 needs an approval relation in the model.',
       'Policy refund_over_50_needs_approval as:',

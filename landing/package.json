@@ -5,13 +5,13 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && bun scripts/notices.ts",
     "preview": "astro preview",
     "check": "astro check && tsc --noEmit",
-    "test": "bun test tests/parts.test.ts tests/readme.test.ts",
+    "test": "bun test tests/parts.test.ts tests/readme.test.ts tests/notices.test.ts",
     "verify:sources": "bun run scripts/verify-sources.ts",
     "shots": "bun run scripts/shots.ts",
-    "test:e2e": "bun run build && playwright test"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/react": "7.1.0",

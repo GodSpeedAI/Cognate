@@ -8,7 +8,10 @@ import BuildSteps from '../components/BuildSteps';
 import Onboarding from '../components/Onboarding';
 import PartsText from '../components/PartsText.astro';
 import Rail from '../components/Rail';
+import Capture from '../components/Capture.astro';
 import { captures } from '../data/captures';
+import { leaseSource } from '../data/refund';
+import { githubUrl } from '../lib/links';
 
 const byFile = (name: string) => captures.find((c) => c.file.includes(name))!;
 const contract = byFile('e2e-03');
@@ -34,6 +37,8 @@ const description =
 
   <main id="top">
     <section class="beat hero" aria-labelledby="hero-title">
+      <div class="hero-grid">
+      <div class="hero-copy">
       <p class="eyebrow">The agentic application framework</p>
       <h1 id="hero-title">You steer the software. AI agents build it, and work within it.</h1>
       <p class="sub">
@@ -57,6 +62,11 @@ const description =
       </figure>
       <p class="footline"><span class="speed" aria-hidden="true">⚡</span> You stay the one who decides. A prompt is not an authority boundary, so Cognate checks permissions in code.</p>
       <p class="transition">Does this hold up for a real application?</p>
+      </div>
+      <div class="hero-art">
+        <Capture file={contract.file} alt={contract.alt} caption="Real screen from Cognate-Workbench" width={contract.width} height={contract.height} eager class="hero-plate" />
+      </div>
+      </div>
     </section>
 
     <section class="beat" id="proof" aria-labelledby="proof-title">
@@ -66,28 +76,16 @@ const description =
         Cognate-Workbench is a working application built with Cognate. It is an agent harness for coding and general work, where AI agents write and run code, plan, and carry out tasks in conversation with you. A person scopes a task with a contract that sets its goal, limits and acceptance checks. The agent does the work, and pauses for approval before risky steps. Then a person accepts the result, or doesn't.
       </p>
       <p class="distinction">Workbench is what was built. Cognate is what it was built from.</p>
-      <figure class="capture capture-large">
-        <img src={`/${contract.file}`} width={contract.width} height={contract.height} alt={contract.alt} decoding="async" />
-        <figcaption>{contract.caption}, captured by its own end-to-end test.</figcaption>
-      </figure>
+      <Capture file={contract.file} alt={contract.alt} caption={`${contract.caption}, captured by its own end-to-end test.`} width={contract.width} height={contract.height} class="capture-large" />
       <ul class="annotations" aria-label="What the capture shows">
         <li><span class="mono">1</span> The contract: goal, authority, budget, acceptance</li>
         <li><span class="mono">2</span> How done is it: “finished” is the bottom rung</li>
         <li><span class="mono">3</span> Acceptance checks: a test, an independent check, a person</li>
       </ul>
       <div class="gallery">
-        <figure class="capture">
-          <img src={`/${blocked.file}`} width={blocked.width} height={blocked.height} alt={blocked.alt} loading="lazy" decoding="async" />
-          <figcaption>Blocked until authority is granted</figcaption>
-        </figure>
-        <figure class="capture">
-          <img src={`/${review.file}`} width={review.width} height={review.height} alt={review.alt} loading="lazy" decoding="async" />
-          <figcaption>Review gate</figcaption>
-        </figure>
-        <figure class="capture">
-          <img src={`/${accepted.file}`} width={accepted.width} height={accepted.height} alt={accepted.alt} loading="lazy" decoding="async" />
-          <figcaption>Accepted, on evidence</figcaption>
-        </figure>
+        <Capture file={blocked.file} alt={blocked.alt} caption="Blocked until authority is granted" width={blocked.width} height={blocked.height} />
+        <Capture file={review.file} alt={review.alt} caption="Review gate" width={review.width} height={review.height} />
+        <Capture file={accepted.file} alt={accepted.alt} caption="Accepted, on evidence" width={accepted.width} height={accepted.height} />
       </div>
       <p class="side-note">Workbench is an example app. It is not Cognate.</p>
     </section>
@@ -96,7 +94,7 @@ const description =
       <p class="kicker">Take it apart</p>
       <h2 id="parts-title">What Workbench is made of.</h2>
       <p>
-        Underneath the screen there are four layers. In the capabilities layer sit named parts, and each one does one job. Some come straight from Cognate. Others Workbench built for itself, using the same pattern.
+        Underneath the screen there are four layers: the <strong>interface</strong> you use, the <strong>agents</strong> that do the work, the <strong>capabilities</strong> they work through, and the <strong>durable record</strong> of everything that happened. Each part on the capabilities layer is a capability, a named job with one purpose. Some come straight from Cognate. Workbench built others for itself, using the same pattern.
       </p>
       <p class="legend-chips" aria-label="Legend">
         <span class="chip chip-cognate">From Cognate</span>
@@ -109,9 +107,12 @@ const description =
 
     <section class="beat" id="fit" aria-labelledby="fit-title">
       <p class="kicker">How parts fit</p>
-      <h2 id="fit-title">Ask for the job. Any eligible part can do it.</h2>
+      <h2 id="fit-title">Ask for the job by name, not for the code that does it.</h2>
       <p>
         A capability has a stable name and version, like <span class="mono">billing.quote@1</span>. Code asks for the name, not for a particular implementation. Any part that provides a compatible version can answer. Before any part runs, a permission check decides whether this caller may use it, and the default answer is no.
+      </p>
+      <p class="static-outcome">
+        Try it: switch the caller to <em>mallory</em>. The call is refused before anything runs, and the refusal is recorded. The check happens in code: see <a href={githubUrl(leaseSource)} rel="noopener">the line in <span class="mono">packages/kernel-cordis/src/lease.ts</span></a>.
       </p>
       <CompositionDemo client:visible />
     </section>
@@ -137,10 +138,7 @@ const description =
       <p>
         In Workbench, “Finished” only means the agent stopped. The work is accepted only after a person reviews the evidence. <span class="speed" aria-hidden="true">⚡</span> Completion without proof is theater.
       </p>
-      <figure class="capture">
-        <img src={`/${accepted.file}`} width={accepted.width} height={accepted.height} alt="Workbench done-ladder: Finished, Produced, Tested, Ready for review and Accepted are checked, and all three criteria are closed." loading="lazy" decoding="async" />
-        <figcaption>Real screen from Cognate-Workbench</figcaption>
-      </figure>
+      <Capture file={accepted.file} alt="Workbench done-ladder: Finished, Produced, Tested, Ready for review and Accepted are checked, and all three criteria are closed." caption="Real screen from Cognate-Workbench" width={accepted.width} height={accepted.height} />
     </section>
 
     <section class="beat" id="extend" aria-labelledby="extend-title">
@@ -159,7 +157,7 @@ const description =
     <section class="beat" id="start" aria-labelledby="start-title">
       <p class="kicker">Your turn</p>
       <h2 id="start-title">Build your first app.</h2>
-      <p>No account, no API key. You're done when your app's tests pass on your machine, not when the agent says it's finished.</p>
+      <p>No Cognate account, and no AI API key for the app itself, because the first app runs without a model. (Your coding agent uses whatever sign-in it normally does.) You're done when your app's tests pass on your machine, not when the agent says it's finished.</p>
       <Onboarding client:visible />
     </section>
   </main>
@@ -173,6 +171,7 @@ const description =
       <a href="https://github.com/GodSpeedAI/Cognate/tree/main/docs">Docs</a>
       <a href="https://github.com/GodSpeedAI/Cognate-Workbench">Cognate-Workbench</a>
       <a href="https://github.com/GodSpeedAI/Cognate/blob/main/.agents/DEBT.md">Debt register</a>
+      <a href="/THIRD_PARTY_NOTICES.txt">Third-party notices</a>
     </p>
     <p>Workbench screenshots are real captures from Cognate-Workbench (Apache-2.0).</p>
   </footer>

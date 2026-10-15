@@ -5,7 +5,7 @@ const anchors = ['#proof', '#parts', '#fit', '#build', '#operate', '#extend', '#
 test('every nav anchor and CTA lands on its section', async ({ page }) => {
   await page.goto('/');
   for (const hash of anchors) {
-    await page.locator(`a[href="${hash}"]`).first().click();
+    await page.locator(`a[href="${hash}"]:not(.skip)`).first().click();
     await expect(page).toHaveURL(new RegExp(`${hash}$`));
     const top = await page.locator(hash).evaluate((el) => el.getBoundingClientRect().top);
     expect(top).toBeLessThan(200);

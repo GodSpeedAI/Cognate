@@ -10,7 +10,7 @@ test('run strip: approve completes the refund; deny does not', async ({ page }) 
   await page.goto('/#operate');
   await page.getByRole('button', { name: 'Approve' }).click();
   await expect(page.locator('.run-strip')).toContainText('run.completed');
-  await page.getByRole('button', { name: 'Reset' }).click();
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await page.getByRole('button', { name: 'Deny' }).click();
   await expect(page.locator('.run-strip')).toContainText('run.completed (no refund)');
 });

@@ -12,8 +12,8 @@ const rows = parts.map((p) => {
     label: titleCase(p.label),
     job: p.job,
     kind: `${kindLabel(p.kind)}${p.branchOnly ? '; in development (branch)' : ''}`,
-    needs: needs.length > 0 ? needs.join(', ') : 'none verified',
-    neededBy: neededBy.length > 0 ? neededBy.join(', ') : 'none verified',
+    needs: needs.length > 0 ? needs.join(', ') : 'nothing in this view',
+    neededBy: neededBy.length > 0 ? neededBy.join(', ') : 'nothing in this view',
   };
 });
 ---
@@ -22,7 +22,7 @@ const rows = parts.map((p) => {
   <summary>Read the parts list</summary>
   <ol class="layers">
     <li><strong>L1 Interface.</strong> The real Workbench screen, shown as the top plate.</li>
-    <li><strong>L2 Agents.</strong> The three agents Workbench registers: config, coding and cognitive.</li>
+    <li><strong>L2 Agents:</strong> the three agents Workbench registers: config, coding and cognitive</li>
     <li>
       <strong>L3 Capabilities.</strong>
       <ol class="parts">
