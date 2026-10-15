@@ -31,3 +31,10 @@ passes after recovery also re-enters RESUMED waits. The combined admission/concu
 suite passes **19 tests, zero failures, 121 assertions**. Final `just verify` passes **81/81 gates**
 after both repairs and the pre-agent shutdown guard. Typecheck and diff checks pass. Exact-head CI,
 clean-room packaging, review reconciliation and operator authorization remain release gates.
+
+The operator approved PR #44 and its linked release workflow on 2026-10-15. Before merge, a newly
+discovered provenance error was corrected: Ubuntu's 0.11.1-1ubuntu0.3 package reverted the cited
+CVE fix. The test harness now requires a reviewed attestation file instead of auto-attesting the
+installed binary. Official upstream 0.12.0 was built in an isolated task directory; its actual OS
+suite passes ten tests/29 assertions, and full `just verify` passes 81/81 with the OS gate enabled.
+The corrected head must pass CI/packaging before the authorized merge and linked publication.

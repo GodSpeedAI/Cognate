@@ -1,8 +1,8 @@
 # Current status
 
-**Status revision:** 63
+**Status revision:** 64
 
-**Summary:** Published SDK 0.4.0 remains the Workbench dependency. PR44's admission-capacity finding and two native shutdown/recovery defects are repaired with PostgreSQL regressions and 81/81 full gates; latest-head CI and release authorization remain required.
+**Summary:** PR44 and its linked release are operator-authorized. Incorrect distro-binary patch provenance is withdrawn; explicit attestation and a verified upstream 0.12.0 fixture pass actual OS tests and 81/81 full gates. The corrected head must pass CI and packaging before merge/publication.
 
 SDK 0.4.0 is published completely: all 45 npm names and gitHeads match release commit 467a5f.
 Workbench's published upgrade and native capacity characterization pass all 1,104 tests and keep
@@ -19,6 +19,12 @@ Final admission/concurrency/shutdown with real PostgreSQL: **19 pass, zero fail,
 Outbox/continuations previously passed **54 tests, 242 assertions**. Typecheck and full **81/81**
 verification gates pass after the repairs. PR44's previous head passed CI/packaging; the new head
 must pass again. Independent source review identified and then verified the resumed-wait repair.
+
+The operator approved PR44 and its linked release workflow. Before merge, a provenance correction
+withdraws the claim that Ubuntu 0.11.1-1ubuntu0.3 contains the cited CVE fix: USN-8779-2 reverted it.
+OS tests now require an explicit reviewed attestation path. Official upstream signed tag v0.12.0
+was built without system installation; the corrected fixture passes ten tests/29 assertions and
+full 81/81 gates with the OS gate enabled. Exact-head CI/packaging must pass after this correction.
 
 Shutdown aborts cooperative provider work without cancelling durable objectives; committed steps
 and open waits survive restart. Recovery also handles an acknowledged RESUMED continuation before
