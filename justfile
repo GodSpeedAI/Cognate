@@ -1,5 +1,17 @@
 # Cognate workspace commands. `just verify` is the regression baseline; `just gates` reports every ledger gate honestly.
 
+# Build and serve the landing page in the background on the first free port at or above 4321 (flags: --port N, --no-build)
+site-up *args:
+    cd landing && (test -d node_modules || bun install) && bun scripts/site.ts up {{args}}
+
+# Stop the landing page server started by `just site-up`
+site-down:
+    cd landing && bun scripts/site.ts down
+
+# Show whether the landing page server is running, and where
+site-status:
+    cd landing && bun scripts/site.ts status
+
 # Inspect available commands and prerequisites
 setup:
     @bun --version
