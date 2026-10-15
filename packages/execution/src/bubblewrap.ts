@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { realpathSync,statSync } from "node:fs";
 import { readFile,realpath } from "node:fs/promises";
-import { basename,dirname,resolve,sep } from "node:path";
+import { basename,dirname,isAbsolute,relative,resolve,sep } from "node:path";
 import { commandFileSystem } from "./command.ts";
 import { PathEscapeError,WorldUnavailableError,type ExecResult,type ExecSpec,type ExecutionWorldProvider,type FileSystemPort } from "./types.ts";
 
@@ -22,7 +22,7 @@ export interface BubblewrapExecutionWorldOptions {
 }
 const PUBLIC_ROOTS=new Set(["/usr/bin","/usr/lib","/usr/lib64","/bin","/lib","/lib64"]);
 const ENVIRONMENT=new Set(["LANG","LC_ALL","TZ","TERM"]);
-const inside=(root:string,path:string)=>path===root || path.startsWith(root+sep);
+const inside=(root:string,path:string)=>{const rel=relative(root,path);return rel==="" || (rel!==".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));};
 
 export async function bubblewrapExecutionWorld(options:BubblewrapExecutionWorldOptions):Promise<ExecutionWorldProvider>{
   const worldId=options.worldId ?? "linux-bubblewrap";
@@ -34,6 +34,7 @@ export async function bubblewrapExecutionWorld(options:BubblewrapExecutionWorldO
   const executable=await realpath(options.executablePath);
   const workspace=await realpath(options.workspaceRoot);
   if(workspace==="/" || !statSync(workspace).isDirectory())unavailable("A dedicated workspace directory is required");
+  if(inside(workspace,executable))unavailable("bubblewrap launcher must be outside the writable workspace");
   const mounts: string[]=[];
   for(const root of [...new Set(options.runtimeRoots)]){
     let source:string;
@@ -43,6 +44,7 @@ export async function bubblewrapExecutionWorld(options:BubblewrapExecutionWorldO
   }
   if(!mounts.length)unavailable("No usable runtime roots");
   const bunExecutable=options.bunExecutable ? await realpath(options.bunExecutable):undefined;
+  if(bunExecutable && inside(workspace,bunExecutable))unavailable("Bun executable must be outside the writable workspace");
   if(bunExecutable && !statSync(bunExecutable).isFile())unavailable("Bun executable must be a regular file");
   const timeoutMs=options.timeoutMs ?? 30_000;
   const outputLimit=options.maxOutputBytes ?? 1_048_576;
