@@ -34,3 +34,35 @@ without cancelling durable objectives. Recovery re-enters acknowledged RESUMED w
 resume event was not persisted. Actual PostgreSQL regressions failed before each repair and pass
 afterward: admission/concurrency/shutdown 19 tests, 121 assertions; full verification 81/81 gates.
 Signal-ignoring handlers and ambiguous external effects retain their documented limitations.
+
+The next review regressions cover cancellation during execution-slot admission and recovery polling.
+The slot test was RED before the fix (`AbortSignal.aborted` remained false while the run waited),
+then GREEN after the run controller remained registered until slot acquisition settled; late grants
+are released and the cancelled run performs no effects. The instrumented recovery test was RED with
+12 unnecessary `listOutbox` scans during 120 ms, then GREEN with at most one after polling was
+limited to ticks that have new recovery candidates. Combined async-admission/concurrency testing
+passed 21 tests / 133 assertions, including PostgreSQL. Final `bun run verify` passed the substrate
+ledger 81/81 and the full suite 951 pass / 31 skipped / 0 fail (5,861 assertions across 982 tests).
+The full run skipped explicitly gated bubblewrap OS and live external-service suites; earlier
+separate patched-bubblewrap OS evidence remains recorded in the evidence document. Typecheck and
+diff checks passed. No status files were changed, and no commit or publication was made.
+
+Final handoff review found a stale-snapshot cancellation window between slot admission and the
+executor's initial `readStream`. A deterministic held-read regression was RED with one agent entry
+after cancellation and GREEN with zero after controller registration moved before the first await;
+terminal/error paths clean up the controller through an outer `finally`. A forced close just after
+slot grant confirms the permit is returned. Recovery intent cache entries are now removed after
+delivery success or failure; the durable outbox remains authoritative for retry/poison state, and a
+later recovery scan can reuse pending intents. Admission/concurrency/shutdown-recovery passed 26
+tests / 157 assertions, with typecheck and diff checks green. Parent is rerunning full SDK
+verification with patched bubblewrap OS tests enabled after review.
+
+The 100-run startup recovery batches were also too frequent: a backlog above one batch could trigger
+a full pending-topic scan every 10 ms. Reconciliation now has a monotonic 250 ms throttle set before
+the store query, preserving the 100-candidate batch and capping scan frequency at four per second
+(nominal progress 400 candidates/second). A 250-record regression observed at most one extra scan
+over 120 ms and confirmed all candidates eventually completed with delivered recovery intents after
+more than 500 ms. The test is RED at zero throttle (two extra scans during the 120 ms window) and
+GREEN at 250 ms. Each `listOutbox` call still materializes an unbounded result; this does not close
+the A4 retrieval/indexing limitation. Parent will rerun final SDK and OS-enabled verification after
+review.

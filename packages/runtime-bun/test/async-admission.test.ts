@@ -4,6 +4,7 @@ import { openPostgresStore } from "@godspeedai/cognate-store-postgres";
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { createRuntime } from "../src/index.ts";
 import { RUNS, runStream } from "../src/fold.ts";
+import { ExecutionSlots } from "../src/execution-slots.ts";
 
 const caller: Caller = { tenant: "test", actor: { id: "human", kind: "user" } };
 const policy = { authorize: () => ({ allow: true as const, policyId: "test", reason: "test" }) };
@@ -109,6 +110,99 @@ describe("awaitable execution eligibility", () => {
         expect((await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" })).some((item) => item.id === pending?.id)).toBe(false);
         expect((await runtime.service.getRun(caller, { runId: run.runId })).status).toBe("running");
       } finally { await runtime.close(); }
+    }
+  });
+
+  test("tracked recovery retries do not rescan the pending outbox on every timer tick", async () => {
+    const base = openSqliteStore({ path: ":memory:" });
+    const runId = "recovery-scan-bounded";
+    const agent: AgentDefinition = { id: "agent.recovery-scan", version: "1.0.0", run: async () => "unused" };
+    await base.commit({
+      appends: [{ streamId: runStream(runId), expectedVersion: 0, events: [{
+        eventType: "run.started", schemaVersion: 1, occurredAt: new Date().toISOString(), tenant: caller.tenant,
+        correlationId: runId, causationId: null, runId, scopeId: "test-scope",
+        payload: { input: null }, metadata: { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind },
+      }] }],
+      records: [{ collection: RUNS, id: runId, expectedVersion: 0,
+        value: { tenant: caller.tenant, agent: agent.id, correlationId: runId, startedBy: caller.actor.id, scopeId: "test-scope" } }],
+    });
+    let recoveryPendingQueries = 0;
+    const store = new Proxy(base, { get(target, property) {
+      if (property === "listOutbox") return async (query: Parameters<typeof target.listOutbox>[0]) => {
+        if (query?.topic === "run.execute" && query.status === "pending") {
+          recoveryPendingQueries++;
+        }
+        return target.listOutbox(query);
+      };
+      const value = Reflect.get(target, property, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    } });
+    const runtime = await createRuntime({ store: { store }, agents: [agent], policy, actions,
+      execution: { resourceKeys: async () => { throw new Error("recovery lookup temporarily unavailable"); } } });
+    try {
+      for (let i = 0; i < 100; i++) {
+        const pending = await base.listOutbox({ topic: "run.execute", status: "pending" });
+        if (pending.some((item) => item.lastError?.includes("recovery lookup temporarily unavailable"))) break;
+        await Bun.sleep(5);
+      }
+      const afterRetry = recoveryPendingQueries;
+      expect(afterRetry).toBeGreaterThan(0);
+      await Bun.sleep(120);
+      expect(recoveryPendingQueries - afterRetry).toBeLessThanOrEqual(1);
+    } finally {
+      await runtime.close();
+      await base.close();
+    }
+  });
+
+  test("startup recovery scans a backlog in bounded 100-run batches with throttled reconciliation", async () => {
+    const base = openSqliteStore({ path: ":memory:" });
+    const candidateCount = 250;
+    const runIds = Array.from({ length: candidateCount }, (_, index) => `recovery-backlog-${index}`);
+    const agent: AgentDefinition = { id: "agent.recovery-backlog", version: "1.0.0", run: async () => "recovered" };
+    await base.commit({
+      appends: runIds.map((runId) => ({ streamId: runStream(runId), expectedVersion: 0, events: [{
+        eventType: "run.started", schemaVersion: 1, occurredAt: new Date().toISOString(), tenant: caller.tenant,
+        correlationId: runId, causationId: null, runId, scopeId: "test-scope",
+        payload: { input: null }, metadata: { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind },
+      }] })),
+      records: runIds.map((runId) => ({ collection: RUNS, id: runId, expectedVersion: 0,
+        value: { tenant: caller.tenant, agent: agent.id, correlationId: runId, startedBy: caller.actor.id, scopeId: "test-scope" } })),
+    });
+    let recoveryPendingQueries = 0;
+    let firstRecoveryScanAt: number | undefined;
+    const store = new Proxy(base, { get(target, property) {
+      if (property === "listOutbox") return async (query: Parameters<typeof target.listOutbox>[0]) => {
+        if (query?.topic === "run.execute" && query.status === "pending") {
+          firstRecoveryScanAt ??= performance.now();
+          recoveryPendingQueries++;
+        }
+        return target.listOutbox(query);
+      };
+      const value = Reflect.get(target, property, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    } });
+    const runtime = await createRuntime({ store: { store }, agents: [agent], policy, actions });
+    try {
+      for (let i = 0; i < 100 && recoveryPendingQueries === 0; i++) await Bun.sleep(5);
+      expect(recoveryPendingQueries).toBeGreaterThan(0);
+      const afterFirstScan = recoveryPendingQueries;
+      await Bun.sleep(120);
+      expect(recoveryPendingQueries - afterFirstScan).toBeLessThanOrEqual(1);
+
+      let completed = 0;
+      for (let i = 0; i < 300; i++) {
+        completed = (await base.readAll({ limit: 1_000 })).filter((event) => event.eventType === "run.completed").length;
+        if (completed === candidateCount) break;
+        await Bun.sleep(10);
+      }
+      expect(completed).toBe(candidateCount);
+      expect(performance.now() - firstRecoveryScanAt!).toBeGreaterThan(500);
+      expect((await base.listOutbox({ topic: "run.execute", status: "delivered" })).length).toBe(candidateCount);
+      expect(recoveryPendingQueries).toBeLessThanOrEqual(4);
+    } finally {
+      await runtime.close();
+      await base.close();
     }
   });
 
@@ -268,6 +362,149 @@ describe("awaitable execution eligibility", () => {
       lookup.reject(new Error("late cancelled lookup rejection"));
       await Bun.sleep(0);
     } finally { await runtime.close(); }
+  });
+
+  test("cancellation while waiting for an execution slot aborts admission and releases late grants", async () => {
+    const firstEntered = deferred<void>();
+    const releaseFirst = deferred<void>();
+    const waiterStarted = deferred<void>();
+    const queuedLookup = deferred<void>();
+    const signals = new Map<number, AbortSignal>();
+    let waiterLookups = 0;
+    const effects: number[] = [];
+    const agent: AgentDefinition = { id: "agent.cancel-slot-wait", version: "1.0.0", async run(input, ctx) {
+      const n = (input as { n: number }).n;
+      if (n === 2) {
+        waiterStarted.resolve();
+        await ctx.waitFor("cancel-slot-wait", {
+          type: "test.cancel-slot-wait", condition: { kind: "cancel-slot-wait" }, payload: null,
+        });
+      }
+      return ctx.step("effect", async () => {
+        if (n === 1) { firstEntered.resolve(); await releaseFirst.promise; }
+        effects.push(n);
+        return { n };
+      });
+    } };
+    const runtime = await createRuntime({ store: ":memory:", agents: [agent], policy, actions,
+      execution: { maxConcurrentRuns: 1, resourceKeys: (run, signal) => {
+        const n = (run.input as { n: number }).n;
+        if (signal) signals.set(n, signal);
+        if (n === 2 && ++waiterLookups === 2) queuedLookup.resolve();
+        return [];
+      } } });
+    const waitFor = async <T>(promise: Promise<T>, step: string): Promise<T> => Promise.race([
+      promise,
+      Bun.sleep(1_000).then(() => { throw new Error(`timed out waiting for ${step}`); }),
+    ]);
+    try {
+      const cancelled = await runtime.service.startRun(caller, { agent: agent.id, input: { n: 2 }, idempotencyKey: "cancel-slot-waiter" });
+      await waitFor(waiterStarted.promise, "continuation waiter");
+      for (let i = 0; i < 100 && (await runtime.service.getRun(caller, { runId: cancelled.runId })).status !== "waiting"; i++) await Bun.sleep(5);
+      const continuation = (await runtime.service.listContinuations(caller, { runId: cancelled.runId, status: "OPEN" }))[0];
+      expect(continuation).toBeDefined();
+      await runtime.service.startRun(caller, { agent: agent.id, input: { n: 1 }, idempotencyKey: "cancel-slot-holder" });
+      await waitFor(firstEntered.promise, "slot holder effect");
+      await runtime.service.resolveContinuation(caller, {
+        continuationId: continuation!.id, action: "cancel", reason: "cancel while waiting for slot", idempotencyKey: "cancel-slot-continuation",
+      });
+      await waitFor(queuedLookup.promise, "cancelled continuation execution queued for slot");
+      await runtime.service.cancelRun(caller, { runId: cancelled.runId, reason: "cancel while waiting for slot", idempotencyKey: "cancel-slot-waiter-run" });
+      expect(signals.get(2)?.aborted).toBe(true);
+      const next = await runtime.service.startRun(caller, { agent: agent.id, input: { n: 3 }, idempotencyKey: "cancel-slot-next" });
+      releaseFirst.resolve();
+      await runtime.idle();
+      expect((await runtime.service.getRun(caller, { runId: cancelled.runId })).status).toBe("cancelled");
+      expect((await runtime.service.getRun(caller, { runId: next.runId })).status).toBe("completed");
+      expect(effects.sort()).toEqual([1, 3]);
+    } finally {
+      releaseFirst.resolve();
+      await runtime.close();
+    }
+  });
+
+  test("runtime close after a slot grant still releases the grant before skipping execution", async () => {
+    const originalAcquire = ExecutionSlots.prototype.acquire;
+    const slotReleaseObserved = deferred<void>();
+    const closeStarted = deferred<void>();
+    let runtime: Awaited<ReturnType<typeof createRuntime>>;
+    let closePromise: Promise<void> | undefined;
+    let acquisitions = 0;
+    let effects = 0;
+    const agent: AgentDefinition = { id: "agent.close-after-slot-grant", version: "1.0.0", run: async () => {
+      effects++;
+      return "ran";
+    } };
+    ExecutionSlots.prototype.acquire = function(keys) {
+      const acquisition = originalAcquire.call(this, keys);
+      return new Promise((resolve, reject) => {
+        acquisition.then((release) => {
+          acquisitions++;
+          if (acquisitions === 2) {
+            resolve(() => { release(); slotReleaseObserved.resolve(); });
+            // Let acquireExecutionSlot's grant handler return its permit first, then close before
+            // execute() resumes from its await. This forces the late-close branch deterministically.
+            queueMicrotask(() => queueMicrotask(() => {
+              closePromise = runtime.close();
+              closeStarted.resolve();
+            }));
+          } else resolve(release);
+        }, reject);
+      });
+    };
+    runtime = await createRuntime({ store: ":memory:", agents: [agent], policy, actions,
+      execution: { maxConcurrentRuns: 1, resourceKeys: async () => [] } });
+    try {
+      await runtime.service.startRun(caller, { agent: agent.id, input: null, idempotencyKey: "close-after-slot-grant" });
+      await Promise.race([closeStarted.promise, Bun.sleep(1_000).then(() => { throw new Error("runtime close was not triggered after slot grant"); })]);
+      await closePromise;
+      await Promise.race([slotReleaseObserved.promise, Bun.sleep(1_000).then(() => { throw new Error("granted execution slot leaked during close"); })]);
+      expect(effects).toBe(0);
+    } finally {
+      ExecutionSlots.prototype.acquire = originalAcquire;
+      await runtime.close();
+    }
+  });
+
+  test("cancellation during the executor's initial snapshot read prevents stale-snapshot agent entry", async () => {
+    const readEntered = deferred<void>();
+    const releaseRead = deferred<void>();
+    let gateRunId: string | undefined;
+    let gateNextRead = false;
+    let agentEntries = 0;
+    const agent: AgentDefinition = { id: "agent.cancel-snapshot-read", version: "1.0.0", async run() {
+      agentEntries++;
+      return "must not run";
+    } };
+    const base = openSqliteStore({ path: ":memory:" });
+    const store = new Proxy(base, { get(target, property) {
+      if (property === "readStream") return async (streamId: Parameters<typeof target.readStream>[0]) => {
+        const snapshot = await target.readStream(streamId);
+        if (gateNextRead && gateRunId && streamId === runStream(gateRunId)) {
+          gateNextRead = false;
+          readEntered.resolve();
+          await releaseRead.promise;
+        }
+        return snapshot;
+      };
+      const value = Reflect.get(target, property, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    } });
+    const runtime = await createRuntime({ store: { store }, agents: [agent], policy, actions,
+      execution: { resourceKeys: (run) => { gateRunId = run.runId; gateNextRead = true; return []; } } });
+    try {
+      const run = await runtime.service.startRun(caller, { agent: agent.id, input: null, idempotencyKey: "cancel-snapshot-read" });
+      await readEntered.promise;
+      await runtime.service.cancelRun(caller, { runId: run.runId, reason: "cancel during executor read", idempotencyKey: "cancel-snapshot-read-run" });
+      releaseRead.resolve();
+      await runtime.idle();
+      expect(agentEntries).toBe(0);
+      expect((await runtime.service.getRun(caller, { runId: run.runId })).status).toBe("cancelled");
+    } finally {
+      releaseRead.resolve();
+      await runtime.close();
+      await base.close();
+    }
   });
 
   test("close aborts and releases a never-settling eligibility lookup", async () => {
