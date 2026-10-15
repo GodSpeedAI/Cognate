@@ -1,0 +1,12 @@
+# Awaitable run eligibility evidence
+
+The runtime execution admission policy accepts synchronous or asynchronous resource-key lookups. An optional per-run signal is passed to the trusted callback and aborted by cancellation or runtime shutdown. Lookups during recovery are bounded by execution capacity. Resolution completes before an execution slot is acquired; a policy rejection goes through the durable native outbox retry path and no agent effects run. A lookup still pending during cancellation cannot start agent work after it resolves. Cancellation and shutdown release the waiting execution path even if a callback ignores its signal; late rejection is observed.
+
+On 2026-10-15, `bun test packages/runtime-bun/test/async-admission.test.ts` passed all 5 tests, including invalid `undefined`/`null` lookup results remaining pending with a durable error and no effects. The combined runtime concurrency and async-admission run passed 15 tests; its PostgreSQL case could not connect because pg0 was stopped (`ECONNREFUSED 127.0.0.1:5432`), so that run is not counted as a full pass. Before this final contract-validation test was added, `just verify` passed 81/81 checks on 2026-10-15; the initial run was blocked by a corrupt cached Buf executable, fixed by reinstalling the frozen dependencies with a fresh temporary Bun cache. `bun test packages/events/test/outbox-dispatcher.test.ts packages/continuations/test` passed 54 tests. `bun run typecheck` passed after the final change. CI's PostgreSQL-backed suite now includes `async-admission.test.ts` beside `concurrency.test.ts` in `.github/workflows/verify.yml`.
+
+The final combined runtime/admission run, with PostgreSQL explicitly available, passes **16 tests,
+zero failures and 100 assertions** after the invalid-result guard. The earlier connection refusal is
+an environment failure, not a passing skip. The full 81-gate run preceded that final one-line guard;
+the current guard has targeted coverage and typecheck, and exact-head CI remains required.
+
+The failed-lookup run remains `running` in `RunView` because `run.started` folds to that status until a terminal event; eligibility is outside the agent executor, so the policy failure is recorded on the retryable outbox item and does not append `run.failed`. This limitation is intentional for this contract slice. The mechanism remains process-local and does not provide distributed run ownership or OS isolation.

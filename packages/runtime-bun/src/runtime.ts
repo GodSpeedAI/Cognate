@@ -4,6 +4,7 @@ import { ContinuationService } from "@godspeedai/cognate-continuations";
 import { type DurableStore, type Json, NotFoundError, OutboxDispatcher } from "@godspeedai/cognate-events";
 import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 import type { Principal } from "@godspeedai/cognate-kernel-api";
+import type { RunView } from "@godspeedai/cognate-runtime-api";
 import { ProjectionRunner } from "@godspeedai/cognate-projections";
 import { openPostgresStore, resolvePg0Url } from "@godspeedai/cognate-store-postgres";
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
@@ -33,6 +34,9 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     }
   }
   const slots=new ExecutionSlots(capacity);
+  // Recovery can enqueue many runs at once. Bound authoritative eligibility lookups with the
+  // same primitive/capacity so metadata resolution cannot fan out without limit.
+  const eligibilitySlots = new ExecutionSlots(capacity);
   // Run and resume topics share one pre-claim budget. ExecutionSlots separately enforces
   // run-local/resource exclusion for every execution path, including direct recovery.
   let admittedDeliveries = 0;
@@ -70,6 +74,54 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const continuations = new ContinuationService(store, { policy: { authorize: () => ({ allow: true, reason: "authorized by runtime service" }) }, delivery: DELIVERY, deliveryConcurrency: capacity, deliveryAdmission });
 
   let closed = false;
+  const shutdown = new AbortController();
+  const executionControllers = new Map<string, AbortController>();
+  const resourceKeysFor = async (runId: string, view: RunView): Promise<readonly string[] | undefined> => {
+    const resolveKeys = options.execution?.resourceKeys;
+    if (!resolveKeys) return [];
+    const controller = new AbortController();
+    const signal = controller.signal;
+    executionControllers.set(runId, controller);
+    const abortForShutdown = () => controller.abort(new Error("runtime closed"));
+    if (shutdown.signal.aborted) abortForShutdown();
+    else shutdown.signal.addEventListener("abort", abortForShutdown, { once: true });
+    let onAbort!: () => void;
+    const aborted = new Promise<{ readonly kind: "aborted" }>((resolve) => {
+      onAbort = () => resolve({ kind: "aborted" });
+      if (signal.aborted) onAbort();
+      else signal.addEventListener("abort", onAbort, { once: true });
+    });
+    let releaseEligibility: (() => void) | undefined;
+    try {
+      const current = foldRun(runId, await store.readStream(runStream(runId)));
+      if (closed || signal.aborted || !current || isTerminal(current)) return undefined;
+      // A cancelled waiter may still be in this semaphore queue. Attach a release handler now so
+      // its eventual permit is returned even when the abort race lets execute() stop waiting.
+      const acquisition = eligibilitySlots.acquire([]).then((release) => {
+        if (closed || signal.aborted) { release(); return undefined; }
+        releaseEligibility = release;
+        return release;
+      });
+      const admitted = await Promise.race([acquisition, aborted]);
+      if (!admitted || closed || signal.aborted) return undefined;
+      // A callback that ignores cancellation may settle later, but its eventual rejection remains
+      // observed by this handler after the abort race has returned.
+      const lookup = Promise.resolve().then(() => resolveKeys(view, signal)).then(
+        (keys) => ({ kind: "keys" as const, keys }),
+        (error: unknown) => ({ kind: "error" as const, error }),
+      );
+      const result = await Promise.race([lookup, aborted]);
+      if (result.kind === "aborted") return undefined;
+      if (result.kind === "error") throw result.error;
+      if (!Array.isArray(result.keys)) throw new Error("execution.resourceKeys must resolve to an array");
+      return result.keys;
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+      shutdown.signal.removeEventListener("abort", abortForShutdown);
+      releaseEligibility?.();
+      if (executionControllers.get(runId) === controller) executionControllers.delete(runId);
+    }
+  };
   const chains = new Map<string, Promise<void>>();
   const pending = new Set<string>();
   const deliveries = new Set<Promise<void>>();
@@ -81,7 +133,9 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     const next = (chains.get(runId) ?? Promise.resolve()).then(async () => {
       const view=foldRun(runId,await store.readStream(runStream(runId)));
       if(closed || !view || isTerminal(view))return;
-      const release=await slots.acquire(options.execution?.resourceKeys?.(view) ?? []);
+      const keys = await resourceKeysFor(runId, view);
+      if (closed || !keys) return;
+      const release=await slots.acquire(keys);
       try{
         for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId)) === "done") return;
       }finally{release();}
@@ -104,7 +158,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     scopeId: kernel.root.id,
     recall: recallFor(store, options.cognition),
     outboxFor: options.outboxFor ?? (() => []),
-    controllers: new Map(),
+    controllers: executionControllers,
     remoteOffers: new RemoteOfferRegistry(),
     execute,
     kick: () => kick(),
@@ -381,6 +435,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     async close() {
       if (closed) return;
       closed = true;
+      shutdown.abort();
       clearInterval(timer);
       if (approvalTimer) clearInterval(approvalTimer);
       await ticking;
