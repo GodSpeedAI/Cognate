@@ -1,17 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// e2e runs against the static build served by `astro preview`. `bun run test:e2e` builds first.
+// The static build is served by scripts/serve.ts on a free port, started by globalSetup and stopped by globalTeardown.
 export default defineConfig({
   testDir: 'tests/e2e',
+  testMatch: /.*\.spec\.ts/,
   timeout: 60_000,
   fullyParallel: true,
   reporter: [['list']],
-  use: { baseURL: 'http://127.0.0.1:4322', trace: 'off' },
+  globalSetup: './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
+  use: { baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4399', trace: 'off' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: "sh -c 'node_modules/.bin/astro preview --port 4322 --host 127.0.0.1 & wait'",
-    url: 'http://127.0.0.1:4322/',
-    reuseExistingServer: true,
-    timeout: 180_000,
-  },
 });

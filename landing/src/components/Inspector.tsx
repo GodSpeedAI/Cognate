@@ -11,7 +11,7 @@ interface Props {
 export default function Inspector({ part, onClose }: Props) {
   if (!part) {
     return (
-      <section className="inspector" data-open="false" aria-labelledby="inspector-title" aria-live="polite">
+      <section className="inspector" data-testid="inspector" data-open="false" aria-labelledby="inspector-title" aria-live="polite">
         <h3 id="inspector-title">Part inspector</h3>
         <p>Select a part to see what it does, what it depends on, and where its source lives.</p>
       </section>
@@ -23,7 +23,7 @@ export default function Inspector({ part, onClose }: Props) {
   const primary = part.sources[0];
 
   return (
-    <section className="inspector" data-open="true" aria-labelledby="inspector-title" aria-live="polite">
+    <section className="inspector" data-testid="inspector" data-open="true" aria-labelledby="inspector-title" aria-live="polite">
       <div className="inspector-head">
         <h3 id="inspector-title">
           <span className="mono">{part.id}</span> {titleCase(part.label)}
@@ -46,7 +46,7 @@ export default function Inspector({ part, onClose }: Props) {
         <dt>Depends on</dt>
         <dd>
           {deps.length === 0 ? (
-            'No verified dependencies.'
+            'Nothing in this view.'
           ) : (
             <ul>
               {deps.map((e) => (
@@ -60,7 +60,7 @@ export default function Inspector({ part, onClose }: Props) {
         <dt>Used by</dt>
         <dd>
           {users.length === 0 ? (
-            'No verified dependents.'
+            'Nothing in this view.'
           ) : (
             <ul>
               {users.map((e) => (

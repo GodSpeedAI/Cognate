@@ -105,12 +105,12 @@ export default function Onboarding() {
           <label className="ob-check">
             <input type="checkbox" checked={!!checked.tools} onChange={() => toggle('tools')} /> <h3>1. Check you have the tools.</h3>
           </label>
-          <p>{STEPS[0].body}</p>
+          <p>{STEPS[0].body} Optional: Rust's <span className="mono">cargo</span>, if your agent wants to install the DomainForge checker (the skill also has a check that needs no install).</p>
           {path === 'new' && <p className="new-note">{NEW_PATH_NOTES.tools}</p>}
           <pre id="cmd-check">
             <code>{checkCommand}</code>
           </pre>
-          <p>Expected: <span className="mono">1.4.0</span> or higher. If you see "bun: command not found", install Bun from bun.sh and open a new terminal.</p>
+          <p>Expected: <span className="mono">1.4.0</span> or higher. If you see "bun: command not found", install Bun from bun.sh and open a new terminal. If <span className="mono">bunx</span> isn't found, use <span className="mono">bun x</span>.</p>
           <CopyButton text={checkCommand} targetId="cmd-check" />
           <details className="failed">
             <summary>It failed</summary>
@@ -132,10 +132,10 @@ export default function Onboarding() {
             <code>{skillCommand}</code>
           </pre>
           <CopyButton text={skillCommand} targetId="cmd-skill-b" />
-          <p className="note">Using another agent? Change <span className="mono">-a</span> (see <span className="mono">npx skills add --help</span>). A skills.sh listing is coming soon; until then, install from GitHub.</p>
+          <p className="note">Using another agent? Change <span className="mono">-a</span> (see <span className="mono">npx skills add --help</span>). <a href="https://skills.sh/godspeedai/cognate/building-with-cognate">skills.sh listing</a>: coming soon (placeholder link).</p>
           <details className="failed">
             <summary>It failed</summary>
-            <p>Copy the folders <span className="mono">.agents/skills/building-with-cognate</span>, <span className="mono">deriving-interaction-domain-models</span> and <span className="mono">domainforge-sea</span> from GitHub into <span className="mono">.claude/skills/</span>.</p>
+            <p>Install takes about a minute because it downloads the repo. If it fails, copy <span className="mono">.agents/skills/building-with-cognate</span>, <span className="mono">deriving-interaction-domain-models</span> and <span className="mono">domainforge-sea</span> from GitHub into <span className="mono">.claude/skills/</span>.</p>
           </details>
         </li>
 
@@ -151,7 +151,7 @@ export default function Onboarding() {
           <CopyButton text={firstRequest} targetId="cmd-ask" />
           <details className="failed">
             <summary>It failed</summary>
-            <p>If the agent did not use the skill, start your message with "Use the building-with-cognate skill". If it asks for a Cognate source checkout, tell it to use the published npm packages.</p>
+            <p>The agent didn't use the skill → start your message with "Use the building-with-cognate skill". It wants the DomainForge CLI → let it install with <span className="mono">cargo install domainforge-core --features cli --locked</span>, or tell it to use the skill's no-CLI check. It asks for a Cognate source checkout, or tries <span className="mono">cognate create</span> → tell it: "Don't use <span className="mono">cognate create</span>. Add the published <span className="mono">@godspeedai/cognate-*</span> packages with <span className="mono">bun add</span> and build the app directly." That's the verified route.</p>
           </details>
         </li>
 
@@ -192,7 +192,7 @@ export default function Onboarding() {
       )}
 
       <p className="honest-note">
-        Cognate is v0, and APIs will change before 1.0. Starting from a project template with <span className="mono">cognate create</span> currently needs a copy of the Cognate source. This path doesn't.
+        Cognate is v0, and APIs will change before 1.0. For developers: the <span className="mono">cognate create</span> template command still needs a copy of the Cognate source. This path doesn't use it.
       </p>
     </div>
   );

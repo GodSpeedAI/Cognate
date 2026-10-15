@@ -3,16 +3,15 @@ import { refundSteps } from '../data/refund';
 import { githubUrl } from '../lib/links';
 
 // Beat E. A scroll-stepped assembly. Each step reveals its real excerpt beside it; no typing animation.
-const TOKENS: { step: number; label: string; kind: 'reused' | 'new' | 'proof' }[] = [
-  { step: 2, label: 'Domain model', kind: 'new' },
-  { step: 3, label: 'Runtime', kind: 'reused' },
-  { step: 3, label: 'Permissions', kind: 'reused' },
-  { step: 3, label: 'Approvals', kind: 'reused' },
-  { step: 3, label: 'History', kind: 'reused' },
-  { step: 4, label: 'orders.lookup', kind: 'new' },
-  { step: 4, label: 'refunds.issue', kind: 'new' },
-  { step: 5, label: 'Approval gate', kind: 'new' },
-  { step: 6, label: 'Tests: 7 pass', kind: 'proof' },
+// Parts the small app gains, by step. "reused" parts come from Cognate packages; "new" parts are built and bound.
+const PARTS: { label: string; kind: 'reused' | 'new'; from: number; filled: number }[] = [
+  { label: 'Runtime', kind: 'reused', from: 3, filled: 3 },
+  { label: 'Permissions', kind: 'reused', from: 3, filled: 3 },
+  { label: 'Approvals', kind: 'reused', from: 3, filled: 3 },
+  { label: 'History', kind: 'reused', from: 3, filled: 3 },
+  { label: 'orders.lookup', kind: 'new', from: 4, filled: 5 },
+  { label: 'refunds.issue', kind: 'new', from: 4, filled: 5 },
+  { label: 'Approval gate', kind: 'new', from: 5, filled: 6 },
 ];
 
 export default function BuildSteps() {
@@ -35,16 +34,30 @@ export default function BuildSteps() {
   return (
     <div className="build">
       <div className="build-drawing" aria-hidden="true">
-        <div className="mini-stack">
-          <div className="mini-plate">
-            {TOKENS.filter((t) => t.step <= active).map((t) => (
-              <span key={t.label} className={`mini-token mini-${t.kind} ${t.step === active && t.kind !== 'reused' ? 'mini-fresh' : ''}`}>
-                {t.label}
-              </span>
-            ))}
+        <div className="mini-3d">
+          <div className="mini-plate mini-plate-top">
+            <span className="mini-label">Domain</span>
+            {active >= 2 && <span className="mini-domain">orders · refunds · $50 rule</span>}
+          </div>
+          <div className="mini-plate mini-plate-mid">
+            <span className="mini-label">Capabilities</span>
+            <div className="mini-grid">
+              {PARTS.filter((p) => active >= p.from).map((p) => {
+                const state = p.kind === 'reused' ? 'reused' : active >= p.filled ? 'filled' : 'outlined';
+                return (
+                  <span key={p.label} className={`mini-cart mini-${state}`}>
+                    {p.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          <div className="mini-plate mini-plate-base">
+            <span className="mini-label">Durable record</span>
           </div>
         </div>
-        <p className="build-caption">Shown for step {active} of 6. Grey parts are reused; outlined parts are new.</p>
+        {active >= 6 && <p className="mini-stamp">7 tests pass</p>}
+        <p className="build-caption">Step {active} of 6. Grey parts are reused from Cognate. Outlined parts are new, then filled once bound.</p>
       </div>
       <ol className="build-steps">
         {refundSteps.map((s, i) => (
@@ -56,24 +69,27 @@ export default function BuildSteps() {
             </h3>
             <p>{s.body}</p>
             {s.excerpt && s.source && (
-              <figure className="excerpt">
-                <pre>
-                  <code>{s.excerpt}</code>
-                </pre>
-                <figcaption>
-                  {s.excerptCaption}{' '}
-                  <a href={githubUrl(s.source)} rel="noopener">
-                    View on GitHub
-                  </a>
-                </figcaption>
-              </figure>
+              <details className="show-file">
+                <summary>Show the file</summary>
+                <figure className="excerpt">
+                  <pre tabIndex={0}>
+                    <code>{s.excerpt}</code>
+                  </pre>
+                  <figcaption>
+                    {s.excerptCaption}{' '}
+                    <a href={githubUrl(s.source)} rel="noopener">
+                      View on GitHub
+                    </a>
+                  </figcaption>
+                </figure>
+              </details>
             )}
             {s.output && (
               <figure className="excerpt">
-                <pre>
+                <pre tabIndex={0}>
                   <code>{s.output}</code>
                 </pre>
-                <figcaption>Output of bun test in examples/refund-desk, at this commit.</figcaption>
+                <figcaption>Seven tests pass: the five journeys you asked for, plus checks that the domain model loads and that refunds survive a restart.</figcaption>
               </figure>
             )}
           </li>

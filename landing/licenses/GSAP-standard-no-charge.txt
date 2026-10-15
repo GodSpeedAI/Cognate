@@ -1,0 +1,21 @@
+GSAP (GreenSock Animation Platform) 3.15.0
+Copyright Webflow, Inc. (GreenSock)
+
+License: Standard "No Charge" GSAP License
+Full text: https://gsap.com/standard-license
+
+The npm package for gsap 3.15.0 ships no LICENSE file. Its package.json states:
+  "license": "Standard 'no charge' license: https://gsap.com/standard-license."
+
+Clauses relevant to this site (summarized from the license; the full text is at the URL above):
+
+Permitted use: implementation and/or use of GSAP Products on any website, web application,
+or digital interface by any person or entity.
+
+Restrictions (Section III). You may not:
+1. Use any GSAP Products for any Prohibited Uses without prior written consent;
+2. Reverse engineer any GSAP Products for the purpose of creating Competitive Products;
+3. Remove or alter any proprietary notices or branding from GSAP Products.
+
+Prohibited Uses include use in visual-animation builder tools that compete with Webflow.
+This site is a static landing page, not a builder tool.

@@ -51,7 +51,8 @@ export async function writeOgImage(origin: string): Promise<string> {
   try {
     const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1, colorScheme: 'light' });
     await page.goto(`${origin}/keyframe/`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('[data-measured="true"]');
+    // The exploded view no longer sets data-measured; wait for its stage to render instead.
+    await page.waitForSelector('.stage-wrap svg', { state: 'visible' });
     await page.evaluate(() => {
       document.querySelector('.qa-head')?.remove();
       document.querySelector('.inspector')?.remove();

@@ -19,6 +19,11 @@ body {
   }
 }
 
+/* Inline SVG keeps its viewBox aspect (default preserveAspectRatio) and never forces page overflow. */
+svg {
+  max-width: 100%;
+}
+
 h1,
 h2,
 h3 {

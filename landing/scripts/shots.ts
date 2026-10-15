@@ -111,6 +111,20 @@ try {
       report.push(
         `${shot.name}: scrollWidth=${metrics.scrollWidth} innerWidth=${metrics.innerWidth} overflow=${overflow} parts=${metrics.cartridges} pageErrors=${pageErrors.length}`,
       );
+      // Lazy images only load when scrolled near; walk the page once so full-page captures are not empty frames.
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 500) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 40));
+        }
+        window.scrollTo(0, 0);
+        await Promise.all(
+          [...document.images].map((img) =>
+            img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; setTimeout(r, 3000); }),
+          ),
+        );
+      });
+      await page.waitForTimeout(300);
       await page.screenshot({ path: resolve(outDir, `${shot.name}.png`), fullPage: true });
       await context.close();
     }

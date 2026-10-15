@@ -31,7 +31,7 @@ Cognate is probably **not** what you want if you need a hosted no-code app build
 
 ## Quick start: build your first app with your coding agent
 
-You need **Bun ≥ 1.4**, **git**, **Node.js** (for `npx`), and a coding agent such as Claude Code. The first app needs **no AI API key**.
+You need **Bun ≥ 1.4**, **git**, **Node.js** (for `npx`), and a coding agent such as Claude Code. The first app itself needs **no AI API key** because it runs without a model; your coding agent uses whatever sign-in it normally does. Optional: Rust's `cargo`, if your agent wants to install the DomainForge checker for the app's domain model (the skill also has a check that needs no install).
 
 **1. Make a project folder and give your agent the skill.**
 
@@ -64,7 +64,7 @@ denial refunds nothing, and the history records each step.
 bun test
 ```
 
-You should see all five behaviours pass. You're done when the tests pass on your machine. The agent saying it finished doesn't count. If something fails, see [Troubleshooting](docs/troubleshooting.md).
+You should see all five behaviours pass. You're done when the tests pass on your machine. The agent saying it finished doesn't count. If your agent reaches for `cognate create` or asks for a Cognate source checkout, tell it to add the published `@godspeedai/cognate-*` packages with `bun add` and build the app directly. If something else fails, see [Troubleshooting](docs/troubleshooting.md).
 
 **Want to see a finished answer first?** [`examples/refund-desk/`](examples/refund-desk/) is the same app, built from npm packages only:
 
