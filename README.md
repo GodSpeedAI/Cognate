@@ -306,6 +306,7 @@ Start at [docs/README.md](docs/README.md). It routes by intent: learn the system
 | Look things up | [reference](docs/reference/), [commands and configuration](docs/reference/commands-and-configuration.md), [events and stores](docs/reference/events-and-stores.md) |
 | Subsystems and workflows | [subsystems](docs/subsystems/), [workflows](docs/workflows/) |
 | Decisions | [architecture decision records](docs/decisions/) |
+| Topic guides | [getting started](docs/getting-started.md), [concepts](docs/concepts.md), [architecture](docs/architecture.md), [semantics](docs/semantics.md), [cognition](docs/cognition.md), [RVF](docs/rvf.md), [evidence](docs/evidence.md), [UI](docs/ui.md), [protocols](docs/protocols.md), [extensions](docs/extensions.md), [security](docs/security.md) |
 | Trouble | [troubleshooting](docs/troubleshooting.md) |
 | Maps | [documentation map](docs/documentation-map.md), [source map](docs/source-map.md) |
 
@@ -317,21 +318,26 @@ Each package and profile has its own `README.md` and `AGENTS.md`. The package RE
 
 Each example is a single runnable program. It uses real package APIs, runs against in-memory or temporary state, and checks its own outcome. From a checkout, run one with `bun run example:<name>`:
 
-- `copilot`: the Copilot profile, with a model and a backend tool loop
-- `autonomous-harness`: the Harness profile, with model providers, a tool registry and an agent loop
-- `human-approval`: an agent that waits on a durable continuation until a person resolves it
-- `generative-ui`: `ui.render` events rendered to HTML through a component registry
-- `shared-state`: application state derived from state snapshots and JSON Patch deltas
-- `artifact-workbench`: a durable, content-addressed artifact written and read back
-- `multi-agent`: a parent run that spawns and awaits a child run
-- `cognitive-memory`: indexing and semantic recall, with authorization
-- `rvf-branching`: a branched RVF cognition file that diverges from its parent
-- `capability-hot-swap`: live replacement of a capability provider
-- `domainforge`: a DomainForge model projected to read-only semantics, with explicit binding
-- `realitytrace`: observation delivery through the committed outbox to an in-memory port
-- `ag-ui`: a run projected as an AG-UI event stream
-- `mcp`: runtime capabilities exposed as authorized MCP tools
-- `connect`: the same RuntimeService served and consumed over Connect RPC
+```text
+examples/
+├── copilot/              # the Copilot profile: a model and a backend tool loop
+├── autonomous-harness/   # the Harness profile: model providers, a tool registry, an agent loop
+├── human-approval/       # an agent waits on a durable continuation until a person resolves it
+├── generative-ui/        # ui.render events rendered to HTML through a component registry
+├── shared-state/         # state derived from snapshots and JSON Patch deltas
+├── artifact-workbench/   # a durable, content-addressed artifact written and read back
+├── multi-agent/          # a parent run spawns and awaits a child run
+├── cognitive-memory/     # indexing and semantic recall, with authorization
+├── rvf-branching/        # a branched RVF cognition file diverges from its parent
+├── capability-hot-swap/  # live replacement of a capability provider
+├── domainforge/          # a DomainForge model projected to read-only semantics, explicitly bound
+├── realitytrace/         # observation delivery through the committed outbox
+├── ag-ui/                # a run projected as an AG-UI event stream
+├── mcp/                  # runtime capabilities exposed as authorized MCP tools
+└── connect/              # the same RuntimeService served and consumed over Connect RPC
+```
+
+Each runs independently and verifies its own outcome (`tests/examples.test.ts`).
 
 The Refund Desk example is separate. It is an application with its own `package.json`, not a root script:
 
