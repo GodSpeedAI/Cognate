@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-events",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Event envelope, durable store port, and the store conformance kit.",
   "type": "module",
   "license": "Apache-2.0",
