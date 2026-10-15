@@ -25,7 +25,8 @@ resumption, and continuation expiry all happen because it ticks.
    f. construct `ProjectionRunner`s for user projections and, if cognition is configured, for
       `runtime.cognition` — clearing and rebuilding first when the index is not `persistent`;
    g. **recover**: scan the `runs` records and re-queue any run that was `running` at shutdown or
-      whose wait closed without a delivery;
+      whose wait closed, including a RESUMED wait whose delivery was acknowledged before the run
+      persisted its resume event;
    h. start `setInterval(kick, tickMs ?? 10)` and kick once.
 5. Bind the Connect service on an internal `Bun.serve` (port 0).
 6. For the copilot profile, bundle the browser entry with `Bun.build` and read the Astryx
@@ -65,6 +66,13 @@ run concurrently. It calls `executeOnce` up to 5 times, because one attempt may 
 tick in flight, no queued or executing run, no outbox item that is available now or has never
 errored, and no projection lagging its checkpoint. It exists for tests and graceful shutdown, not
 for request handling.
+
+`close()` stops new admission and aborts cooperative active execution and pending eligibility
+lookups. It leaves durable objectives and open continuations recoverable. It then drains tracked
+delivery/execution paths before stopping projections and shutting down the kernel and owned store.
+Signal-ignoring handlers can still block shutdown; interrupted provider calls may be repeated on
+recovery. Native commitments and reconciliation remain necessary for ambiguous external effects.
+See [bounded execution](../runtime-concurrency.md) for admission and cancellation details.
 
 ## State changes during startup
 

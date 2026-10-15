@@ -106,12 +106,21 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       if (!admitted || closed || signal.aborted) return undefined;
       // A callback that ignores cancellation may settle later, but its eventual rejection remains
       // observed by this handler after the abort race has returned.
-      const lookup = Promise.resolve().then(() => resolveKeys(view, signal)).then(
-        (keys) => ({ kind: "keys" as const, keys }),
-        (error: unknown) => ({ kind: "error" as const, error }),
-      );
+      const lookup = Promise.resolve().then(async () => {
+        if (closed || signal.aborted) return { kind: "aborted" as const };
+        try { return { kind: "keys" as const, keys: await resolveKeys(view, signal) }; }
+        catch (error) { return { kind: "error" as const, error }; }
+      });
       const result = await Promise.race([lookup, aborted]);
-      if (result.kind === "aborted") return undefined;
+      if (result.kind === "aborted") {
+        // Cancellation releases the caller immediately, but an uncancellable policy callback
+        // still occupies a real lookup slot until it settles. The outcome union observes late
+        // rejection, and the queued release preserves the configured concurrency bound.
+        const release = releaseEligibility;
+        releaseEligibility = undefined;
+        void lookup.then(() => release?.());
+        return undefined;
+      }
       if (result.kind === "error") throw result.error;
       if (!Array.isArray(result.keys)) throw new Error("execution.resourceKeys must resolve to an array");
       return result.keys;
@@ -159,6 +168,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     recall: recallFor(store, options.cognition),
     outboxFor: options.outboxFor ?? (() => []),
     controllers: executionControllers,
+    shutdownSignal: shutdown.signal,
     remoteOffers: new RemoteOfferRegistry(),
     execute,
     kick: () => kick(),
@@ -244,7 +254,10 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     if (view.status === "running") pending.add(id);
     for (const continuationId of view.waitingOn) {
       const record = await continuations.get(continuationId);
-      if (record && !["OPEN", "BLOCKED", "RESUMED"].includes(record.status)) pending.add(id);
+      // A resume delivery can be acknowledged during shutdown before run.resumed is appended.
+      // Re-enter closed waits, including RESUMED, even when their outbox receipt is delivered.
+      // The run-local execution chain and recorded wait result make duplicate delivery harmless.
+      if (record && !["OPEN", "BLOCKED"].includes(record.status)) pending.add(id);
     }
   }
 

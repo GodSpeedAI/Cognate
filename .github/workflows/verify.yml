@@ -74,7 +74,7 @@ jobs:
       - name: PostgreSQL-backed suites
         run: |
           bun test packages/store-postgres
-          bun test packages/runtime-bun/test/concurrency.test.ts packages/runtime-bun/test/async-admission.test.ts
+          bun test packages/runtime-bun/test/concurrency.test.ts packages/runtime-bun/test/async-admission.test.ts packages/runtime-bun/test/shutdown-recovery.test.ts
           bun test packages/runtime-bun/test/service-postgres.test.ts
           bun test tests/integration/postgres-multiprocess.test.ts
           bun test tests/integration/projection-convergence.test.ts
