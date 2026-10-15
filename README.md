@@ -375,6 +375,8 @@ Packages ship TypeScript source that Bun runs directly, so there is no separate 
 
 ## Contributing
 
+Start with [CONTRIBUTING.md](CONTRIBUTING.md): contribution paths, review criteria, and how to prove a change works.
+
 Read before you change a package:
 
 1. the root [`AGENTS.md`](AGENTS.md);
