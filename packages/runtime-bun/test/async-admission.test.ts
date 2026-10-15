@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { AgentDefinition, Caller, RunView } from "@godspeedai/cognate-runtime-api";
+import { openPostgresStore } from "@godspeedai/cognate-store-postgres";
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { createRuntime } from "../src/index.ts";
 import { RUNS, runStream } from "../src/fold.ts";
@@ -147,5 +148,50 @@ describe("awaitable execution eligibility", () => {
     await Promise.race([runtime.close(), Bun.sleep(500).then(() => { throw new Error("close hung on eligibility"); })]);
     expect(receivedSignal?.aborted).toBe(true);
     pending.reject(new Error("late lookup rejection"));
+  });
+
+  test("cancelled lookup retains its bounded permit until the callback actually settles (PostgreSQL)", async () => {
+    const database = await openPostgresStore({
+      url: process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+      schema: `cognate_admission_cancel_${crypto.randomUUID().replaceAll("-", "")}`,
+      pollMs: 0,
+    });
+    const abandonedLookup = deferred<readonly string[]>();
+    const firstEntered = deferred<void>();
+    const secondEntered = deferred<void>();
+    let lookupCalls = 0;
+    let effects = 0;
+    const agent: AgentDefinition = { id: "agent.cancelled-eligibility-permit", version: "1.0.0", run: (_input, ctx) =>
+      ctx.step("effect", () => { effects++; return "ran"; }) };
+    const runtime = await createRuntime({ store: { store: database.store }, agents: [agent], policy, actions,
+      execution: { maxConcurrentRuns: 1, resourceKeys: (run: RunView) => {
+        lookupCalls++;
+        const n = (run.input as { n: number }).n;
+        if (n === 1) { firstEntered.resolve(); return abandonedLookup.promise; }
+        secondEntered.resolve();
+        return [`resource:${n}`];
+      } } });
+    try {
+      const first = await runtime.service.startRun(caller, { agent: agent.id, input: { n: 1 }, idempotencyKey: "cancelled-lookup-first" });
+      await firstEntered.promise;
+      await runtime.service.cancelRun(caller, { runId: first.runId, reason: "cancel pending eligibility", idempotencyKey: "cancelled-lookup-first-run" });
+      const second = await runtime.service.startRun(caller, { agent: agent.id, input: { n: 2 }, idempotencyKey: "cancelled-lookup-second" });
+      await Bun.sleep(40);
+      expect(lookupCalls).toBe(1);
+      expect(effects).toBe(0);
+
+      abandonedLookup.reject(new Error("late eligibility rejection"));
+      await secondEntered.promise;
+      await runtime.idle();
+      expect(lookupCalls).toBe(2);
+      expect(effects).toBe(1);
+      expect((await runtime.service.getRun(caller, { runId: first.runId })).status).toBe("cancelled");
+      expect((await runtime.service.getRun(caller, { runId: second.runId })).status).toBe("completed");
+    } finally {
+      abandonedLookup.reject(new Error("cleanup"));
+      await runtime.close();
+      await database.dropSchema();
+      await database.close();
+    }
   });
 });

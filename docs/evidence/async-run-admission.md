@@ -10,3 +10,24 @@ an environment failure, not a passing skip. The full 81-gate run preceded that f
 the current guard has targeted coverage and typecheck, and exact-head CI remains required.
 
 The failed-lookup run remains `running` in `RunView` because `run.started` folds to that status until a terminal event; eligibility is outside the agent executor, so the policy failure is recorded on the retryable outbox item and does not append `run.failed`. This limitation is intentional for this contract slice. The mechanism remains process-local and does not provide distributed run ownership or OS isolation.
+
+## Review and lifecycle follow-up
+
+PR #44's original `bf5031c` head passed exact-head verify and clean-room packaging. CodeRabbit then
+identified a real capacity defect: cancellation released a lookup permit while an uncooperative
+callback remained active. The new PostgreSQL regression failed before the repair (two callbacks
+entered at capacity one) and passed after the permit was retained until actual settlement. Late
+rejection is observed and releases capacity; cancellation still stops the waiting execution path.
+The repaired async suite passes six tests with 35 assertions and concurrency passes eleven with 71.
+
+A separate PostgreSQL shutdown regression failed before active execution received the shutdown
+signal. With native signal propagation it passes nine assertions: the cooperative provider aborts,
+the same durable run resumes, a committed checkpoint is not repeated, and an open continuation
+remains waiting and can resume after restart. This does not prove exactly-once remote provider
+execution. Signal-ignoring handlers can still delay shutdown. Independent review identified an
+additional acknowledged-resume recovery race: a waiting run was stranded after its resume outbox
+was delivered during shutdown. Its PostgreSQL regression failed at restart before the repair and
+passes after recovery also re-enters RESUMED waits. The combined admission/concurrency/shutdown
+suite passes **19 tests, zero failures, 121 assertions**. Final `just verify` passes **81/81 gates**
+after both repairs and the pre-agent shutdown guard. Typecheck and diff checks pass. Exact-head CI,
+clean-room packaging, review reconciliation and operator authorization remain release gates.

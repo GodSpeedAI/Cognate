@@ -27,3 +27,10 @@ and capacity behavior is covered in `packages/runtime-bun/test/async-admission.t
 `docs/evidence/async-run-admission.md`. This slice remains unpublished and is not a Workbench
 dependency; integrate it only after its exact-head CI, packaging, and supported release pass. Local
 source checkout success is not a dependency release.
+
+PR44 review follow-up retains each eligibility permit until its callback actually settles, even
+when cancellation has released the waiting run. Native shutdown now aborts cooperative execution
+without cancelling durable objectives. Recovery re-enters acknowledged RESUMED waits whose run
+resume event was not persisted. Actual PostgreSQL regressions failed before each repair and pass
+afterward: admission/concurrency/shutdown 19 tests, 121 assertions; full verification 81/81 gates.
+Signal-ignoring handlers and ambiguous external effects retain their documented limitations.
