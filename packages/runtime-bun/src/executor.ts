@@ -15,8 +15,25 @@ class Halt {
 export type ExecutionResult = "done" | "retry";
 
 export async function executeOnce(core: Core, runId: string): Promise<ExecutionResult> {
+  // Register before the first store await so cancellation and shutdown can reach this attempt
+  // while its initial snapshot is being read.
+  const controller = new AbortController();
+  core.controllers.set(runId, controller);
+  const stopForShutdown = () => controller.abort(new Error("runtime closed"));
+  if (core.shutdownSignal.aborted) stopForShutdown();
+  else core.shutdownSignal.addEventListener("abort", stopForShutdown, { once: true });
+  try {
+    return await executeRegistered(core, runId, controller);
+  } finally {
+    core.shutdownSignal.removeEventListener("abort", stopForShutdown);
+    if (core.controllers.get(runId) === controller) core.controllers.delete(runId);
+  }
+}
+
+async function executeRegistered(core: Core, runId: string, controller: AbortController): Promise<ExecutionResult> {
   const streamId = runStream(runId);
   const events = await core.store.readStream(streamId);
+  if (controller.signal.aborted) return "done";
   const view = foldRun(runId, events);
   if (!view || isTerminal(view)) return "done";
   const agent = core.agents.get(view.agent);
@@ -31,8 +48,6 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
   }
   const find = (stepId: string, eventType?: string) => recorded.get(stepId)?.find((e) => eventType === undefined || e.eventType === eventType);
 
-  const controller = new AbortController();
-  core.controllers.set(runId, controller);
   let halted: Halt | undefined;
   const halt = (retry: boolean): never => {
     halted ??= new Halt(retry);
@@ -403,6 +418,7 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
     if (!agent) outcome = { ok: false, error: new Error(`agent ${view.agent} is not registered`) };
     else {
       try {
+        guard();
         outcome = { ok: true, value: toJson(await agent.run(field(started.payload, "input"), context)) };
       } catch (error) {
         outcome = { ok: false, error };
@@ -417,7 +433,5 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
   } catch (error) {
     if (error instanceof Halt) return error.retry ? "retry" : "done";
     throw error;
-  } finally {
-    if (core.controllers.get(runId) === controller) core.controllers.delete(runId);
   }
 }
