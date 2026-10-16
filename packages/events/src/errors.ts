@@ -49,3 +49,28 @@ export class CheckpointConflictError extends Error {
 export class NotFoundError extends Error {
   override readonly name = "NotFoundError";
 }
+
+/** A run-scoped write was refused because its ownership credential is not the run's current
+ * owner and lease generation (docs/contracts/run-write-ownership.md). Nothing was appended. */
+export class StaleRunOwnerError extends Error {
+  override readonly name = "StaleRunOwnerError";
+  constructor(
+    readonly runId: string,
+    readonly current: { readonly ownerId: string | null; readonly generation: number } | undefined,
+  ) {
+    super(current
+      ? `Run ${runId} is owned by ${current.ownerId ?? "no one"} at generation ${current.generation}; the presented ownership credential is stale`
+      : `Run ${runId} has no claimed ownership to present`);
+  }
+}
+
+/** A run-ownership claim was refused because a different owner holds an unexpired lease. */
+export class RunOwnershipHeldError extends Error {
+  override readonly name = "RunOwnershipHeldError";
+  constructor(
+    readonly runId: string,
+    readonly lease: { readonly ownerId: string; readonly generation: number; readonly expiresAt: number },
+  ) {
+    super(`Run ${runId} is held by ${lease.ownerId} at generation ${lease.generation} until ${lease.expiresAt}`);
+  }
+}
