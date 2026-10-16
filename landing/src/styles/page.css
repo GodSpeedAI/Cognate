@@ -84,7 +84,9 @@
   font-weight: 600;
 }
 
+/* One frame for every beat: the 1200px text frame includes its gutters, so beat text and the hero share a left edge. */
 main {
+  box-sizing: border-box;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-5);
@@ -103,6 +105,83 @@ main {
   max-width: 68ch;
 }
 
+/* Spacing rhythm: full beats open at 96 and close at 64; dense beats (fit, extension) at 64 and 48;
+   evidence beats (proof, agents at work) close at 96 so the proof gets air before the next claim. */
+.beat-dense {
+  padding: var(--space-8) 0 var(--space-7);
+}
+.beat-evidence {
+  padding-bottom: var(--space-9);
+}
+
+/* Section openers on evidence beats carry the gold proof marker: a small square, not text. */
+.beat-evidence .kicker::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  background: var(--signal);
+  vertical-align: 1px;
+}
+
+/* Authority record (one refund run from examples/refund-desk tests). Hairline rows, not cards. Mono for identifiers. */
+.record {
+  margin: var(--space-6) 0 var(--space-3);
+  max-width: 760px;
+  border-top: 2px solid var(--ink);
+}
+.record > div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.record dt {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.record dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 599px) {
+  .record > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}
+.record .mono {
+  font-size: 14px;
+}
+.record-decision dt {
+  color: var(--ink);
+}
+.record-decision dt::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  background: var(--signal);
+  vertical-align: 1px;
+}
+.record-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 760px;
+}
+
 /* Dark cinematic hero: a full-bleed near-black band in both schemes (the theme-dark scope sets the tokens). */
 .hero {
   padding-top: var(--space-9);
@@ -112,10 +191,13 @@ main {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   padding-left: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
-  padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
+  /* Extra right gutter keeps the capture clear of the section rail (fixed at the right edge). */
+  padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-8));
 }
-.hero h1 {
-  max-width: 18ch;
+/* The headline spans the frame on its own row, so it sets in two or three lines, not five. */
+.hero-head h1 {
+  max-width: 20ch;
+  font-size: clamp(44px, 5.6vw, 80px);
 }
 .sub {
   font-size: 20px;
@@ -336,6 +418,10 @@ main {
   padding-left: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
   padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
 }
+/* The pinned area is dark too (the stage is an instrument panel in both schemes), so no paper band shows around it. */
+.seq-c .seq-pin {
+  background: var(--near-black);
+}
 .seq-skip {
   font-size: 14px;
   margin: var(--space-2) 0 0;
@@ -489,7 +575,7 @@ main {
 }
 .mini-3d {
   position: relative;
-  height: 300px;
+  height: 340px;
   perspective: 900px;
 }
 .mini-plate {
@@ -591,7 +677,10 @@ main {
 }
 .build-caption {
   font-size: 13px;
+  line-height: 1.5;
   color: var(--ink-2);
+  margin: var(--space-6) 0 0;
+  max-width: 44ch;
 }
 .build-steps {
   list-style: none;
@@ -673,27 +762,51 @@ main {
   border-color: var(--ink);
   border-width: 2px;
 }
+/* Steps share the text measure: code blocks stop at the same column as the prose beside them. */
 .checklist {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: var(--space-5);
+  max-width: 720px;
 }
 .ob-step {
-  border-left: 2px solid var(--rule);
-  padding-left: var(--space-4);
+  padding: var(--space-5) 0 var(--space-6);
+  border-top: 1px solid var(--rule);
 }
+.ob-step .ob-check {
+  margin-bottom: var(--space-3);
+}
+.checklist > li:first-child {
+  border-top: 2px solid var(--ink);
+}
+.checklist > li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+/* The checkbox and the heading share one centred row, so the box sits on the heading's cap line. */
 .ob-check {
   display: flex;
-  gap: var(--space-2);
-  align-items: baseline;
+  gap: var(--space-3);
+  align-items: center;
+  cursor: pointer;
+}
+.ob-check input {
+  flex: none;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
 }
 .ob-check h3 {
-  display: inline;
-  font-size: 20px;
+  display: block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.2;
 }
 .ob-step pre {
+  max-width: 100%;
   overflow-x: auto;
   background: var(--paper-2);
   border: 1px solid var(--rule);
@@ -769,7 +882,8 @@ main {
   flex-wrap: wrap;
 }
 
-@media (max-width: 1100px) {
+/* The rail needs the right gutter; below 1280px it would sit over the content, so it steps aside. */
+@media (max-width: 1279px) {
   .rail {
     display: none;
   }
@@ -804,6 +918,11 @@ main {
   .hero-plate img {
     height: auto;
   }
+  .hero-plate picture,
+  .hero-plate img {
+    width: 100%;
+    margin-left: 0;
+  }
   .hero-plate figcaption {
     position: static;
     background: none;
@@ -835,23 +954,28 @@ main {
   }
 }
 
-/* Hero: copy on the left; a quiet, partly visible capture plate foreshadows the reveal. */
+/* Hero: headline on its own row; below it a 12-column grid. Copy takes columns 1 to 5; the real capture takes
+   columns 7 to 12 at full height, so the Workbench screen is the largest thing on the first screen. */
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-7);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--space-5);
   align-items: start;
+  margin-top: var(--space-7);
 }
 .hero-copy {
   min-width: 0;
+  grid-column: 1 / span 5;
 }
 .hero-art {
   min-width: 0;
-  padding-top: var(--space-8);
+  grid-column: 6 / -1;
 }
+/* The plate holds the capture's own 16:10 frame. The capture is scaled up and its left navigation is cropped off,
+   so the contract block is what the reader sees first. Scaled and cropped only; no pixel edits. */
 .hero-plate {
   margin: 0;
-  height: 360px;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid var(--rule);
   background: var(--paper-2);
@@ -860,11 +984,10 @@ main {
 .hero-plate picture,
 .hero-plate img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 0% 0%;
-  opacity: 0.85;
+  width: 124%;
+  max-width: none;
+  height: auto;
+  margin-left: -24%;
 }
 .hero-plate figcaption {
   position: absolute;
@@ -878,13 +1001,11 @@ main {
 @media (max-width: 1023px) {
   .hero-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-5);
+    row-gap: var(--space-5);
   }
+  .hero-copy,
   .hero-art {
-    padding-top: 0;
-  }
-  .hero-plate {
-    height: 240px;
+    grid-column: 1 / -1;
   }
 }
 

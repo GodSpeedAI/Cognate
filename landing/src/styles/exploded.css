@@ -42,6 +42,11 @@
   margin: 0 auto;
 }
 
+/* Every drawn element gets its own compositing layer, so a frame paints the same going down or back up. */
+.stage-wrap > * {
+  will-change: transform;
+}
+
 /* Plates: world units are element px; each is placed by one matrix() with transform-origin 0 0. */
 .plate {
   position: absolute;
@@ -49,6 +54,8 @@
   top: 0;
   box-sizing: border-box;
   transform-origin: 0 0;
+  /* Own compositing layer: the plate is rasterised the same way on the way down and on the way back up. */
+  will-change: transform;
   border: 1px solid var(--rule);
   background: var(--paper);
   pointer-events: none;
@@ -95,6 +102,7 @@
 .face {
   position: absolute;
   box-sizing: border-box;
+  will-change: transform;
   margin: 0;
   padding: 2px 4px;
   display: flex;
@@ -259,10 +267,16 @@
   margin-top: var(--space-2);
 }
 
+/* Stage caption: one tight block under the drawing (the prose line-height is too loose for a caption). */
+.exploded figcaption {
+  margin-top: var(--space-3);
+}
 .exploded figcaption p {
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--ink-2);
   max-width: 68ch;
+  margin: 0 0 var(--space-1);
 }
 
 /* Inspector: a labelled region. Desktop: the right 40 percent column, visible during the hold. */
@@ -371,15 +385,25 @@
 /* Desktop: the stage is the left 60 percent and never rescales; the inspector column is the right 40 percent.
    Before the hold it is kept in layout but hidden, so the stage does not move. */
 @media (min-width: 1024px) {
+  /* Grid: stage on the left 64 percent, inspector on the right 36 percent, both starting on one top line. */
   .exploded-island {
     grid-template-columns: minmax(0, 64fr) minmax(280px, 36fr);
-    align-items: center;
+    column-gap: var(--space-6);
+    align-items: start;
   }
 
   .stage-wrap {
-    margin: 24px 0 0;
+    margin: 0;
     max-width: none;
     height: clamp(420px, calc(100vh - var(--header-h) - 128px), 820px);
+  }
+
+  /* Beat C: the stage takes the drawing's own 4:3 proportion (the projection fits the stage width), so the stack
+     fills the box and there is no empty band under it. Capped by the viewport height. */
+  .seq-c .stage-wrap {
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: calc(100vh - var(--header-h) - 150px);
   }
 
   .seq-g .stage-wrap {
