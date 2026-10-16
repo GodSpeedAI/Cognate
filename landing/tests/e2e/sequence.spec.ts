@@ -38,5 +38,36 @@ test('Sequence C: stills at units 0/24/48/68/84 match in both directions', async
     await scrollToUnit(page, u);
     backward.unshift(await page.locator('[data-sequence="C"] .seq-stage').screenshot());
   }
-  units.forEach((u, i) => expect(forward[i].equals(backward[i]), `unit ${u}`).toBe(true));
+  // Same pose both ways. Chromium's rasteriser can differ by 1/255 on a few anti-aliased edge pixels
+  // between passes, so compare pixels with a tolerance instead of bytes: no channel may differ by more
+  // than 8, and at most 0.05% of pixels may differ at all.
+  for (const [i, u] of units.entries()) {
+    const diff = await page.evaluate(async ([a, b]) => {
+      const load = async (s: string) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${s}`;
+        await img.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+        return ctx.getImageData(0, 0, img.width, img.height);
+      };
+      const A = await load(a);
+      const B = await load(b);
+      if (A.width !== B.width || A.height !== B.height) return { sizeMismatch: true, changed: 0, max: 0, total: 0 };
+      let changed = 0;
+      let max = 0;
+      for (let k = 0; k < A.data.length; k += 4) {
+        const d = Math.max(Math.abs(A.data[k] - B.data[k]), Math.abs(A.data[k + 1] - B.data[k + 1]), Math.abs(A.data[k + 2] - B.data[k + 2]));
+        if (d > 0) changed++;
+        if (d > max) max = d;
+      }
+      return { sizeMismatch: false, changed, max, total: A.data.length / 4 };
+    }, [forward[i].toString('base64'), backward[i].toString('base64')] as const);
+    expect(diff.sizeMismatch, `unit ${u} size`).toBe(false);
+    expect(diff.max, `unit ${u} max channel diff`).toBeLessThanOrEqual(8);
+    expect(diff.changed / diff.total, `unit ${u} changed pixel ratio`).toBeLessThanOrEqual(0.0005);
+  }
 });

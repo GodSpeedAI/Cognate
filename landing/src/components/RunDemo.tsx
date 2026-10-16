@@ -17,7 +17,12 @@ const NODE_LABEL: Record<Phase, string> = {
 };
 
 export default function RunDemo() {
-  const [phase, setPhase] = useState<Phase>('pending');
+  // The run starts at its approval gate, so the static (no-JS) markup shows the state the run waits in. Reset replays
+  // the policy check from pending. Controls stay disabled until this island has mounted, so nothing looks clickable
+  // before it can act.
+  const [phase, setPhase] = useState<Phase>('escalate');
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   // pending -> escalate on its own. Only the pending phase schedules this; a decision or a reset never does.
   useEffect(() => {
@@ -59,16 +64,17 @@ export default function RunDemo() {
           ))}
       </ol>
       <div className="demo-actions">
-        <button type="button" className="btn btn-human" onClick={() => setPhase('allow')} disabled={!awaiting}>
+        <button type="button" className="btn btn-human" onClick={() => setPhase('allow')} disabled={!ready || !awaiting}>
           Approve
         </button>
-        <button type="button" className="btn" onClick={() => setPhase('deny')} disabled={!awaiting}>
+        <button type="button" className="btn" onClick={() => setPhase('deny')} disabled={!ready || !awaiting}>
           Deny
         </button>
-        <button type="button" className="btn btn-quiet" onClick={() => setPhase('pending')}>
+        <button type="button" className="btn btn-quiet" onClick={() => setPhase('pending')} disabled={!ready}>
           Reset
         </button>
       </div>
+      {!ready && <p className="demo-note">Approve, Deny and Reset work once this part of the page has loaded. Until then the run is shown at its approval gate.</p>}
       <p className="demo-status" aria-live="polite">
         {phase === 'pending' && 'Checking the policy.'}
         {awaiting && 'Paused at the approval gate. The run waits for a person.'}

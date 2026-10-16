@@ -18,6 +18,7 @@ colors:
   rule: "#b3bfc8 light / #33495a dark"
   signal: "var(--gold)"
   human-text: "#22774d light / #4cb47a dark"
+  escalate-text: "#8a5c12 light / #e0a94a dark"
 typography:
   display:
     fontFamily: "Josefin Sans Variable, Josefin Sans, system-ui, sans-serif"
@@ -136,7 +137,8 @@ Palette from the owner's visual language (Core Palette, Optional Utility Colors)
 ### Utility (demos and diagrams only)
 - **Allow** `#2f8f5b`: approval strokes and fills. Text on light uses `#22774d`; text on dark uses `#4cb47a` (both derived to keep 4.5:1).
 - **Deny** `#9e2f2f`: refused-by-policy text on light; `#d9776f` on dark.
-- **Escalate** `#c58a2a` and **Unknown** `#7c8790`: reserved for states the page does not currently show.
+- **Escalate** `#c58a2a` (text and state lines use `escalate-text`: `#8a5c12` on ivory and mist, 4.8:1 or better; `#e0a94a` on dark). Used for the refund demo's approval gate, the only place it appears. **Unknown** `#7c8790` is reserved for states the page does not show.
+- **Routes**: the authority route (Beat C) is an orthogonal trace on the board in gold, from the selected part to the ledger row. It is solved once per part (`src/lib/route.ts`), never crosses a face, and is checked by `tests/route.test.ts`.
 
 ### Derived steps
 - Hairline rule: `#b3bfc8` on light (a darker mist step; decorative); `#33495a` on dark.
@@ -180,8 +182,11 @@ Flat. Surfaces sit on the ground; separation comes from tonal steps, 1px hairlin
 - **Default:** ground fill, ink text, 1px slate border.
 - **Human:** ground fill, `human-text` label and Allow border. Decision controls only.
 - **Focus:** 2px outline, 2px offset: Prussian on light, gold on dark.
+- **Touch:** every button, wordmark, checkbox row and radio row is at least 44px tall.
+- **Command blocks:** the Copy button sits in the block's own top bar (44px, top right); no Copy button on a row below.
 
 ### Cartridges (the signature part)
+- **Labels at 768 to 1199px**: 12px number and name; long names break at a break opportunity (`wbr`) so they fit the narrower faces.
 - **Shape:** 10px radius with a 6px connector notch on the top edge (desktop faces 4px radius, 1px border).
 - **Colour:** a Prussian tint step with ink text. Dimmed parts drop to the ground.
 - **Selected:** 2px Prussian outline on light, 2px gold on dark, over a 16% gold tint.
@@ -193,6 +198,7 @@ Flat. Surfaces sit on the ground; separation comes from tonal steps, 1px hairlin
 - **Stamps:** dashed rule when pending; solid slate when done; Allow when the final step is accepted.
 
 ### Captures
+- The hero window shows the capture from the sidebar's rule to the right edge and from the top down to the table rule (cut between regions, never through a word).
 - Bare images with a 1px rule border. Caption 13px slate below. "Real screen from Cognate-Workbench" or "Illustration". Cropped and scaled only.
 
 ### Navigation

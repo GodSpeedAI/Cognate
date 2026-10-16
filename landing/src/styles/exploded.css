@@ -673,15 +673,24 @@
 
 /* Tablet and narrow desktop: the faces are about 64px wide here, so the labels step down to fit (C-04 Permissions
    clipped at 1024). Checked by tests/e2e/exploded.spec.ts: no face label overflows its face. */
+/* Faces are 64 to 80px wide here, so a 12px name can wrap onto two lines inside the face (a long word breaks rather
+   than clipping). Line height 1 keeps number and two name lines inside the face's height. */
 @media (min-width: 768px) and (max-width: 1199px) {
   .face {
-    padding: 1px 2px;
+    padding: 0 2px;
+    gap: 0;
+    line-height: 1;
+  }
+  .face-num,
+  .face-name {
+    font-size: 12px;
+    line-height: 0.9;
   }
   .face-name {
-    font-size: 10px;
-    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+    line-height: 0.9;
   }
-  .face-num {
-    font-size: 10px;
+  .face-name wbr::after {
+    content: '-';
   }
 }
