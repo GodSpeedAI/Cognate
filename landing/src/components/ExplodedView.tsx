@@ -107,6 +107,8 @@ interface Scene {
   tokens: TokenScene[];
   edges: { key: string; points: string; consumer: boolean }[];
   sockets: (Rect & { opacity: number })[];
+  /** The selected part's verified stores-in edge to C-10 History, when it has one: the route ends in a ledger row. */
+  record: { from: string; label: string; rect: Rect } | null;
 }
 
 /** Screen rectangle of a vertical face in the x-z plane (no shear). */
@@ -216,7 +218,37 @@ function buildScene(pose: Pose, size: { w: number; h: number }, parts: readonly 
     });
   }
 
-  return { view, plates, layerLabels, mating, faces, tokens, edges, sockets: sockets.map((r) => ({ ...r, opacity: pose.rise })) };
+  // Authority route: a selected part's verified stores-in edge to C-10 (History, the L4 durable record) is the one
+  // edge that writes to the record. Only that edge stamps a ledger row; a part with no such edge gets none.
+  const writes = selectedId ? allEdges.find((e) => e.from === selectedId && e.to === 'C-10' && e.kind === 'stores-in') : undefined;
+  const writer = writes ? partById(writes.from) : undefined;
+  const writerSlot = writer ? slotOf(Number(writer.id.slice(2)) - 1) : null;
+  let record: Scene['record'] = null;
+  if (writer && writerSlot && shownIds.has('C-10')) {
+    // The row lies flat on the screen (the L4 plate is foreshortened, so text on it would not read). Its centre is
+    // a point on the plate; the route comes down from the writer's base to that point.
+    const l4z = layerZ('L4', pose);
+    const rowMid = PLATE.L4.h - (PLATE.L4.h - 118 + 18);
+    const left = at(40, rowMid, l4z);
+    const right = at(PLATE.L4.w - 40, rowMid, l4z);
+    const mid = at(PLATE.L4.w / 2, rowMid, l4z);
+    const route = traceBetween(baseOf(writerSlot, pose), { x: PLATE.L4.w / 2, y: rowMid, z: l4z });
+    edges.push({
+      key: `${writer.id}>record`,
+      points: route.map((p) => {
+        const q = at(p.x, p.y, p.z);
+        return `${q.u.toFixed(1)},${q.v.toFixed(1)}`;
+      }).join(' '),
+      consumer: false,
+    });
+    record = {
+      from: writer.id,
+      label: titleCase(writer.label),
+      rect: { x: left.u, y: mid.v - 13, w: right.u - left.u, h: 26 },
+    };
+  }
+
+  return { view, plates, layerLabels, mating, faces, tokens, edges, sockets: sockets.map((r) => ({ ...r, opacity: pose.rise })), record };
 }
 
 export default function ExplodedView({ parts = keyframeParts, defaultSelection = null, holdSelection = null, split: splitProp, extension = 0, pose: poseProp, hold: holdProp }: Props) {
@@ -339,8 +371,8 @@ export default function ExplodedView({ parts = keyframeParts, defaultSelection =
 
             <svg className="overlay" width={size.w} height={size.h} viewBox={`0 0 ${size.w} ${size.h}`} aria-hidden="true" focusable="false">
               <defs>
-                <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                  <path d="M0,0 L8,4 L0,8 z" style={{ fill: 'var(--route)' }} />
+                <marker id="arrow-route" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 z" style={{ fill: 'var(--signal)' }} />
                 </marker>
               </defs>
               {scene.mating.map((s) => (
@@ -349,9 +381,10 @@ export default function ExplodedView({ parts = keyframeParts, defaultSelection =
               {scene.edges.map((e) => (
                 <polyline
                   key={e.key}
-                  className={e.consumer ? 'edge edge-consumer' : 'edge edge-provider'}
+                  className={`${e.consumer ? 'edge edge-consumer' : 'edge edge-provider'} route`}
                   points={e.points}
-                  markerEnd="url(#arrow)"
+                  pathLength={1}
+                  markerEnd="url(#arrow-route)"
                 />
               ))}
             </svg>
@@ -402,6 +435,16 @@ export default function ExplodedView({ parts = keyframeParts, defaultSelection =
                 {t.name}
               </span>
             ))}
+
+            {scene.record && (
+              <span
+                key={`ledger-${scene.record.from}`}
+                className="ledger-row mono"
+                style={{ left: scene.record.rect.x, top: scene.record.rect.y, width: scene.record.rect.w, height: scene.record.rect.h, zIndex: 3 }}
+              >
+                {scene.record.from} {scene.record.label} → C-10 History
+              </span>
+            )}
 
             {scene.layerLabels.map((l) => (
               <span key={l.id} className="layer-tag" data-layer={l.id} style={{ left: l.left, top: l.top }}>

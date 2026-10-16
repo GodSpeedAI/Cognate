@@ -41,3 +41,33 @@ test.describe('touch on mobile', () => {
     await expect(page.getByTestId('inspector')).toContainText('C-02');
   });
 });
+
+test.describe('authority route and record', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('a part with a verified stores-in edge to C-10 writes a ledger row; one without does not', async ({ page }) => {
+    await page.goto('/keyframe/');
+    await page.locator(part('C-04')).filter({ visible: true }).first().click();
+    await expect(page.locator('.ledger-row')).toHaveText(/C-04 Permissions → C-10 History/);
+    await page.locator(part('C-01')).filter({ visible: true }).first().click();
+    await expect(page.locator('.ledger-row')).toHaveCount(0);
+  });
+
+  test('the route is drawn in the signal colour, and no ledger row is drawn before a selection', async ({ page }) => {
+    await page.goto('/keyframe/');
+    await expect(page.locator('.overlay .edge.route')).toHaveCount(0);
+    await page.locator(part('C-05')).filter({ visible: true }).first().click();
+    await expect(page.locator('.overlay .edge.route').first()).toBeVisible();
+  });
+});
+
+test('no face label overflows its face at 1024 (C-04 Permissions was clipped)', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto('/keyframe/');
+  const overflowing = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('.exploded .face')]
+      .filter((f) => f.getBoundingClientRect().width > 0 && f.scrollWidth > f.clientWidth + 1)
+      .map((f) => f.dataset.partId),
+  );
+  expect(overflowing).toEqual([]);
+});

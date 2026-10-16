@@ -422,6 +422,16 @@ main {
 .seq-c .seq-pin {
   background: var(--near-black);
 }
+/* The stage fills the pinned area, so its full-bleed dark band covers the whole pin (no ivory corners). Its content
+   is centred inside it rather than the pin centring an undersized stage (which left the band short of the pin). */
+.seq-c .seq-stage.theme-dark {
+  flex: 1 1 auto;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .seq-skip {
   font-size: 14px;
   margin: var(--space-2) 0 0;
@@ -547,6 +557,53 @@ main {
 .gate-mark {
   color: var(--human-text);
   font-weight: 600;
+}
+/* Decision node: one box whose border and state move pending -> escalate -> allow or deny. */
+.decision-node {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 8px 12px;
+  border: 1px dashed var(--ink-2);
+  border-radius: var(--radius-small);
+  font-size: 15px;
+}
+.decision-node[data-phase='escalate'] {
+  border: 2px solid var(--human);
+}
+.decision-node[data-phase='allow'] {
+  border: 2px solid var(--allow);
+}
+.decision-node[data-phase='deny'] {
+  border: 2px solid var(--deny);
+}
+.decision-state {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.decision-node[data-phase='escalate'] .decision-state {
+  color: var(--human-text);
+}
+.decision-node[data-phase='allow'] .decision-state {
+  color: var(--human-text);
+}
+.decision-node[data-phase='deny'] .decision-state {
+  color: var(--deny-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .decision-node,
+  .decision-state {
+    transition:
+      border-color 240ms var(--ease-out-expo),
+      color 240ms var(--ease-out-expo);
+  }
+  .run-strip li {
+    animation: stamp-in 240ms var(--ease-out-expo) both;
+  }
 }
 .demo-actions {
   display: flex;
