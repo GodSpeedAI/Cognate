@@ -25,6 +25,7 @@ import {
   type Vec2,
   type View,
 } from '../lib/projection';
+import { LEDGER_ROW, routeFor } from '../lib/route';
 import Inspector from './Inspector';
 
 // One oblique projection (lib/projection.ts) places plates, standing cartridges, agent tokens and edge traces
@@ -76,6 +77,20 @@ const LAYER_TITLE: Record<LayerId, string> = {
 };
 const Z_INDEX: Record<LayerId, number> = { L4: 1, L3: 2, L2: 5, L1: 6 };
 const FACE_Z = 4;
+
+/** Long single words on a face may break at a break opportunity (wbr, no text), so 12px names fit. */
+const SOFT_BREAK: Record<string, number> = { Permissions: 6, Workspace: 4, Workflows: 4, Interfaces: 5, Schedules: 5 };
+const faceName = (label: string) => {
+  const name = titleCase(label);
+  const at = SOFT_BREAK[name];
+  return at ? (
+    <>
+      {name.slice(0, at)}
+      <wbr />
+      {name.slice(at)}
+    </>
+  ) : name;
+};
 
 const titleFor = (p: Part) => `${p.id} ${titleCase(p.label)}: ${lowerFirst(p.job)}`;
 
@@ -160,8 +175,12 @@ function buildScene(pose: Pose, size: { w: number; h: number }, parts: readonly 
   const shownEdges: Edge[] = allEdges.filter((e) => shownIds.has(e.from) && shownIds.has(e.to));
   const isBranch = (id: string) => partById(id)?.branchOnly === true;
   // Verified extension edges stay drawn once the part is bound (stamp 3 and later); otherwise only the selection's.
+  // A stores-in edge to C-10 is drawn as the authority route (below), not as a board trace between the bases.
+  const isRecordWrite = (e: Edge) => e.to === 'C-10' && e.kind === 'stores-in';
   const drawn = shownEdges.filter(
-    (e) => (selectedId && (e.from === selectedId || e.to === selectedId)) || (extension >= 3 && (isBranch(e.from) || isBranch(e.to))),
+    (e) =>
+      ((selectedId && (e.from === selectedId || e.to === selectedId)) || (extension >= 3 && (isBranch(e.from) || isBranch(e.to)))) &&
+      !(isRecordWrite(e) && e.from === selectedId),
   );
   const selectedEdges = drawn;
   const linked = new Set(selectedEdges.flatMap((e) => [e.from, e.to]));
@@ -222,23 +241,25 @@ function buildScene(pose: Pose, size: { w: number; h: number }, parts: readonly 
   // edge that writes to the record. Only that edge stamps a ledger row; a part with no such edge gets none.
   const writes = selectedId ? allEdges.find((e) => e.from === selectedId && e.to === 'C-10' && e.kind === 'stores-in') : undefined;
   const writer = writes ? partById(writes.from) : undefined;
-  const writerSlot = writer ? slotOf(Number(writer.id.slice(2)) - 1) : null;
+  const writerRoute = writer ? routeFor(writer.id) : undefined;
   let record: Scene['record'] = null;
-  if (writer && writerSlot && shownIds.has('C-10')) {
-    // The row lies flat on the screen (the L4 plate is foreshortened, so text on it would not read). Its centre is
-    // a point on the plate; the route comes down from the writer's base to that point.
+  if (writer && writerRoute && shownIds.has('C-10')) {
+    // The route is an orthogonal trace on the board, solved once per writer (lib/route.ts) so that it never crosses a
+    // cartridge face. Its heights scale with the separation, so it stays on the board and above the faces at any pose.
+    // The row lies flat on the screen (the L4 plate is foreshortened, so text on it would not read); the route ends
+    // at the row's right end.
     const l4z = layerZ('L4', pose);
-    const rowMid = PLATE.L4.h - (PLATE.L4.h - 118 + 18);
-    const left = at(40, rowMid, l4z);
-    const right = at(PLATE.L4.w - 40, rowMid, l4z);
-    const mid = at(PLATE.L4.w / 2, rowMid, l4z);
-    const route = traceBetween(baseOf(writerSlot, pose), { x: PLATE.L4.w / 2, y: rowMid, z: l4z });
+    const left = at(LEDGER_ROW.x0, LEDGER_ROW.y, l4z);
+    const right = at(LEDGER_ROW.x1, LEDGER_ROW.y, l4z);
+    const mid = at((LEDGER_ROW.x0 + LEDGER_ROW.x1) / 2, LEDGER_ROW.y, l4z);
     edges.push({
       key: `${writer.id}>record`,
-      points: route.map((p) => {
-        const q = at(p.x, p.y, p.z);
-        return `${q.u.toFixed(1)},${q.v.toFixed(1)}`;
-      }).join(' '),
+      points: writerRoute
+        .map(([x, y, z]) => {
+          const q = at(x, y, z * pose.sep);
+          return `${q.u.toFixed(1)},${q.v.toFixed(1)}`;
+        })
+        .join(' '),
       consumer: false,
     });
     record = {
@@ -417,7 +438,7 @@ export default function ExplodedView({ parts = keyframeParts, defaultSelection =
                   style={{ left: f.rect.x, top: f.rect.y, width: f.rect.w, height: f.rect.h, zIndex: FACE_Z }}
                 >
                   <span className="face-num mono">{p.id}</span>{' '}
-                  <span className="face-name">{titleCase(p.label)}</span>
+                  <span className="face-name">{faceName(p.label)}</span>
                 </button>
               );
             })}

@@ -183,7 +183,7 @@ main {
 }
 
 /* Dark cinematic hero: a full-bleed near-black band in both schemes (the theme-dark scope sets the tokens). */
-.hero {
+.beat.hero {
   padding-top: var(--space-9);
   border-top: 0;
   background: var(--paper);
@@ -223,7 +223,9 @@ main {
 }
 
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
   font-family: var(--font-text);
   font-weight: 600;
@@ -551,11 +553,11 @@ main {
   font-size: 13px;
 }
 .run-strip li.gate {
-  border-color: var(--human);
+  border-color: var(--escalate-text);
   border-width: 2px;
 }
 .gate-mark {
-  color: var(--human-text);
+  color: var(--escalate-text);
   font-weight: 600;
 }
 /* Decision node: one box whose border and state move pending -> escalate -> allow or deny. */
@@ -572,7 +574,7 @@ main {
   font-size: 15px;
 }
 .decision-node[data-phase='escalate'] {
-  border: 2px solid var(--human);
+  border: 2px solid var(--escalate-text);
 }
 .decision-node[data-phase='allow'] {
   border: 2px solid var(--allow);
@@ -586,7 +588,7 @@ main {
   color: var(--ink-2);
 }
 .decision-node[data-phase='escalate'] .decision-state {
-  color: var(--human-text);
+  color: var(--escalate-text);
 }
 .decision-node[data-phase='allow'] .decision-state {
   color: var(--human-text);
@@ -882,7 +884,9 @@ main {
 .copy-status {
   font-size: 13px;
   color: var(--ink-2);
-  margin-left: var(--space-2);
+  order: -1;
+  margin-right: auto;
+  padding-left: var(--space-3);
 }
 .failed summary {
   cursor: pointer;
@@ -918,6 +922,39 @@ main {
 }
 .js .copy-btn {
   display: inline-block;
+}
+/* A command block: its own top bar carries the Copy button (a 44px target, top right). Without JavaScript the bar is
+   not rendered and the command is plain selectable text. */
+.code-block {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  background: var(--paper-2);
+  margin: 0 0 var(--space-3);
+  max-width: 100%;
+}
+.code-bar {
+  display: none;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border-bottom: 1px solid var(--rule);
+}
+.js .code-bar {
+  display: flex;
+}
+.code-bar .copy-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-3);
+  font-size: 14px;
+}
+.code-block pre {
+  margin: 0;
+  padding: var(--space-3);
+  border: 0;
+  background: none;
+  overflow-x: auto;
 }
 
 /* Prussian authority surface (the .theme-prussian scope in tokens.css). Full-bleed, text inside the page measure. */
@@ -966,25 +1003,6 @@ main {
   .mini-3d {
     display: none;
   }
-  /* Hero screenshot: caption sits under the image, not over it. */
-  .hero-plate {
-    height: auto;
-    border: 0;
-  }
-  .hero-plate picture,
-  .hero-plate img {
-    height: auto;
-  }
-  .hero-plate picture,
-  .hero-plate img {
-    width: 100%;
-    margin-left: 0;
-  }
-  .hero-plate figcaption {
-    position: static;
-    background: none;
-    padding: var(--space-2) 0 0;
-  }
   .status-chip {
     margin-left: auto;
   }
@@ -1028,32 +1046,32 @@ main {
   min-width: 0;
   grid-column: 6 / -1;
 }
-/* The plate holds the capture's own 16:10 frame. The capture is scaled up and its left navigation is cropped off,
-   so the contract block is what the reader sees first. Scaled and cropped only; no pixel edits. */
+/* The plate shows one deliberate window of the 1440 x 900 capture: from the sidebar's right rule (x = 280) to the
+   right edge, and from the top of the screen down to the rule under the acceptance table (y = 844). Both cut lines
+   fall between regions, never through a word or a row. Scaled and cropped only; no pixel edits. The plate is
+   1160 x 844 (its own proportion) and the capture is scaled to 1440 / 1160 of the plate width. */
 .hero-plate {
   margin: 0;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 1160 / 844;
   overflow: hidden;
   border: 1px solid var(--rule);
   background: var(--paper-2);
-  position: relative;
 }
-.hero-plate picture,
+.hero-plate picture {
+  display: block;
+  width: 124.14%;
+  max-width: none;
+  margin-left: -24.14%;
+}
 .hero-plate img {
   display: block;
-  width: 124%;
-  max-width: none;
+  width: 100%;
   height: auto;
-  margin-left: -24%;
 }
 .hero-plate figcaption {
-  position: absolute;
-  left: var(--space-2);
-  bottom: var(--space-2);
-  background: var(--paper);
-  padding: 2px 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-2);
+  margin-top: var(--space-2);
 }
 @media (max-width: 1023px) {
   .hero-grid {
@@ -1070,4 +1088,27 @@ main {
 pre code,
 code {
   font-family: var(--font-mono);
+}
+
+/* Touch targets: every control is at least 44px tall, and the whole row of a checkbox or radio is the target. */
+.btn,
+.wordmark,
+.ob-check,
+.radio {
+  min-height: 44px;
+}
+.seq-skip a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.radio input,
+.ob-check input {
+  width: 20px;
+  height: 20px;
+}
+.excerpt figcaption a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }

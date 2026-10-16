@@ -39,6 +39,8 @@
   --human: var(--allow);
   --human-text: #22774d;
   --deny-text: var(--deny);
+  /* Escalate amber as text and as a state line: the darker step is 4.8:1 on mist and 5.2:1 on ivory. */
+  --escalate-text: #8a5c12;
 
   /* Cartridge fills: five tints of the Prussian hue, distinguished by lightness and by the Plex Mono code. */
   --part-model: oklch(92% 0.02 245);
@@ -82,6 +84,7 @@
     --human: #4cb47a;
     --human-text: #4cb47a;
     --deny-text: #d9776f;
+    --escalate-text: #e0a94a;
     --part-model: oklch(27% 0.04 245);
     --part-act: oklch(22% 0.02 245);
     --part-control: oklch(33% 0.05 250);
@@ -105,6 +108,7 @@
   --human: #4cb47a;
   --human-text: #4cb47a;
   --deny-text: #d9776f;
+  --escalate-text: #e0a94a;
   --part-model: oklch(27% 0.04 245);
   --part-act: oklch(22% 0.02 245);
   --part-control: oklch(33% 0.05 250);
