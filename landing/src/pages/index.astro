@@ -37,10 +37,12 @@ const description =
 
   <main id="top">
     <section class="beat hero theme-dark" aria-labelledby="hero-title">
+      <div class="hero-head">
+        <p class="eyebrow">The agentic application framework</p>
+        <h1 id="hero-title">You steer the software. AI agents build it, and work within it.</h1>
+      </div>
       <div class="hero-grid">
       <div class="hero-copy">
-      <p class="eyebrow">The agentic application framework</p>
-      <h1 id="hero-title">You steer the software. AI agents build it, and work within it.</h1>
       <p class="sub">
         Describe the application you want. Your coding agent assembles it from Cognate's capabilities. Inside it, AI agents can do real work within permissions you set, and pause for you when it matters.
       </p>
@@ -69,7 +71,7 @@ const description =
       </div>
     </section>
 
-    <section class="beat" id="proof" aria-labelledby="proof-title">
+    <section class="beat beat-evidence" id="proof" aria-labelledby="proof-title">
       <p class="kicker">Evidence</p>
       <h2 id="proof-title">This app was built with Cognate.</h2>
       <p>
@@ -105,7 +107,7 @@ const description =
       <PartsText />
     </section>
 
-    <section class="beat" id="fit" aria-labelledby="fit-title">
+    <section class="beat beat-dense" id="fit" aria-labelledby="fit-title">
       <p class="kicker">How parts fit</p>
       <h2 id="fit-title">Ask for the job by name, not for the code that does it.</h2>
       <p>
@@ -127,13 +129,24 @@ const description =
       <p class="closing">You don't need to know how to write any of this. You do need to read step 6.</p>
     </section>
 
-    <section class="beat" id="operate" aria-labelledby="operate-title">
+    <!-- Authority record: every value is from examples/refund-desk/test/refund-desk.test.ts, "large refund waits for
+         approval" and "approval completes it" (propose(1003, 7500), decide(..., true, "manager-1")), and the
+         "history records each step" event list. Nothing here is invented; it is one run of the same test. -->
+    <section class="beat beat-evidence" id="operate" aria-labelledby="operate-title">
       <p class="kicker">Agents at work, inside the app</p>
       <h2 id="operate-title">The agent proposes. You decide.</h2>
       <p>
         Agents don't only build Cognate apps. They can work inside them. The refund agent looks up the order and proposes a refund. Over $50, it stops and waits, even across a restart, until a person decides. Every step is written to the app's history.
       </p>
       <RunDemo client:visible />
+      <dl class="record" aria-label="Authority record for one refund run">
+        <div><dt>Actor</dt><dd><span class="mono">agent.refund-desk</span>, for caller <span class="mono">support-agent-1</span></dd></div>
+        <div><dt>Operation</dt><dd><span class="mono">refunds.issue@1.0.0</span></dd></div>
+        <div><dt>Resource</dt><dd>Order <span class="mono">1003</span>, a refund of <span class="mono">$75.00</span></dd></div>
+        <div class="record-decision"><dt>Decision</dt><dd><span class="mono">refund-approval</span> approved by <span class="mono">manager-1</span></dd></div>
+        <div><dt>Evidence</dt><dd><span class="mono">refund.proposed</span>, <span class="mono">refund.awaiting_approval</span>, <span class="mono">refund.approved</span>, <span class="mono">refund.issued</span></dd></div>
+      </dl>
+      <p class="record-note">From the refund desk's tests, <span class="mono">examples/refund-desk</span>. The events are the ones its history test checks, in order.</p>
       <h3>Finishing is not the same as accepting.</h3>
       <p>
         In Workbench, “Finished” only means the agent stopped. The work is accepted only after a person reviews the evidence. <span class="speed" aria-hidden="true">⚡</span> Completion without proof is theater.
@@ -141,7 +154,7 @@ const description =
       <Capture file={accepted.file} alt="Workbench done-ladder: Finished, Produced, Tested, Ready for review and Accepted are checked, and all three criteria are closed." caption="Real screen from Cognate-Workbench" width={accepted.width} height={accepted.height} />
     </section>
 
-    <section class="beat" id="extend" aria-labelledby="extend-title">
+    <section class="beat beat-dense" id="extend" aria-labelledby="extend-title">
       <p class="kicker">It can grow</p>
       <h2 id="extend-title">Need something new? Authorize the agent to add it.</h2>
       <p>
@@ -154,7 +167,7 @@ const description =
       <p class="caption-note">Same app, one more part, and the same structure.</p>
     </section>
 
-    <section class="beat" id="start" aria-labelledby="start-title">
+    <section class="beat beat-open" id="start" aria-labelledby="start-title">
       <p class="kicker">Your turn</p>
       <h2 id="start-title">Build your first app.</h2>
       <p>No Cognate account, and no AI API key for the app itself, because the first app runs without a model. (Your coding agent uses whatever sign-in it normally does.) You're done when your app's tests pass on your machine, not when the agent says it's finished.</p>
