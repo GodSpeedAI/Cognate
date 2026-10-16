@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 
 // Sticky slim progress rail: anchor links for each beat, aria-current on the beat in view.
 const BEATS = [
-  { id: 'top', label: 'Possibility' },
-  { id: 'proof', label: 'Proof' },
-  { id: 'parts', label: 'Reveal' },
-  { id: 'fit', label: 'Composition' },
-  { id: 'build', label: 'Construction' },
-  { id: 'operate', label: 'Operation' },
+  { id: 'top', label: 'Overview' },
+  { id: 'proof', label: 'Evidence' },
+  { id: 'parts', label: 'Parts' },
+  { id: 'fit', label: 'How parts fit' },
+  { id: 'build', label: 'Building' },
+  { id: 'operate', label: 'Agents at work' },
   { id: 'extend', label: 'Extension' },
   { id: 'start', label: 'Your turn' },
 ] as const;
@@ -31,7 +31,7 @@ export default function Rail() {
   }, []);
 
   return (
-    <nav className="rail" aria-label="Beats">
+    <nav className="rail" aria-label="Page sections">
       <ol>
         {BEATS.map((b) => (
           <li key={b.id}>

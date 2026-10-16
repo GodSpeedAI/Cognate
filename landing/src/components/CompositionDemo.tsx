@@ -34,7 +34,7 @@ export default function CompositionDemo() {
         ))}
       </fieldset>
       <fieldset className="demo-controls">
-        <legend>Door</legend>
+        <legend>Door (how the call comes in)</legend>
         {DOORS.map((d) => (
           <label key={d} className="radio">
             <input type="radio" name="door" checked={door === d} onChange={() => setDoor(d)} /> {d}

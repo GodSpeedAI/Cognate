@@ -7,7 +7,7 @@ cites: [C1, C3, C4, C5, C6, C8, C9, C10, C11, C19, C21, C23, C30, C31, C32, C33,
 Voice: Journey mode by default. Speed lines are marked ⚡ (at most one per beat). Use the copy verbatim unless a layout forces a line break. The builder must not add factual sentences.
 
 ## Meta
-- `<title>`: Cognate — the agentic application framework
+- `<title>`: Cognate: the agentic application framework
 - description: Describe the software you want. Your coding agent builds it with Cognate. AI agents can then work inside it, within permissions you set. Open source, Apache-2.0. [C3]
 - OG image: the exploded keyframe crop (direction, Variants).
 
@@ -49,7 +49,7 @@ Wordmark "Cognate" · links: How it works (#parts) · Build your first app (#sta
 - H2: Ask for the job by name, not for the code that does it.
 - Body: A capability has a stable name and version, like `billing.quote@1`. Code asks for the name, not for a particular implementation. Any part that provides a compatible version can answer [C6]. Before any part runs, a permission check decides whether this caller may use it, and the default answer is no [C8].
 - Demo label: Interactive demonstration, runs in your browser, not a deployed app.
-- Demo controls: **Provider:** Local model · Remote model (same contract `model.generate@1`) [C19] · **Caller:** alice · mallory · **Door:** Button in the app · Agent tool (MCP) · API call
+- Demo controls: **Provider:** Local model · Remote model (same contract `model.generate@1`) [C19] · **Caller:** alice · mallory · **Door (how the call comes in):** Button in the app · Agent tool (MCP) · API call
 - Demo result copy: allowed → "billing.quote@1 answered by *{provider}* through *{door}* → total 42. Recorded: invocation · allowed." Denied → "Denied by policy before anything ran. Recorded: invocation · denied."
 - Takeaway: The same job, through three different doors, under one permission check. That's the difference between a capability and a pile of tools. [C9]
 - Static outcome line (visible without JS): Try it: switch the caller to *mallory*. The call is refused before anything runs, and the refusal is recorded. The check happens in code: see the line in `packages/kernel-cordis/src/lease.ts` (link) [C8].
@@ -71,7 +71,7 @@ Wordmark "Cognate" · links: How it works (#parts) · Build your first app (#sta
 ## F — Operation (#operate)
 - Kicker: Agents at work, inside the app
 - H2: The agent proposes. You decide.
-- Body: Agents don't only build Cognate apps. They can work inside them. The refund agent looks up the order and proposes a refund. Over $50, it stops and waits durably, even across a restart, until a person decides [C10] [C46]. Every step is written to the app's history [C11].
+- Body: Agents don't only build Cognate apps. They can work inside them. The refund agent looks up the order and proposes a refund. Over $50, it stops and waits, even across a restart, until a person decides [C10] [C46]. Every step is written to the app's history [C11].
 - Demo (label "Demonstration"): run strip events: `refund.proposed $75` → `refund.awaiting_approval` ■ gate. Buttons: **Approve** / **Deny** → continues to `refund.approved → refund.issued → run.completed` or `refund.denied → run.completed (no refund)`. Reset.
 - Acceptance block: H3 "Finishing is not the same as accepting." Body: In Workbench, "Finished" only means the agent stopped. The work is accepted only after a person reviews the evidence [C34]. ⚡ Completion without proof is theater. (Workbench done-ladder capture, captioned as real.)
 
@@ -100,5 +100,8 @@ Cognate is open source under Apache-2.0 [C3], made by GodSpeed AI. Links: GitHub
 
 ## Parts-list text rules (first-contact fixes)
 - Replace "none verified" with "Nothing in this view" (e.g. "Used by: nothing in this view").
-- Layer rows explain themselves: "L2 Agents: the three agents Workbench registers: config, coding and cognitive".
+- Layer rows explain themselves: "L2 Agents. The three agents Workbench registers: config, coding and cognitive."
+- Section rail labels (visitor-facing nav, `aria-label` "Page sections"): Overview · Evidence · Parts · How parts fit · Building · Agents at work · Extension · Your turn.
+- Recovery drawers (Beat H) are written as plain sentences, not `symptom → fix` arrows. Step 2 body: "Run both commands in order, in the same terminal. The first makes a refund-desk folder and moves into it." Step 4 expected: "passing tests for each journey. A small refund completes. A large refund waits for approval. Approval completes it. Denial refunds nothing. The history records each step."
+- Card wording: "skills.sh listing: coming soon." (no "placeholder" in visible copy; the link stays in code)..
 - Keep code excerpts behind "Show the file" disclosures in Beat E, so the step text reads without code.
