@@ -77,7 +77,7 @@ Paths are repo-relative. Symbols are the ones that establish the behavior, not e
 | capabilities, cognition, adapters | [subsystems/capabilities-and-cognition.md](subsystems/capabilities-and-cognition.md) | `capabilities`, `cognitive-api`, `cognitive-memory`, `cognitive-ruvector`, `cognitive-rvf`, `artifacts`, `provider-local`, `provider-openai-compatible`, `domainforge`, `realitytrace` |
 | wire and protocols | [subsystems/wire-and-protocols.md](subsystems/wire-and-protocols.md) | `proto`, `protocol-connect`, `protocol-connect-bun`, `ag-ui`, `mcp`, `a2a` |
 | presentation | [subsystems/presentation.md](subsystems/presentation.md) | `client`, `react`, `ui-astryx` |
-| application composition | [subsystems/application-composition.md](subsystems/application-composition.md) | `profile`, `profiles/copilot`, `profiles/harness`, `cli`, `templates/starter` |
+| application composition | [subsystems/application-composition.md](subsystems/application-composition.md) | `profile`, `profiles/copilot`, `profiles/harness`, `cli` (with `cli/templates/starter`) |
 
 ## Plane pages (cross-cutting concerns)
 

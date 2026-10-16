@@ -168,7 +168,7 @@ Three edits, in the order that pays off:
 ## Source trail
 
 - `packages/cli/src/bin.ts`, `packages/cli/src/index.ts` — `create` and `dev`.
-- `templates/starter/` — the generated tree.
+- `packages/cli/templates/starter/` — the generated tree.
 - `tests/integration/cli-create.test.ts` — generate → install → test → dev → restart, both
   profiles.
 - `profiles/copilot/src/index.tsx` — what the copilot profile composes.

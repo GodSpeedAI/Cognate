@@ -24,7 +24,8 @@ If a gate that should pass fails, run it directly — the gate command is in the
 | Symptom | Cause | Recovery | Source |
 |---|---|---|---|
 | `cognate: usage: cognate create …` | no or unknown subcommand | the usage line lists both commands | `packages/cli/src/bin.ts:55` |
-| `cognate create: --source is required` | `create` vendors packages from a checkout; the npm CLI tarball ships only `src/` (DEBT-016) | pass a Cognate checkout | `packages/cli/src/bin.ts:33` |
+| `cognate create: --source is required` | the 0.5.0 CLI tarball ships only `src/`; later releases ship the templates (DEBT-016) | upgrade `@godspeedai/cognate-cli`, or pass a Cognate checkout with `--source` | `packages/cli/src/bin.ts` |
+| `cognate create` fails to resolve `@godspeedai/*` after generation | the generated app pins the published packages at the CLI's version; the registry is unreachable or that version is not published | check network access to the npm registry, or pass `--source <checkout>` to vendor from a checkout | `packages/cli/src/index.ts` (`create`) |
 | `bunx: command not found` | `bunx` is not on PATH in every shell | use `bun x @godspeedai/cognate-cli@0.5` (same package) | shell `PATH`; checked with bun 1.4.0 |
 | `SQLITE_CANTOPEN unable to open database file` | the store's parent directory does not exist; `openSqliteStore` does not create it | create the directory first (`mkdir -p`); `cognate dev` creates `.cognate/` itself | `packages/store-sqlite/src/index.ts:128` |
 | `cognate create: cannot find source package "X" under --source` | `--source` is not a full checkout | point at the repository root | `packages/cli/src/index.ts:71` |

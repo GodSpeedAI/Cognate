@@ -18,8 +18,7 @@ generated apps) also needs the ambient type packages: `bun add -d @types/bun @ty
 
 ```sh
 # Scaffold an app from the copilot profile (an interactive chat app).
-# --source points at a Cognate checkout whose packages are vendored into the app.
-cognate create my-app --profile copilot --source /path/to/cognate/checkout
+cognate create my-app --profile copilot
 
 cd my-app
 bun install
@@ -27,12 +26,14 @@ bun dev            # serves the app; print the URL and open it
 ```
 
 `create` copies the profile's starter layout (`domain/*.sea` semantic files,
-`src/{agents,capabilities,components,projections,ui}`, `cognate.config.ts`, `package.json`),
-then vendors every `@godspeedai/cognate-*` package the profile needs from `--source` into
-`.cognate/vendor/`, pinning each with a `file:` dependency — so the generated app is
-self-contained and reproducible against the checkout you generated it from. Pass
-`--with <name,name>` to request optional adapters: anything the profile can't wire yet is
+`src/{agents,capabilities,components,projections,ui}`, `cognate.config.ts`, `package.json`)
+and pins every `@godspeedai/*` dependency to this CLI's exact version, resolved from npm.
+Pass `--with <name,name>` to request optional adapters: anything the profile can't wire yet is
 reported (`unsupported: <name> (<reason>)`) and never silently added.
+
+To generate an app from a local checkout of the Cognate repository, pass `--source <checkout>`: `create`
+packs the profile's packages from that checkout into the app's `.cognate/vendor/` directory and
+pins them with `file:` dependencies, so the app is self-contained and reproducible from that checkout.
 
 `dev` loads `cognate.config.ts`, parses `domain/*.sea` through the DomainForge adapter, creates
 the app's SQLite database at `.cognate/app.sqlite` (state survives restarts), and serves:
@@ -47,16 +48,16 @@ the app's SQLite database at `.cognate/app.sqlite` (state survives restarts), an
 
 | Command | Purpose |
 | --- | --- |
-| `cognate create <dir> --profile copilot\|harness --source <checkout> [--with a,b]` | Generate a starter app |
+| `cognate create <dir> --profile copilot\|harness [--source <checkout>] [--with a,b]` | Generate a starter app |
 | `cognate dev [--port N]` | Run the app from its directory |
 
 Run `cognate` with no arguments to print the usage your installed version supports.
 
 ## Limitations
 
-- `create` requires `--source` pointing at a Cognate checkout; packages are vendored at
-  generation time rather than resolved from npm. A registry-only mode is a known, tracked
-  follow-up.
+- Without `--source`, generated apps resolve the `@godspeedai/*` packages from npm at the CLI's
+  version, so the generated app needs network access to the npm registry on first install.
+- `--source` vendors packages from a checkout at generation time, for building against a local checkout of the repository rather than the published versions.
 - `dev` is a development server: its auth is dev-only and it runs a single process.
 
 ## Related packages

@@ -49,13 +49,18 @@ cognate dev [--port N]
 |---|---|---|---|
 | `<dir>` | yes | — | target directory (created if absent) |
 | `--profile` | yes | — | `copilot` or `harness`; anything else exits 1 |
-| `--source` | yes | — | path to a Cognate checkout; exits 1 without it (DEBT-016) |
+| `--source` | no | — | path to a Cognate checkout whose packages are vendored instead of pinned from npm (DEBT-016) |
 | `--with` | no | — | comma-separated extras; unsupported ones are reported, never imported |
 
 Output: `unsupported: <name> (<reason>)` lines, then
-`created <dir> (vendored <n> package(s))`.
+`created <dir> (@godspeedai/* packages pinned to <version> from npm)` or, with `--source`,
+`created <dir> (vendored <n> package(s) from <source>)`.
 
-Behavior: copies `templates/starter/common` then `templates/starter/<profile>`; computes the
+Behavior without `--source`: copies the starter templates shipped in the CLI package
+(`templates/starter/common` then `templates/starter/<profile>`) and rewrites each `workspace:*`
+`@godspeedai/*` dependency to the CLI's exact version. Nothing is vendored.
+
+Behavior with `--source`: copies the same templates; computes the
 transitive `@godspeedai/*` closure from the profile roots
 (`@godspeedai/cognate-cli`, `@godspeedai/cognate-profile-<profile>`, `@godspeedai/domainforge`, `@godspeedai/cognate-provider-local`);
 `bun pm pack`s each into `.cognate/vendor/`; rewrites `package.json` so each closure member is a

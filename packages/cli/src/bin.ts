@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-// `cognate create <dir> [--profile copilot|harness] --source <path> [--with a,b]` | `cognate dev [--port N]`
-import { create, dev } from "./index.ts";
+// `cognate create <dir> [--profile copilot|harness] [--source <path>] [--with a,b]` | `cognate dev [--port N]`
+import { CLI_VERSION, create, dev } from "./index.ts";
 
 function parseFlags(argv: readonly string[]): Record<string, string> {
   const flags: Record<string, string> = {};
@@ -28,16 +28,17 @@ async function runCreate(args: readonly string[]): Promise<void> {
     console.error("cognate create: --profile must be 'copilot' or 'harness'");
     process.exit(1);
   }
-  const source = flags.source;
-  if (!source) {
-    console.error("cognate create: --source is required");
+  if (flags.source === "true") {
+    console.error("cognate create: --source needs a path to a Cognate checkout");
     process.exit(1);
   }
+  const source = flags.source;
   const withList = flags.with && flags.with !== "true" ? flags.with.split(",").map((name) => name.trim()).filter(Boolean) : undefined;
 
   const report = await create({ dir, profile, source, with: withList });
   for (const entry of report.unsupported) console.log(`unsupported: ${entry.name} (${entry.reason})`);
-  console.log(`created ${report.dir} (vendored ${report.vendored.length} package(s))`);
+  const packages = source === undefined ? `@godspeedai/* packages pinned to ${CLI_VERSION} from npm` : `vendored ${report.vendored.length} package(s) from ${source}`;
+  console.log(`created ${report.dir} (${packages})`);
 }
 
 async function runDev(args: readonly string[]): Promise<void> {
@@ -53,7 +54,7 @@ async function main(): Promise<void> {
     if (command === "create") await runCreate(rest);
     else if (command === "dev") await runDev(rest);
     else {
-      console.error("cognate: usage: cognate create <dir> --profile copilot|harness --source <path> [--with a,b] | cognate dev [--port N]");
+      console.error("cognate: usage: cognate create <dir> --profile copilot|harness [--source <checkout>] [--with a,b] | cognate dev [--port N]");
       process.exit(1);
     }
   } catch (error) {

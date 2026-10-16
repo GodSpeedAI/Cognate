@@ -31,7 +31,10 @@ for (const tgz of tarballs) {
     if (pkg.license !== "Apache-2.0") problems.push("license missing/not Apache-2.0");
     if (!pkg.description) problems.push("description missing");
     if (!pkg.repository?.url?.includes("github.com/GodSpeedAI/Cognate")) problems.push("repository.url not the Cognate repo");
-    if (!pkg.files || pkg.files.join(",") !== "src") problems.push(`files field is ${JSON.stringify(pkg.files)}, expected ["src"]`);
+    // Most packages ship only src/; the CLI also ships the starter templates that `cognate create` copies.
+    const shipsTemplates = pkg.files?.join(",") === "src,templates";
+    if (!pkg.files || (pkg.files.join(",") !== "src" && !shipsTemplates)) problems.push(`files field is ${JSON.stringify(pkg.files)}, expected ["src"] or ["src","templates"]`);
+    if (shipsTemplates && !existsSync(join(tmp, "package", "templates", "starter", "common", "_gitignore"))) problems.push("templates/starter not shipped");
     if (!existsSync(join(tmp, "package", "LICENSE"))) problems.push("LICENSE not shipped");
     if (!existsSync(join(tmp, "package", "README.md"))) problems.push("README not shipped");
     if (!existsSync(join(tmp, "package", "src"))) problems.push("src/ not shipped");

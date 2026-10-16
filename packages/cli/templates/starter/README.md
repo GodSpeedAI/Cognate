@@ -14,8 +14,10 @@ my-app/
 └── package.json
 ```
 
-`cognate create` then vendors the `@godspeedai/*` packages the profile needs
-(`bun pm pack` from `--source` into `.cognate/vendor/`) and pins them in
-`package.json` via `file:` dependencies and `overrides` (DEBT-016).
+`cognate create` then pins the `@godspeedai/*` packages the profile needs to the CLI's own
+version, resolved from npm. With `--source <checkout>` it instead vendors them from that checkout
+(`bun pm pack` into `.cognate/vendor/`, pinned with `file:` dependencies and `overrides`).
+
+The `.gitignore` is stored as `_gitignore` here because npm and bun drop `.gitignore` from tarballs.
 
 Keep this template small: it is the first thing a user reads and edits.

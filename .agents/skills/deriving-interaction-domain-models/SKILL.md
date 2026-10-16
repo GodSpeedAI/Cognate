@@ -37,6 +37,24 @@ purpose or desired direction
 
 A desired result is not an affordance until a reachable path exposes its actors, preconditions, material payment, actions, authority, evidence, and settlement access.
 
+## Proportionate scope: small apps
+
+Scale the deliverables to the system, not the method. Use the **small-app path** when all of these hold:
+
+* one application boundary, built for one team or owner;
+* about six canonical journeys or fewer;
+* the evidence is one short request or brief, with no conflicting sources to reconcile.
+
+On the small-app path:
+
+* Run the same workflow, but compress steps 2–5 into one pass. The semantic chain, evidence discipline, and canonical journey rule still apply.
+* Write one `.sea` file where the application loads its model (for a Cognate app, its `domain/` directory) instead of `.sea/interaction/`.
+* Replace the separate companion artifacts with one `MODEL.md` beside it, containing: the boundary in a few lines; the journey catalog as one table (actor, initiating condition, steps and capabilities, authority or approval, evidence, settlement, failure and recovery); assumptions and unknowns; and the validation record (command and result).
+* Skip the source translation map unless there are two or more sources or a contradiction.
+* Validate exactly as in step 7, and end with one of the two canonicality conclusions.
+
+Switch to the full deliverables as soon as any condition stops holding: a second boundary, conflicting evidence, or journeys that outgrow one table.
+
 ## Workflow
 
 1. **Inspect evidence and repository conventions**
