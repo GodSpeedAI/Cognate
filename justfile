@@ -12,6 +12,10 @@ site-down:
 site-status:
     cd landing && bun scripts/site.ts status
 
+# Build and publish the landing page to https://cognate.gspeedai.com (needs `bun x wrangler login` once)
+site-deploy:
+    cd landing && (test -d node_modules || bun install) && bun run build && bun x wrangler deploy
+
 # Inspect available commands and prerequisites
 setup:
     @bun --version
