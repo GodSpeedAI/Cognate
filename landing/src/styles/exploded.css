@@ -8,6 +8,8 @@
 
 :root {
   --header-h: 64px;
+  /* Exponential ease-out for UI response (route completion, ledger stamp, decision state). */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Pinned sequences fill the viewport below the sticky header. */
@@ -259,6 +261,60 @@
 
 .overlay .edge-consumer {
   stroke-dasharray: 6 4;
+}
+
+/* Authority route: the selected part's verified edges, drawn in the signal gold. With motion allowed the route
+   completes in one exponential ease-out pass after selection (a UI response, not scroll). Reduced motion and no-JS
+   get the whole route at once. */
+.overlay .edge.route {
+  stroke: var(--signal);
+  stroke-width: 2;
+}
+
+/* The ledger row is the route's end: the L4 durable record writes the selected part's stores-in edge. */
+.ledger-row {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--signal);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overlay .edge.route {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: route-draw 380ms var(--ease-out-expo) both;
+  }
+  .ledger-row {
+    animation: stamp-in 240ms var(--ease-out-expo) both;
+  }
+}
+
+@keyframes route-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .capture-caption {
@@ -612,5 +668,20 @@
 
   .inspector-facts dd {
     margin-bottom: var(--space-3);
+  }
+}
+
+/* Tablet and narrow desktop: the faces are about 64px wide here, so the labels step down to fit (C-04 Permissions
+   clipped at 1024). Checked by tests/e2e/exploded.spec.ts: no face label overflows its face. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .face {
+    padding: 1px 2px;
+  }
+  .face-name {
+    font-size: 10px;
+    letter-spacing: -0.01em;
+  }
+  .face-num {
+    font-size: 10px;
   }
 }
