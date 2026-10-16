@@ -1,20 +1,26 @@
 // CG-CLI-001 (spec §37 Phase 10): `cognate create` (starter generation with profiles) and `cognate dev`
-// (runtime + Connect + AG-UI + UI server). Packages are not published to a registry (DEBT-016): `create`
-// vendors the `@godspeedai/*` packages a profile needs from `--source` with `bun pm pack` and pins them with
-// `file:` dependencies plus a package.json `overrides` map, so `workspace:*` inside the packed tarballs
-// resolves outside the workspace.
+// (runtime + Connect + AG-UI + UI server). `create` has two modes for the `@godspeedai/*` packages a profile needs:
+// - without `source` (the default): the generated app depends on the published packages at this CLI's exact
+//   version, resolved from npm;
+// - with `source` (unreleased local work, DEBT-016): `create` packs them from a Cognate checkout with
+//   `bun pm pack` into `.cognate/vendor/` and pins them with `file:` dependencies plus a package.json `overrides`
+//   map, so `workspace:*` inside the packed tarballs resolves outside the workspace.
+// The starter templates ship inside this package (`templates/starter`) and are resolved from the package directory.
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
+import { cp, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 export interface CreateOptions {
   readonly dir: string;
   readonly profile: "copilot" | "harness";
-  /** Path to a Cognate source checkout whose packages are packed and vendored (packages are not on npm; DEBT-016). */
-  readonly source: string;
+  /**
+   * Path to a Cognate source checkout whose packages are packed and vendored (unreleased local work; DEBT-016).
+   * Omitted: the app depends on the published `@godspeedai/*` packages at {@link CLI_VERSION} from npm.
+   */
+  readonly source?: string;
   /** Optional components requested beyond the profile; unsupported ones are reported and never imported. */
   readonly with?: readonly string[];
 }
@@ -25,6 +31,12 @@ export interface CreateReport {
   readonly vendored: readonly string[];
   readonly unsupported: readonly { readonly name: string; readonly reason: string }[];
 }
+
+/** This CLI's version; every `@godspeedai/*` package is released at the same version (linked Release Please). */
+export const CLI_VERSION: string = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { readonly version: string }).version;
+
+/** The starter templates shipped inside this package; the same directory in the workspace and the installed tarball. */
+export const STARTER_TEMPLATE_DIR: string = fileURLToPath(new URL("../templates/starter", import.meta.url));
 
 /** `--with` names the starter cannot yet wire up, with a specific reason where one is known. */
 const KNOWN_UNSUPPORTED: Readonly<Record<string, string>> = {
@@ -90,18 +102,33 @@ async function packPackage(pkgDir: string, destination: string): Promise<string>
   return basename(outputPath);
 }
 
-/** Generate a starter app from templates/starter for a profile. */
+/**
+ * Generate a starter app for a profile from the starter templates in this package. Without `source`, every
+ * `@godspeedai/*` `workspace:*` dependency becomes the exact {@link CLI_VERSION} and nothing is vendored.
+ */
 export async function create(options: CreateOptions): Promise<CreateReport> {
   const dir = resolve(options.dir);
-  const source = resolve(options.source);
-  const templateRoot = join(source, "templates", "starter");
-  if (!existsSync(templateRoot)) throw new Error(`cognate create: no template at ${templateRoot}`);
+  if (!existsSync(join(STARTER_TEMPLATE_DIR, options.profile))) throw new Error(`cognate create: no template for profile "${options.profile}" at ${STARTER_TEMPLATE_DIR}`);
 
   await mkdir(dir, { recursive: true });
-  await copyDir(join(templateRoot, "common"), dir);
-  await copyDir(join(templateRoot, options.profile), dir);
+  await copyDir(join(STARTER_TEMPLATE_DIR, "common"), dir);
+  await copyDir(join(STARTER_TEMPLATE_DIR, options.profile), dir);
+  // npm and bun drop `.gitignore` from published tarballs, so the template stores it as `_gitignore`.
+  await rename(join(dir, "_gitignore"), join(dir, ".gitignore"));
   const files = ["domain", "src/agents", "src/capabilities", "src/components", "src/projections", "src/ui", "test", "cognate.config.ts", "package.json"];
+  const unsupported = (options.with ?? []).map((name) => ({ name, reason: KNOWN_UNSUPPORTED[name] ?? `not available in the starter yet: ${name}` }));
 
+  if (options.source === undefined) {
+    const pkgPath = join(dir, "package.json");
+    const manifest = JSON.parse(await readFile(pkgPath, "utf8")) as { dependencies?: Record<string, string> };
+    for (const key of Object.keys(manifest.dependencies ?? {})) {
+      if (key.startsWith("@godspeedai/") && manifest.dependencies![key] === "workspace:*") manifest.dependencies![key] = CLI_VERSION;
+    }
+    await writeFile(pkgPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    return { dir, files, vendored: [], unsupported };
+  }
+
+  const source = resolve(options.source);
   const byName = await indexCognatePackages(source);
   const closure = await transitiveClosure(PROFILE_ROOTS[options.profile], byName);
 
@@ -126,8 +153,6 @@ export async function create(options: CreateOptions): Promise<CreateReport> {
     if (manifest.dependencies[key] === "workspace:*") manifest.dependencies[key] = fileDepFor.get(key) ?? manifest.dependencies[key]!;
   }
   await writeFile(pkgPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
-  const unsupported = (options.with ?? []).map((name) => ({ name, reason: KNOWN_UNSUPPORTED[name] ?? `not available in the starter yet: ${name}` }));
 
   return { dir, files, vendored: closure, unsupported };
 }

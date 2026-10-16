@@ -148,7 +148,7 @@ the implementation, the decision still stands and the current status is in the l
 | [../requirements/ledger.yaml](../requirements/ledger.yaml) | the workbench | the requirement/proof map; the authority on status |
 | [../.agents/specs/…](../.agents/specs/software-design-spec-cognate.-frameworkmd) | the workbench | the normative design; cited by section, never copied |
 | [../examples/README.md](../examples/README.md) | the examples | the runnable example index |
-| [../templates/starter/README.md](../templates/starter/README.md) | the template | the generated-app layout |
+| [../packages/cli/templates/starter/README.md](../packages/cli/templates/starter/README.md) | the template | the generated-app layout |
 | `packages/*/README.md`, `profiles/*/README.md` | each package | the per-package contract; required by `docs.test.ts` |
 | `packages/*/AGENTS.md`, `profiles/*/AGENTS.md` | each package | per-package guardrails for agents; required by `docs.test.ts` |
 

@@ -12,7 +12,7 @@ generate a project that already works.
 - The two reference profiles, which demonstrate that a user-facing copilot and an autonomous agent
   harness are compositions of the same substrate.
 - The `cognate` CLI: `create` (generate and vendor a starter) and `dev` (compose and serve).
-- `templates/starter`, the small tree a new application starts from.
+- `packages/cli/templates/starter`, the small tree a new application starts from.
 
 ## Non-responsibilities
 
@@ -75,9 +75,9 @@ oldest-first with status and output.
 
 ## Internal operation
 
-`cognate create <dir> --profile copilot|harness --source <path> [--with a,b]`:
+`cognate create <dir> --profile copilot|harness [--source <path>] [--with a,b]`, with `--source` (the vendoring path):
 
-1. copy `templates/starter/common` then `templates/starter/<profile>` over the target;
+1. copy `packages/cli/templates/starter/common` then `.../<profile>` over the target;
 2. index every `@godspeedai/*` package under `--source` by reading its `package.json` name;
 3. walk `dependencies` breadth-first from the profile's root packages to compute the transitive
    closure (roots: `@godspeedai/cognate-cli`, `@godspeedai/cognate-profile-<profile>`, `@godspeedai/domainforge`,
@@ -87,8 +87,9 @@ oldest-first with status and output.
    an `overrides` entry, so `workspace:*` inside the packed tarballs resolves outside the workspace;
 6. report `--with` names it cannot wire as `unsupported: <name> (<reason>)`, and never import them.
 
-Packing exists because nothing is published to a registry (DEBT-016). A `cognate create` without
-`--source` exits 1.
+Without `--source`, `create` pins the `@godspeedai/*` packages to the CLI's version from npm and
+vendors nothing. Packing is only the `--source` path, for building against a local checkout
+(DEBT-016).
 
 `cognate dev [--port N]` (default 3000) does the composition described in
 [startup-and-the-background-loop](../workflows/startup-and-the-background-loop.md), then serves:
@@ -126,7 +127,7 @@ both servers and closes the profile app.
 
 | Symptom | Cause | Recovery |
 |---|---|---|
-| `cognate create: --source is required` | packages are not published | pass a local checkout (DEBT-016) |
+| `cognate create` generated app fails to install `@godspeedai/*` | the CLI's version is not on npm yet, or the registry is unreachable | check the registry, or generate with `--source <checkout>` |
 | `cannot find source package "X" under --source` | the checkout does not contain a package the closure needs | check `--source` points at a full Cognate checkout |
 | `bun pm pack failed in <dir>` | the package manifest is unreadable or the directory is not a package | run it manually to see the error |
 | `unsupported: sona (SONA was rejected…)` | a `--with` name with a known reason | informational; SONA stays rejected (ADR-0005) |
@@ -143,12 +144,12 @@ both servers and closes the profile app.
 - **A new component in a profile** — add a `ComponentEntry` and mount its component. Dynamic
   components (tools, skills, providers) are added at runtime with `harness.mount`, and disposing
   them deactivates dependents.
-- **A new starter** — extend `templates/starter`, keeping it small: it is the first thing a user
+- **A new starter** — extend `packages/cli/templates/starter`, keeping it small: it is the first thing a user
   reads and edits.
 - **A new `--with` extra** — add a `ComponentEntry`; unsupported names must keep reporting their
   reason rather than being dropped.
 
-Not extension points: `templates/starter`'s internal layout beyond what `create` copies, the
+Not extension points: `packages/cli/templates/starter`'s internal layout beyond what `create` copies, the
 vendoring mechanism (it exists because of DEBT-016), or the dev token format.
 
 ## Source trail
@@ -162,7 +163,7 @@ vendoring mechanism (it exists because of DEBT-016), or the dev token format.
 - `packages/cli/src/index.ts` — `create`, `dev`, `BROWSER_ENTRY`, `KNOWN_UNSUPPORTED`,
   `PROFILE_ROOTS`, `transitiveClosure`.
 - `packages/cli/AGENTS.md` — the vendoring rule the implementation must keep.
-- `templates/starter/` — the generated layout.
+- `packages/cli/templates/starter/` — the generated layout.
 - `tests/integration/cli-create.test.ts` — generate → install → test → dev → restart, both profiles.
 - [../extensions.md](../extensions.md) — providers, adapters, and profiles in one page.
 

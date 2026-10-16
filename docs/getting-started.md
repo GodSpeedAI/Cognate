@@ -15,7 +15,7 @@ cd cognate
 bun install
 ```
 
-The `@godspeedai/*` packages are on npm, but `create` still needs a checkout: the published CLI tarball ships only `src/`, so `bun x @godspeedai/cognate-cli@0.5 create my-app` without `--source` fails ([DEBT-016](../.agents/DEBT.md)). `cognate create --source <checkout>` (below) works from a local checkout by vendoring packed packages; the rest of this page uses that path. To build an app from npm alone, see [building-with-cognate/references/cli.md](../.agents/skills/building-with-cognate/references/cli.md).
+From the first `@godspeedai/cognate-cli` release after 0.5.0, `cognate create my-app --profile copilot` needs no checkout: it pins the `@godspeedai/*` packages to the CLI's version from npm. The 0.5.0 CLI still requires `--source`. `cognate create --source <checkout>` (below) works from a local checkout by vendoring packed packages; the rest of this page uses that path. To build an app from npm alone, see [building-with-cognate/references/cli.md](../.agents/skills/building-with-cognate/references/cli.md). Remaining gap: [DEBT-016](../.agents/DEBT.md).
 
 ## Verify the substrate
 
@@ -47,7 +47,7 @@ cognate create my-app --profile copilot|harness --source /path/to/cognate/checko
 cd my-app && bun install && bun dev --port N
 ```
 
-`create` copies the profile's starter template, then vendors every `@godspeedai/*` package the profile needs from `--source` with `bun pm pack` into `.cognate/vendor/`, pinning each with a `file:` dependency and a matching `package.json` `overrides` entry — rather than fetching them from npm ([DEBT-016](../.agents/DEBT.md)). `--with <a,b>` reports unsupported extras (`unsupported: <name> (<reason>)`) and never silently imports them.
+`create` copies the profile's starter template and pins each `@godspeedai/*` package the profile needs to the CLI's version from npm. With `--source` it instead vendors them from the checkout with `bun pm pack` into `.cognate/vendor/`, pinning each with a `file:` dependency and a matching `package.json` `overrides` entry ([DEBT-016](../.agents/DEBT.md)). `--with <a,b>` reports unsupported extras (`unsupported: <name> (<reason>)`) and never silently imports them.
 
 `dev` (run from the generated app) loads `cognate.config.ts`, parses `domain/*.sea` through the DomainForge adapter (see [semantics.md](semantics.md)), starts the profile's app on `.cognate/app.sqlite` (state survives restart), and serves one `Bun.serve`: `GET /health`, the Connect `RuntimeService` at `/cognate.v1.RuntimeService/*` (dev-only `Bearer <tenant>:<user>` auth), `/agui` (copilot only), and `/` — an Astryx chat UI for copilot, a health JSON page for harness.
 

@@ -58,6 +58,20 @@
 "Runs DomainForge validation and parse equivalents and records CLI versions, commands, diagnostics, corrections, and limitations.",
 "Uses the domainforge-sea skill as the authoritative source for .sea syntax, DomainForge CLI usage, and validation procedures rather than independently inventing or reconstructing them."
 ]
+},
+{
+"id": 4,
+"prompt": "Build a small refund-desk app with Cognate: a support agent looks up an order and issues a refund; refunds over $50 wait for a human; every refund is recorded and the customer gets a receipt. Model the domain first.",
+"expected_output": "A small-app-path model: one validated .sea file in the app's domain/ directory and one MODEL.md beside it, ending with a canonicality conclusion.",
+"files": [],
+"expectations": [
+"Recognises the small-app conditions (one boundary, few journeys, one brief) and uses the small-app path rather than the full set of companion artifacts.",
+"Writes one .sea file in the app's domain/ directory and one MODEL.md beside it with boundary, journey table, assumptions and unknowns, and validation record.",
+"Does not produce a source translation map, because there is a single uncontested brief.",
+"Models the over-$50 approval as authority within the refund journey, with its evidence and settlement.",
+"Validates the .sea per domainforge-sea and ends with exactly one of the permitted canonicality conclusions.",
+"States that it would switch to the full deliverables if a second boundary or conflicting evidence appeared."
+]
 }
 ]
 }
