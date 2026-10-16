@@ -16,7 +16,9 @@ interface Props {
 }
 
 const { title, description, noindex = false, ogImage = '/og.png' } = Astro.props;
-// No canonical link: there is no public URL yet (U7). Add <link rel="canonical"> when it exists.
+// `site` in astro.config sets the public origin; canonical and OG URLs must be absolute.
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
 ---
 
 <!doctype html>
@@ -27,16 +29,18 @@ const { title, description, noindex = false, ogImage = '/og.png' } = Astro.props
     <meta name="description" content={description} />
     {noindex ? <meta name="robots" content="noindex" /> : <meta name="robots" content="index, follow" />}
     <title>{title}</title>
+    <link rel="canonical" href={canonical} />
+    <meta property="og:url" content={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
+    <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image" content={ogImageUrl} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <script is:inline>

@@ -3,3 +3,4 @@ dist
 .astro
 .preview.pid
 .site
+.wrangler

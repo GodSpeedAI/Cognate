@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/cognate-lockup-reversed.svg">
+  <img alt="Cognate" src="brand/cognate-lockup.svg" height="56">
+</picture>
+
 # Cognate
 
 **The agentic application framework.**
