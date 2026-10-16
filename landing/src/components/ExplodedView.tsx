@@ -77,7 +77,7 @@ const LAYER_TITLE: Record<LayerId, string> = {
 const Z_INDEX: Record<LayerId, number> = { L4: 1, L3: 2, L2: 5, L1: 6 };
 const FACE_Z = 4;
 
-const titleFor = (p: Part) => `${p.id} ${titleCase(p.label)} — ${lowerFirst(p.job)}`;
+const titleFor = (p: Part) => `${p.id} ${titleCase(p.label)}: ${lowerFirst(p.job)}`;
 
 interface PlateScene {
   id: LayerId;

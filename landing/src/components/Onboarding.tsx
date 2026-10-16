@@ -7,7 +7,7 @@ type Path = 'agent' | 'new';
 
 const STEPS = [
   { id: 'tools', title: 'Check you have the tools.', body: 'Bun 1.4 or newer, git, Node.js and a coding agent such as Claude Code.' },
-  { id: 'skill', title: 'Give your agent the skill.', body: 'Run both commands in an empty folder. Expected: "Installed 3 skills", with files under .claude/skills/.' },
+  { id: 'skill', title: 'Give your agent the skill.', body: 'Run both commands in order, in the same terminal. The first makes a refund-desk folder and moves into it. Expected: "Installed 3 skills", with files under .claude/skills/.' },
   { id: 'ask', title: 'Ask your agent.', body: 'Paste this request into your coding agent. It is the same request the README uses.' },
   { id: 'check', title: 'Check it yourself.', body: 'Run the tests. You are done when they pass on your machine.' },
 ] as const;
@@ -132,7 +132,7 @@ export default function Onboarding() {
             <code>{skillCommand}</code>
           </pre>
           <CopyButton text={skillCommand} targetId="cmd-skill-b" />
-          <p className="note">Using another agent? Change <span className="mono">-a</span> (see <span className="mono">npx skills add --help</span>). <a href="https://skills.sh/godspeedai/cognate/building-with-cognate">skills.sh listing</a>: coming soon (placeholder link).</p>
+          <p className="note">Using another agent? Change <span className="mono">-a</span> (see <span className="mono">npx skills add --help</span>). <a href="https://skills.sh/godspeedai/cognate/building-with-cognate">skills.sh listing</a>: coming soon.</p>
           <details className="failed">
             <summary>It failed</summary>
             <p>Install takes about a minute because it downloads the repo. If it fails, copy <span className="mono">.agents/skills/building-with-cognate</span>, <span className="mono">deriving-interaction-domain-models</span> and <span className="mono">domainforge-sea</span> from GitHub into <span className="mono">.claude/skills/</span>.</p>
@@ -151,7 +151,7 @@ export default function Onboarding() {
           <CopyButton text={firstRequest} targetId="cmd-ask" />
           <details className="failed">
             <summary>It failed</summary>
-            <p>The agent didn't use the skill → start your message with "Use the building-with-cognate skill". It wants the DomainForge CLI → let it install with <span className="mono">cargo install domainforge-core --features cli --locked</span>, or tell it to use the skill's no-CLI check. It asks for a Cognate source checkout, or tries <span className="mono">cognate create</span> → tell it: "Don't use <span className="mono">cognate create</span>. Add the published <span className="mono">@godspeedai/cognate-*</span> packages with <span className="mono">bun add</span> and build the app directly." That's the verified route.</p>
+            <p>If the agent didn't use the skill, start your message with "Use the building-with-cognate skill". If it wants the DomainForge CLI, let it install with <span className="mono">cargo install domainforge-core --features cli --locked</span>, or tell it to use the skill's no-CLI check. If it asks for a Cognate source checkout or tries <span className="mono">cognate create</span>, tell it: "Don't use <span className="mono">cognate create</span>. Add the published <span className="mono">@godspeedai/cognate-*</span> packages with <span className="mono">bun add</span> and build the app directly." That's the verified route.</p>
           </details>
         </li>
 
@@ -164,7 +164,7 @@ export default function Onboarding() {
           <pre id="cmd-test">
             <code>{testCommand}</code>
           </pre>
-          <p>Expected: passing tests for small refund completes, large refund waits for approval, approval completes it, denial refunds nothing, and the history records each step.</p>
+          <p>Expected: passing tests for each journey. A small refund completes. A large refund waits for approval. Approval completes it. Denial refunds nothing. The history records each step.</p>
           <CopyButton text={testCommand} targetId="cmd-test" />
           <details className="failed">
             <summary>It failed</summary>

@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T00:00:00Z",
+  "title": "Design System: Cognate Landing",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Warm Drafting Paper", "canonical": "oklch(97.2% 0.008 85)", "darkValue": "oklch(19% 0.012 250)", "purpose": "Page ground, header, cartridges." },
+      "paper-2": { "role": "neutral", "displayName": "Inset Vellum", "canonical": "oklch(94% 0.01 85)", "darkValue": "oklch(23% 0.014 250)", "purpose": "Inset panels, code ground, demos, hero plate." },
+      "ink": { "role": "neutral", "displayName": "Graphite Linework", "canonical": "oklch(22% 0.015 255)", "darkValue": "oklch(93% 0.01 85)", "purpose": "Body text, headings, 1px strokes of active parts." },
+      "ink-2": { "role": "neutral", "displayName": "Pencil Grey", "canonical": "oklch(42% 0.015 255)", "darkValue": "oklch(76% 0.012 85)", "purpose": "Secondary text, captions, default borders, layer tags." },
+      "rule": { "role": "neutral", "displayName": "Hairline Stone", "canonical": "oklch(82% 0.012 85)", "darkValue": "oklch(36% 0.014 250)", "purpose": "1px rules, leader lines, plate borders at rest." },
+      "signal": { "role": "primary", "displayName": "Drafting Orange", "canonical": "oklch(54% 0.17 45)", "darkValue": "oklch(72% 0.15 50)", "brandHex": "#ba4300", "purpose": "The one thing to look at now: primary CTA, focus ring, active rail step, selected part, edge traces." },
+      "human": { "role": "secondary", "displayName": "Decision Green-Teal", "canonical": "oklch(46% 0.11 165)", "darkValue": "oklch(74% 0.1 165)", "purpose": "Only where a person approves, denies, accepts or authorizes." },
+      "part-model": { "role": "category", "displayName": "Pale Slate Blue", "canonical": "oklch(92% 0.035 250)", "darkValue": "oklch(34% 0.035 250)", "purpose": "Cartridge fill, model category." },
+      "part-act": { "role": "category", "displayName": "Pale Teal Mist", "canonical": "oklch(92% 0.035 200)", "darkValue": "oklch(34% 0.035 200)", "purpose": "Cartridge fill, act category." },
+      "part-control": { "role": "category", "displayName": "Pale Violet Mist", "canonical": "oklch(92% 0.035 305)", "darkValue": "oklch(34% 0.035 305)", "purpose": "Cartridge fill, control category." },
+      "part-work": { "role": "category", "displayName": "Pale Straw", "canonical": "oklch(92% 0.035 90)", "darkValue": "oklch(34% 0.035 90)", "purpose": "Cartridge fill, work category (default fill)." },
+      "part-history": { "role": "category", "displayName": "Pale Sage", "canonical": "oklch(92% 0.035 150)", "darkValue": "oklch(34% 0.035 150)", "purpose": "Cartridge fill, history category." }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "H1 only; hero headline." },
+      "headline": { "displayName": "Headline", "purpose": "Section H2s, one per beat." },
+      "title": { "displayName": "Title", "purpose": "H3s and beat sub-heads." },
+      "body": { "displayName": "Body", "purpose": "Running text, 68ch measure; 17px below 768px." },
+      "label": { "displayName": "Label (mono)", "purpose": "Part numbers, commands, code, status chip. Not running prose." }
+    },
+    "shadows": [
+      { "name": "sheet-lift", "value": "0 -4px 16px oklch(0% 0 0 / 0.12)", "purpose": "Mobile inspector bottom sheet below 768px. The only shadow in the build." }
+    ],
+    "motion": [
+      { "name": "reduced-motion-collapse", "value": "transition-duration: 0ms; animation-duration: 0ms", "purpose": "Under prefers-reduced-motion. No other CSS transitions exist; the exploded view is a pure function of scroll." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-max", "value": "767px" },
+      { "name": "tablet", "value": "768px" },
+      { "name": "desktop", "value": "1024px" },
+      { "name": "rail-hide", "value": "1100px" },
+      { "name": "text-frame", "value": "1200px" }
+    ],
+    "darkMode": {
+      "trigger": "prefers-color-scheme: dark, unless [data-theme='light']; or [data-theme='dark'] explicitly",
+      "note": "Values are in colorMeta.darkValue. Dark is derived from the same system ('drawing on slate')."
+    },
+    "focus": {
+      "rule": ":focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Single primary call to action per view.",
+      "html": "<a class=\"ds-btn-primary\" href=\"#start\">Build your first app</a>",
+      "css": ".ds-btn-primary { display: inline-block; font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; font-size: 15px; padding: 8px 14px; border: 1px solid oklch(54% 0.17 45); border-radius: 4px; background: oklch(54% 0.17 45); color: oklch(97.2% 0.008 85); text-decoration: none; cursor: pointer; } .ds-btn-primary:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
+    },
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Secondary action beside the primary.",
+      "html": "<a class=\"ds-btn\" href=\"#proof\">See it taken apart</a>",
+      "css": ".ds-btn { display: inline-block; font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; font-size: 15px; padding: 8px 14px; border: 1px solid oklch(42% 0.015 255); border-radius: 4px; background: oklch(97.2% 0.008 85); color: oklch(22% 0.015 255); text-decoration: none; cursor: pointer; } .ds-btn:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
+    },
+    {
+      "name": "Human Decision Button",
+      "kind": "button",
+      "refersTo": "button-human",
+      "description": "Decision controls only: approve, deny, accept.",
+      "html": "<button class=\"ds-btn-human\" type=\"button\">Accept the result</button>",
+      "css": ".ds-btn-human { display: inline-block; font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; font-size: 15px; padding: 8px 14px; border: 1px solid oklch(46% 0.11 165); border-radius: 4px; background: oklch(97.2% 0.008 85); color: oklch(46% 0.11 165); cursor: pointer; } .ds-btn-human:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
+    },
+    {
+      "name": "Cartridge",
+      "kind": "custom",
+      "refersTo": "cartridge",
+      "description": "Capability part on the exploded shelf; fill by category, number on the face.",
+      "html": "<button class=\"ds-cart\" data-cat=\"model\" aria-pressed=\"false\"><span class=\"ds-cart-num\">C-07</span><span class=\"ds-cart-name\">Approvals</span></button>",
+      "css": ".ds-cart { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 72px; padding: 8px 10px; border: 1px solid oklch(42% 0.015 255); border-radius: 10px; background: oklch(92% 0.035 250); color: oklch(22% 0.015 255); font: inherit; text-align: left; cursor: pointer; } .ds-cart[aria-pressed='true'] { border: 2px solid oklch(54% 0.17 45); } .ds-cart-num { font-family: 'Martian Mono Variable', ui-monospace, monospace; font-size: 12px; line-height: 1.2; } .ds-cart-name { font-size: 13px; font-weight: 600; line-height: 1.2; } .ds-cart:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
+    },
+    {
+      "name": "Code Block",
+      "kind": "custom",
+      "refersTo": "code-block",
+      "description": "Commands in plain code blocks with a copy control.",
+      "html": "<pre class=\"ds-code\"><code>npm install @godspeedai/cognate-cli</code></pre>",
+      "css": ".ds-code { overflow-x: auto; margin: 0; background: oklch(94% 0.01 85); border: 1px solid oklch(82% 0.012 85); border-radius: 4px; padding: 12px; font-family: 'Martian Mono Variable', ui-monospace, monospace; font-size: 13px; line-height: 1.5; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Assembly Drawing",
+    "overview": "The page is a precise, annotated technical illustration printed on warm drafting paper. Its one dense moment is the exploded view: a real Workbench capture separates into layers, and capability cartridges stand on an oblique shelf with part numbers, leader lines and an inspector column. Everything around that moment is quiet: a single text column at 68ch, hairline rules between beats, generous vertical rhythm, and real captures shown bare with a caption. The system is light-first; dark ('drawing on slate') is the same system inverted. It rejects purple or blue AI gradients, glowing brains, neural node clouds, particle fields, fake browser, terminal or IDE chrome, icon-over-heading three-card grids, hero metric tiles, and dark-first neon.",
+    "keyCharacteristics": [
+      "Warm paper ground with a cool graphite ink; contrast carries hierarchy, not color.",
+      "One signal accent (drafting orange) marks the single thing to look at now.",
+      "One human accent (decision green-teal) appears only where a person decides.",
+      "Hairline rules (1px) and flat surfaces; depth is tonal, not shadowed.",
+      "Newsreader for voice, Hanken Grotesk for text, Martian Mono for part numbers and commands.",
+      "Cartridges and leader lines are the only illustrative vocabulary; no other iconography."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Drafting Orange marks the one thing the reader should look at now. Its rarity is the point.", "section": "colors" },
+      { "name": "The Person Decides Rule", "body": "Decision Green-Teal appears only where a human approves, denies, accepts or authorizes an extension.", "section": "colors" },
+      { "name": "The Measure Rule", "body": "Running text stops at 68ch. Wide things (captures, the stage, code) may be wide; prose is not.", "section": "typography" },
+      { "name": "The Mono Is For Identifiers Rule", "body": "Martian Mono sets part numbers, commands, code and status. It does not set running sentences.", "section": "typography" },
+      { "name": "The Flat Paper Rule", "body": "Surfaces are flat at rest. Depth is a tonal step or a hairline, never a drop shadow. A shadow is allowed only where a surface overlays content it describes.", "section": "elevation" },
+      { "name": "The Hairline Rule", "body": "Structure is drawn with 1px lines in Hairline Stone. Selected or active items take a 2px Drafting Orange or Graphite stroke, not a glow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set running text at 18px / 1.6 on desktop, 17px below 768px, with a 68ch measure.",
+      "Do use Drafting Orange for at most one thing per view: the next action or the thing to check.",
+      "Do reserve Decision Green-Teal for approvals, denials, acceptance and authorization, and nothing else.",
+      "Do separate beats with a 1px Hairline Stone top rule and 96px / 64px vertical padding.",
+      "Do caption every capture as real or as an illustration, and keep the caption under the image.",
+      "Do keep the exploded view's cartridges in the category fills, with the part number on the front face.",
+      "Do keep dashed lines for sockets, the agent layer, the branch and mating lines; they are the drawing's notation.",
+      "Do keep the connector notch on cartridges; it is the drawing's signature device.",
+      "Do keep every animation tied to a relationship or state change, and collapse it under reduced motion."
+    ],
+    "donts": [
+      "Don't use purple or blue AI gradients, glowing brains, neural node clouds or particle fields.",
+      "Don't build fake browser, terminal or IDE chrome around screens. Real captures only, captioned as real.",
+      "Don't make icon-over-heading three-card feature grids, hero metric tiles or benchmark numbers.",
+      "Don't go dark-first or neon-on-black; light paper is primary.",
+      "Don't borrow Cognate-Workbench's cockpit styling (cobalt accent, Inter, Space Grotesk or JetBrains Mono) outside its captures.",
+      "Don't set type in Inter, Space Grotesk, Fraunces, IBM Plex Mono, Instrument Sans or Instrument Serif.",
+      "Don't add decorative motion. Every animation reveals a relationship or a state change.",
+      "Don't use Decision Green-Teal as a decorative accent or a heading color.",
+      "Don't add kicker or eyebrow labels above headings. The current ones are a defect the build carries, not a pattern to copy.",
+      "Don't use glyph icons or emoji as UI signifiers. The speed marker in the build is a defect, not a pattern.",
+      "Don't add drop shadows to cards or buttons. The sheet lift is the single exception.",
+      "Don't claim 'effortless', 'magic' or 'autonomous' as a selling point, or 'done' without evidence."
+    ]
+  }
+}
