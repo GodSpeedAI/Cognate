@@ -50,10 +50,12 @@ export const RUNTIME_PACKAGES: Runtime[] = [
   },
 ];
 
+// Fonts shipped in dist/ (imported in src/layouts/Base.astro). Each one is SIL OFL 1.1; tests/notices.test.ts checks this list against the imports.
 export const FONT_FAMILIES = [
-  { name: 'Newsreader', pkg: '@fontsource-variable/newsreader', slug: 'newsreader', use: 'display type' },
-  { name: 'Hanken Grotesk', pkg: '@fontsource-variable/hanken-grotesk', slug: 'hanken-grotesk', use: 'text and UI type' },
-  { name: 'Martian Mono', pkg: '@fontsource-variable/martian-mono', slug: 'martian-mono', use: 'mono type' },
+  { name: 'Josefin Sans', pkg: '@fontsource-variable/josefin-sans', slug: 'josefin-sans', use: 'display headings and signal lines' },
+  { name: 'IBM Plex Sans', pkg: '@fontsource/ibm-plex-sans', slug: 'ibm-plex-sans', use: 'body and functional headings' },
+  { name: 'IBM Plex Mono', pkg: '@fontsource/ibm-plex-mono', slug: 'ibm-plex-mono', use: 'evidence, code and diagram labels' },
+  { name: 'Josefin Slab', pkg: '@fontsource/josefin-slab', slug: 'josefin-slab', use: 'editorial accent' },
 ] as const;
 
 // Workbench captures: Apache-2.0, copied with `git show <sha>:<path>` (see PROVENANCE.md).

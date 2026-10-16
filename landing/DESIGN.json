@@ -4,132 +4,82 @@
   "title": "Design System: Cognate Landing",
   "extensions": {
     "colorMeta": {
-      "paper": { "role": "neutral", "displayName": "Warm Drafting Paper", "canonical": "oklch(97.2% 0.008 85)", "darkValue": "oklch(19% 0.012 250)", "purpose": "Page ground, header, cartridges." },
-      "paper-2": { "role": "neutral", "displayName": "Inset Vellum", "canonical": "oklch(94% 0.01 85)", "darkValue": "oklch(23% 0.014 250)", "purpose": "Inset panels, code ground, demos, hero plate." },
-      "ink": { "role": "neutral", "displayName": "Graphite Linework", "canonical": "oklch(22% 0.015 255)", "darkValue": "oklch(93% 0.01 85)", "purpose": "Body text, headings, 1px strokes of active parts." },
-      "ink-2": { "role": "neutral", "displayName": "Pencil Grey", "canonical": "oklch(42% 0.015 255)", "darkValue": "oklch(76% 0.012 85)", "purpose": "Secondary text, captions, default borders, layer tags." },
-      "rule": { "role": "neutral", "displayName": "Hairline Stone", "canonical": "oklch(82% 0.012 85)", "darkValue": "oklch(36% 0.014 250)", "purpose": "1px rules, leader lines, plate borders at rest." },
-      "signal": { "role": "primary", "displayName": "Drafting Orange", "canonical": "oklch(54% 0.17 45)", "darkValue": "oklch(72% 0.15 50)", "brandHex": "#ba4300", "purpose": "The one thing to look at now: primary CTA, focus ring, active rail step, selected part, edge traces." },
-      "human": { "role": "secondary", "displayName": "Decision Green-Teal", "canonical": "oklch(46% 0.11 165)", "darkValue": "oklch(74% 0.1 165)", "purpose": "Only where a person approves, denies, accepts or authorizes." },
-      "part-model": { "role": "category", "displayName": "Pale Slate Blue", "canonical": "oklch(92% 0.035 250)", "darkValue": "oklch(34% 0.035 250)", "purpose": "Cartridge fill, model category." },
-      "part-act": { "role": "category", "displayName": "Pale Teal Mist", "canonical": "oklch(92% 0.035 200)", "darkValue": "oklch(34% 0.035 200)", "purpose": "Cartridge fill, act category." },
-      "part-control": { "role": "category", "displayName": "Pale Violet Mist", "canonical": "oklch(92% 0.035 305)", "darkValue": "oklch(34% 0.035 305)", "purpose": "Cartridge fill, control category." },
-      "part-work": { "role": "category", "displayName": "Pale Straw", "canonical": "oklch(92% 0.035 90)", "darkValue": "oklch(34% 0.035 90)", "purpose": "Cartridge fill, work category (default fill)." },
-      "part-history": { "role": "category", "displayName": "Pale Sage", "canonical": "oklch(92% 0.035 150)", "darkValue": "oklch(34% 0.035 150)", "purpose": "Cartridge fill, history category." }
+      "paper": { "role": "neutral", "displayName": "Ivory", "canonical": "#f7f3ea", "darkValue": "#05070a", "purpose": "Light page ground; dark instrument-panel ground in dark scheme and on the hero, stage and footer surfaces (Prussian on the footer)." },
+      "paper-2": { "role": "neutral", "displayName": "Mist", "canonical": "#e7ebee", "darkValue": "#0b1a26", "purpose": "Inset grounds: code, demos, plates." },
+      "ink": { "role": "neutral", "displayName": "Prussian Blue", "canonical": "#003153", "darkValue": "#f7f3ea", "purpose": "Headings and body text on light; ivory text on dark." },
+      "ink-2": { "role": "neutral", "displayName": "Slate", "canonical": "#566978", "darkValue": "#a7b4bf", "purpose": "Secondary text, captions, default borders." },
+      "rule": { "role": "neutral", "displayName": "Mist step (hairline)", "canonical": "#b3bfc8", "darkValue": "#33495a", "purpose": "Decorative section rules and plate borders at rest. Decorative only." },
+      "signal": { "role": "primary", "displayName": "Muted Gold", "canonical": "#d7a84a", "darkValue": "#d7a84a", "purpose": "Proof, authority, selection and route: primary CTA fill, proof marker, selected tint, route traces on dark. Never text on ivory." },
+      "select": { "role": "primary", "displayName": "Selection outline", "canonical": "#003153", "darkValue": "#d7a84a", "purpose": "Selected part outline and focus ring." },
+      "route": { "role": "primary", "displayName": "Route trace", "canonical": "#003153", "darkValue": "#d7a84a", "purpose": "Exploded-view edges and arrowheads." },
+      "human": { "role": "secondary", "displayName": "Allow", "canonical": "#2f8f5b", "darkValue": "#4cb47a", "purpose": "Approval strokes and fills. Only where a person decides." },
+      "human-text": { "role": "secondary", "displayName": "Allow (text)", "canonical": "#22774d", "darkValue": "#4cb47a", "purpose": "Decision text on light (4.97:1 on ivory). Brand Allow is 3.65:1 on ivory, so text uses this step." },
+      "deny-text": { "role": "utility", "displayName": "Deny (text)", "canonical": "#9e2f2f", "darkValue": "#d9776f", "purpose": "Refused-by-policy text in the permission demo." },
+      "part-model": { "role": "category", "displayName": "Prussian tint 1", "canonical": "oklch(92% 0.02 245)", "darkValue": "oklch(27% 0.04 245)", "purpose": "Cartridge fill, category Models." },
+      "part-act": { "role": "category", "displayName": "Mist white", "canonical": "oklch(97% 0.006 245)", "darkValue": "oklch(22% 0.02 245)", "purpose": "Cartridge fill, category Act." },
+      "part-control": { "role": "category", "displayName": "Prussian tint 2", "canonical": "oklch(88% 0.03 250)", "darkValue": "oklch(33% 0.05 250)", "purpose": "Cartridge fill, category Control." },
+      "part-work": { "role": "category", "displayName": "Mist grey", "canonical": "oklch(94.5% 0.008 230)", "darkValue": "oklch(25% 0.012 240)", "purpose": "Cartridge fill, category Work." },
+      "part-history": { "role": "category", "displayName": "Slate tint", "canonical": "oklch(86% 0.012 240)", "darkValue": "oklch(38% 0.02 240)", "purpose": "Cartridge fill, category History." }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "H1 only; hero headline." },
-      "headline": { "displayName": "Headline", "purpose": "Section H2s, one per beat." },
-      "title": { "displayName": "Title", "purpose": "H3s and beat sub-heads." },
-      "body": { "displayName": "Body", "purpose": "Running text, 68ch measure; 17px below 768px." },
-      "label": { "displayName": "Label (mono)", "purpose": "Part numbers, commands, code, status chip. Not running prose." }
+      "display": { "family": "Josefin Sans Variable", "weights": "500", "use": "H1, H2, eyebrows, stage caption, transition line", "tracking": "0 (display); 0.3em (eyebrow caps)" },
+      "text": { "family": "IBM Plex Sans", "weights": "400, 600", "use": "body, H3, buttons, labels" },
+      "mono": { "family": "IBM Plex Mono", "weights": "400, 500", "use": "code, commands, evidence, part numbers, diagram labels" },
+      "slab": { "family": "Josefin Slab", "weights": "400", "use": "editorial accent: dialogue request, pull line, closing line (sparingly)" }
     },
-    "shadows": [
-      { "name": "sheet-lift", "value": "0 -4px 16px oklch(0% 0 0 / 0.12)", "purpose": "Mobile inspector bottom sheet below 768px. The only shadow in the build." }
-    ],
-    "motion": [
-      { "name": "reduced-motion-collapse", "value": "transition-duration: 0ms; animation-duration: 0ms", "purpose": "Under prefers-reduced-motion. No other CSS transitions exist; the exploded view is a pure function of scroll." }
-    ],
-    "breakpoints": [
-      { "name": "mobile-max", "value": "767px" },
-      { "name": "tablet", "value": "768px" },
-      { "name": "desktop", "value": "1024px" },
-      { "name": "rail-hide", "value": "1100px" },
-      { "name": "text-frame", "value": "1200px" }
-    ],
+    "shadows": {
+      "sheet": { "value": "0 -4px 16px oklch(0% 0 0 / 0.12)", "use": "Mobile inspector sheet only (below 768px)" }
+    },
+    "motion": {
+      "principle": "No CSS transitions. Exploded view is a pure function of scroll. Reduced motion shows the final keyframe.",
+      "easing": "none declared"
+    },
+    "breakpoints": { "mobile": "767px", "tablet": "1023px", "rail-hidden": "1100px", "page-measure": "1200px" },
     "darkMode": {
-      "trigger": "prefers-color-scheme: dark, unless [data-theme='light']; or [data-theme='dark'] explicitly",
-      "note": "Values are in colorMeta.darkValue. Dark is derived from the same system ('drawing on slate')."
+      "strategy": "prefers-color-scheme plus [data-theme]; dark scopes .theme-dark (hero, stage) and .theme-prussian (footer) apply in both schemes",
+      "instrumentPanel": "Near Black field, Prussian structure, ivory type, gold proof, gray-blue linework"
     },
-    "focus": {
-      "rule": ":focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }"
-    }
+    "focus": { "style": "2px outline, 2px offset, Prussian (light) or gold (dark)" }
   },
-  "components": [
-    {
-      "name": "Primary Button",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Single primary call to action per view.",
-      "html": "<a class=\"ds-btn-primary\" href=\"#start\">Build your first app</a>",
-      "css": ".ds-btn-primary { display: inline-block; font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; font-size: 15px; padding: 8px 14px; border: 1px solid oklch(54% 0.17 45); border-radius: 4px; background: oklch(54% 0.17 45); color: oklch(97.2% 0.008 85); text-decoration: none; cursor: pointer; } .ds-btn-primary:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
-    },
-    {
-      "name": "Default Button",
-      "kind": "button",
-      "refersTo": "button-default",
-      "description": "Secondary action beside the primary.",
-      "html": "<a class=\"ds-btn\" href=\"#proof\">See it taken apart</a>",
-      "css": ".ds-btn { display: inline-block; font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; font-size: 15px; padding: 8px 14px; border: 1px solid oklch(42% 0.015 255); border-radius: 4px; background: oklch(97.2% 0.008 85); color: oklch(22% 0.015 255); text-decoration: none; cursor: pointer; } .ds-btn:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
-    },
-    {
-      "name": "Human Decision Button",
-      "kind": "button",
-      "refersTo": "button-human",
-      "description": "Decision controls only: approve, deny, accept.",
-      "html": "<button class=\"ds-btn-human\" type=\"button\">Accept the result</button>",
-      "css": ".ds-btn-human { display: inline-block; font-family: 'Hanken Grotesk Variable', system-ui, sans-serif; font-size: 15px; padding: 8px 14px; border: 1px solid oklch(46% 0.11 165); border-radius: 4px; background: oklch(97.2% 0.008 85); color: oklch(46% 0.11 165); cursor: pointer; } .ds-btn-human:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
-    },
-    {
-      "name": "Cartridge",
-      "kind": "custom",
-      "refersTo": "cartridge",
-      "description": "Capability part on the exploded shelf; fill by category, number on the face.",
-      "html": "<button class=\"ds-cart\" data-cat=\"model\" aria-pressed=\"false\"><span class=\"ds-cart-num\">C-07</span><span class=\"ds-cart-name\">Approvals</span></button>",
-      "css": ".ds-cart { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 72px; padding: 8px 10px; border: 1px solid oklch(42% 0.015 255); border-radius: 10px; background: oklch(92% 0.035 250); color: oklch(22% 0.015 255); font: inherit; text-align: left; cursor: pointer; } .ds-cart[aria-pressed='true'] { border: 2px solid oklch(54% 0.17 45); } .ds-cart-num { font-family: 'Martian Mono Variable', ui-monospace, monospace; font-size: 12px; line-height: 1.2; } .ds-cart-name { font-size: 13px; font-weight: 600; line-height: 1.2; } .ds-cart:focus-visible { outline: 2px solid oklch(54% 0.17 45); outline-offset: 2px; }"
-    },
-    {
-      "name": "Code Block",
-      "kind": "custom",
-      "refersTo": "code-block",
-      "description": "Commands in plain code blocks with a copy control.",
-      "html": "<pre class=\"ds-code\"><code>npm install @godspeedai/cognate-cli</code></pre>",
-      "css": ".ds-code { overflow-x: auto; margin: 0; background: oklch(94% 0.01 85); border: 1px solid oklch(82% 0.012 85); border-radius: 4px; padding: 12px; font-family: 'Martian Mono Variable', ui-monospace, monospace; font-size: 13px; line-height: 1.5; }"
-    }
-  ],
+  "components": {
+    "button-primary": { "backgroundColor": "#d7a84a", "textColor": "#05070a", "rounded": "4px", "padding": "8px 14px", "use": "Hero and start CTA, once per view" },
+    "button-default": { "backgroundColor": "paper", "textColor": "ink", "border": "1px ink-2", "rounded": "4px" },
+    "button-human": { "backgroundColor": "paper", "textColor": "human-text", "border": "1px human", "rounded": "4px", "use": "Decision controls only" },
+    "cartridge": { "backgroundColor": "part tint", "textColor": "ink", "rounded": "10px", "notch": "6px connector, top centre", "selected": "2px select outline over 16% gold tint" },
+    "code-block": { "backgroundColor": "paper-2", "textColor": "ink", "rounded": "4px", "padding": "12px" },
+    "proof-marker": { "backgroundColor": "signal", "size": "8px square", "use": "Replaces the lightning glyph in copy; aria-hidden" }
+  },
   "narrative": {
-    "northStar": "The Assembly Drawing",
-    "overview": "The page is a precise, annotated technical illustration printed on warm drafting paper. Its one dense moment is the exploded view: a real Workbench capture separates into layers, and capability cartridges stand on an oblique shelf with part numbers, leader lines and an inspector column. Everything around that moment is quiet: a single text column at 68ch, hairline rules between beats, generous vertical rhythm, and real captures shown bare with a caption. The system is light-first; dark ('drawing on slate') is the same system inverted. It rejects purple or blue AI gradients, glowing brains, neural node clouds, particle fields, fake browser, terminal or IDE chrome, icon-over-heading three-card grids, hero metric tiles, and dark-first neon.",
+    "northStar": "Receipts Visible",
+    "overview": "An authority manual for AI work: a dark cinematic hero, one exploded assembly drawing of a real capture as the signature, and ivory editorial sections. Evidence-disciplined: every proof is a real capture or a labelled drawing.",
     "keyCharacteristics": [
-      "Warm paper ground with a cool graphite ink; contrast carries hierarchy, not color.",
-      "One signal accent (drafting orange) marks the single thing to look at now.",
-      "One human accent (decision green-teal) appears only where a person decides.",
-      "Hairline rules (1px) and flat surfaces; depth is tonal, not shadowed.",
-      "Newsreader for voice, Hanken Grotesk for text, Martian Mono for part numbers and commands.",
-      "Cartridges and leader lines are the only illustrative vocabulary; no other iconography."
+      "Ivory and near-black grounds; Prussian identity; contrast carries hierarchy.",
+      "Gold marks proof, selection and the one primary action; never text on ivory.",
+      "Allow green only where a person decides.",
+      "Flat surfaces and hairlines. No gradients, glow, particles or decorative shadows.",
+      "Josefin Sans display, IBM Plex Sans text, IBM Plex Mono evidence, Josefin Slab sparingly."
     ],
     "rules": [
-      { "name": "The One Signal Rule", "body": "Drafting Orange marks the one thing the reader should look at now. Its rarity is the point.", "section": "colors" },
-      { "name": "The Person Decides Rule", "body": "Decision Green-Teal appears only where a human approves, denies, accepts or authorizes an extension.", "section": "colors" },
-      { "name": "The Measure Rule", "body": "Running text stops at 68ch. Wide things (captures, the stage, code) may be wide; prose is not.", "section": "typography" },
-      { "name": "The Mono Is For Identifiers Rule", "body": "Martian Mono sets part numbers, commands, code and status. It does not set running sentences.", "section": "typography" },
-      { "name": "The Flat Paper Rule", "body": "Surfaces are flat at rest. Depth is a tonal step or a hairline, never a drop shadow. A shadow is allowed only where a surface overlays content it describes.", "section": "elevation" },
-      { "name": "The Hairline Rule", "body": "Structure is drawn with 1px lines in Hairline Stone. Selected or active items take a 2px Drafting Orange or Graphite stroke, not a glow.", "section": "elevation" }
+      "The Gold Is Proof Rule: gold is never body text on ivory and never a large wash.",
+      "The Person Decides Rule: Allow appears only at a human decision.",
+      "The Measure Rule: running text stops at 68ch.",
+      "The Mono Is For Identifiers Rule: Plex Mono sets identifiers, code and status, not sentences.",
+      "The Flat Paper Rule: depth is a tonal step or a hairline; the sheet lift is the only shadow.",
+      "The Hairline Rule: structure is drawn with 1px lines; selection is a 2px outline, not a glow."
     ],
     "dos": [
-      "Do set running text at 18px / 1.6 on desktop, 17px below 768px, with a 68ch measure.",
-      "Do use Drafting Orange for at most one thing per view: the next action or the thing to check.",
-      "Do reserve Decision Green-Teal for approvals, denials, acceptance and authorization, and nothing else.",
-      "Do separate beats with a 1px Hairline Stone top rule and 96px / 64px vertical padding.",
-      "Do caption every capture as real or as an illustration, and keep the caption under the image.",
-      "Do keep the exploded view's cartridges in the category fills, with the part number on the front face.",
-      "Do keep dashed lines for sockets, the agent layer, the branch and mating lines; they are the drawing's notation.",
-      "Do keep the connector notch on cartridges; it is the drawing's signature device.",
-      "Do keep every animation tied to a relationship or state change, and collapse it under reduced motion."
+      "Use gold for proof, selection, route and the one primary action.",
+      "Keep the connector notch and the dashed notation of the drawing.",
+      "Caption every capture as real or as an illustration.",
+      "Collapse every animation under reduced motion."
     ],
     "donts": [
-      "Don't use purple or blue AI gradients, glowing brains, neural node clouds or particle fields.",
-      "Don't build fake browser, terminal or IDE chrome around screens. Real captures only, captioned as real.",
-      "Don't make icon-over-heading three-card feature grids, hero metric tiles or benchmark numbers.",
-      "Don't go dark-first or neon-on-black; light paper is primary.",
-      "Don't borrow Cognate-Workbench's cockpit styling (cobalt accent, Inter, Space Grotesk or JetBrains Mono) outside its captures.",
-      "Don't set type in Inter, Space Grotesk, Fraunces, IBM Plex Mono, Instrument Sans or Instrument Serif.",
-      "Don't add decorative motion. Every animation reveals a relationship or a state change.",
-      "Don't use Decision Green-Teal as a decorative accent or a heading color.",
-      "Don't add kicker or eyebrow labels above headings. The current ones are a defect the build carries, not a pattern to copy.",
-      "Don't use glyph icons or emoji as UI signifiers. The speed marker in the build is a defect, not a pattern.",
-      "Don't add drop shadows to cards or buttons. The sheet lift is the single exception.",
-      "Don't claim 'effortless', 'magic' or 'autonomous' as a selling point, or 'done' without evidence."
+      "No gradients, glow, neon, particle fields or decorative glass.",
+      "No gold text on ivory.",
+      "No green headings or decorative green.",
+      "No glyph icons or emoji as signifiers.",
+      "No drop shadows on cards or buttons.",
+      "No 'effortless', 'magic', 'autonomous' as a selling point, and no 'done' without evidence."
     ]
   }
 }

@@ -340,7 +340,7 @@ export default function ExplodedView({ parts = keyframeParts, defaultSelection =
             <svg className="overlay" width={size.w} height={size.h} viewBox={`0 0 ${size.w} ${size.h}`} aria-hidden="true" focusable="false">
               <defs>
                 <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                  <path d="M0,0 L8,4 L0,8 z" style={{ fill: 'var(--signal)' }} />
+                  <path d="M0,0 L8,4 L0,8 z" style={{ fill: 'var(--route)' }} />
                 </marker>
               </defs>
               {scene.mating.map((s) => (

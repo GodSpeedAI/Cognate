@@ -69,7 +69,7 @@ export default function SequenceC() {
     <Root start="top top" end="bottom bottom" disabled>
       <div className="seq-track seq-c" data-sequence="C">
         <div className="seq-pin" ref={pinRef}>
-          <div className="seq-stage">
+          <div className="seq-stage theme-dark">
             <p className="seq-caption" aria-live="polite">
               {CAPTIONS[caption]}
             </p>

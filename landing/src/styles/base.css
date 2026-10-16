@@ -1,4 +1,4 @@
-/* Base typography and page ground. Scale: 1.333 ratio; body 18px/1.6 desktop, 17px mobile. */
+/* Base typography and page ground. Josefin Sans display, IBM Plex Sans text, IBM Plex Mono evidence. */
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -10,12 +10,13 @@ body {
   color: var(--ink);
   font-family: var(--font-text);
   font-size: 18px;
-  line-height: 1.6;
+  line-height: 28px;
 }
 
 @media (max-width: 767px) {
   body {
-    font-size: 17px;
+    font-size: 16px;
+    line-height: 24px;
   }
 }
 
@@ -24,25 +25,35 @@ svg {
   max-width: 100%;
 }
 
+/* Display headings: Josefin Sans Medium, tracking 0, line-height 105 to 115 percent. */
 h1,
-h2,
-h3 {
+h2 {
   font-family: var(--font-display);
   font-weight: 500;
-  line-height: 1.15;
+  letter-spacing: 0;
+  line-height: 1.08;
+  margin: 0 0 var(--space-3);
+}
+
+/* Functional headings: IBM Plex Sans SemiBold, tracking -1, line-height 110 to 120 percent. */
+h3 {
+  font-family: var(--font-text);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   margin: 0 0 var(--space-3);
 }
 
 h1 {
-  font-size: clamp(40px, 6vw, 76px);
+  font-size: clamp(44px, 6.6vw, 88px);
 }
 
 h2 {
-  font-size: clamp(28px, 3.4vw, 42px);
+  font-size: clamp(34px, 4.2vw, 56px);
 }
 
 h3 {
-  font-size: 24px;
+  font-size: 22px;
 }
 
 p {
@@ -52,19 +63,19 @@ p {
 
 a {
   color: var(--ink);
-  text-decoration-color: var(--signal);
+  text-decoration-color: var(--link-line);
   text-underline-offset: 3px;
 }
 
 :focus-visible {
-  outline: 2px solid var(--signal);
+  outline: 2px solid var(--select);
   outline-offset: 2px;
 }
 
 .mono {
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  letter-spacing: 0;
 }
 
 .visually-hidden {
