@@ -1,28 +1,56 @@
 /*
- * Design tokens, implementing actualize/artifacts/direction/creative-direction.md exactly.
- * Light is primary. Dark ("drawing on slate") is derived from the same system and applies
- * when the reader prefers it, or when [data-theme="dark"] is set explicitly.
+ * Design tokens, GodSpeed visual language (godspeed-growth/brand/visual/visual-language.md), AI-Native register.
+ * Supersedes the paper-and-drafting-orange tokens of actualize/artifacts/direction/creative-direction.md (see D21).
+ *
+ * Light: ivory field, Prussian type, gold micro-accents, slate and mist linework.
+ * Dark: "instrument panel": near-black field, Prussian structure, ivory type, gold proof accents, thin gray-blue lines.
+ * The hero, the exploded-view stage and the footer are dark surfaces in both schemes. They opt in with
+ * .theme-dark or .theme-prussian, which redefine the same tokens on that element.
  */
 
 :root {
-  --paper: oklch(97.2% 0.008 85);
-  --paper-2: oklch(94% 0.01 85);
-  --ink: oklch(22% 0.015 255);
-  --ink-2: oklch(42% 0.015 255);
-  --rule: oklch(82% 0.012 85);
-  /* Light --signal is 54% (not 58%) so paper text on it reaches 4.5:1 (direction spec: every text pair >= 4.5). */
-  --signal: oklch(54% 0.17 45);
-  /* Light --human is 46% (not 52%) for 4.5:1 on paper-2 tints; see iterations.md. */
-  --human: oklch(46% 0.11 165);
-  --part-model: oklch(92% 0.035 250);
-  --part-act: oklch(92% 0.035 200);
-  --part-control: oklch(92% 0.035 305);
-  --part-work: oklch(92% 0.035 90);
-  --part-history: oklch(92% 0.035 150);
+  /* Brand palette, from the visual language doc (Core Palette and Optional Utility Colors). */
+  --prussian: #003153;
+  --near-black: #05070a;
+  --ivory: #f7f3ea;
+  --gold: #d7a84a;
+  --slate: #566978;
+  --mist: #e7ebee;
+  --allow: #2f8f5b;
+  --escalate: #c58a2a;
+  --deny: #9e2f2f;
+  --unknown: #7c8790;
 
-  --font-display: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
-  --font-text: 'Hanken Grotesk Variable', system-ui, sans-serif;
-  --font-mono: 'Martian Mono Variable', ui-monospace, monospace;
+  /* Light scheme. */
+  --paper: var(--ivory);
+  --paper-2: var(--mist);
+  --ink: var(--prussian);
+  --ink-2: var(--slate);
+  /* Hairlines are a darker mist step: #e7ebee is 1.1:1 on ivory and would disappear. Decorative only. */
+  --rule: #b3bfc8;
+  /* Gold is never text on ivory (1.98:1). It fills buttons (with --btn-ink), marks proof, and tints selection. */
+  --signal: var(--gold);
+  /* Selection outline and route traces are Prussian on light (11:1), gold on dark. */
+  --select: var(--prussian);
+  --route: var(--prussian);
+  --link-line: var(--slate);
+  --btn-ink: var(--near-black);
+  /* The decision colour. Allow green as a stroke or fill; the darker step is for text on paper (4.97:1). */
+  --human: var(--allow);
+  --human-text: #22774d;
+  --deny-text: var(--deny);
+
+  /* Cartridge fills: five tints of the Prussian hue, distinguished by lightness and by the Plex Mono code. */
+  --part-model: oklch(92% 0.02 245);
+  --part-act: oklch(97% 0.006 245);
+  --part-control: oklch(88% 0.03 250);
+  --part-work: oklch(94.5% 0.008 230);
+  --part-history: oklch(86% 0.012 240);
+
+  --font-display: 'Josefin Sans Variable', 'Josefin Sans', system-ui, sans-serif;
+  --font-text: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-slab: 'Josefin Slab', Georgia, serif;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -41,32 +69,61 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: oklch(19% 0.012 250);
-    --paper-2: oklch(23% 0.014 250);
-    --ink: oklch(93% 0.01 85);
-    --ink-2: oklch(76% 0.012 85);
-    --rule: oklch(36% 0.014 250);
-    --signal: oklch(72% 0.15 50);
-    --human: oklch(74% 0.1 165);
-    --part-model: oklch(34% 0.035 250);
-    --part-act: oklch(34% 0.035 200);
-    --part-control: oklch(34% 0.035 305);
-    --part-work: oklch(34% 0.035 90);
-    --part-history: oklch(34% 0.035 150);
+    --paper: var(--near-black);
+    --paper-2: #0b1a26;
+    --ink: var(--ivory);
+    --ink-2: #a7b4bf;
+    --rule: #33495a;
+    --signal: var(--gold);
+    --select: var(--gold);
+    --route: var(--gold);
+    --link-line: var(--gold);
+    --btn-ink: var(--near-black);
+    --human: #4cb47a;
+    --human-text: #4cb47a;
+    --deny-text: #d9776f;
+    --part-model: oklch(27% 0.04 245);
+    --part-act: oklch(22% 0.02 245);
+    --part-control: oklch(33% 0.05 250);
+    --part-work: oklch(25% 0.012 240);
+    --part-history: oklch(38% 0.02 240);
   }
 }
 
-:root[data-theme='dark'] {
-  --paper: oklch(19% 0.012 250);
-  --paper-2: oklch(23% 0.014 250);
-  --ink: oklch(93% 0.01 85);
-  --ink-2: oklch(76% 0.012 85);
-  --rule: oklch(36% 0.014 250);
-  --signal: oklch(72% 0.15 50);
-  --human: oklch(74% 0.1 165);
-  --part-model: oklch(34% 0.035 250);
-  --part-act: oklch(34% 0.035 200);
-  --part-control: oklch(34% 0.035 305);
-  --part-work: oklch(34% 0.035 90);
-  --part-history: oklch(34% 0.035 150);
+:root[data-theme='dark'],
+.theme-dark {
+  --paper: var(--near-black);
+  --paper-2: #0b1a26;
+  --ink: var(--ivory);
+  --ink-2: #a7b4bf;
+  --rule: #33495a;
+  --signal: var(--gold);
+  --select: var(--gold);
+  --route: var(--gold);
+  --link-line: var(--gold);
+  --btn-ink: var(--near-black);
+  --human: #4cb47a;
+  --human-text: #4cb47a;
+  --deny-text: #d9776f;
+  --part-model: oklch(27% 0.04 245);
+  --part-act: oklch(22% 0.02 245);
+  --part-control: oklch(33% 0.05 250);
+  --part-work: oklch(25% 0.012 240);
+  --part-history: oklch(38% 0.02 240);
+}
+
+/* Prussian authority surface (footer). Text is ivory, proof stays gold. */
+.theme-prussian {
+  --paper: var(--prussian);
+  --paper-2: #0a2a42;
+  --ink: var(--ivory);
+  --ink-2: #b7c4cd;
+  --rule: #2e5068;
+  --signal: var(--gold);
+  --select: var(--gold);
+  --route: var(--gold);
+  --link-line: var(--gold);
+  --btn-ink: var(--near-black);
+  --human: #4cb47a;
+  --human-text: #4cb47a;
 }

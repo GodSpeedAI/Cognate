@@ -28,6 +28,12 @@ describe('third-party notices', () => {
     expect(text).toContain('SIL Open Font License');
   });
 
+  test('lists exactly the fonts Base.astro imports', () => {
+    const base = readFileSync(resolve(import.meta.dir, '../src/layouts/Base.astro'), 'utf8');
+    const imported = [...base.matchAll(/import '(@fontsource[^']*)';/g)].map((m) => m[1].replace(/\/\d+\.css$/, ''));
+    expect(new Set(imported)).toEqual(new Set(FONT_FAMILIES.map((f) => f.pkg)));
+  });
+
   test('includes the Workbench Apache-2.0 notice with owner and pinned SHAs', () => {
     const text = readFileSync(notices, 'utf8');
     expect(text).toContain('Copyright GodSpeedAI');

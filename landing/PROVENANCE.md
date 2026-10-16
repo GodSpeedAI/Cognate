@@ -58,9 +58,10 @@ Self-hosted woff2 files from the fontsource variable packages. The OFL text, wit
 
 | Family | Package | Version | Copyright |
 |---|---|---|---|
-| Newsreader | @fontsource-variable/newsreader | 5.3.0 | The Newsreader Project Authors (2020) |
-| Hanken Grotesk | @fontsource-variable/hanken-grotesk | 5.3.0 | The Hanken Grotesk Project Authors (2021) |
-| Martian Mono | @fontsource-variable/martian-mono | 5.3.0 | The Martian Mono Project Authors (2020) |
+| Josefin Sans | @fontsource-variable/josefin-sans | 5.3.0 | The Josefin Sans Project Authors (2010), Reserved Font Name "Josefin Sans" |
+| IBM Plex Sans | @fontsource/ibm-plex-sans | 5.3.0 | IBM Corp. (2019) |
+| IBM Plex Mono | @fontsource/ibm-plex-mono | 5.3.0 | IBM Corp. (2017) |
+| Josefin Slab | @fontsource/josefin-slab | 5.3.0 | The Josefin Slab Project Authors (2020), Reserved Font Name "Josefin" |
 
 The fonts are not modified or renamed, so the Reserved Font Name clauses do not apply. No external requests are made at runtime; the fonts are served from this site.
 

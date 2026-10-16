@@ -45,11 +45,11 @@ export async function writeWebpDerivatives(origin: string): Promise<string[]> {
   return written;
 }
 
-/** 1200x630 OG image: the lockup and headline beside the keyframe stage (no browser chrome). */
+/** 1200x630 OG image: the reversed lockup and headline beside the keyframe stage, on the dark field (no browser chrome). */
 export async function writeOgImage(origin: string): Promise<string> {
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: 'light' });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: 'dark' });
     await page.goto(`${origin}/keyframe/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.stage-wrap svg', { state: 'visible' });
     await page.evaluate(() => {
@@ -59,13 +59,13 @@ export async function writeOgImage(origin: string): Promise<string> {
     await page.waitForTimeout(300);
     const stageBox = (await page.locator('.stage-wrap').boundingBox())!;
     const stagePng = await page.screenshot({ clip: stageBox });
-    const mark = readFileSync(resolve(landingDir, '..', 'brand', 'cognate-lockup.svg'), 'utf8');
+    const mark = readFileSync(resolve(landingDir, '..', 'brand', 'cognate-lockup-reversed.svg'), 'utf8');
     await page.setViewportSize({ width: 1200, height: 630 });
     await page.evaluate(
       ({ mark, img }) => {
         document.body.innerHTML = `<div class="og"><div class="og-copy">${mark}<p class="og-line">You steer the software.<br>AI agents build it, and work within it.</p><p class="og-url">The agentic application framework<br>cognate.gspeedai.com</p></div><img class="og-stage" src="${img}" alt=""></div>`;
         const css = document.createElement('style');
-        css.textContent = `html,body{margin:0;background:var(--paper)}.og{width:1200px;height:630px;box-sizing:border-box;display:grid;grid-template-columns:470px 1fr;align-items:center;gap:8px;padding:56px 40px 56px 64px;overflow:hidden}.og-copy svg{height:60px;width:auto;display:block}.og-line{font-family:var(--font-display);font-size:40px;line-height:1.15;color:var(--ink);margin:36px 0 28px;letter-spacing:-0.01em}.og-url{font-family:var(--font-mono);font-size:15px;color:var(--ink-2);margin:0}.og-stage{width:100%;max-height:540px;object-fit:contain}`;
+        css.textContent = `html,body{margin:0;background:#05070a}.og{width:1200px;height:630px;box-sizing:border-box;display:grid;grid-template-columns:470px 1fr;align-items:center;gap:8px;padding:56px 40px 56px 64px;overflow:hidden;background:#05070a;color:#f7f3ea}.og-copy svg{height:60px;width:auto;display:block}.og-line{font-family:'Josefin Sans Variable','Josefin Sans',system-ui,sans-serif;font-weight:500;font-size:44px;line-height:1.08;color:#f7f3ea;margin:36px 0 28px;letter-spacing:0}.og-url{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:15px;color:#a7b4bf;margin:0;line-height:1.5}.og-stage{width:100%;max-height:540px;object-fit:contain}`;
         document.head.append(css);
         window.scrollTo(0, 0);
       },

@@ -1,6 +1,6 @@
 # Product: Cognate landing page
 
-Sources: `actualize/artifacts/brand/brand.md`, `actualize/artifacts/direction/creative-direction.md`, `actualize/artifacts/marketing/copy-deck.md` (owner-approved Product Actualizer run, model@7, 2026-10-15). Those files are authoritative; this is the working summary for design commands.
+Sources: `actualize/artifacts/brand/brand.md`, `actualize/artifacts/direction/creative-direction.md`, `actualize/artifacts/marketing/copy-deck.md` (owner-approved Product Actualizer run, model@7, 2026-10-15), and the owner's visual language `godspeed-growth/brand/visual/visual-language.md`. The visual language is authoritative for tokens, type and colour (see D21 in creative-direction.md); the rest of those files stands. This is the working summary for design commands.
 
 ## Register
 
@@ -18,7 +18,7 @@ The page exists to move a visitor to one activation: their coding agent builds a
 - Intelligent non-developers and technical leaders deciding whether to trust AI with building and running software. They want to understand how it is put together and where the person stays in charge.
 - Skeptics of AI autonomy. They look for permissions, approvals, and evidence, not adjectives.
 
-Scene: a curious, intelligent reader on a laptop or phone, in daylight or office light, trying to understand what this is before deciding whether to trust an AI with their software. Light paper is primary; dark ("drawing on slate") is derived.
+Scene: a curious, intelligent reader on a laptop or phone, in daylight or office light, trying to understand what this is before deciding whether to trust an AI with their software. Ivory is the primary light field. The hero, the exploded-view stage and the footer are dark instrument panels in both schemes.
 
 ## Brand personality
 
@@ -34,13 +34,13 @@ Refuse: revolutionary, magic, effortless, autonomous (as a selling point), unlea
 - Icon-over-heading three-card feature grids, hero metric tiles, benchmark numbers.
 - Dark-first neon developer look.
 - Cognate-Workbench's cockpit styling (its cobalt, Inter/Space Grotesk/JetBrains Mono) outside its captures.
-- Reflex-reject typefaces: Inter, Space Grotesk, Fraunces, IBM Plex Mono, Instrument Sans/Serif.
+- Reflex-reject typefaces: Inter, Space Grotesk, Fraunces, Instrument Sans/Serif. IBM Plex Mono is prescribed by the owner's visual language for evidence and labels, so it is allowed here.
 - Decorative motion. Every animation reveals a relationship or a state change.
 
 ## Strategic principles
 
 1. **Truth over polish.** No unsupported claims, no fake screens, no dead controls. Every capability claim is source-verified (`bun run verify:sources`). Cognate-Workbench is an app built with Cognate (a coding and work agent harness), never "Cognate" itself, and never a supervision cockpit. Do not claim parallel Specialists.
 2. **One signature.** The exploded assembly drawing of a real Workbench capture is where distinctiveness is spent. Everything else stays quiet: type, rules, white space, real captures.
-3. **The person decides.** `--human` green appears only where a person approves, denies, accepts, or authorizes. `--signal` orange marks the one thing to look at now.
+3. **The person decides.** Allow green (`--human`) appears only where a person approves, denies, accepts, or authorizes. Muted gold (`--signal`) marks proof, authority, selection, and the one thing to look at now; it is never text on ivory.
 4. **No reader loses information.** Reduced motion, no-JS, keyboard, touch, and screen-reader readers get the full story (static keyframe and text parts list).
 5. **Copy is kept in sync.** The README and the page share commands and the first request; `tests/readme.test.ts` enforces it.

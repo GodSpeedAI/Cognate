@@ -173,8 +173,8 @@
 }
 
 .face[data-state='selected'] {
-  border: 2px solid var(--signal);
-  background: color-mix(in srgb, var(--signal) 14%, var(--paper));
+  border: 2px solid var(--select);
+  background: color-mix(in srgb, var(--signal) 16%, var(--paper));
 }
 
 /* Dimmed parts keep full-contrast text on a lighter fill. */
@@ -245,7 +245,7 @@
 
 .overlay .edge {
   fill: none;
-  stroke: var(--signal);
+  stroke: var(--route);
   stroke-width: 1.75;
 }
 
@@ -521,7 +521,7 @@
   }
 
   .m-cart[aria-pressed='true'] {
-    border: 2px solid var(--signal);
+    border: 2px solid var(--select);
   }
 
   .tag-num {

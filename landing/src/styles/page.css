@@ -47,7 +47,7 @@
 .status-chip {
   margin-left: auto;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   border: 1px solid var(--rule);
   border-radius: var(--radius-small);
   padding: 2px 8px;
@@ -68,12 +68,14 @@
   display: grid;
   gap: 6px;
 }
+/* The rail floats over dark bands too, so each link carries its own ivory ground for legibility. */
 .rail a {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-2);
+  background: var(--paper);
   text-decoration: none;
-  padding-left: 14px;
+  padding: 1px 8px 1px 14px;
   border-left: 2px solid var(--rule);
 }
 .rail a[aria-current='step'] {
@@ -101,9 +103,16 @@ main {
   max-width: 68ch;
 }
 
+/* Dark cinematic hero: a full-bleed near-black band in both schemes (the theme-dark scope sets the tokens). */
 .hero {
   padding-top: var(--space-9);
   border-top: 0;
+  background: var(--paper);
+  color: var(--ink);
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
+  padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
 }
 .hero h1 {
   max-width: 18ch;
@@ -112,13 +121,17 @@ main {
   font-size: 20px;
 }
 
+/* Eyebrows and signal lines: Josefin Sans Medium, ALL CAPS, tracking +250 to +400. Engraved, not a subtitle. */
 .eyebrow,
 .kicker {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
   color: var(--ink-2);
-  text-transform: none;
+  margin-bottom: var(--space-3);
 }
 
 .ctas {
@@ -130,6 +143,8 @@ main {
 .btn {
   display: inline-block;
   font: inherit;
+  font-family: var(--font-text);
+  font-weight: 600;
   font-size: 15px;
   padding: 8px 14px;
   border: 1px solid var(--ink-2);
@@ -146,11 +161,11 @@ main {
 .btn-primary {
   background: var(--signal);
   border-color: var(--signal);
-  color: var(--paper);
+  color: var(--btn-ink);
 }
 .btn-human {
   border-color: var(--human);
-  color: var(--human);
+  color: var(--human-text);
 }
 .btn-quiet {
   border-color: transparent;
@@ -165,9 +180,10 @@ main {
   max-width: 68ch;
 }
 .dialogue .request {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 22px;
+  font-family: var(--font-slab);
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1.3;
 }
 .dialogue .who {
   font-family: var(--font-text);
@@ -191,12 +207,21 @@ main {
 }
 .transition {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
   margin-top: var(--space-5);
 }
 
+/* The proof marker: a small gold square in place of the glyph. Gold marks proof, it is not text. */
 .speed {
-  color: var(--signal);
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 var(--space-2) 2px 0;
+  background: var(--signal);
+  font-size: 0;
+  vertical-align: middle;
 }
 
 .capture {
@@ -232,10 +257,11 @@ main {
 }
 
 .distinction {
-  font-family: var(--font-display);
-  font-size: 22px;
-  color: var(--human);
-  border-left: 3px solid var(--human);
+  font-family: var(--font-slab);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--ink);
+  border-left: 3px solid var(--signal);
   padding-left: var(--space-3);
 }
 
@@ -295,9 +321,20 @@ main {
 }
 .seq-caption {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
   margin: 0 0 var(--space-3);
   min-height: 1.4em;
+}
+/* The exploded-view stage is an instrument panel: a full-bleed dark band, the same gutter rule as the hero. */
+.seq-stage.theme-dark {
+  background: var(--paper);
+  color: var(--ink);
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
+  padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
 }
 .seq-skip {
   font-size: 14px;
@@ -324,7 +361,7 @@ main {
   border-color: var(--ink-2);
 }
 .stamps li:last-child[data-done='true'] {
-  color: var(--human);
+  color: var(--human-text);
   border-color: var(--human);
 }
 .branch-capture img {
@@ -388,7 +425,7 @@ main {
   margin: 0 0 var(--space-2);
 }
 .denied {
-  color: var(--ink);
+  color: var(--deny-text);
   font-weight: 600;
 }
 .event-row {
@@ -422,7 +459,7 @@ main {
   border-width: 2px;
 }
 .gate-mark {
-  color: var(--human);
+  color: var(--human-text);
   font-weight: 600;
 }
 .demo-actions {
@@ -484,7 +521,10 @@ main {
   left: 8px;
   top: -20px;
   font-family: var(--font-mono);
+  font-weight: 500;
   font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--ink-2);
   white-space: nowrap;
 }
@@ -544,7 +584,7 @@ main {
   display: inline-block;
   font-family: var(--font-mono);
   font-size: 14px;
-  color: var(--human);
+  color: var(--human-text);
   border: 2px solid var(--human);
   border-radius: var(--radius-small);
   padding: 4px 10px;
@@ -571,7 +611,8 @@ main {
 }
 .step-n {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
 }
 .show-file {
   margin-top: var(--space-3);
@@ -606,8 +647,9 @@ main {
 }
 .closing {
   margin-top: var(--space-5);
-  font-family: var(--font-display);
-  font-size: 22px;
+  font-family: var(--font-slab);
+  font-size: 24px;
+  line-height: 1.3;
 }
 
 /* Onboarding (H) */
@@ -692,7 +734,7 @@ main {
   border-radius: var(--radius-small);
 }
 .success h3 {
-  color: var(--human);
+  color: var(--human-text);
   font-size: 22px;
 }
 .honest-note {
@@ -708,13 +750,18 @@ main {
   display: inline-block;
 }
 
+/* Prussian authority surface (the .theme-prussian scope in tokens.css). Full-bleed, text inside the page measure. */
 .site-footer {
-  /* Same measure and gutter as the sections above, so the rule and text line up with them. */
-  width: min(var(--text-frame), 100% - 2 * var(--space-5));
-  margin: var(--space-8) auto 0;
+  margin: var(--space-8) 0 0;
   padding: var(--space-6) 0;
-  border-top: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
   font-size: 15px;
+}
+.site-footer > * {
+  width: min(var(--text-frame), 100% - 2 * var(--space-5));
+  margin-left: auto;
+  margin-right: auto;
 }
 .site-footer .links {
   display: flex;
