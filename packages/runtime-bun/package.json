@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-runtime-bun",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Bun reference runtime: composes kernel, durable store, runs, continuations, commitments, artifacts, and cognition behind RuntimeService.",
   "type": "module",
   "license": "Apache-2.0",

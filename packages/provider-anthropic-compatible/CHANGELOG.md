@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-anthropic-compatible-v0.5.0...cognate-provider-anthropic-compatible-v0.6.0) (2026-10-17)
+
+
+### Miscellaneous Chores
+
+* **cognate-provider-anthropic-compatible:** Synchronize cognate SDK packages versions
+
 ## [0.5.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-anthropic-compatible-v0.4.0...cognate-provider-anthropic-compatible-v0.5.0) (2026-10-15)
 
 

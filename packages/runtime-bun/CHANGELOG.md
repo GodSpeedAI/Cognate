@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.5.0...cognate-runtime-bun-v0.6.0) (2026-10-17)
+
+
+### Features
+
+* **runtime:** executor run-ownership lifecycle with fenced writes and ambiguous-effect reconciliation ([222456e](https://github.com/GodSpeedAI/Cognate/commit/222456e989cd33c79499a0c919b7fae5e41af283))
+* **runtime:** run-write ownership with fenced appends and ambiguous-effect reconciliation ([b15d7b8](https://github.com/GodSpeedAI/Cognate/commit/b15d7b84d490ef66e1b1adf1270d46b52c38a5fe))
+
 ## [0.5.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.4.0...cognate-runtime-bun-v0.5.0) (2026-10-15)
 
 
