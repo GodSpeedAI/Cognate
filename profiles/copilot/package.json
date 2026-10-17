@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-profile-copilot",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "Copilot reference profile: a composition of runtime, runs, continuations, frontend capabilities, state and artifact projections, AG-UI, React, and Astryx (spec §29.1). No kernel additions.",
   "type": "module",
   "license": "Apache-2.0",

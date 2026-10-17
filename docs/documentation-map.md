@@ -169,7 +169,9 @@ the implementation, the decision still stands and the current status is in the l
 - [evidence/fenced-outbox-leases.md](evidence/fenced-outbox-leases.md) — store conformance and stale-owner regression evidence.
 - [evidence/postgres-idempotency-pool.md](evidence/postgres-idempotency-pool.md) — saturated connection-pool replay deadlock and transaction-local fix.
 - [evidence/pr42-release-readiness.md](evidence/pr42-release-readiness.md) — actionable review fixes, release audit and remaining operator authorization gates.
+- [evidence/sdk-publication-receipts.md](evidence/sdk-publication-receipts.md) — exact-version public registry metadata and commit-association receipt verification.
 - [runtime-concurrency.md](runtime-concurrency.md) — bounded run admission, resource contention and limits.
+- [evidence/async-run-admission.md](evidence/async-run-admission.md) — awaited trusted resource-key lookup, shutdown abort, and focused regression evidence.
 - [contracts/linux-bubblewrap-world.md](contracts/linux-bubblewrap-world.md) — opt-in Linux child-process containment and explicitly unclosed production requirements.
 - [source-map.md](source-map.md) — concept to implementation.
 - [README.md](README.md) — intent-based navigation.

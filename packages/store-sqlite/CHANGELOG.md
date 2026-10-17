@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.4.0...cognate-store-sqlite-v0.5.0) (2026-10-15)
+
+
+### Miscellaneous Chores
+
+* **cognate-store-sqlite:** Synchronize cognate SDK packages versions
+
+## [0.4.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.3.0...cognate-store-sqlite-v0.4.0) (2026-10-14)
+
+
+### Features
+
+* fence native dispatch and admit bounded independent runs ([ab4dd2a](https://github.com/GodSpeedAI/Cognate/commit/ab4dd2ae5e3ecc6c4a415c43ae66ffcbf631da22))
+* native fenced dispatch, bounded runs and Linux execution world ([c6e3207](https://github.com/GodSpeedAI/Cognate/commit/c6e32079844dd36dd6c20d3516f8c6ac2f2c67f0))
+
 ## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-sqlite-v0.2.0...cognate-store-sqlite-v0.3.0) (2026-10-12)
 
 

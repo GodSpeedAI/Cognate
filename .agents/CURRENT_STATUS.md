@@ -1,33 +1,27 @@
 # Current status
 
-**Status revision:** 61
+**Status revision:** 69
 
-**Summary:** Independent reviewer gate removed by operator. All 81 SDK verification gates pass after AG-UI settled-stream test correction; fresh exact-head CI and packaging precede final merge/release authorization.
+**Summary:** SDK 0.5.0 publication is verified at all 45 packages. PR #47 adds a fail-closed public registry receipt gate; its source and nine regressions pass all native gates. Exact-head CI passed, and this readable status update will receive fresh checks before final merge authorization.
 
-The [review and release gate evidence](../docs/evidence/pr42-release-readiness.md) records the
-three actionable CodeRabbit corrections, exact regressions and read-only release audit. Run and
-continuation topics now share admission before claiming; alternating priority prevents starvation
-at capacity one. Actual execution and resource exclusion still use the native execution gate,
-including direct recovery. Worker failures wait for sibling settlement before surfacing.
+The operator-approved PR #44 and linked SDK 0.5.0 release are merged. All 45 public npm versions and
+gitHeads match release **dd13c842**. Initial visibility lag contradicted green publish jobs; the
+targeted retry skipped publication once the missing version became visible. Its cause is not
+established. A fresh all-package consumer proves native asynchronous admission and PostgreSQL
+overlap. Workbench consumes only supported 0.5.0 packages.
 
-Targeted events, continuations and runtime tests with real PostgreSQL: **225 pass, zero fail,
-772 assertions**, with seventeen optional external CEP tests skipped. SDK typecheck passes.
-The actual Linux OS suite passes ten tests / 29 assertions. The final isolated full run passes **81/81 gates**, exit zero, in about 49 seconds.
-The AG-UI tests now await settled SSE streams rather than HTTP headers; twenty repeated file runs
-pass 100 tests / 160 assertions. Failed gate diagnostics are retained rather than discarded.
+[PR #47](https://github.com/GodSpeedAI/Cognate/pull/47) verifies every public package after publishing.
+Requests reject redirects and omit credentials. Five workers, a 30-minute deadline, a 10-second
+request timeout and a 256 KiB body cap bound work. Release-created runs fail when publishing
+readiness is disabled or the publish matrix failed or was skipped. Only complete receipts upload.
 
-Read-only audit confirms all 45 linked npm packages have latest 0.3.0, including the nine historical
-publication failures. Release run 38300385888 now reports successful publish jobs and the readiness
-variable is true. CI and packaging passed previous pushed head 7d9b80f; new source requires fresh
-checks. The operator removed the independent GitHub reviewer requirement. The remaining gates require
-final authorization: **do not merge or publish**. npm linked publication is not transactional.
+The **nine publication regressions / 32 assertions** run in the standard `just verify` recipe.
+Typecheck, documentation, proof routing and **81/81 implemented gates** pass against actual
+PostgreSQL. The initial truncated Bun-types installation was repaired using unchanged frozen
+dependencies. PR source head **0679f8f** passed exact-head CI; this status correction needs fresh
+checks. CodeRabbit's minor readability finding is addressed in the current snapshot while prior
+append-only records remain intact.
 
-Outbox fencing is not distributed run-write fencing. Caller-clock leases, old SQL writers,
-process ownership, worker-version admission and ambiguous external effects retain documented
-limitations. The opt-in Linux world contains child processes only and is not a complete production
-security boundary. Aggregate quotas, production identity/tenant integration and independent review
-remain outstanding. Workbench continues using published Cognate 0.2.0.
-
-The sibling operator's working status modifications are untouched. The task-owned worktree remains
-available for review fixes; it is never a production dependency. The full Workbench debt mission
-remains incomplete.
+Final merge authorization is reserved. Publication remains non-atomic. Outbox fencing is not
+distributed run-write ownership; Linux children are not production authentication, host isolation
+or aggregate resource containment. The Workbench debt mission remains incomplete.
