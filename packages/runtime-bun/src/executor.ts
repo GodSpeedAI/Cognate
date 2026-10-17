@@ -1,7 +1,7 @@
 // Durable run execution by deterministic replay (ADR-0011, spec §11, §12).
 // Each execution re-reads the run stream, re-enters the agent from the top, and answers every
 // RunContext call that already has a recorded result from the stream instead of repeating it.
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, type StoredEvent } from "@godspeedai/cognate-events";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, StaleRunOwnerError, type StoredEvent } from "@godspeedai/cognate-events";
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@godspeedai/cognate-runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
@@ -14,7 +14,17 @@ class Halt {
 
 export type ExecutionResult = "done" | "retry";
 
-export async function executeOnce(core: Core, runId: string): Promise<ExecutionResult> {
+/** The fenced run-write ownership a worker holds for one execution pass
+ * (docs/contracts/run-write-ownership.md). The credential fences every run-scoped append; renew
+ * refreshes the lease and reports whether ownership was lost. */
+export interface RunExecutionOwnership {
+  readonly ownerId: string;
+  readonly generation: number;
+  readonly ambiguousSteps: "reexecute" | "wait";
+  readonly renew: () => Promise<boolean>;
+}
+
+export async function executeOnce(core: Core, runId: string, ownership?: RunExecutionOwnership): Promise<ExecutionResult> {
   const streamId = runStream(runId);
   const events = await core.store.readStream(streamId);
   const view = foldRun(runId, events);
@@ -66,13 +76,23 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       try {
         // Pre-assign the id so hooks can derive intents that commit atomically with the event (spec §13.1).
         const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt };
-        const outcome = await core.store.commit({ appends: [{ streamId, expectedVersion: version, events: [{ ...envelope, eventId: pending.eventId }] }], outbox: core.outboxFor(pending) });
+        const outcome = await core.store.commit({
+          appends: [{
+            streamId,
+            expectedVersion: version,
+            events: [{ ...envelope, eventId: pending.eventId }],
+            ...(ownership ? { runOwnership: { runId, ownerId: ownership.ownerId, generation: ownership.generation } } : {}),
+          }],
+          outbox: core.outboxFor(pending),
+        });
         const stored = outcome.events[0]!;
         version += 1;
         lastEventId = stored.eventId;
         return stored;
       } catch (error) {
         if (error instanceof ConcurrencyError) halt(true);
+        // Ownership was reclaimed or released: this worker is stale and must never retry the pass.
+        if (error instanceof StaleRunOwnerError) halt(false);
         throw error;
       }
     });
@@ -134,17 +154,49 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
       // recorded event) but are a distinct event type, so the completion check must name it explicitly.
       let done = find(stepId, "run.invocation");
       if (!done) {
+        // Refresh the ownership lease before any external effect: a lost lease must be discovered
+        // before dispatch, not after (docs/contracts/run-write-ownership.md).
+        if (ownership && !(await ownership.renew())) halt(false);
+        const priorProgress = (recorded.get(stepId) ?? []).filter((e) => e.eventType === "run.invocation.progress");
+        // A previous owner's generation started this invocation and never recorded its outcome.
+        // Under `ambiguousSteps: "wait"` the recovering owner does not re-perform the effect: it
+        // records the ambiguity and waits for explicit reconciliation.
+        if (ownership && ownership.ambiguousSteps === "wait") {
+          const priorGenerations = priorProgress
+            .map((e) => field<number>(meta(e), "ownerGeneration"))
+            .filter((generation): generation is number => typeof generation === "number" && generation < ownership.generation);
+          if (priorGenerations.length > 0) {
+            const priorGeneration = Math.max(...priorGenerations);
+            const ambiguousStepId = `${stepId}:ambiguous`;
+            if (!find(ambiguousStepId, "run.invocation.ambiguous")) {
+              await append({ eventType: "run.invocation.ambiguous", payload: { capability, priorGeneration }, metadata: { stepId: ambiguousStepId, capability, priorGeneration } });
+            }
+            const resolution = await context.waitFor(`ambiguous:${stepId}`, {
+              type: "ambiguous-invocation",
+              condition: { kind: "ambiguous_invocation", capability, priorGeneration },
+              payload: { capability, stepId, priorGeneration },
+            });
+            const reconciled = (resolution ?? null) as { readonly result?: Json; readonly failure?: { readonly kind: string; readonly message?: string } } | null;
+            if (reconciled?.failure) throw new InvocationFailedError(capability, reconciled.failure);
+            return reconciled?.result ?? null;
+          }
+        }
         // A crash between a progress call and the final run.invocation event leaves partial progress
         // recorded for this stepId with no completion; re-executing calls the handler again under a
         // fresh attempt number so consumers can discard the earlier partial attempt.
-        const priorAttempts = (recorded.get(stepId) ?? [])
-          .filter((e) => e.eventType === "run.invocation.progress")
-          .map((e) => field<number>(meta(e), "attempt") ?? 0);
+        const priorAttempts = priorProgress.map((e) => field<number>(meta(e), "attempt") ?? 0);
         const attempt = priorAttempts.length ? Math.max(...priorAttempts) + 1 : 0;
         let seq = 0;
         const progress = async (payload: Json): Promise<void> => {
           guard();
-          await append({ eventType: "run.invocation.progress", payload: toJson(payload), metadata: { stepId, capability, attempt, seq: seq++ } });
+          await append({
+            eventType: "run.invocation.progress",
+            payload: toJson(payload),
+            metadata: {
+              stepId, capability, attempt, seq: seq++,
+              ...(ownership ? { ownerGeneration: ownership.generation } : {}),
+            },
+          });
         };
         const call = (approval?: { readonly approvalId: string }) =>
           core.invoker.invoke({
@@ -343,12 +395,14 @@ export async function executeOnce(core: Core, runId: string): Promise<ExecutionR
                   payload: toJson(update),
                   metadata: { scope: "thread", threadId: view.correlationId, source: "agent", actor: context.actor.id, stepId: `shared-state.update:${id}` },
                 }],
+                ...(ownership ? { runOwnership: { runId, ownerId: ownership.ownerId, generation: ownership.generation } } : {}),
               }],
               result: { state, version: events.length + 1 },
             });
             return outcome.result as { readonly state: Json; readonly version: number };
           } catch (error) {
             if (error instanceof ConcurrencyError) continue;
+            if (error instanceof StaleRunOwnerError) halt(false);
             if (error instanceof IdempotencyMismatchError) throw new Error(`thread state update ${id} was replayed with different input`);
             throw error;
           }

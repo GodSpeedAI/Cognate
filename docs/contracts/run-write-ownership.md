@@ -49,32 +49,54 @@ therefore stay fenced after completion.
 ## Fenced run writes
 
 `CommitRequest` appends may carry a `runOwnership` credential `{ runId, ownerId, generation }`.
-Inside the append transaction, for every run named by the commit — the credential's run or any
+Inside the append transaction, for every run named by the commit — a presented credential or an
 appended event's `runId` — the store locks the ownership row and applies one rule:
 
-- an enrolled run accepts the write only when the credential exactly matches the current owner
-  and generation, whatever the lease expiry (expiry is reclaim eligibility, not ownership loss);
-- an enrolled run without a matching credential is refused with `StaleRunOwnerError` and nothing
-  is appended;
+- a credential presented for an enrolled run must exactly match the current owner and generation,
+  whatever the lease expiry (expiry is reclaim eligibility, not ownership loss); a mismatch is
+  refused with `StaleRunOwnerError` and nothing is appended;
+- an uncredited write to an enrolled run is an administrative write — cancellation, continuation
+  resolution, artifacts and erasure from other processes — and commits under its own
+  authorization, which is separate from execution ownership;
 - an unenrolled run without a credential writes exactly as before (legacy);
 - an unenrolled run with a presented credential is refused with `StaleRunOwnerError`: ownership
   must be claimed before it can be presented.
+
+The executor presents its credential on every run-scoped append, so a stale worker — the only
+writer that can re-execute a step — is fenced at its first write after ownership loss. Old
+binaries that never present credentials are not fenced; do not mix them with fenced workers.
 
 The check runs under the append transaction's existing serialization, so claim, reclaim, release
 and append cannot interleave.
 
 ## Execution, recovery and ambiguous effects
 
-The executor-side integration is the next bounded slice over this contract: the dispatcher claims
-ownership before executing a run, presents the credential on every run-scoped append, renews
-around long-running or external-effect steps, halts without retry on `StaleRunOwnerError` (the
-run is executing elsewhere), and releases on terminal states; recovery claims a fresh generation
-and thereby fences the stalled worker. A worker that loses ownership while a tool invocation is in
-flight cannot record that outcome; the recovering owner must observe the prior generation's
-started-but-unrecorded step, mark it ambiguous and require reconciliation rather than silently
-replaying the external effect. Delivery of external effects remains at least once and target-side
-idempotency remains required; this contract supplies authoritative ownership, stale-write
-fencing and observable loss, not exactly-once physics.
+The executor integrates the contract directly: before executing a run it claims ownership (a
+held lease from another live worker makes it back off — that worker is executing the run), it
+presents the credential on every run-scoped append (run events and the thread-state updates its
+steps write), it renews the lease before each capability invocation so a lost lease is detected
+before the next external effect, it halts without retry on `StaleRunOwnerError` (the run is
+executing elsewhere), and it releases ownership when its execution pass ends, so a suspended run's
+resumer always claims fresh. Ownership is claimed automatically when the store implements the
+extension; SQLite and memory stores keep the legacy single-process behavior.
+
+Worker identity is per runtime instance, so a process restart reclaims with a new generation. The
+executor stamps the owning generation on its `run.invocation.progress` events. When a recovering
+owner re-enters an invocation that a previous generation started but never finished — progress
+events exist with no recorded outcome — two behaviors are configured through
+`execution.runOwnership.ambiguousSteps`:
+
+- `reexecute` (default, the historical behavior) re-runs the handler under a fresh attempt number,
+  preserving single-process restart semantics;
+- `wait` records a `run.invocation.ambiguous` event and opens an `ambiguous-invocation`
+  continuation: the recovering owner does not re-perform the external effect. The reconciler
+  resolves the continuation with the observed outcome (`{ result }` or `{ failure }`), or lets it
+  expire, and the run proceeds from that resolution.
+
+Either way, delivery of external effects remains at least once and target-side idempotency
+remains required; an invocation that left no trace at all (no progress, no outcome) cannot be
+distinguished from one that never started and re-executes. This contract supplies authoritative
+ownership, stale-write fencing and observable loss, not exactly-once physics.
 
 ## Boundary
 

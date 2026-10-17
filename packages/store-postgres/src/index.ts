@@ -334,11 +334,14 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
         streamVersions.set(append.streamId, current);
       }
 
-      // Phase C2 — fenced run-write ownership (docs/contracts/run-write-ownership.md). Every run
-      // this commit touches, through a presented credential or an appended event's runId, must be
-      // either unenrolled (legacy: no credential presented anywhere for it) or exactly matched by
-      // one of the commit's credentials. The row lock serializes this check with claims, reclaims
-      // and releases; a refusal aborts the whole transaction with nothing appended.
+      // Phase C2 — fenced run-write ownership (docs/contracts/run-write-ownership.md). A
+      // credential presented for a run must match the current owner and generation exactly: a
+      // stale executor is fenced with nothing appended. Uncredited writes to enrolled runs are
+      // administrative (cancel, continuation resolution, artifacts from other processes) and pass
+      // under their own authorization. Unenrolled runs keep the exact legacy behavior, except that
+      // a credential presented for a never-claimed run is refused — ownership must be claimed
+      // before it can be presented. The row lock serializes this check with claims, reclaims and
+      // releases; a refusal aborts the whole transaction with nothing appended.
       const credentials = new Map<string, { readonly ownerId: string; readonly generation: number }>();
       const touched = new Set<string>();
       for (const append of appends) {
@@ -356,13 +359,11 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
         const row = rows[0];
         const credential = credentials.get(runId);
         if (!row) {
-          // Unenrolled: legacy writes pass without a credential; a presented credential for a
-          // never-claimed run is refused — ownership must be claimed before it can be presented.
           if (credential) throw new StaleRunOwnerError(runId, undefined);
           continue;
         }
         const generation = num(row.generation);
-        if (!credential || credential.ownerId !== (row.owner_id ?? "") || credential.generation !== generation) {
+        if (credential && (credential.ownerId !== (row.owner_id ?? "") || credential.generation !== generation)) {
           throw new StaleRunOwnerError(runId, { ownerId: row.owner_id, generation });
         }
       }

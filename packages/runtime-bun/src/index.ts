@@ -73,6 +73,19 @@ export interface RuntimeOptions {
      * Trusted resource identities derived from frozen run inputs, never model-granted authority.
      * Runs sharing a key serialize in this process; this is not a distributed lock or OS isolation. */
     readonly resourceKeys?: (run: RunView) => readonly string[];
+    /** Fenced run-write ownership tuning (docs/contracts/run-write-ownership.md). Claims happen
+     * automatically whenever the store implements the extension; SQLite/memory stay legacy. */
+    readonly runOwnership?: {
+      /** Stable worker identity for claims; defaults to a per-runtime random id. */
+      readonly ownerId?: string;
+      /** Lease duration in milliseconds; default 30_000. Expiry is reclaim eligibility, not
+       * ownership loss — a matching generation stays writable until someone reclaims. */
+      readonly leaseMs?: number;
+      /** What a recovering owner does with a previous generation's started-but-unrecorded
+       * invocation: "reexecute" (historical behavior, default) or "wait" — record an ambiguity
+       * and require explicit reconciliation before the external effect may repeat. */
+      readonly ambiguousSteps?: "reexecute" | "wait";
+    };
   };
   readonly system?: Principal;
 }
