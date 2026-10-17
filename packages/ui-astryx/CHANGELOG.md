@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-ui-astryx-v0.6.0...cognate-ui-astryx-v0.6.1) (2026-10-17)
+
+
+### Miscellaneous Chores
+
+* **cognate-ui-astryx:** Synchronize cognate SDK packages versions
+
 ## [0.6.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-ui-astryx-v0.5.0...cognate-ui-astryx-v0.6.0) (2026-10-17)
 
 

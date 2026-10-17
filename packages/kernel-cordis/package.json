@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-kernel-cordis",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Cordis-backed implementation of @godspeedai/cognate-kernel-api. The only package allowed to import cordis.",
   "type": "module",
   "license": "Apache-2.0",
