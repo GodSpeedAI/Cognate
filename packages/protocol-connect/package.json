@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-protocol-connect",
-  "version": "0.6.1",
+  "version": "0.3.0",
   "description": "Maps RuntimeService to the generated Connect service (server routes and a remote client). Transport-agnostic.",
   "type": "module",
   "license": "Apache-2.0",

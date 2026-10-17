@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-protocol-connect-bun",
-  "version": "0.6.1",
+  "version": "0.3.0",
   "description": "Serves the Connect runtime service on Bun.serve with authentication, payload limits, and deadlines; provides a fetch transport.",
   "type": "module",
   "license": "Apache-2.0",
