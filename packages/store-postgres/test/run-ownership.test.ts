@@ -101,20 +101,22 @@ test("enrolled runs fence run-scoped appends by owner and generation; unenrolled
     await expect(store.commit(stale)).rejects.toBeInstanceOf(StaleRunOwnerError);
     expect((await store.readStream("run-run-B"))).toHaveLength(1);
 
-    // A missing credential on an enrolled run is refused fail-closed.
-    const uncredited: CommitRequest = { appends: [runAppend("run-B", 2)] };
-    await expect(store.commit(uncredited)).rejects.toBeInstanceOf(StaleRunOwnerError);
-    expect((await store.readStream("run-run-B"))).toHaveLength(1);
+    // A missing credential on an enrolled run is an administrative write (cancel, continuation
+    // resolution, artifacts from another process) and commits under its own authorization.
+    const administrative: CommitRequest = { appends: [runAppend("run-B", 2)] };
+    expect((await store.commit(administrative)).kind).toBe("committed");
+    expect((await store.readStream("run-run-B"))).toHaveLength(2);
 
-    // A wrong owner is refused even with the right generation.
-    const wrongOwner: CommitRequest = { appends: [runAppend("run-B", 2, { ...ownership, ownerId: "worker-2" })] };
+    // A wrong owner is refused even with the right generation, with nothing appended.
+    const wrongOwner: CommitRequest = { appends: [{ ...runAppend("run-B", 3, { ...ownership, ownerId: "worker-2" }), expectedVersion: 2 }] };
     await expect(store.commit(wrongOwner)).rejects.toBeInstanceOf(StaleRunOwnerError);
-    expect((await store.readStream("run-run-B"))).toHaveLength(1);
+    expect((await store.readStream("run-run-B"))).toHaveLength(2);
 
-    // Events carrying an enrolled runId are fenced even when the credential names another run.
+    // Events carrying an enrolled runId are fenced even when the credential names another run:
+    // the credential's own run is unenrolled, so presenting it is refused and nothing commits.
     const smuggled: CommitRequest = { appends: [{ ...runAppend("run-C", 1, { runId: "run-C", ownerId: "worker-1", generation: 1 }), events: [runEvent("run-B", 2)] }] };
     await expect(store.commit(smuggled)).rejects.toBeInstanceOf(StaleRunOwnerError);
-    expect((await store.readStream("run-run-B"))).toHaveLength(1);
+    expect((await store.readStream("run-run-B"))).toHaveLength(2);
 
     // Unenrolled runs keep the exact legacy write behavior.
     const legacy: CommitRequest = { appends: [runAppend("run-C", 1)] };

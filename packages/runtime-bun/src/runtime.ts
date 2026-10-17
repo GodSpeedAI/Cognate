@@ -1,7 +1,7 @@
 // Composition root: store, kernel, continuations, artifacts, projections, cognition, and the background loop.
 import { ArtifactService } from "@godspeedai/cognate-artifacts";
 import { ContinuationService } from "@godspeedai/cognate-continuations";
-import { type DurableStore, type Json, NotFoundError, OutboxDispatcher } from "@godspeedai/cognate-events";
+import { type DurableStore, type Json, NotFoundError, OutboxDispatcher, RunOwnershipHeldError } from "@godspeedai/cognate-events";
 import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 import type { Principal } from "@godspeedai/cognate-kernel-api";
 import { ProjectionRunner } from "@godspeedai/cognate-projections";
@@ -9,7 +9,7 @@ import { openPostgresStore, resolvePg0Url } from "@godspeedai/cognate-store-post
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { COGNITION_PROJECTION, cognitionProjection, recallFor } from "./cognition.ts";
 import type { Core } from "./core.ts";
-import { executeOnce } from "./executor.ts";
+import { executeOnce, type RunExecutionOwnership } from "./executor.ts";
 import { ExecutionSlots } from "./execution-slots.ts";
 import { foldRun, isTerminal, RESUME_HANDLER, RUN_EXECUTE_TOPIC, RUNS, runStream } from "./fold.ts";
 import type { Runtime, RuntimeOptions } from "./index.ts";
@@ -33,6 +33,10 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     }
   }
   const slots=new ExecutionSlots(capacity);
+  // Fenced run-write ownership worker identity (docs/contracts/run-write-ownership.md). Per
+  // runtime instance: a restarted process reclaims with a fresh generation.
+  const ownerId=options.execution?.runOwnership?.ownerId ?? `worker-${crypto.randomUUID()}`;
+  const leaseMs=options.execution?.runOwnership?.leaseMs ?? 30_000;
   // Run and resume topics share one pre-claim budget. ExecutionSlots separately enforces
   // run-local/resource exclusion for every execution path, including direct recovery.
   let admittedDeliveries = 0;
@@ -82,9 +86,31 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       const view=foldRun(runId,await store.readStream(runStream(runId)));
       if(closed || !view || isTerminal(view))return;
       const release=await slots.acquire(options.execution?.resourceKeys?.(view) ?? []);
+      // Fenced run-write ownership (docs/contracts/run-write-ownership.md): claim before
+      // executing. A held lease means another live worker is executing this run — back off; its
+      // completion, suspension or death releases the run for a later pass to reclaim.
+      let ownership: RunExecutionOwnership | undefined;
+      if (store.claimRunOwnership) {
+        try {
+          const lease = await store.claimRunOwnership({ runId, ownerId, now: Date.now(), leaseMs });
+          ownership = {
+            ownerId,
+            generation: lease.generation,
+            ambiguousSteps: options.execution?.runOwnership?.ambiguousSteps ?? "reexecute",
+            renew: () => store.renewRunOwnership!({ runId, ownerId, generation: lease.generation, now: Date.now(), leaseMs }).then((ok) => ok === true),
+          };
+        } catch (error) {
+          if (error instanceof RunOwnershipHeldError) return;
+          throw error;
+        }
+      }
       try{
-        for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId)) === "done") return;
-      }finally{release();}
+        for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId, ownership)) === "done") return;
+      }finally{
+        release();
+        // Best-effort release: a reclaimed or already-released row simply refuses.
+        if (ownership) await store.releaseRunOwnership!({ runId, ownerId, generation: ownership.generation }).catch(() => {});
+      }
     });
     const tracked = next.finally(() => {
       if (chains.get(runId) === tracked) chains.delete(runId);
