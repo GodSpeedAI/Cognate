@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-continuations",
-  "version": "0.6.0",
+  "version": "0.3.0",
   "description": "Durable continuations and external commitments on the durable store (spec §9.3, §12).",
   "type": "module",
   "license": "Apache-2.0",
