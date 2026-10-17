@@ -70,10 +70,26 @@ export interface RuntimeOptions {
   readonly execution?: {
     readonly maxConcurrentRuns?: number;
     /** Required above capacity one. Returning [] explicitly declares independent eligibility.
+  readonly execution?: {
+    readonly maxConcurrentRuns?: number;
+    /** Required above capacity one. Returning [] explicitly declares independent eligibility.
      * This trusted, side-effect-free policy may asynchronously resolve canonical resource identities
      * from authoritative application metadata. Its signal is aborted when the run is cancelled or the runtime closes.
      * Runs sharing a key serialize in this process; this is not distributed ownership or OS isolation. */
     readonly resourceKeys?: (run: RunView, signal?: AbortSignal) => readonly string[] | Promise<readonly string[]>;
+    /** Fenced run-write ownership tuning (docs/contracts/run-write-ownership.md). Claims happen
+     * automatically whenever the store implements the extension; SQLite/memory stay legacy. */
+    readonly runOwnership?: {
+      /** Stable worker identity for claims; defaults to a per-runtime random id. */
+      readonly ownerId?: string;
+      /** Lease duration in milliseconds; default 30_000. Expiry is reclaim eligibility, not
+       * ownership loss — a matching generation stays writable until someone reclaims. */
+      readonly leaseMs?: number;
+      /** What a recovering owner does with a previous generation's started-but-unrecorded
+       * invocation: "reexecute" (historical behavior, default) or "wait" — record an ambiguity
+       * and require explicit reconciliation before the external effect may repeat. */
+      readonly ambiguousSteps?: "reexecute" | "wait";
+    };
   };
   readonly system?: Principal;
 }

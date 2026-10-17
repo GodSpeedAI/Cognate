@@ -19,6 +19,8 @@ import {
   IdempotencyMismatchError,
   NotFoundError,
   RecordConflictError,
+  RunOwnershipHeldError,
+  StaleRunOwnerError,
   validateNewEvent,
 } from "@godspeedai/cognate-events";
 import type {
@@ -32,6 +34,7 @@ import type {
   ProjectionCheckpoint,
   ProjectionCommit,
   ProjectionSnapshot,
+  RunOwnershipLease,
   StoredEvent,
   StoredRecord,
 } from "@godspeedai/cognate-events";
@@ -173,6 +176,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     idempotency: id("idempotency"),
     records: id("records"),
     outbox: id("outbox"),
+    runLeases: id("run_leases"),
     checkpoints: id("projection_checkpoints"),
     projectionState: id("projection_state"),
     blobs: id("blobs"),
@@ -328,6 +332,40 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
         const current = num(rows[0]!.version);
         if (current !== append.expectedVersion) throw new ConcurrencyError(append.streamId, append.expectedVersion, current);
         streamVersions.set(append.streamId, current);
+      }
+
+      // Phase C2 — fenced run-write ownership (docs/contracts/run-write-ownership.md). A
+      // credential presented for a run must match the current owner and generation exactly: a
+      // stale executor is fenced with nothing appended. Uncredited writes to enrolled runs are
+      // administrative (cancel, continuation resolution, artifacts from other processes) and pass
+      // under their own authorization. Unenrolled runs keep the exact legacy behavior, except that
+      // a credential presented for a never-claimed run is refused — ownership must be claimed
+      // before it can be presented. The row lock serializes this check with claims, reclaims and
+      // releases; a refusal aborts the whole transaction with nothing appended.
+      const credentials = new Map<string, { readonly ownerId: string; readonly generation: number }>();
+      const touched = new Set<string>();
+      for (const append of appends) {
+        if (append.runOwnership) {
+          const { runId, ownerId, generation } = append.runOwnership;
+          const prior = credentials.get(runId);
+          if (prior && (prior.ownerId !== ownerId || prior.generation !== generation)) throw new StaleRunOwnerError(runId, undefined);
+          credentials.set(runId, { ownerId, generation });
+          touched.add(runId);
+        }
+        for (const event of append.events) if (event.runId) touched.add(event.runId);
+      }
+      for (const runId of touched) {
+        const rows = await tx`SELECT owner_id, generation FROM ${t.runLeases} WHERE run_id = ${runId} FOR UPDATE`;
+        const row = rows[0];
+        const credential = credentials.get(runId);
+        if (!row) {
+          if (credential) throw new StaleRunOwnerError(runId, undefined);
+          continue;
+        }
+        const generation = num(row.generation);
+        if (credential && (credential.ownerId !== (row.owner_id ?? "") || credential.generation !== generation)) {
+          throw new StaleRunOwnerError(runId, { ownerId: row.owner_id, generation });
+        }
       }
 
       // Phase D — CAS every record write before applying any of them. Record-only commits do not take the
@@ -593,6 +631,55 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
           WHERE id = ${lease.id} AND status = 'pending' AND lease_owner = ${lease.ownerId}
             AND lease_generation = ${lease.generation} AND claimed_until > ${lease.now} RETURNING id`;
       }
+      return rows.length === 1;
+    },
+
+    // Fenced run-write ownership (docs/contracts/run-write-ownership.md). The row is the
+    // authoritative owner; every reclaim or release advances the generation and thereby fences
+    // every earlier worker permanently. Expiry is reclaim eligibility only — a matching
+    // generation stays writable until someone else actually reclaims.
+    async claimRunOwnership(options): Promise<RunOwnershipLease> {
+      assertOpen();
+      return await sql.begin(async (tx) => {
+        const rows = await tx`SELECT owner_id, generation, claimed_until FROM ${t.runLeases} WHERE run_id = ${options.runId} FOR UPDATE`;
+        const row = rows[0];
+        if (!row) {
+          const inserted = await tx`INSERT INTO ${t.runLeases} (run_id, owner_id, generation, claimed_until)
+            VALUES (${options.runId}, ${options.ownerId}, 1, ${options.now + options.leaseMs})
+            RETURNING generation, claimed_until`;
+          return { runId: options.runId, ownerId: options.ownerId, generation: num(inserted[0]!.generation), expiresAt: num(inserted[0]!.claimed_until) };
+        }
+        const generation = num(row.generation);
+        const expiresAt = num(row.claimed_until);
+        if (row.owner_id === options.ownerId) {
+          const refreshed = await tx`UPDATE ${t.runLeases} SET claimed_until = ${options.now + options.leaseMs} WHERE run_id = ${options.runId} RETURNING claimed_until`;
+          return { runId: options.runId, ownerId: options.ownerId, generation, expiresAt: num(refreshed[0]!.claimed_until) };
+        }
+        if (expiresAt > options.now) {
+          const holder = row.owner_id ?? "";
+          throw new RunOwnershipHeldError(options.runId, { ownerId: holder, generation, expiresAt });
+        }
+        const reclaimed = await tx`UPDATE ${t.runLeases} SET owner_id = ${options.ownerId}, generation = ${generation + 1}, claimed_until = ${options.now + options.leaseMs}
+          WHERE run_id = ${options.runId} RETURNING generation, claimed_until`;
+        return { runId: options.runId, ownerId: options.ownerId, generation: num(reclaimed[0]!.generation), expiresAt: num(reclaimed[0]!.claimed_until) };
+      });
+    },
+
+    async renewRunOwnership(lease) {
+      assertOpen();
+      const rows = await sql`UPDATE ${t.runLeases} SET claimed_until = ${lease.now + lease.leaseMs}
+        WHERE run_id = ${lease.runId} AND owner_id = ${lease.ownerId} AND generation = ${lease.generation} AND claimed_until > ${lease.now}
+        RETURNING run_id`;
+      return rows.length === 1;
+    },
+
+    async releaseRunOwnership(lease) {
+      assertOpen();
+      // Release clears the owner and advances the generation but keeps the row enrolled, so a
+      // late write from the released generation is fenced forever.
+      const rows = await sql`UPDATE ${t.runLeases} SET owner_id = NULL, claimed_until = 0, generation = generation + 1
+        WHERE run_id = ${lease.runId} AND owner_id = ${lease.ownerId} AND generation = ${lease.generation}
+        RETURNING run_id`;
       return rows.length === 1;
     },
 
