@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-execution",
-  "version": "0.6.0",
+  "version": "0.3.0",
   "description": "Framework-owned execution-world contracts: filesystem and process ports, replaceable providers, and the filesystem.*/process.* capability component. No transport or library types.",
   "type": "module",
   "license": "Apache-2.0",
