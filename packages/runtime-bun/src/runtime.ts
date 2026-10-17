@@ -181,7 +181,19 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
               renew: () => store.renewRunOwnership!({ runId, ownerId, generation: lease.generation, now: Date.now(), leaseMs }).then((ok) => ok === true),
             };
           } catch (error) {
-            if (error instanceof RunOwnershipHeldError) return;
+            if (error instanceof RunOwnershipHeldError) {
+              // Another live worker owns this run. Its lease expiry is reclaim eligibility, so
+              // re-arm this run for recovery once that lease can have lapsed; the durable
+              // intent machinery re-dispatches it on a later pass. Without this, a held-lease
+              // back-off would consume the only recovery trigger and strand the run.
+              const retryAt = error.lease.expiresAt - Date.now() + 250;
+              setTimeout(() => {
+                if (closed) return;
+                pending.add(runId);
+                kick();
+              }, Math.max(250, retryAt));
+              return;
+            }
             throw error;
           }
         }
