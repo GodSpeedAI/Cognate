@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.6.0...cognate-runtime-bun-v0.6.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **runtime:** re-arm a lease-held run for recovery instead of stranding it ([6b7d662](https://github.com/GodSpeedAI/Cognate/commit/6b7d6629245c1ffa396a0c6175e7ef809059d195))
+* **runtime:** re-arm a lease-held run for recovery instead of stranding it ([3bd44ea](https://github.com/GodSpeedAI/Cognate/commit/3bd44eae6b7548c2b874e8fbc6af2be8fd636de8))
+
 ## [0.6.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.5.0...cognate-runtime-bun-v0.6.0) (2026-10-17)
 
 
