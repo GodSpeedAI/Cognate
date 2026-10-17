@@ -32,6 +32,7 @@ docs:
 # Regression baseline: substrate check, typecheck, gate-runner tests, README gate, and every gate claimed implemented
 verify: check typecheck docs
     bun test ./tests/proof-routing.test.ts
+    bun test ./tests/release-publication.test.mjs
     bun scripts/gate.ts --implemented
 
 # Run one requirement's proof gate, e.g. `just gate CG-KRN-001`; unmet gates fail
@@ -120,5 +121,4 @@ copilot-up *args:
 # Tear down the running reconstructed Cognate Copilot app
 copilot-down *args:
     bun scripts/copilot.ts down {{args}}
-
 
