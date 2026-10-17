@@ -186,3 +186,53 @@ test("default ambiguousSteps reexecute keeps the historical single-process resta
     await cleaner.close();
   }
 }, 45_000);
+
+test("a held-lease back-off re-arms the run and recovers after the lease can lapse", async () => {
+  const schema = `cognate_own_rt_${Date.now().toString(36)}_3`;
+  const gate = makeGate();
+  const tool = blockedTool(gate);
+  const url = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres";
+  const database = await openPostgresStore({ url, schema, maxConnections: 4, pollMs: 0 });
+  // Seed a killed worker's residue: a non-terminal run, its pending run.execute intent, and a
+  // still-live ownership lease whose holder no longer exists. The recovering worker must refuse
+  // the live lease, re-arm itself, and take the run over once the lease can have lapsed.
+  const runId = `held-${crypto.randomUUID()}`;
+  await database.store.commit({
+    appends: [{ streamId: `run-${runId}`, expectedVersion: 0, events: [{
+      eventType: "run.started", schemaVersion: 1, occurredAt: new Date().toISOString(),
+      tenant: caller.tenant, correlationId: runId, causationId: null, runId, scopeId: "test-scope",
+      payload: { input: {} },
+      metadata: { agent: "agent.worker", agentVersion: "1.0.0", startedBy: caller.actor.id, startedByKind: caller.actor.kind },
+    }] }],
+    records: [{ collection: "runs", id: runId, expectedVersion: 0, value: { tenant: caller.tenant, agent: "agent.worker", correlationId: runId, startedBy: caller.actor.id, scopeId: "test-scope" } }],
+    outbox: [{ id: `run.execute:${runId}`, topic: "run.execute", payload: { runId } }],
+  });
+  await database.store.claimRunOwnership!({ runId, ownerId: "dead-worker", now: Date.now(), leaseMs: 5_000 });
+  let runtime;
+  try {
+    runtime = await createRuntime({
+      store: { store: database.store },
+      agents: [workerAgent],
+      components: [tool.component],
+      execution: { runOwnership: { leaseMs: 500 } },
+      ...allow,
+    });
+    // Before the fix this stranded forever: the held back-off consumed the only recovery
+    // trigger. Now the run completes only after the seeded lease lapsed and the recovery
+    // re-armed itself — and the killed worker's lease genuinely refused the first claim.
+    const deadline = Date.now() + 20_000;
+    while (gate.finishers.length < 1 && Date.now() < deadline) await Bun.sleep(20);
+    expect(tool.count()).toBe(1);
+    gate.finishers[0]!();
+    const completed = await awaitStatus(runtime.service, runId, "completed");
+    expect((completed.output as { outcome: { done: boolean; input: unknown } }).outcome).toEqual({ done: true, input: {} });
+  } finally {
+    for (const abort of gate.aborters) abort();
+    await Bun.sleep(100);
+    await runtime?.close().catch(() => {});
+    await database.close();
+    const cleaner = await openPostgresStore({ url, schema, pollMs: 0 });
+    await cleaner.dropSchema();
+    await cleaner.close();
+  }
+}, 45_000);
