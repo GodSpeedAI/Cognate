@@ -17,6 +17,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      publish-released-version:
+        description: "Recovery: publish and verify the already-released SDK version at HEAD (never bumps versions)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -70,7 +76,7 @@ jobs:
   tag-components:
     name: Tag SDK packages and finalize one public release
     needs: release-please
-    if: needs.release-please.outputs.cognate_release_created == 'true'
+    if: needs.release-please.outputs.cognate_release_created == 'true' || (github.event_name == 'workflow_dispatch' && inputs.publish-released-version == true)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -129,7 +135,7 @@ jobs:
   publish:
     name: publish ${{ matrix.path }}
     needs: [release-please, tag-components]
-    if: needs.release-please.outputs.cognate_release_created == 'true' && vars.NPM_TRUSTED_PUBLISHING_READY == 'true'
+    if: (needs.release-please.outputs.cognate_release_created == 'true' || (github.event_name == 'workflow_dispatch' && inputs.publish-released-version == true)) && vars.NPM_TRUSTED_PUBLISHING_READY == 'true'
     runs-on: ubuntu-latest
     environment: release
     concurrency:
@@ -173,7 +179,7 @@ jobs:
   verify-publication:
     name: Verify public npm publication receipts
     needs: [release-please, tag-components, publish]
-    if: always() && needs.release-please.outputs.cognate_release_created == 'true'
+    if: always() && (needs.release-please.outputs.cognate_release_created == 'true' || (github.event_name == 'workflow_dispatch' && inputs.publish-released-version == true))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
