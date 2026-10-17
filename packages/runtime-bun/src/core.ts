@@ -28,6 +28,8 @@ export interface Core {
   readonly outboxFor: (event: PendingEvent) => readonly OutboxIntent[];
   /** Abort controllers of executions in progress, by run id (cancellation aborts `RunContext.signal`). */
   readonly controllers: Map<string, AbortController>;
+  /** Stops cooperative execution without cancelling its durable objective. */
+  readonly shutdownSignal: AbortSignal;
   readonly remoteOffers: RemoteOfferRegistry;
   /** Serialize and (re-)run a run's execution; replay-safe and idempotent. */
   execute(runId: string): Promise<void>;

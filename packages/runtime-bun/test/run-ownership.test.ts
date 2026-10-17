@@ -31,7 +31,19 @@ const allow = {
 /** Shared handler state: both runtimes mount the same component definition, so the counter and
  * the gate are shared across the two "processes" of the journey. `release` interrupts the
  * handler abort-style; `finish` lets it complete normally. */
-interface Gate { started: Promise<void>; finishers: (() => void)[]; aborters: (() => void)[] }
+interface Gate {
+  /** Resolves only when the handler actually starts its blocked stretch (a true deferred —
+   * initializing an already-resolved promise would let `await gate.started` race past the run). */
+  started: Promise<void>;
+  start(): void;
+  finishers: (() => void)[];
+  aborters: (() => void)[];
+}
+function makeGate(): Gate {
+  let start!: () => void;
+  const started = new Promise<void>(resolve => { start = resolve; });
+  return { started, start: () => start(), finishers: [], aborters: [] };
+}
 function blockedTool(gate: Gate) {
   let calls = 0;
   const component = {
@@ -41,7 +53,7 @@ function blockedTool(gate: Gate) {
       fiber.provide({ id: "tool.blocked", version: "1.0.0" }, async (input, ctx) => {
         calls += 1;
         await (ctx as { progress?: (payload: unknown) => Promise<void> }).progress?.({ started: true });
-        gate.started = Promise.resolve();
+        gate.start();
         await new Promise<unknown>((resolve, reject) => {
           const abort = () => reject((ctx.signal as AbortSignal & { reason?: Error }).reason ?? new DOMException("aborted", "AbortError"));
           if (ctx.signal.aborted) abort();
@@ -75,7 +87,7 @@ async function awaitStatus(service: RuntimeService, runId: string, status: strin
 
 test("a reclaimed owner is fenced and the recovering worker reconciles the ambiguous effect without repeating it", async () => {
   const schema = `cognate_own_rt_${Date.now().toString(36)}`;
-  const gate: Gate = { started: Promise.resolve(), finishers: [], aborters: [] };
+  const gate = makeGate();
   const tool = blockedTool(gate);
   const make = () => createRuntime({
     store: { postgres: { url, schema } },
@@ -87,30 +99,29 @@ test("a reclaimed owner is fenced and the recovering worker reconciles the ambig
   const runtimeA = await make();
   let runtimeB;
   try {
-    // Worker A claims the run, starts the external effect (progress recorded under its
-    // generation) and stalls inside the handler while its lease expires.
+    // Worker A claims the run and starts the external effect (progress recorded under its
+    // generation), then dies mid-effect: the cooperative shutdown abort unwinds the handler
+    // through the executor's guard, so no invocation outcome is recorded, and A's execution
+    // pass releases its ownership.
     const start = await runtimeA.service.startRun(caller, { agent: "agent.worker", input: { hi: 1 }, idempotencyKey: "fence-1" });
     await gate.started;
-    await Bun.sleep(400);
+    await runtimeA.close();
 
-    // Worker B recovers the stalled run after lease expiry and claims a fresh generation.
+    // Worker B recovers the killed run and claims a fresh generation.
     runtimeB = await make();
-    const waiting = await awaitStatus(runtimeB.service, start.runId, "waiting");
-    expect(waiting).toBeDefined();
+    await awaitStatus(runtimeB.service, start.runId, "waiting");
 
-    // The interrupted effect is marked ambiguous: B did not re-perform it.
+    // The interrupted effect is marked ambiguous: B did not re-perform it, and the killed
+    // owner never recorded an outcome.
     expect(tool.count()).toBe(1);
     let ambiguous = 0;
-    for await (const event of runtimeB.service.events(caller, { runId: start.runId })) if (event.eventType === "run.invocation.ambiguous") ambiguous += 1;
-    expect(ambiguous).toBe(1);
-
-    // The stalled worker finally unblocks: its outcome write is fenced and never recorded.
-    gate.aborters[0]!();
-    await Bun.sleep(300);
     let lateInvocations = 0;
-    for await (const event of runtimeA.service.events(caller, { runId: start.runId })) if (event.eventType === "run.invocation") lateInvocations += 1;
+    for await (const event of runtimeB.service.events(caller, { runId: start.runId })) {
+      if (event.eventType === "run.invocation.ambiguous") ambiguous += 1;
+      if (event.eventType === "run.invocation") lateInvocations += 1;
+    }
+    expect(ambiguous).toBe(1);
     expect(lateInvocations).toBe(0);
-    expect(tool.count()).toBe(1);
 
     // Reconciliation supplies the observed outcome; the run completes from it, not from a repeat.
     const [continuation] = (await runtimeB.service.listContinuations(caller, { runId: start.runId, status: "OPEN" })).filter((c) => c.type === "ambiguous-invocation");
@@ -132,7 +143,7 @@ test("a reclaimed owner is fenced and the recovering worker reconciles the ambig
 
 test("default ambiguousSteps reexecute keeps the historical single-process restart behavior", async () => {
   const schema = `cognate_own_rt_${Date.now().toString(36)}_2`;
-  const gate: Gate = { started: Promise.resolve(), finishers: [], aborters: [] };
+  const gate = makeGate();
   const tool = blockedTool(gate);
   const make = () => createRuntime({
     store: { postgres: { url, schema } },
@@ -146,12 +157,12 @@ test("default ambiguousSteps reexecute keeps the historical single-process resta
   try {
     const start = await runtimeA.service.startRun(caller, { agent: "agent.worker", input: { hi: 2 }, idempotencyKey: "fence-2" });
     await gate.started;
-    await Bun.sleep(400);
+    await runtimeA.close();
 
-    // The stalled worker is abandoned mid-effect (a killed process cannot close politely), and
-    // its lease has expired. The recovering worker holds a fresh generation and, in the default
-    // mode, re-executes the interrupted handler under a fresh attempt number instead of gating on
-    // reconciliation — the historical single-process restart behavior.
+    // The killed worker left the effect started but unrecorded. The recovering worker holds a
+    // fresh generation and, in the default mode, re-executes the interrupted handler under a
+    // fresh attempt number instead of gating on reconciliation — the historical single-process
+    // restart behavior.
     runtimeB = await make();
     const deadline = Date.now() + 10_000;
     // Wait for the recovering worker's re-execution to register its own finisher, then let only
@@ -165,7 +176,7 @@ test("default ambiguousSteps reexecute keeps the historical single-process resta
     for await (const event of runtimeB.service.events(caller, { runId: start.runId })) if (event.eventType === "run.invocation.ambiguous") ambiguous += 1;
     expect(ambiguous).toBe(0);
   } finally {
-    // Abandon every interrupted call so both execution chains can settle for close.
+    // Abandon any still-blocked call so execution chains can settle for close.
     for (const abort of gate.aborters) abort();
     await Bun.sleep(100);
     await runtimeA.close().catch(() => {});

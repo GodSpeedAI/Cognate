@@ -70,9 +70,13 @@ export interface RuntimeOptions {
   readonly execution?: {
     readonly maxConcurrentRuns?: number;
     /** Required above capacity one. Returning [] explicitly declares independent eligibility.
-     * Trusted resource identities derived from frozen run inputs, never model-granted authority.
-     * Runs sharing a key serialize in this process; this is not a distributed lock or OS isolation. */
-    readonly resourceKeys?: (run: RunView) => readonly string[];
+  readonly execution?: {
+    readonly maxConcurrentRuns?: number;
+    /** Required above capacity one. Returning [] explicitly declares independent eligibility.
+     * This trusted, side-effect-free policy may asynchronously resolve canonical resource identities
+     * from authoritative application metadata. Its signal is aborted when the run is cancelled or the runtime closes.
+     * Runs sharing a key serialize in this process; this is not distributed ownership or OS isolation. */
+    readonly resourceKeys?: (run: RunView, signal?: AbortSignal) => readonly string[] | Promise<readonly string[]>;
     /** Fenced run-write ownership tuning (docs/contracts/run-write-ownership.md). Claims happen
      * automatically whenever the store implements the extension; SQLite/memory stay legacy. */
     readonly runOwnership?: {

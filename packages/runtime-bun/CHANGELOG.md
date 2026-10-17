@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.5.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.4.0...cognate-runtime-bun-v0.5.0) (2026-10-15)
+
+
+### Features
+
+* **runtime:** await authoritative admission and preserve shutdown recovery ([e90f511](https://github.com/GodSpeedAI/Cognate/commit/e90f511731cbe01cf204f7ec7675e1b03532c5c7))
+* **runtime:** await authoritative resource eligibility with cancellation ([7af8bf3](https://github.com/GodSpeedAI/Cognate/commit/7af8bf3a1ecee9a8a0c5d698c33ffb9d6aa356db))
+
+
+### Bug Fixes
+
+* **runtime:** persist recovery retries and protect trusted executables ([5c85e4c](https://github.com/GodSpeedAI/Cognate/commit/5c85e4ccdc1d715bd010f031eb5e05845f3d7472))
+* **runtime:** preserve cancellation across admission and bound recovery scans ([6963620](https://github.com/GodSpeedAI/Cognate/commit/696362090fb5bae0627dad0a37d7b508eaa63f8a))
+* **runtime:** retain admission capacity and recover interrupted shutdown work ([d0e4911](https://github.com/GodSpeedAI/Cognate/commit/d0e491105d7f76ecebed04302701c3f911b69926))
+
+## [0.4.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.3.0...cognate-runtime-bun-v0.4.0) (2026-10-14)
+
+
+### Features
+
+* **execution:** add opt-in Linux namespace execution world ([920c4c9](https://github.com/GodSpeedAI/Cognate/commit/920c4c9c4649c6a321dfc7389bd7075ec0602efe))
+* fence native dispatch and admit bounded independent runs ([ab4dd2a](https://github.com/GodSpeedAI/Cognate/commit/ab4dd2ae5e3ecc6c4a415c43ae66ffcbf631da22))
+* native fenced dispatch, bounded runs and Linux execution world ([c6e3207](https://github.com/GodSpeedAI/Cognate/commit/c6e32079844dd36dd6c20d3516f8c6ac2f2c67f0))
+
+
+### Bug Fixes
+
+* **runtime:** reject unfenced parallel stores before startup ([a59a7da](https://github.com/GodSpeedAI/Cognate/commit/a59a7dadfef28c296ce526bd703f12921b429a90))
+* **runtime:** share admission across run and continuation dispatch ([52a8eaf](https://github.com/GodSpeedAI/Cognate/commit/52a8eaf369959f12023dd7b96fb76552f10557e2))
+
 ## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.2.0...cognate-runtime-bun-v0.3.0) (2026-10-12)
 
 

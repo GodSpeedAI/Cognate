@@ -1,9 +1,11 @@
 // Composition root: store, kernel, continuations, artifacts, projections, cognition, and the background loop.
+import { randomUUID } from "node:crypto";
 import { ArtifactService } from "@godspeedai/cognate-artifacts";
 import { ContinuationService } from "@godspeedai/cognate-continuations";
 import { type DurableStore, type Json, NotFoundError, OutboxDispatcher, RunOwnershipHeldError } from "@godspeedai/cognate-events";
 import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 import type { Principal } from "@godspeedai/cognate-kernel-api";
+import type { RunView } from "@godspeedai/cognate-runtime-api";
 import { ProjectionRunner } from "@godspeedai/cognate-projections";
 import { openPostgresStore, resolvePg0Url } from "@godspeedai/cognate-store-postgres";
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
@@ -37,8 +39,11 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   // runtime instance: a restarted process reclaims with a fresh generation.
   const ownerId=options.execution?.runOwnership?.ownerId ?? `worker-${crypto.randomUUID()}`;
   const leaseMs=options.execution?.runOwnership?.leaseMs ?? 30_000;
+  // Recovery can enqueue many runs at once. Bound authoritative eligibility lookups with the
+  // same primitive/capacity so metadata resolution cannot fan out without limit.
+  const eligibilitySlots = new ExecutionSlots(capacity);
   // Run and resume topics share one pre-claim budget. ExecutionSlots separately enforces
-  // run-local/resource exclusion for every execution path, including direct recovery.
+  // run-local/resource exclusion for every execution path.
   let admittedDeliveries = 0;
   const deliveryAdmission = { tryAcquire(): (() => void) | undefined {
     if (admittedDeliveries >= capacity) return undefined;
@@ -74,8 +79,81 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const continuations = new ContinuationService(store, { policy: { authorize: () => ({ allow: true, reason: "authorized by runtime service" }) }, delivery: DELIVERY, deliveryConcurrency: capacity, deliveryAdmission });
 
   let closed = false;
+  const shutdown = new AbortController();
+  const executionControllers = new Map<string, AbortController>();
+  const acquireExecutionSlot = async (runId: string, view: RunView): Promise<(() => void) | undefined> => {
+    const resolveKeys = options.execution?.resourceKeys;
+    const controller = new AbortController();
+    const signal = controller.signal;
+    executionControllers.set(runId, controller);
+    const abortForShutdown = () => controller.abort(new Error("runtime closed"));
+    if (shutdown.signal.aborted) abortForShutdown();
+    else shutdown.signal.addEventListener("abort", abortForShutdown, { once: true });
+    let onAbort!: () => void;
+    const aborted = new Promise<{ readonly kind: "aborted" }>((resolve) => {
+      onAbort = () => resolve({ kind: "aborted" });
+      if (signal.aborted) onAbort();
+      else signal.addEventListener("abort", onAbort, { once: true });
+    });
+    let releaseEligibility: (() => void) | undefined;
+    try {
+      const current = foldRun(runId, await store.readStream(runStream(runId)));
+      if (closed || signal.aborted || !current || isTerminal(current)) return undefined;
+      let keys: readonly string[] = [];
+      if (resolveKeys) {
+        // A cancelled waiter may still be in this semaphore queue. Attach a release handler now so
+        // its eventual permit is returned even when the abort race lets execute() stop waiting.
+        const acquisition = eligibilitySlots.acquire([]).then((release) => {
+          if (closed || signal.aborted) { release(); return undefined; }
+          releaseEligibility = release;
+          return release;
+        });
+        const admitted = await Promise.race([acquisition, aborted]);
+        if (!admitted || closed || signal.aborted) return undefined;
+        // A callback that ignores cancellation may settle later, but its eventual rejection remains
+        // observed by this handler after the abort race has returned.
+        const lookup = Promise.resolve().then(async () => {
+          if (closed || signal.aborted) return { kind: "aborted" as const };
+          try { return { kind: "keys" as const, keys: await resolveKeys(view, signal) }; }
+          catch (error) { return { kind: "error" as const, error }; }
+        });
+        const result = await Promise.race([lookup, aborted]);
+        if (result.kind === "aborted") {
+          // Cancellation releases the caller immediately, but an uncancellable policy callback
+          // still occupies a real lookup slot until it settles. The outcome union observes late
+          // rejection, and the queued release preserves the configured concurrency bound.
+          const release = releaseEligibility;
+          releaseEligibility = undefined;
+          void lookup.then(() => release?.());
+          return undefined;
+        }
+        if (result.kind === "error") throw result.error;
+        if (!Array.isArray(result.keys)) throw new Error("execution.resourceKeys must resolve to an array");
+        keys = result.keys;
+      }
+      // Keep the run controller registered until both policy and execution-slot admission finish.
+      // If cancellation wins while queued, a later grant is immediately returned by this handler.
+      const acquisition = slots.acquire(keys).then((release) => {
+        if (closed || signal.aborted) { release(); return undefined; }
+        return release;
+      });
+      return await Promise.race([acquisition, aborted.then(() => undefined)]);
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+      shutdown.signal.removeEventListener("abort", abortForShutdown);
+      releaseEligibility?.();
+      if (executionControllers.get(runId) === controller) executionControllers.delete(runId);
+    }
+  };
   const chains = new Map<string, Promise<void>>();
   const pending = new Set<string>();
+  // A runtime epoch gives recovery attempts fresh durable intent IDs after prior intents have
+  // already been delivered. Existing pending run.execute intents retain their persisted backoff.
+  const recoveryEpoch = randomUUID();
+  let recoverySequence = 0;
+  const recoveryReconciliationIntervalMs = 250;
+  let nextRecoveryReconciliationAt = 0;
+  const recoveryOutboxByRun = new Map<string, string>();
   const deliveries = new Set<Promise<void>>();
   const trackDelivery=(job:Promise<unknown>):void=>{
     const tracked=job.then(()=>{},()=>{}).finally(()=>deliveries.delete(tracked));
@@ -85,32 +163,35 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     const next = (chains.get(runId) ?? Promise.resolve()).then(async () => {
       const view=foldRun(runId,await store.readStream(runStream(runId)));
       if(closed || !view || isTerminal(view))return;
-      const release=await slots.acquire(options.execution?.resourceKeys?.(view) ?? []);
-      // Fenced run-write ownership (docs/contracts/run-write-ownership.md): claim before
-      // executing. A held lease means another live worker is executing this run — back off; its
-      // completion, suspension or death releases the run for a later pass to reclaim.
-      let ownership: RunExecutionOwnership | undefined;
-      if (store.claimRunOwnership) {
-        try {
-          const lease = await store.claimRunOwnership({ runId, ownerId, now: Date.now(), leaseMs });
-          ownership = {
-            ownerId,
-            generation: lease.generation,
-            ambiguousSteps: options.execution?.runOwnership?.ambiguousSteps ?? "reexecute",
-            renew: () => store.renewRunOwnership!({ runId, ownerId, generation: lease.generation, now: Date.now(), leaseMs }).then((ok) => ok === true),
-          };
-        } catch (error) {
-          if (error instanceof RunOwnershipHeldError) return;
-          throw error;
-        }
-      }
+      const release=await acquireExecutionSlot(runId, view);
+      if (!release) return;
       try{
-        for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId, ownership)) === "done") return;
-      }finally{
-        release();
-        // Best-effort release: a reclaimed or already-released row simply refuses.
-        if (ownership) await store.releaseRunOwnership!({ runId, ownerId, generation: ownership.generation }).catch(() => {});
-      }
+        if (closed) return;
+        // Fenced run-write ownership (docs/contracts/run-write-ownership.md): claim before
+        // executing. A held lease means another live worker is executing this run — back off;
+        // its completion, suspension or death releases the run for a later pass to reclaim.
+        let ownership: RunExecutionOwnership | undefined;
+        if (store.claimRunOwnership) {
+          try {
+            const lease = await store.claimRunOwnership({ runId, ownerId, now: Date.now(), leaseMs });
+            ownership = {
+              ownerId,
+              generation: lease.generation,
+              ambiguousSteps: options.execution?.runOwnership?.ambiguousSteps ?? "reexecute",
+              renew: () => store.renewRunOwnership!({ runId, ownerId, generation: lease.generation, now: Date.now(), leaseMs }).then((ok) => ok === true),
+            };
+          } catch (error) {
+            if (error instanceof RunOwnershipHeldError) return;
+            throw error;
+          }
+        }
+        try{
+          for (let attempt = 0; attempt < 5 && !closed; attempt++) if ((await executeOnce(core, runId, ownership)) === "done") return;
+        }finally{
+          // Best-effort release: a reclaimed or already-released row simply refuses.
+          if (ownership) await store.releaseRunOwnership!({ runId, ownerId, generation: ownership.generation }).catch(() => {});
+        }
+      }finally{release();}
     });
     const tracked = next.finally(() => {
       if (chains.get(runId) === tracked) chains.delete(runId);
@@ -130,7 +211,8 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     scopeId: kernel.root.id,
     recall: recallFor(store, options.cognition),
     outboxFor: options.outboxFor ?? (() => []),
-    controllers: new Map(),
+    controllers: executionControllers,
+    shutdownSignal: shutdown.signal,
     remoteOffers: new RemoteOfferRegistry(),
     execute,
     kick: () => kick(),
@@ -148,14 +230,58 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     admission: deliveryAdmission,
     backoff: DELIVERY,
     deliver: async (item) => {
-      await execute((item.payload as { runId: string }).runId);
-      return { executed: true };
+      const runId = (item.payload as { runId: string }).runId;
+      try {
+        await execute(runId);
+        return { executed: true };
+      } finally {
+        // The store retains pending retry/poison state; this map only correlates this process's
+        // currently delivered recovery intent and must not retain failed or exhausted attempts.
+        if (recoveryOutboxByRun.get(runId) === item.id) recoveryOutboxByRun.delete(runId);
+      }
     },
   });
+
+  async function persistRecoveryIntents(): Promise<void> {
+    // Reconcile only when a new recovery candidate exists. A tracked intent already has a
+    // durable retry schedule; rescanning the complete pending topic every timer tick is needless.
+    if (pending.size === 0) return;
+    const now = performance.now();
+    if (now < nextRecoveryReconciliationAt) return;
+    // Set the deadline before awaiting: a slow or failing store query must not hot-loop scans.
+    nextRecoveryReconciliationAt = now + recoveryReconciliationIntervalMs;
+    const pendingItems = await store.listOutbox({ topic: RUN_EXECUTE_TOPIC, status: "pending" });
+    const pendingItemIds = new Set(pendingItems.map((item) => item.id));
+    for (const [runId, id] of recoveryOutboxByRun) {
+      if (pendingItemIds.has(id)) pending.delete(runId);
+      else recoveryOutboxByRun.delete(runId);
+    }
+    const candidates = [...pending].filter((runId) => !recoveryOutboxByRun.has(runId)).slice(0, 100);
+    if (candidates.length === 0) return;
+    const pendingRunItems = new Map<string, string>();
+    for (const item of pendingItems) {
+      const runId = (item.payload as { runId?: unknown } | null)?.runId;
+      if (typeof runId === "string" && !pendingRunItems.has(runId)) pendingRunItems.set(runId, item.id);
+    }
+    const intents: { id: string; topic: string; payload: Json }[] = [];
+    const selected = new Map<string, string>();
+    for (const runId of candidates) {
+      const existing = pendingRunItems.get(runId);
+      const id = existing ?? `${RUN_EXECUTE_TOPIC}:recovery:${recoveryEpoch}:${++recoverySequence}:${runId}`;
+      selected.set(runId, id);
+      if (!existing) intents.push({ id, topic: RUN_EXECUTE_TOPIC, payload: { runId } });
+    }
+    if (intents.length > 0) await store.commit({ appends: [], outbox: intents });
+    for (const [runId, id] of selected) {
+      recoveryOutboxByRun.set(runId, id);
+      pending.delete(runId);
+    }
+  }
 
   let resumeFirst = false;
   async function tick(): Promise<void> {
     for (const record of await continuations.expireDue()) pending.add(record.runId);
+    await persistRecoveryIntents();
     // Dispatchers reserve a bounded set of slots across overlapping drains. A new runnable
     // arrival can fill a free slot while an earlier long-running delivery is still executing.
     // Rotate priority: even an empty topic briefly reserves capacity while its claim is
@@ -168,9 +294,6 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       trackDelivery(continuations.dispatchResumes());
     }
     resumeFirst = !resumeFirst;
-    const recover=[...pending];
-    for(const runId of recover)pending.delete(runId);
-    for(const runId of recover)trackDelivery(execute(runId));
   }
 
   let ticking: Promise<void> | null = null;
@@ -216,7 +339,10 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     if (view.status === "running") pending.add(id);
     for (const continuationId of view.waitingOn) {
       const record = await continuations.get(continuationId);
-      if (record && !["OPEN", "BLOCKED", "RESUMED"].includes(record.status)) pending.add(id);
+      // A resume delivery can be acknowledged during shutdown before run.resumed is appended.
+      // Re-enter closed waits, including RESUMED, even when their outbox receipt is delivered.
+      // The run-local execution chain and recorded wait result make duplicate delivery harmless.
+      if (record && !["OPEN", "BLOCKED"].includes(record.status)) pending.add(id);
     }
   }
 
@@ -407,6 +533,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     async close() {
       if (closed) return;
       closed = true;
+      shutdown.abort();
       clearInterval(timer);
       if (approvalTimer) clearInterval(approvalTimer);
       await ticking;
