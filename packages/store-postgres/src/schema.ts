@@ -163,5 +163,20 @@ export function migrations(): Migration[] {
         `ALTER TABLE outbox ADD COLUMN lease_generation bigint NOT NULL DEFAULT 0`,
       ],
     },
+    {
+      // Fenced run-write ownership (docs/contracts/run-write-ownership.md). One row per enrolled
+      // run: the authoritative current owner, a store-maintained generation advanced by every
+      // reclaim and release (which permanently fences earlier workers), and a caller-clock expiry
+      // used only as reclaim eligibility. A run with no row is unenrolled and keeps legacy writes.
+      version: 5,
+      statements: [
+        `CREATE TABLE run_leases (
+          run_id text PRIMARY KEY,
+          owner_id text,
+          generation bigint NOT NULL,
+          claimed_until bigint NOT NULL
+        )`,
+      ],
+    },
   ];
 }

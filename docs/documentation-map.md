@@ -164,6 +164,8 @@ the implementation, the decision still stands and the current status is in the l
 ## Related
 
 - [contracts/fenced-outbox-leases.md](contracts/fenced-outbox-leases.md) — additive native delivery lease and compatibility contract.
+- [contracts/run-write-ownership.md](contracts/run-write-ownership.md) — authoritative store-time run ownership, fenced run-scoped writes and crash-recovery contract.
+- [evidence/run-write-ownership.md](evidence/run-write-ownership.md) — store and two-process runtime stale-writer, fencing and ambiguous-reconciliation regression evidence.
 - [evidence/fenced-outbox-leases.md](evidence/fenced-outbox-leases.md) — store conformance and stale-owner regression evidence.
 - [evidence/postgres-idempotency-pool.md](evidence/postgres-idempotency-pool.md) — saturated connection-pool replay deadlock and transaction-local fix.
 - [evidence/pr42-release-readiness.md](evidence/pr42-release-readiness.md) — actionable review fixes, release audit and remaining operator authorization gates.

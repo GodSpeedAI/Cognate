@@ -43,6 +43,33 @@ export interface StreamAppend {
   /** Current stream version the decision was made against; 0 for a new stream. */
   readonly expectedVersion: number;
   readonly events: readonly NewEvent[];
+  /** Fenced run-write credential (docs/contracts/run-write-ownership.md). Required for appends
+   * touching an enrolled run; refused as stale when it does not match the current owner and
+   * generation; ignored for unenrolled runs when absent. */
+  readonly runOwnership?: RunOwnershipIdentity;
+}
+
+/** A run-ownership lease as returned by the store: current owner, generation and expiry. */
+export interface RunOwnershipLease {
+  readonly runId: string;
+  readonly ownerId: string;
+  readonly generation: number;
+  readonly expiresAt: number;
+}
+
+export interface RunOwnershipClaim {
+  readonly runId: string;
+  readonly ownerId: string;
+  /** Caller-observed epoch milliseconds; see docs/contracts/run-write-ownership.md. */
+  readonly now: number;
+  readonly leaseMs: number;
+}
+
+/** The identity a fenced writer presents with every run-scoped append. */
+export interface RunOwnershipIdentity {
+  readonly runId: string;
+  readonly ownerId: string;
+  readonly generation: number;
 }
 
 /** A compare-and-swap write of a versioned durable record (runs, continuations, commitments, artifacts). */
@@ -185,6 +212,11 @@ export interface DurableStore {
   /** Operator replay path for a poisoned item. */
   requeueOutbox(id: string, now: number): Promise<void>;
   listOutbox(options?: { readonly topic?: string; readonly status?: OutboxStatus }): Promise<OutboxItem[]>;
+  /** Optional fenced run-write ownership extension (docs/contracts/run-write-ownership.md).
+   * Older adapters may omit all three methods and stay legacy single-process. */
+  claimRunOwnership?(options: RunOwnershipClaim): Promise<RunOwnershipLease>;
+  renewRunOwnership?(lease: RunOwnershipIdentity & { readonly now: number; readonly leaseMs: number }): Promise<boolean>;
+  releaseRunOwnership?(lease: RunOwnershipIdentity): Promise<boolean>;
 
   getProjection(name: string): Promise<ProjectionCheckpoint | undefined>;
   commitProjection(commit: ProjectionCommit): Promise<void>;
