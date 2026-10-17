@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-mcp",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "MCP adapter: exposes runtime capabilities as MCP tools through the runtime's authorization path.",
   "type": "module",
   "license": "Apache-2.0",

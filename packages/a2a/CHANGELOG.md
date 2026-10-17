@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-a2a-v0.6.0...cognate-a2a-v0.6.1) (2026-10-17)
+
+
+### Miscellaneous Chores
+
+* **cognate-a2a:** Synchronize cognate SDK packages versions
+
 ## [0.6.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-a2a-v0.5.0...cognate-a2a-v0.6.0) (2026-10-17)
 
 
