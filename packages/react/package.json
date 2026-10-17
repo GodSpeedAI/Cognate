@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-react",
-  "version": "0.6.0",
+  "version": "0.3.0",
   "description": "React 19 bindings over the headless client: runs, projections, frontend capabilities, continuations, artifacts (spec §25.2). No Astryx.",
   "type": "module",
   "license": "Apache-2.0",

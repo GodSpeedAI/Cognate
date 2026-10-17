@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-ag-ui",
-  "version": "0.6.0",
+  "version": "0.3.0",
   "description": "AG-UI projection and interoperability adapter: outbound event mapping, inbound actions through native authorization, SSE endpoint with reconnect (spec §24). Internal events are never AG-UI aliases.",
   "type": "module",
   "license": "Apache-2.0",
