@@ -1,28 +1,27 @@
 # Current status
 
-**Status revision:** 67
+**Status revision:** 69
 
-**Summary:** Authorized PR44 final source repairs all actionable scoped review findings. Real PostgreSQL/Linux runtime suites pass38/189; full81/81 gates pass. Latest-head CI/packaging and complete linked publication still precede Workbench consumption.
+**Summary:** SDK 0.5.0 publication is verified at all 45 packages. PR #47 adds a fail-closed public registry receipt gate; its source and nine regressions pass all native gates. Exact-head CI passed, and this readable status update will receive fresh checks before final merge authorization.
 
-SDK0.4.0 remains published at all45 linked names, release467a5f. Workbench consumes only that
-supported release; no local source checkout is an application dependency.
+The operator-approved PR #44 and linked SDK 0.5.0 release are merged. All 45 public npm versions and
+gitHeads match release **dd13c842**. Initial visibility lag contradicted green publish jobs; the
+targeted retry skipped publication once the missing version became visible. Its cause is not
+established. A fresh all-package consumer proves native asynchronous admission and PostgreSQL
+overlap. Workbench consumes only supported 0.5.0 packages.
 
-PR44 adds awaitable authoritative resource eligibility and cooperative shutdown/recovery. Final
-review repairs preserve cancellation through slot acquisition and the executor's initial store
-read; late permits are released. Startup recovery uses durable outbox retry. Monotonic250ms/100
-candidate reconciliation bounds scan frequency; the full query remains unpaginated.
+[PR #47](https://github.com/GodSpeedAI/Cognate/pull/47) verifies every public package after publishing.
+Requests reject redirects and omit credentials. Five workers, a 30-minute deadline, a 10-second
+request timeout and a 256 KiB body cap bound work. Release-created runs fail when publishing
+readiness is disabled or the publish matrix failed or was skipped. Only complete receipts upload.
 
-The slot-wait, stale-snapshot, late-grant and250-candidate backlog regressions fail before repair and
-pass afterward. Final actual PostgreSQL/Linux suite: **38 pass, zero fail,189 assertions**. Full
-`just verify` with explicit reviewed Bubblewrap0.12 attestation: **81/81 gates pass**. Typecheck,
-diff check and fresh Luna source review pass. Earlier5c85e4cCI/packaging pass but do not cover the
-new source; exact new-head checks remain required.
+The **nine publication regressions / 32 assertions** run in the standard `just verify` recipe.
+Typecheck, documentation, proof routing and **81/81 implemented gates** pass against actual
+PostgreSQL. The initial truncated Bun-types installation was repaired using unchanged frozen
+dependencies. PR source head **0679f8f** passed exact-head CI; this status correction needs fresh
+checks. CodeRabbit's minor readability finding is addressed in the current snapshot while prior
+append-only records remain intact.
 
-The operator approved PR44 and its linked release. The45-package release configuration and trusted
-publishing readiness were rechecked. No merge/publication has happened yet.
-
-Limits: ignored policy callbacks retain capacity; signal-ignoring handlers may delay shutdown.
-Interrupted effects require commitments/reconciliation. Outbox fencing is not distributed run-write
-ownership; Linux child containment is not production authentication, host isolation or aggregate
-resource control. The incorrect distro patch claim is withdrawn; explicit upstream0.12 provenance
-and OS receipts replace it. The overall debt mission remains incomplete.
+Final merge authorization is reserved. Publication remains non-atomic. Outbox fencing is not
+distributed run-write ownership; Linux children are not production authentication, host isolation
+or aggregate resource containment. The Workbench debt mission remains incomplete.
