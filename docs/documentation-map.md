@@ -74,6 +74,7 @@ adding, renaming, or removing a page means editing this list.
 | [how-to/add-a-capability.md](how-to/add-a-capability.md) | How-to: add a capability | the component, the mount, the policy, the call, verification, symptoms | extensions |
 | [how-to/add-a-projection.md](how-to/add-a-projection.md) | How-to: add a read model | the projection contract, registration, reading, erasure, symptoms | durable-state |
 | [how-to/add-a-protocol-adapter.md](how-to/add-a-protocol-adapter.md) | How-to: extend the wire | the five-package contract revision, schema + codegen, both mapping directions, non-Connect protocols | wire-and-protocols |
+| [how-to/load-a-composed-semantic-world.md](how-to/load-a-composed-semantic-world.md) | How-to: resolve a root `.sea` model and imported modules | canonical DomainForge source-map loading, organizational `world_ref`, and native binding gate | semantics, application-composition |
 | [how-to/verify-a-change.md](how-to/verify-a-change.md) | How-to: prove a change | the verification loop, the narrow gate, the suites, recording the result, environment caveats | getting-started |
 
 ## Reference
