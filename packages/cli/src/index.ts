@@ -135,6 +135,8 @@ export async function create(options: CreateOptions): Promise<CreateReport> {
 export interface CognateConfig {
   readonly profile: "copilot" | "harness";
   readonly instructions?: string;
+  /** Canonical organizational world: entry is a logical path under domain/, e.g. domain/organization.sea. */
+  readonly semanticWorld?: { readonly entry: string; readonly name: string; readonly registryContentHash?: string };
 }
 
 export interface DevServer {
@@ -196,19 +198,56 @@ export async function dev(options: { readonly dir: string; readonly port: number
   if (!existsSync(configPath)) throw new Error(`cognate dev: no cognate.config.ts in ${dir}`);
   const { default: config } = (await import(pathToFileURL(configPath).href)) as { default: CognateConfig };
 
-  const { loadSemanticProjection } = await import("@godspeedai/cognate-domainforge");
+  const { loadSemanticProjection, loadSemanticWorld } = await import("@godspeedai/cognate-domainforge");
   const domainDir = join(dir, "domain");
-  const seaFiles = existsSync(domainDir) ? (await readdir(domainDir)).filter((name) => name.endsWith(".sea")) : [];
-  const objects: { readonly id: string; readonly kind: string; readonly name: string }[] = [];
-  const digestParts: string[] = [];
-  for (const file of seaFiles.sort()) {
-    const source = await readFile(join(domainDir, file), "utf8");
-    const result = loadSemanticProjection(source, { uri: `domain/${file}` });
-    if (!result.ok) throw new Error(`cognate dev: failed to parse domain/${file}: ${JSON.stringify(result.error)}`);
-    for (const object of result.projection.objects) objects.push({ id: object.ref.id, kind: object.kind, name: object.name });
-    digestParts.push(result.projection.source.digest);
+  const sources: Record<string, string> = {};
+  if (existsSync(domainDir)) {
+    // Paths are logical IDs under domain/, not guessed namespace names.
+    // Traverse recursively so imports may live in nested directories.
+    const visit = async (current: string, prefix: string): Promise<void> => {
+      for (const item of await readdir(current, { withFileTypes: true })) {
+        const relative = prefix ? `${prefix}/${item.name}` : item.name;
+        if (item.isDirectory()) await visit(join(current, item.name), relative);
+        else if (item.isFile() && item.name.endsWith(".sea")) {
+          sources[`domain/${relative}`] = await readFile(join(current, item.name), "utf8");
+        }
+      }
+    };
+    await visit(domainDir, "");
   }
-  const digest = `sha256:${createHash("sha256").update(digestParts.sort().join("|")).digest("hex")}`;
+
+  const objects: { readonly id: string; readonly kind: string; readonly name: string }[] = [];
+  let worldRef: string | undefined;
+  let semanticClosureHash: string | undefined;
+  let digest: string;
+  const fileNames = Object.keys(sources).sort();
+  if (config.semanticWorld) {
+    const result = loadSemanticWorld({
+      entry: config.semanticWorld.entry,
+      sources,
+      worldName: config.semanticWorld.name,
+      registryContentHash: config.semanticWorld.registryContentHash,
+    });
+    if (!result.ok) throw new Error(`cognate dev: organizational world resolution failed: ${JSON.stringify(result.error)}`);
+    for (const object of result.projection.objects) objects.push({ id: object.ref.id, kind: object.kind, name: object.name });
+    worldRef = result.worldRef;
+    digest = result.projection.source.digest;
+    semanticClosureHash = result.identity.semantic_closure_hash;
+  } else {
+    // Legacy single-module starter support. Combining independent file digests is not a
+    // canonical world; reject ambiguous multi-file worlds instead of advertising one.
+    if (fileNames.length > 1) {
+      throw new Error("cognate dev: multiple .sea files require semanticWorld { entry, name } in cognate.config.ts");
+    }
+    const digestParts: string[] = [];
+    for (const file of fileNames) {
+      const result = loadSemanticProjection(sources[file]!, { uri: file });
+      if (!result.ok) throw new Error(`cognate dev: failed to parse ${file}: ${JSON.stringify(result.error)}`);
+      for (const object of result.projection.objects) objects.push({ id: object.ref.id, kind: object.kind, name: object.name });
+      digestParts.push(result.projection.source.digest);
+    }
+    digest = `sha256:${createHash("sha256").update(digestParts.join("|")).digest("hex")}`;
+  }
 
   await mkdir(join(dir, ".cognate"), { recursive: true });
   const storePath = join(dir, ".cognate", "app.sqlite");
@@ -259,7 +298,7 @@ export async function dev(options: { readonly dir: string; readonly port: number
     bundleJs = await build.outputs[0]!.text();
   }
 
-  const healthPayload = { ok: true, semantic: { objects: objects.length, digest }, agents, components };
+  const healthPayload = { ok: true, semantic: { objects: objects.length, digest, ...(worldRef ? { worldRef, semanticClosureHash } : {}) }, agents, components };
 
   const server = Bun.serve({
     port: options.port,
