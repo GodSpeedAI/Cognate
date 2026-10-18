@@ -1,7 +1,36 @@
 import { describe, expect, test } from "bun:test";
-import { governanceFromEnv, SeaForgeAuthority } from "../src/index.ts";
+import { governanceFromEnv, isWorldRef, SeaForgeAuthority } from "../src/index.ts";
 
 const WORLD = `world:demo@sha256:${"a".repeat(64)}`;
+
+describe("DomainForge canonical world-reference grammar", () => {
+  const digest = "a".repeat(64);
+
+  test("governed worlds accept canonical organizational names including dots, underscores and hyphens", () => {
+    for (const name of ["godspeed.org", "godspeed_ai", "godspeed-ai", "a", "a".repeat(64)]) {
+      const worldRef = `world:${name}@sha256:${digest}`;
+      expect(isWorldRef(worldRef), name).toBe(true);
+      const options = governanceFromEnv({
+        COGNATE_GOVERNANCE: "sea-forge",
+        COGNATE_SEA_FORGE_SOCKET: "/tmp/world.sock",
+        COGNATE_WORLD_REF: worldRef,
+      });
+      expect(options.worldRef).toBe(worldRef);
+    }
+  });
+
+  test("invalid or unpinned names fail closed under DomainForge's exact grammar", () => {
+    for (const ref of [
+      "world:org", "world:org@sha256:xyz",
+      `world:0org@sha256:${digest}`,
+      `world:Org@sha256:${digest}`,
+      `world:org..finance@sha256:${digest}`,
+      `world:org.-finance@sha256:${digest}`,
+      `world:org_@sha256:${digest}`,
+      `world:${"a".repeat(65)}@sha256:${digest}`,
+    ]) expect(isWorldRef(ref), ref).toBe(false);
+  });
+});
 
 describe("governanceFromEnv", () => {
   test("nothing set is off", () => {

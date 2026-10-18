@@ -114,10 +114,15 @@ export interface GovernedResult {
   readonly authority?: AuthorityReference;
 }
 
-const WORLD_REF = /^world:[a-z0-9]+(?:-[a-z0-9]+)*@sha256:[0-9a-f]{64}$/;
+// Mirror DomainForge WorldName's public grammar, rather than accepting a narrower name.
+// Canonical rule: [a-z][a-z0-9]*([._-][a-z0-9]+)*, with a 64-byte ASCII name bound.
+// DomainForge remains authoritative for minting and verifying the pinned identity.
+const WORLD_REF = /^world:([a-z][a-z0-9]*(?:[._-][a-z0-9]+)*)@sha256:[0-9a-f]{64}$/;
 
 export function isWorldRef(text: unknown): text is string {
-  return typeof text === "string" && text.length <= 200 && WORLD_REF.test(text);
+  if (typeof text !== "string") return false;
+  const match = WORLD_REF.exec(text);
+  return match !== null && match[1]!.length <= 64;
 }
 
 /** Fails at construction, never at first use: `sea-forge` mode without authority and a world is a bug. */
