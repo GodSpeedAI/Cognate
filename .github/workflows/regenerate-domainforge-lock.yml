@@ -22,7 +22,7 @@ jobs:
           set -euo pipefail
           bun install --lockfile-only
           git diff --check
-          git diff -- bun.lock | head -100
+          git diff --stat -- bun.lock
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add bun.lock
