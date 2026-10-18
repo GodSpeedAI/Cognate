@@ -42,11 +42,6 @@ jobs:
         run: |
           cargo install domainforge-core --version "$DOMAINFORGE_VERSION" --features cli --locked
           just setup-realitytrace
-      - name: Probe DomainForge lockfile update (temporary)
-        run: |
-          bun install --lockfile-only
-          grep -n '@godspeedai/domainforge' bun.lock
-          git diff -- bun.lock
       - name: Install dependencies
         run: |
           bun install --frozen-lockfile
