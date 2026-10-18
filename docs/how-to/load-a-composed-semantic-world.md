@@ -48,8 +48,6 @@ Use `identity.semantic_closure_hash` to distinguish meaning-preserving source ed
 
 ## Native dependency and proof gate
 
-**Requires an upstream DomainForge native-binding release that exposes `Graph.parseSourceMap(entryLogicalPath, sourcesJson)`.** The proposed binding change is in [DomainForge fix/canonical-multifile-world-projection](https://github.com/GodSpeedAI/DomainForge/tree/fix/canonical-multifile-world-projection).
-
-Cognate currently pins `@godspeedai/domainforge@0.19.0`, which does **not** expose that method. `loadSemanticWorld` therefore returns `binding_unavailable` rather than a partial or fraudulent graph until DomainForge is released and Cognate's exact dependency pin is upgraded. The composed-world integration gate in `packages/domainforge/test/world.test.ts` intentionally fails while that native API is absent. It must not be waived as a passing end-to-end integration.
+Requires the published DomainForge 0.21.1 binding, including `Graph.parseSourceMap(entryLogicalPath, sourcesJson)`. A missing native factory is an explicit error and never falls back to a partial graph. Before deploying a composed world, run `bun test packages/domainforge/test/world.test.ts` and verify a valid pinned `world_ref` is accepted by the target SEA-Forge registry.
 
 A `world_ref` establishes the semantic model being used, not the current operational state, not authority to act, and not evidence of developmental settlement. Governed operations still require SEA-Forge authorization, and operational events remain Cognate and RealityTrace responsibilities.

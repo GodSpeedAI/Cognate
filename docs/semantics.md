@@ -22,11 +22,11 @@ Identity is pinned to source revision: a rename or namespace change mints a **ne
 
 ## Adapter: `@godspeedai/domainforge`
 
-[`@godspeedai/domainforge`](../packages/domainforge/README.md) binds `@godspeedai/domainforge` 0.18.2's `Graph.parse(source)` API ([ADR-0002](decisions/ADR-0002-semantic-binding-domainforge.md)). Entity and Resource `id` getters are content-derived (`namespace::name`) and stable across re-parses, so the adapter uses them directly as `SemanticRef` identity components.
+[`@godspeedai/domainforge`](../packages/domainforge/README.md) binds `@godspeedai/domainforge` 0.21.1's `Graph.parse(source)` and canonical `Graph.parseSourceMap(entryLogicalPath, sourcesJson)` APIs ([ADR-0002](decisions/ADR-0002-semantic-binding-domainforge.md)). Entity and Resource `id` getters are content-derived (`namespace::name`) and stable across re-parses, so the adapter uses them directly as `SemanticRef` identity components.
 
 ### Mapping table (spec §19)
 
-The following rows describe the mapping. DEBT-003 closed when the pin moved to `@godspeedai/domainforge` 0.18.1, which exposes every SEA-declared collection; the golden gate passes against the published binding. The pre-existing CG-SEM-001 baseline remains implemented in the ledger.
+The adapter supports both a legacy one-source projection and an import-aware composed organizational world. The canonical composed-world loader pins references to DomainForge's verified root `world_ref`; see [the composed-world guide](how-to/load-a-composed-semantic-world.md).\n\nThe following rows describe the mapping. DEBT-003 closed when the pin moved to `@godspeedai/domainforge` 0.18.1, which exposes every SEA-declared collection; the golden gate passes against the published binding. The pre-existing CG-SEM-001 baseline remains implemented in the ledger.
 
 | Kind | Supported | View |
 |---|---|---|
@@ -48,7 +48,7 @@ The full row data (meaning, cardinality, provenance, reason) is in `mappingTable
 
 ## Status
 
-`CG-SEM-001` and `CG-SEM-002` have passing evidence against the exact-pinned `@godspeedai/domainforge@0.18.2` package under Bun 1.4.0 (first characterized on 0.16.0 in `.agents/evidence/phase0-domainforge.md`, re-run on 0.17.0 in `.agents/evidence/2026-09-25-releases.md`, closed on 0.18.1 in `.agents/evidence/2026-09-26-debt-003-close.md`). The DEBT-003 expansion is verified against the published binding, including the byte-identical golden projection.
+`CG-SEM-001` and `CG-SEM-002` have passing evidence against the exact-pinned `@godspeedai/domainforge@0.21.1` package under Bun 1.4.0 (first characterized on 0.16.0 in `.agents/evidence/phase0-domainforge.md`, re-run on 0.17.0 in `.agents/evidence/2026-09-25-releases.md`, closed on 0.18.1 in `.agents/evidence/2026-09-26-debt-003-close.md`). The DEBT-003 expansion is verified against the published binding, including the byte-identical golden projection.
 
 ## Related
 

@@ -63,6 +63,8 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Canonical DomainForge world binding gate
+        run: bun test packages/domainforge
       - name: Pack every package with resolved workspace ranges
         run: |
           set -euo pipefail

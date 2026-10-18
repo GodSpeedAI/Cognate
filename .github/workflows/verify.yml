@@ -15,7 +15,7 @@ permissions:
 
 env:
   # Keep in step with packages/domainforge BINDING and the realitytrace pin in the justfile.
-  DOMAINFORGE_VERSION: "0.19.0"
+  DOMAINFORGE_VERSION: "0.21.1"
 
 jobs:
   verify:

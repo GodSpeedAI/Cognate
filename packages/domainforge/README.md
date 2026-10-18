@@ -3,7 +3,7 @@
 Turn DomainForge domain models into Cognate semantic objects and capabilities. This package is
 a version-pinned adapter around the external
 [`@godspeedai/domainforge`](https://www.npmjs.com/package/@godspeedai/domainforge) npm package
-(pinned to `0.19.0`), which parses the `.sea` domain language into a graph of entities,
+(pinned to `0.21.1`), which parses the `.sea` domain language into a graph of entities,
 resources, flows, relations, policies, and metrics. The adapter converts that graph into
 Cognate `SemanticRef`s and a read-only `SemanticProjection`, and is the only supported path
 from a domain model to Cognate capability contracts.
@@ -20,7 +20,7 @@ bun add @godspeedai/cognate-domainforge
 
 Requires [Bun](https://bun.sh) >= 1.4.0. The external parser
 [`@godspeedai/domainforge`](https://www.npmjs.com/package/@godspeedai/domainforge) at
-`0.19.0` is installed automatically as a pinned regular dependency; it performs the actual
+`0.21.1` is installed automatically as a pinned regular dependency; it performs the actual
 `.sea` parsing (including its native binding). The SDK ships Bun-native TypeScript source, so
 add `@types/bun` and `@types/node` as dev dependencies when typechecking your project.
 
@@ -88,9 +88,13 @@ if (!result.ok) {
   supported, its framework view, meaning, cardinality, and source accessor. `External` is the
   one unmappable kind (it has no graph declaration).
 
+## Composed-world integration
+
+With DomainForge 0.21.1, `loadSemanticWorld({ entry, sources, worldName })` resolves the complete canonical import closure through `Graph.parseSourceMap`, returns the verified root `worldRef` and `DomainModelIdentity`, and creates refs pinned to the resolved world. Use this API rather than parsing individual imported files. See [`docs/how-to/load-a-composed-semantic-world.md`](https://github.com/GodSpeedAI/Cognate/blob/main/docs/how-to/load-a-composed-semantic-world.md).
+
 ## Limitations
 
-- Pinned to `@godspeedai/domainforge` `0.19.0`. The projection records which binding produced
+- Pinned to `@godspeedai/domainforge` `0.21.1`. The projection records which binding produced
   it; newer parser versions require a deliberate adapter upgrade, not an accidental drift.
 - Projections are read-only data. Nothing here executes models, enforces policies, or grants
   permissions — it makes semantics referenceable.
