@@ -176,8 +176,19 @@ describe("E2E cognitive console", () => {
         expect(text).toMatch(/Uncommitted\s*2/);
         expect(text).toContain("human approval required");
         expect(await readdir(repo)).toContain("generated"); // nothing ran before the human decided
-        // The card renders from `tool.approval.requested`, a beat before `continuation.opened`; a human
-        // can only decide once the continuation exists (pre-existing ordering in the console).
+        // The card renders from `tool.approval.requested`, a beat before `continuation.opened` (DEBT-025).
+        // Until the continuation is open the decision buttons must be disabled. The disabled read happens
+        // before the event read, so "no continuation.opened yet" at the later read implies the UI had none
+        // at the earlier read either.
+        const allowButton = card.getByRole("button", { name: "Allow once" });
+        const rejectButton = card.getByRole("button", { name: "Reject" });
+        const allowDisabledEarly = await allowButton.isDisabled();
+        const rejectDisabledEarly = await rejectButton.isDisabled();
+        if (!(await events(app)).some((e) => e.eventType === "continuation.opened")) {
+          expect(allowDisabledEarly).toBe(true);
+          expect(rejectDisabledEarly).toBe(true);
+          expect(await card.getAttribute("aria-busy")).toBe("true");
+        }
         for (let i = 0; i < 800; i++) { if ((await events(app)).some((e) => e.eventType === "continuation.opened")) break; await Bun.sleep(25); }
         await Bun.sleep(300);
         await card.getByRole("button", { name: "Allow once" }).click();

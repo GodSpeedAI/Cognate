@@ -39,6 +39,7 @@ RVF 0.3.4's `open()` has no integrity check (a 50%-truncated file, or a flipped 
 - **`MetadataNotSupported`.** No entry is ever ingested with a `metadata` field. All provenance — tenant, scope, metadata, embeddings, source refs — lives in an adapter-owned `<path>.entries.json` sidecar, the only source of truth for `get`/`similar` disclosure.
 - **String ids in RVF's own sidecar.** `NodeBackend` writes `<path>.idmap.json`; every filesystem copy this adapter makes (snapshot, verified import) copies that file alongside the `.rvf` bytes.
 - **`exportBytes`/`openBytes` unsupported.** Snapshot and import operate on file paths only, never in-memory byte buffers.
+- **Transient `FsyncFailed` on create.** `createRvfIndex` retries only `FsyncFailed` (matched by error code) up to 5 attempts with a 50ms×n backoff, removing partial files at the target path before each retry; every other error is rethrown immediately.
 
 ### What remains unproven
 

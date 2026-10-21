@@ -112,13 +112,6 @@ export function CognitiveFrame({ awaitingDecision }: { readonly awaitingDecision
     }
   }, [client, caseId]);
   useEffect(() => { void refresh(); }, [refresh, latest]);
-  // `useProjection` can stay stale (DEBT-021), so the projection is only a hint; a slow refresh
-  // guarantees the frame converges on the server-derived Case regardless.
-  useEffect(() => {
-    if (!caseId) return;
-    const t = setInterval(() => { void refresh(); }, 1500);
-    return () => clearInterval(t);
-  }, [caseId, refresh]);
 
   const takePending = useCallback(async () => {
     const out = (await client.invoke("ui.pending", {})) as unknown as { surfaces: Surface[]; focus: FocusContext | null };

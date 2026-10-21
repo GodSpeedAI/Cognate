@@ -36,12 +36,15 @@ function kindOf(path: string, files: Map<string, string>, directories: Set<strin
 }
 
 function createMemoryFileSystem(files: Map<string, string>, directories: Set<string>): FileSystemPort {
+  // Every write bumps a per-path revision, so a same-size rewrite still yields a new version.
+  const revisions = new Map<string, number>();
+  const versionOf = (path: string, content: string) => `${content.length}:${revisions.get(path) ?? 0}`;
   return {
     resolve: resolveMemory,
     async stat(path) {
       if (files.has(path)) {
         const content = files.get(path)!;
-        return { kind: "file", size: content.length, version: `${content.length}:${content.length}` };
+        return { kind: "file", size: content.length, version: versionOf(path, content) };
       }
       if (directories.has(path)) return { kind: "directory", size: 0, version: `dir:${path}` };
       return undefined;
@@ -63,12 +66,13 @@ function createMemoryFileSystem(files: Map<string, string>, directories: Set<str
     },
     async writeText(path, content) {
       files.set(path, content);
+      revisions.set(path, (revisions.get(path) ?? 0) + 1);
       const parent = parentOf(path);
       if (parent && parent !== "/") directories.add(parent);
     },
     async version(path) {
       const content = files.get(path);
-      return content === undefined ? undefined : `${content.length}:${content.length}`;
+      return content === undefined ? undefined : versionOf(path, content);
     },
   };
 }

@@ -2022,7 +2022,17 @@ function FailureBlock({ code, message }: { readonly code: string; readonly messa
  *  approval card sits at the bottom of the chat pane, composer hidden underneath it) — exact
  *  strings/buttons/keyboard behavior: Enter = allow once, Escape = reject (characterization's
  *  stated keyboard behavior). */
-function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly onDecide: (approved: boolean) => void }) {
+function ApprovalBar({
+  entry,
+  onDecide,
+  continuationOpen,
+}: {
+  readonly entry: ToolEntry;
+  readonly onDecide: (approved: boolean) => void;
+  /** Whether the run's `tool-approval` continuation is open (DEBT-025). The approval card can render
+   *  before `continuation.opened` lands; until it does, the decision buttons stay disabled. */
+  readonly continuationOpen: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.focus();
@@ -2031,9 +2041,11 @@ function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly 
     <div
       className="approval-card surface-consequential"
       data-approval-panel
+      aria-busy={!continuationOpen}
       tabIndex={-1}
       ref={ref}
       onKeyDown={(e) => {
+        if (!continuationOpen) return;
         if (e.key === "Enter") {
           e.preventDefault();
           onDecide(true);
@@ -2055,10 +2067,10 @@ function ApprovalBar({ entry, onDecide }: { readonly entry: ToolEntry; readonly 
         )}
       </div>
       <div className="approval-actions">
-        <button type="button" className="approval-btn approval-reject" onClick={() => onDecide(false)}>
+        <button type="button" className="approval-btn approval-reject" disabled={!continuationOpen} onClick={() => onDecide(false)}>
           Reject
         </button>
-        <button type="button" className="approval-btn approval-allow" onClick={() => onDecide(true)}>
+        <button type="button" className="approval-btn approval-allow" disabled={!continuationOpen} onClick={() => onDecide(true)}>
           Allow once
         </button>
       </div>
@@ -4402,7 +4414,11 @@ export function App() {
               />
             )}
             {pendingApproval ? (
-              <ApprovalBar entry={pendingApproval} onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)} />
+              <ApprovalBar
+                entry={pendingApproval}
+                continuationOpen={openContinuations.some((c) => c.type === "tool-approval")}
+                onDecide={(approved) => decideApproval(pendingApproval.toolCallId, approved)}
+              />
             ) : planReviewContinuation ? (
               <PlanReviewCard
                 heading={String((planReviewContinuation.payload as { readonly heading?: string }).heading ?? "")}

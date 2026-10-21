@@ -1,20 +1,24 @@
 // CG-CLI-001 (spec §37 Phase 10): `cognate create` (starter generation with profiles) and `cognate dev`
-// (runtime + Connect + AG-UI + UI server). Packages are not published to a registry (DEBT-016): `create`
-// vendors the `@godspeedai/*` packages a profile needs from `--source` with `bun pm pack` and pins them with
-// `file:` dependencies plus a package.json `overrides` map, so `workspace:*` inside the packed tarballs
-// resolves outside the workspace.
+// (runtime + Connect + AG-UI + UI server). `create` has two modes. With `--source <checkout>` it vendors the
+// `@godspeedai/*` packages a profile needs from that checkout with `bun pm pack` and pins them with `file:`
+// dependencies plus a package.json `overrides` map, so `workspace:*` inside the packed tarballs resolves outside
+// the workspace (unreleased local changes). Without `--source` (registry mode) it pins each `@godspeedai/cognate-*`
+// dependency to the CLI's own version, which is released in lockstep with every cognate package (DEBT-016).
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 export interface CreateOptions {
   readonly dir: string;
   readonly profile: "copilot" | "harness";
-  /** Path to a Cognate source checkout whose packages are packed and vendored (packages are not on npm; DEBT-016). */
-  readonly source: string;
+  /**
+   * Optional path to a Cognate source checkout whose packages are packed and vendored (unreleased local changes).
+   * When absent, `@godspeedai/cognate-*` dependencies resolve from the npm registry at the CLI's version.
+   */
+  readonly source?: string;
   /** Optional components requested beyond the profile; unsupported ones are reported and never imported. */
   readonly with?: readonly string[];
 }
@@ -40,6 +44,8 @@ const PROFILE_ROOTS: Readonly<Record<CreateOptions["profile"], readonly string[]
 async function copyDir(srcDir: string, destDir: string): Promise<void> {
   await mkdir(destDir, { recursive: true });
   await cp(srcDir, destDir, { recursive: true });
+  // The packaged template stores .gitignore as _gitignore (npm drops .gitignore files); restore the dot name.
+  if (existsSync(join(destDir, "_gitignore"))) await rename(join(destDir, "_gitignore"), join(destDir, ".gitignore"));
 }
 
 /** Maps every `@godspeedai/*` package name in `--source` to its directory, by reading each package.json. */
@@ -90,17 +96,58 @@ async function packPackage(pkgDir: string, destination: string): Promise<string>
   return basename(outputPath);
 }
 
+/** The starter template inside a Cognate checkout (src/ -> packages/cli -> repo root). */
+const CHECKOUT_TEMPLATE_ROOT = fileURLToPath(new URL("../../../templates/starter", import.meta.url));
+
+/** The starter template copied into the published package at pack time (scripts/prepare-npm-package.mjs). */
+const PACKAGED_TEMPLATE_ROOT = fileURLToPath(new URL("../templates/starter", import.meta.url));
+
+/** Registry mode reads the packaged template; a checkout run without a packaged copy falls back to the repo root. */
+function registryTemplateRoot(): string {
+  return existsSync(PACKAGED_TEMPLATE_ROOT) ? PACKAGED_TEMPLATE_ROOT : CHECKOUT_TEMPLATE_ROOT;
+}
+
+/**
+ * The CLI's own version (packages/cli/package.json). `package.json` is always published by npm, so this resolves
+ * from both the checkout and the installed package.
+ */
+async function cliVersion(): Promise<string> {
+  const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as { readonly version?: string };
+  if (!manifest.version) throw new Error("cognate create: the CLI package.json has no version");
+  return manifest.version;
+}
+
 /** Generate a starter app from templates/starter for a profile. */
 export async function create(options: CreateOptions): Promise<CreateReport> {
   const dir = resolve(options.dir);
-  const source = resolve(options.source);
-  const templateRoot = join(source, "templates", "starter");
+  const source = options.source === undefined ? undefined : resolve(options.source);
+  const templateRoot = source === undefined ? registryTemplateRoot() : join(source, "templates", "starter");
   if (!existsSync(templateRoot)) throw new Error(`cognate create: no template at ${templateRoot}`);
 
   await mkdir(dir, { recursive: true });
   await copyDir(join(templateRoot, "common"), dir);
   await copyDir(join(templateRoot, options.profile), dir);
   const files = ["domain", "src/agents", "src/capabilities", "src/components", "src/projections", "src/ui", "test", "cognate.config.ts", "package.json"];
+  const unsupported = (options.with ?? []).map((name) => ({ name, reason: KNOWN_UNSUPPORTED[name] ?? `not available in the starter yet: ${name}` }));
+
+  const pkgPath = join(dir, "package.json");
+  const manifest = JSON.parse(await readFile(pkgPath, "utf8")) as {
+    dependencies?: Record<string, string>;
+    overrides?: Record<string, string>;
+    [key: string]: unknown;
+  };
+  manifest.dependencies ??= {};
+
+  if (source === undefined) {
+    // Registry mode: nothing is packed or vendored and no `overrides` are written; npm resolves the cognate packages.
+    const version = await cliVersion();
+    for (const key of Object.keys(manifest.dependencies)) {
+      if (manifest.dependencies[key] === "workspace:*") manifest.dependencies[key] = version;
+    }
+    for (const name of PROFILE_ROOTS[options.profile]) manifest.dependencies[name] = version;
+    await writeFile(pkgPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    return { dir, files, vendored: [], unsupported };
+  }
 
   const byName = await indexCognatePackages(source);
   const closure = await transitiveClosure(PROFILE_ROOTS[options.profile], byName);
@@ -113,21 +160,12 @@ export async function create(options: CreateOptions): Promise<CreateReport> {
     fileDepFor.set(name, `file:./.cognate/vendor/${filename}`);
   }
 
-  const pkgPath = join(dir, "package.json");
-  const manifest = JSON.parse(await readFile(pkgPath, "utf8")) as {
-    dependencies?: Record<string, string>;
-    overrides?: Record<string, string>;
-    [key: string]: unknown;
-  };
   manifest.overrides = { ...(manifest.overrides ?? {}) };
   for (const name of closure) manifest.overrides[name] = fileDepFor.get(name)!;
-  manifest.dependencies ??= {};
   for (const key of Object.keys(manifest.dependencies)) {
     if (manifest.dependencies[key] === "workspace:*") manifest.dependencies[key] = fileDepFor.get(key) ?? manifest.dependencies[key]!;
   }
   await writeFile(pkgPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
-  const unsupported = (options.with ?? []).map((name) => ({ name, reason: KNOWN_UNSUPPORTED[name] ?? `not available in the starter yet: ${name}` }));
 
   return { dir, files, vendored: closure, unsupported };
 }

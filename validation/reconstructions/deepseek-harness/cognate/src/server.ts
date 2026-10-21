@@ -16,7 +16,7 @@ import { createConnectRouter } from "@connectrpc/connect";
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { stylesheetPaths } from "@godspeedai/cognate-ui-astryx/styles";
 
-import { bindExecutionWorlds, bindWorkbench, bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
+import { bindCognitive, bindExecutionWorlds, bindWorkbench, bindTranche5, bindTranche7, bindTranche9, bindTranche10, bindUsage2, bindUsage3, loadDomain } from "../domain/index.ts";
 import { agentConfigAgent } from "./agents/agentConfig.ts";
 import { agentCodingAgent } from "./agents/agentCoding.ts";
 import { secretPutComponent } from "./capabilities/secretPut.ts";
@@ -179,6 +179,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
   const usage3 = bindUsage3(domain);
   const worldBindings = bindExecutionWorlds(domain);
   const workbenchRefs = bindWorkbench(domain);
+  const cognitiveRefs = bindCognitive(domain);
 
   const serviceRef: { current: RuntimeService | undefined } = { current: undefined };
   const getService = () => {
@@ -202,7 +203,7 @@ export async function startServer(options: ServerOptions): Promise<AppServer> {
     components: [
       executionWorldsComponent(executionWorlds, { semanticRef: worldBindings.family }),
       executionWorldsManageComponent({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, secrets, semanticRefs: worldBindings }),
-      cognitiveComponent({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, extraMediators: options.extraMediators ?? [] }),
+      cognitiveComponent({ getService, systemCaller: SYSTEM_CALLER, registry: executionWorlds, semanticRefs: cognitiveRefs, extraMediators: options.extraMediators ?? [] }),
       secretPutComponent(secrets, bindings.secretPut.semanticRef),
       sessionHistoryComponent(getService, bindings.sessionHistory.semanticRef),
       workspacePathComponent(getService, toolBindings.workspacePath.semanticRef),

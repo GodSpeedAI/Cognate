@@ -261,7 +261,12 @@ describe("awaitable execution eligibility", () => {
         expect(effects).toBe(2);
         for (const runId of runIds) expect((await runtime.service.getRun(caller, { runId })).status).toBe("completed");
         expect(retryingLookups).toBe(1);
-        const delivered = await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" });
+        // A run's completion commits before its outbox row settles; wait for the settlement itself.
+        let delivered = await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" });
+        for (let i = 0; i < 300 && !delivered.some((item) => item.id === `run.execute:${retryingRun}`); i++) {
+          await Bun.sleep(10);
+          delivered = await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" });
+        }
         const recovery = delivered.filter((item) => (item.payload as { runId?: string } | null)?.runId === deliveredRun);
         expect(recovery.length).toBeGreaterThanOrEqual(2);
         expect(recovery.find((item) => item.id !== `run.execute:${deliveredRun}`)?.attempts).toBeGreaterThanOrEqual(2);
@@ -303,6 +308,9 @@ describe("awaitable execution eligibility", () => {
         } } });
       const run = await runtime.service.startRun(caller, { agent: agent.id, input: null, idempotencyKey: "resumed-eligibility-recovery" });
       for (let i = 0; i < 200 && (await runtime.service.getRun(caller, { runId: run.runId })).status !== "waiting"; i++) await Bun.sleep(10);
+      // "waiting" is visible before the first delivery settles. Resolving earlier lets that execution's
+      // retry replay the resume in place, bypassing the resumed eligibility lookup this test pins.
+      for (let i = 0; i < 200 && !(await database.store.listOutbox({ topic: "run.execute", status: "delivered" })).some((item) => item.id === `run.execute:${run.runId}`); i++) await Bun.sleep(10);
       const continuation = (await runtime.service.listContinuations(caller, { runId: run.runId, status: "OPEN" }))[0];
       expect(continuation).toBeDefined();
       await runtime.service.resolveContinuation(caller, {
@@ -332,8 +340,11 @@ describe("awaitable execution eligibility", () => {
       expect((await runtime.service.getRun(caller, { runId: run.runId })).status).toBe("completed");
       expect((await runtime.service.getRun(caller, { runId: run.runId })).output).toEqual({ answer: { answer: "continue" } });
       expect((await database.store.readStream(runStream(run.runId))).filter((event) => event.eventType === "run.resumed")).toHaveLength(1);
-      expect((await runtime.store.listOutbox({ topic: "run.execute", status: "delivered" })).some((item) =>
-        item.id.startsWith("run.execute:recovery:") && (item.payload as { runId?: string } | null)?.runId === run.runId)).toBe(true);
+      // Completion commits before the recovery row settles; wait for the settlement itself.
+      const recoveryDelivered = async () => (await runtime!.store.listOutbox({ topic: "run.execute", status: "delivered" })).some((item) =>
+        item.id.startsWith("run.execute:recovery:") && (item.payload as { runId?: string } | null)?.runId === run.runId);
+      for (let i = 0; i < 300 && !(await recoveryDelivered()); i++) await Bun.sleep(10);
+      expect(await recoveryDelivered()).toBe(true);
     } finally {
       releaseResumedLookup.resolve([]);
       await runtime?.close();
