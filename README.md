@@ -2,7 +2,7 @@
 
 **Define meaning once. Project it everywhere.**
 
-> **Status: v0 — published, early.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented, verified, and **published on npm under the [`@godspeedai/cognate-*`](https://www.npmjs.com/package/@godspeedai/cognate) names** (releases are managed by Release Please; see [ADR-0012](docs/decisions/ADR-0012-cognate-package-naming.md) for the naming convention). `just gates` reports every ledger requirement passing, and `bun run test` passes across the workspace. The ledger is a *candidate* rather than a frozen contract, and the known gaps are tracked in the [debt register](.agents/DEBT.md) — for example erasure does not yet reach every derived copy, Connect supports unary and server-streaming only, and runs execute serially in a polling loop. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
+> **Status: v0 — published, early.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented, verified, and **published on npm under the [`@godspeedai/cognate-*`](https://www.npmjs.com/package/@godspeedai/cognate) names** (releases are managed by Release Please; see [ADR-0012](docs/decisions/ADR-0012-cognate-package-naming.md) for the naming convention). `just gates` reports every ledger requirement passing, and `bun run test` passes across the workspace. The ledger is a *candidate* rather than a frozen contract, and the known gaps are tracked in the [debt register](.agents/DEBT.md) — for example Connect supports unary and server-streaming only (ADR-0003), and runs default to one at a time (`maxConcurrentRuns`; see [runtime concurrency](docs/runtime-concurrency.md)). The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
 
 Cognate is an open-source semantic application framework for building agent-native software.
 
@@ -64,14 +64,13 @@ Representations remain replaceable.**
 Cognate targets Bun. The quickest way to scaffold an app is the published CLI (it vendors the profile's packages from a Cognate checkout into the new app, so they resolve without a workspace):
 
 ```bash
-# From npm (no Cognate checkout needed to generate an app):
-bunx @godspeedai/cognate-cli@0.1 create my-app --profile copilot --source ./cognate
+bunx @godspeedai/cognate-cli create my-app --profile copilot
 cd my-app && bun install
 ```
 
-`--source` points at a Cognate checkout whose packages get vendored into the app; clone the
-repository there first if you don't have one (`git clone <repository> cognate`). To develop
-Cognate itself, run the CLI from a checkout instead: `bun cognate/packages/cli/src/bin.ts`.
+The generated app depends on the `@godspeedai/cognate-*` packages from npm, at the same version as the CLI.
+To try unreleased local changes, add `--source <checkout>` to vendor the packages from a Cognate checkout instead.
+To develop Cognate itself, run the CLI from a checkout: `bun cognate/packages/cli/src/bin.ts`.
 
 Use `--profile harness` for an autonomous agent harness. The starter layout is:
 

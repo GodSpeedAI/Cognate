@@ -50,7 +50,7 @@ function StateInspector(props: { runId: string | undefined }): ReactNode; // the
 
 ## E2E testing note
 
-End-to-end UI suites (`AK-010`) hit [DEBT-012](../.agents/DEBT.md): Playwright's `webServer` TCP readiness probe hangs indefinitely on this WSL2 host, so fixtures use a `globalSetup` that spawns `bun run` and waits on stdout instead. Playwright workers run under Node, so `Bun` globals are unavailable inside specs — servers run as separate Bun processes.
+End-to-end UI suites (`AK-010`) hit [DEBT-012](../.agents/DEBT.md): Playwright's `webServer` TCP readiness probe hangs indefinitely on this WSL2 host, so the supported pattern is a `globalSetup` that spawns `bun run` and waits on stdout (`tests/e2e/global-setup.ts`); CI runs it through the CG-E2E-001 gate in `just verify`. Playwright workers run under Node, so `Bun` globals are unavailable inside specs — servers run as separate Bun processes.
 
 The full browser journey from semantic load to RVF snapshot (spec §36) passes: `CG-E2E-001` is `implemented` in [`requirements/ledger.yaml`](../requirements/ledger.yaml), and `just gate CG-E2E-001` re-proves it. It drives the Astryx UI, resolves an approval continuation in the browser, opens a JSON artifact as a table, recalls a prior run in a second run, and takes an RVF snapshot to the store head — then verifies all of it from the SQLite file in a separate process rather than from the UI. `DEBT-018` (RVF `FsyncFailed` under concurrent I/O) remains open and is worked around by a retry in the E2E app.
 

@@ -51,6 +51,6 @@ export type { BubblewrapExecutionWorldOptions } from "./bubblewrap.ts";
 
 export { memoryExecutionWorld, resolveMemory } from "./memory.ts";
 export type { MemoryExecutionWorldOptions } from "./memory.ts";
-export { commandFileSystem } from "./command.ts";
+export { commandFileSystem, nanoseconds } from "./command.ts";
 export type { RunScript, ScriptResult } from "./command.ts";
 export { createRootGuard, execScript, resolvePosix, shellQuote, supervisedExecScript } from "./posix.ts";

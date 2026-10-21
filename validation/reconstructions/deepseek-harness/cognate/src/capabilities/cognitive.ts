@@ -14,8 +14,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { localExecutionWorld } from "@godspeedai/cognate-execution";
-import type { ExecInput, ExecResult, ExecutionWorldRegistry, ListInput, ListResult, ReadInput, ReadResult } from "@godspeedai/cognate-execution";
+import { bubblewrapExecutionWorld, localExecutionWorld } from "@godspeedai/cognate-execution";
+import type { BubblewrapExecutionWorldOptions, ExecInput, ExecResult, ExecutionWorldRegistry, ListInput, ListResult, ReadInput, ReadResult } from "@godspeedai/cognate-execution";
 import type { Json } from "@godspeedai/cognate-events";
 import type { CapabilityLease, Component, HandlerContext, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
@@ -43,6 +43,47 @@ export const CASE_OPERATIONS: readonly PossibleOperation[] = [
   { id: "settle", label: "Settle candidate", purpose: "promote candidate to the settled world", advances: "settlement", requires: ["verification.passed"], authority: "human" },
 ];
 
+/**
+ * Operator-supplied bubblewrap configuration for disposable forks: the reviewed executable, its
+ * provenance attestation and runtime roots, exactly as `bubblewrapExecutionWorld` requires them.
+ * Absent by default; the app never fabricates one. Without it every fork is a directory copy.
+ */
+export type BubblewrapForkConfig = Omit<BubblewrapExecutionWorldOptions, "worldId" | "workspaceRoot">;
+
+export type ForkIsolation = "bubblewrap-namespace" | "directory-copy";
+
+export interface ForkWorldOptions {
+  readonly registry: ExecutionWorldRegistry;
+  readonly forkBase: string;
+  readonly sandboxId: string;
+  readonly sourceRoot: string;
+  readonly bubblewrap?: BubblewrapForkConfig;
+}
+
+/**
+ * Copies `sourceRoot` into a fresh directory under `forkBase` and registers it as an execution
+ * world. Uses the bubblewrap provider when an operator config is present and the provider reports
+ * itself available (its preflight passes); otherwise falls back to a local directory-copy world and
+ * records why. Lineage events, not this directory or its isolation, are the truth.
+ */
+export async function forkWorld(options: ForkWorldOptions): Promise<{ readonly sandboxId: string; readonly root: string; readonly isolation: ForkIsolation }> {
+  const { registry, sandboxId, sourceRoot } = options;
+  const root = await mkdtemp(join(options.forkBase, `${sandboxId}-`));
+  await cp(sourceRoot, root, { recursive: true });
+  let fallbackReason: string | undefined;
+  if (options.bubblewrap) {
+    try {
+      const provider = await bubblewrapExecutionWorld({ ...options.bubblewrap, worldId: sandboxId, workspaceRoot: root });
+      registry.register({ ...provider, metadata: { ...provider.metadata, isolation: "bubblewrap-namespace", provider: "bubblewrap", root } });
+      return { sandboxId, root, isolation: "bubblewrap-namespace" };
+    } catch (error) {
+      fallbackReason = (error instanceof Error ? error.message : String(error)).slice(0, 300);
+    }
+  }
+  registry.register(localExecutionWorld({ worldId: sandboxId, metadata: { isolation: "directory-copy", provider: "local-fork", root, ...(fallbackReason ? { bubblewrapFallback: fallbackReason } : {}) } }));
+  return { sandboxId, root, isolation: "directory-copy" };
+}
+
 export interface CognitiveOptions {
   readonly getService: () => RuntimeService;
   readonly systemCaller: Caller;
@@ -52,6 +93,10 @@ export interface CognitiveOptions {
   /** Extra lower-trust mediators (e.g. a user toy mod in tests). Registered under the host's user tier only. */
   readonly extraMediators?: readonly MediatorSpec[];
   readonly semanticRef?: SemanticRef;
+  /** Per-capability semantic anchors (from `bindCognitive`); a capability not listed uses `semanticRef`. */
+  readonly semanticRefs?: Readonly<Record<string, SemanticRef>>;
+  /** Operator-supplied bubblewrap config for `world.fork` / `experiment.round`. Absent: directory copies. */
+  readonly bubblewrap?: BubblewrapForkConfig;
 }
 
 type Lease = CapabilityLease;
@@ -74,7 +119,7 @@ async function waitDone(service: RuntimeService, caller: Caller, runId: string):
 }
 
 export function cognitiveComponent(options: CognitiveOptions): Component {
-  const contract = (id: string) => ({ id, version: "1.0.0", semanticRef: options.semanticRef });
+  const contract = (id: string) => ({ id, version: "1.0.0", semanticRef: options.semanticRefs?.[id] ?? options.semanticRef });
   const ids = ["case.open", "criterion.freeze", "world.freeze", "world.fork", "world.attach", "world.discard", "verification.run", "case.derive", "world.settle", "risk.assess", "case.observe", "ui.focus.publish", "ui.context", "ui.request", "ui.pending", "experiment.round", "experiment.status", "method.review", "method.accept", "method.active"];
   const forkBase = options.forkRoot ?? tmpdir();
   // Ephemeral attention bridge: the page publishes the human's FocusContext; an agent may ask the
@@ -158,19 +203,16 @@ export function cognitiveComponent(options: CognitiveOptions): Component {
       }));
 
       fiber.provide(contract("world.fork"), withCtx(async (i: { sourceRoot: string; sandboxId?: string }) => {
-        // Local-directory fork provider. It is NOT CubeSandbox: isolation is a copied directory
-        // under its own execution world id. The lineage events, not this directory, are the truth.
+        // Bubblewrap namespace when the operator configured it and it is available; otherwise a copied
+        // directory under its own execution world id. The lineage events, not this directory, are the truth.
         const sandboxId = i.sandboxId ?? `sbx-${randomUUID().slice(0, 8)}`;
-        const dir = await mkdtemp(join(forkBase, `${sandboxId}-`));
-        await cp(i.sourceRoot, dir, { recursive: true });
-        options.registry.register(localExecutionWorld({ worldId: sandboxId, metadata: { isolation: "directory-copy", provider: "local-fork", cubeSandbox: "absent", root: dir } }));
-        return { sandboxId, root: dir };
+        return forkWorld({ registry: options.registry, forkBase, sandboxId, sourceRoot: i.sourceRoot, ...(options.bubblewrap ? { bubblewrap: options.bubblewrap } : {}) });
       }));
 
       fiber.provide(contract("world.attach"), withCtx(async (i: { sandboxId: string; root: string }) => {
         // After a restart the in-memory fork provider is gone (fail closed). Re-attaching is an
         // explicit act over a directory that still exists; lineage never depended on it.
-        if (!options.registry.has(i.sandboxId)) options.registry.register(localExecutionWorld({ worldId: i.sandboxId, metadata: { isolation: "directory-copy", provider: "local-fork", cubeSandbox: "absent", root: i.root } }));
+        if (!options.registry.has(i.sandboxId)) options.registry.register(localExecutionWorld({ worldId: i.sandboxId, metadata: { isolation: "directory-copy", provider: "local-fork", root: i.root } }));
         return { attached: i.sandboxId };
       }));
 
@@ -323,9 +365,7 @@ export function cognitiveComponent(options: CognitiveOptions): Component {
         if (prior.length >= i.maxRounds) throw new Error("experiment.round: round budget exhausted");
         const sandboxId = `sbx-${i.roundId}`;
         const started = evs.length ? evs[evs.length - 1]!.position : 0;
-        const dir = await mkdtemp(join(forkBase, `${sandboxId}-`));
-        await cp(i.sourceRoot, dir, { recursive: true });
-        options.registry.register(localExecutionWorld({ worldId: sandboxId, metadata: { isolation: "directory-copy", provider: "local-fork", cubeSandbox: "absent", root: dir } }));
+        const { root: dir } = await forkWorld({ registry: options.registry, forkBase, sandboxId, sourceRoot: i.sourceRoot, ...(options.bubblewrap ? { bubblewrap: options.bubblewrap } : {}) });
         let result: ReturnType<typeof judgeRound>;
         let score: number | undefined;
         let candidateHash = "";

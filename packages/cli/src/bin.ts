@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// `cognate create <dir> [--profile copilot|harness] --source <path> [--with a,b]` | `cognate dev [--port N]`
+// `cognate create <dir> [--profile copilot|harness] [--source <checkout>] [--with a,b]` | `cognate dev [--port N]`
 import { create, dev } from "./index.ts";
 
 function parseFlags(argv: readonly string[]): Record<string, string> {
@@ -28,16 +28,17 @@ async function runCreate(args: readonly string[]): Promise<void> {
     console.error("cognate create: --profile must be 'copilot' or 'harness'");
     process.exit(1);
   }
+  // Without --source, @godspeedai/cognate-* dependencies resolve from the npm registry at the CLI's version.
   const source = flags.source;
-  if (!source) {
-    console.error("cognate create: --source is required");
-    process.exit(1);
-  }
   const withList = flags.with && flags.with !== "true" ? flags.with.split(",").map((name) => name.trim()).filter(Boolean) : undefined;
 
   const report = await create({ dir, profile, source, with: withList });
   for (const entry of report.unsupported) console.log(`unsupported: ${entry.name} (${entry.reason})`);
-  console.log(`created ${report.dir} (vendored ${report.vendored.length} package(s))`);
+  console.log(
+    source === undefined
+      ? `created ${report.dir} (cognate packages resolve from the npm registry)`
+      : `created ${report.dir} (vendored ${report.vendored.length} package(s))`,
+  );
 }
 
 async function runDev(args: readonly string[]): Promise<void> {
@@ -53,7 +54,8 @@ async function main(): Promise<void> {
     if (command === "create") await runCreate(rest);
     else if (command === "dev") await runDev(rest);
     else {
-      console.error("cognate: usage: cognate create <dir> --profile copilot|harness --source <path> [--with a,b] | cognate dev [--port N]");
+      console.error("cognate: usage: cognate create <dir> --profile copilot|harness [--source <checkout>] [--with a,b] | cognate dev [--port N]");
+      console.error("  --source is optional: without it, cognate packages resolve from npm; with it, they are vendored from a local checkout (unreleased changes)");
       process.exit(1);
     }
   } catch (error) {

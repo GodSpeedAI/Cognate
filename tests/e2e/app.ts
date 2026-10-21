@@ -225,41 +225,31 @@ const server = Bun.serve({
       const dir = join(E2E_DIR, "rvf-snapshots");
       mkdirSync(dir, { recursive: true });
 
-      // The native RVF backend occasionally reports a transient fsync failure under concurrent
-      // Bun I/O (sqlite, the observation-delivery timer, the Connect proxy); a short retry with a
-      // fresh working path clears it without masking a genuine, persistent failure.
-      let lastError: unknown;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const workingPath = join(dir, `working-${crypto.randomUUID()}.rvf`);
-        try {
-          const rvfIndex = await createRvfIndex({ dimension: DIMENSION, path: workingPath });
-          try {
-            const runner = new ProjectionRunner(runtime.store, cognitiveIndexer({ name: "admin.rvf.snapshot", version: "1", index: rvfIndex, embedder, extract: extractRun }));
-            const caughtUp = await runner.catchUp();
-            await runner.stop();
-            if (caughtUp.status !== "ok") {
-              return Response.json({ error: `projection ${caughtUp.status}` }, { status: 500 });
-            }
-            const storeHead = (await runtime.store.readAll()).at(-1)?.position ?? 0;
-            const manifest = await rvfIndex.snapshot(runtime.store, {
-              dir,
-              name: `snapshot-${Date.now()}`,
-              lineage: "cognate-e2e",
-              indexedThrough: caughtUp.position,
-              storeHead,
-              onBehind: "fail",
-              frameworkVersion: "0.0.0",
-            });
-            return Response.json(manifest);
-          } finally {
-            await rvfIndex.close();
-          }
-        } catch (error) {
-          lastError = error;
-          await Bun.sleep(50 * (attempt + 1));
+      // createRvfIndex retries the transient native FsyncFailed case itself (DEBT-018).
+      const workingPath = join(dir, `working-${crypto.randomUUID()}.rvf`);
+      const rvfIndex = await createRvfIndex({ dimension: DIMENSION, path: workingPath }).catch((error: unknown) => error as Error);
+      if (rvfIndex instanceof Error) return Response.json({ error: `rvf index create failed: ${rvfIndex.message}` }, { status: 500 });
+      try {
+        const runner = new ProjectionRunner(runtime.store, cognitiveIndexer({ name: "admin.rvf.snapshot", version: "1", index: rvfIndex, embedder, extract: extractRun }));
+        const caughtUp = await runner.catchUp();
+        await runner.stop();
+        if (caughtUp.status !== "ok") {
+          return Response.json({ error: `projection ${caughtUp.status}` }, { status: 500 });
         }
+        const storeHead = (await runtime.store.readAll()).at(-1)?.position ?? 0;
+        const manifest = await rvfIndex.snapshot(runtime.store, {
+          dir,
+          name: `snapshot-${Date.now()}`,
+          lineage: "cognate-e2e",
+          indexedThrough: caughtUp.position,
+          storeHead,
+          onBehind: "fail",
+          frameworkVersion: "0.0.0",
+        });
+        return Response.json(manifest);
+      } finally {
+        await rvfIndex.close();
       }
-      return Response.json({ error: `rvf snapshot failed after retries: ${lastError instanceof Error ? lastError.message : String(lastError)}` }, { status: 500 });
     }
 
     if (url.pathname === "/app.js") return new Response(bundleJs, { headers: { "content-type": "text/javascript" } });

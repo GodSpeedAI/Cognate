@@ -1,27 +1,23 @@
 # Current status
 
-**Status revision:** 69
+**Status revision:** 70
 
-**Summary:** SDK 0.5.0 publication is verified at all 45 packages. PR #47 adds a fail-closed public registry receipt gate; its source and nine regressions pass all native gates. Exact-head CI passed, and this readable status update will receive fresh checks before final merge authorization.
+**Summary:** SDK manifest is at 0.6.1. Branch `fix/debt-burndown-2026-10-21` (uncommitted) burns down the debt register: the runtime loop is event-driven, `cognate create` works from npm without a checkout, and 11 debt entries close. `just verify` passes 81/81 gates.
 
-The operator-approved PR #44 and linked SDK 0.5.0 release are merged. All 45 public npm versions and
-gitHeads match release **dd13c842**. Initial visibility lag contradicted green publish jobs; the
-targeted retry skipped publication once the missing version became visible. Its cause is not
-established. A fresh all-package consumer proves native asynchronous admission and PostgreSQL
-overlap. Workbench consumes only supported 0.5.0 packages.
+Closed this pass: DEBT-004 (by ADR-0003 decision), 012, 015, 016, 018, 020, 023, 029, 030, 031 and 032.
+The runtime wakes on commit notifications with timers for retry backoff; the interval (default
+250 ms) is a safety net. A load benchmark is recorded in `docs/runtime-concurrency.md`.
+`cognate create` pins dependencies to the CLI version and ships the starter template in the CLI
+tarball (packed-tarball smoke passed outside the repo). RVF `FsyncFailed` retry moved into
+`cognitive-rvf`. Local and command execution worlds version files by `mtime ns:size:inode`.
 
-[PR #47](https://github.com/GodSpeedAI/Cognate/pull/47) verifies every public package after publishing.
-Requests reject redirects and omit credentials. Five workers, a 30-minute deadline, a 10-second
-request timeout and a 256 KiB body cap bound work. Release-created runs fail when publishing
-readiness is disabled or the publish matrix failed or was skipped. Only complete receipts upload.
+Accepted limits: DEBT-005 (Cordis rc gaps, adapter-mitigated), 006 (closed locally, open upstream),
+007 (vector search only), 022 (no KVM host; opt-in bubblewrap forks) and 027 (inconclusive; overrides
+kept). Still open: 002 (DomainForge 0.21.1 still has one error code), 017 (Bun `toMatchObject`, still
+on 1.4.3), 024 (narrowed; deferred items recorded in the cybernetic-navigation spec), 025 (native
+WebMCP), 026 (WSL health, containment, SSH seconds-only versions) and 028 (SIWC live sign-in, an
+operator task).
 
-The **nine publication regressions / 32 assertions** run in the standard `just verify` recipe.
-Typecheck, documentation, proof routing and **81/81 implemented gates** pass against actual
-PostgreSQL. The initial truncated Bun-types installation was repaired using unchanged frozen
-dependencies. PR source head **0679f8f** passed exact-head CI; this status correction needs fresh
-checks. CodeRabbit's minor readability finding is addressed in the current snapshot while prior
-append-only records remain intact.
-
-Final merge authorization is reserved. Publication remains non-atomic. Outbox fencing is not
-distributed run-write ownership; Linux children are not production authentication, host isolation
-or aggregate resource containment. The Workbench debt mission remains incomplete.
+Verified: `just verify` 81/81; runtime-bun 175 pass; `async-admission` 60/60 consecutive runs;
+deepseek-harness app suite 870/872 with the one failure fixed and re-run green; Journey A 2/2.
+Ledger freeze remains an operator decision. Nothing is committed or published.

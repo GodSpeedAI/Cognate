@@ -49,11 +49,16 @@ cognate dev [--port N]
 |---|---|---|---|
 | `<dir>` | yes | — | target directory (created if absent) |
 | `--profile` | yes | — | `copilot` or `harness`; anything else exits 1 |
-| `--source` | yes | — | path to a Cognate checkout; exits 1 without it (DEBT-016) |
+| `--source` | no | — | path to a Cognate checkout (reads `<source>/templates/starter`); omitted = registry mode, which reads the starter packaged in the installed CLI (DEBT-016) |
 | `--with` | no | — | comma-separated extras; unsupported ones are reported, never imported |
 
 Output: `unsupported: <name> (<reason>)` lines, then
 `created <dir> (vendored <n> package(s))`.
+
+Template source: with `--source`, `<source>/templates/starter`. In registry mode, the copy packaged in
+`@godspeedai/cognate-cli` (`templates/starter`, synced from the repo-root `templates/starter` at pack time by
+`scripts/prepare-npm-package.mjs`; npm drops `.gitignore`, so `common/_gitignore` is restored to `.gitignore` on copy),
+falling back to the repo-root template when run from a checkout without a packaged copy.
 
 Behavior: copies `templates/starter/common` then `templates/starter/<profile>`; computes the
 transitive `@godspeedai/*` closure from the profile roots

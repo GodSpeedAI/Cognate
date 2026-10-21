@@ -6,7 +6,7 @@ more, no fewer (see `.sea/interaction/handoff.md` "What downstream agents should
 bind speculatively).
 
 All bindings live in `domain/index.ts` (`tranche5Bindings`), against
-`.sea/interaction/interaction-model.sea` (namespace `deepseek-harness.interaction`, 51 semantic
+`.sea/interaction/interaction-model.sea` (namespace `deepseek-harness.interaction`, 139 semantic
 objects, digest logged at startup).
 
 | # | Semantic id | Capability | Published by | Why |
@@ -40,20 +40,41 @@ objects, digest logged at startup).
 | 26 | `deepseek-harness.interaction::ExecutionWorld` | `execution.world.disconnect` v1.0.0 | same | Releases a world, deletes its secrets; refused while a workspace uses it. |
 | 27 | `deepseek-harness.interaction::WorldConnection` | `execution.world.probe` v1.0.0 | same | Reads a server's host key and stops (nothing authenticated); the human confirms the fingerprint. |
 | 28 | `deepseek-harness.interaction::WorldConnection` | `execution.world.check` v1.0.0 | same | Is the live connection usable now (reconnects lazily); the UI's reachability banner. |
+| 29 | `deepseek-harness.interaction::Case` | `case.open` v1.0.0 | `cognitiveComponent` (`src/capabilities/cognitive.ts`) | Declares the desired difference (DEBT-023); the Case's first durable fact. |
+| 30 | `deepseek-harness.interaction::Case` | `case.derive` v1.0.0 | same | Folds the Case projection and Reality from events; read-only. |
+| 31 | `deepseek-harness.interaction::Case` | `case.observe` v1.0.0 | same | LiveVerify core: freezes the candidate world after a change and runs the Case's declared checks. |
+| 32 | `deepseek-harness.interaction::Criterion` | `criterion.freeze` v1.0.0 | same | Freezes the evaluation criterion (observer coverage included) and records it by hash. |
+| 33 | `deepseek-harness.interaction::WorldSnapshot` | `world.freeze` v1.0.0 | same | Content-addresses a baseline or candidate manifest into a `worldHash` with lineage. |
+| 34 | `deepseek-harness.interaction::WorldSnapshot` | `world.settle` v1.0.0 | same | Human-only promotion of a candidate to the settled world; refused from inside a run. |
+| 35 | `deepseek-harness.interaction::ExecutionWorld` | `world.fork` v1.0.0 | same | Forks a disposable candidate world: bubblewrap namespace when an operator config is present and available, otherwise a directory copy (DEBT-022). |
+| 36 | `deepseek-harness.interaction::ExecutionWorld` | `world.attach` v1.0.0 | same | Re-registers an existing fork directory after a restart (directory copy only). |
+| 37 | `deepseek-harness.interaction::ExecutionWorld` | `world.discard` v1.0.0 | same | Unregisters a fork and removes its directory. |
+| 38 | `deepseek-harness.interaction::Verification` | `verification.run` v1.0.0 | same | Runs a frozen criterion's checks against a candidate; each process result is recorded as the fact. |
+| 39 | `deepseek-harness.interaction::Risk` | `risk.assess` v1.0.0 | same | Mediates one consequential operation (Sentinel + risk preflight) and reports whether approval is required. |
+| 40 | `deepseek-harness.interaction::Experiment` | `experiment.round` v1.0.0 | same | One bounded search round in a forked candidate world; records the round and its decision. |
+| 41 | `deepseek-harness.interaction::Experiment` | `experiment.status` v1.0.0 | same | Search eligibility and round/best state for a Case; read-only. |
+| 42 | `deepseek-harness.interaction::Method` | `method.review` v1.0.0 | same | Writes candidate method recommendations from rounds; never changes the active method. |
+| 43 | `deepseek-harness.interaction::Method` | `method.accept` v1.0.0 | same | Human-only acceptance of a recommendation, moving the active methodHash. |
+| 44 | `deepseek-harness.interaction::Method` | `method.active` v1.0.0 | same | The active methodHash in force for a Case; read-only. |
+| 45 | `deepseek-harness.interaction::UiFocus` | `ui.focus.publish` v1.0.0 | same | Stores the person's ephemeral FocusContext (in-memory, never an event). |
+| 46 | `deepseek-harness.interaction::UiFocus` | `ui.context` v1.0.0 | same | The smallest useful neighbourhood around the current focus; read-only. |
+| 47 | `deepseek-harness.interaction::UiFocus` | `ui.request` v1.0.0 | same | Builds a representation Surface from recorded facts and queues it for the page; no mutation path. |
+| 48 | `deepseek-harness.interaction::UiFocus` | `ui.pending` v1.0.0 | same | Drains the queued Surfaces and returns the current focus for the page. |
 
 `bindExecutionWorlds` (`domain/index.ts`) binds #24-28. `execution.wsl.list` is a diagnostic read and is not bound.
+
+`bindCognitive` / `COGNITIVE_ANCHORS` (`domain/index.ts`) bind #29-48 (DEBT-023). `UiFocus` is the cognitive page-focus bridge (`src/cognitive/focus.ts`); it is distinct from the workbench's `AttentionFocus`, which stays deliberately unbound. `cognitiveComponent` takes the bound refs through its `semanticRefs` option; the app's `src/server.ts` does not pass them yet, so the cognitive contracts still publish without a semantic anchor at runtime until that wiring lands.
 
 `tranche7Bindings`/`bindTranche7` (`domain/index.ts`) bind #6-10, alongside `tranche5Bindings` above.
 `tranche9Bindings`/`bindTranche9` (`domain/index.ts`) bind #11.
 `tranche10Bindings`/`bindTranche10` (`domain/index.ts`) bind #12.
 
-## Not bound (open gap, DEBT-023)
+## DEBT-023 (cognitive-navigation capabilities)
 
-- The cognitive-navigation capabilities (`case.open`, `case.derive`, `case.observe`,
-  `criterion.freeze`, `world.freeze|fork|attach|discard|settle`, `verification.run`, `risk.assess`,
-  `experiment.round|status`, `method.review|accept|active`, `ui.*`) are real executable capabilities
-  that *should* be bound but are not yet: the `.sea` model carries another tranche's uncommitted
-  edits. This is a gap, not a design decision; see `.agents/DEBT.md` DEBT-023.
+The cognitive-navigation capabilities are bound (#29-48 above) against the `Case`, `Criterion`,
+`WorldSnapshot`, `Verification`, `Risk`, `Experiment`, `Method` and `UiFocus` entities added to
+`interaction-model.sea`, plus `ExecutionWorld` for the fork/attach/discard lifecycle. Open item: the
+runtime anchor is not yet passed by `src/server.ts` (see the note under the table).
 
 ## Not bound (deliberately)
 

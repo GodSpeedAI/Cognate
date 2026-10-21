@@ -5,7 +5,9 @@ import { resolveProfile } from "@godspeedai/cognate-profile";
 import { localProvider } from "@godspeedai/cognate-provider-local";
 import type { AgentDefinition } from "@godspeedai/cognate-runtime-api";
 import { alice } from "@godspeedai/cognate-runtime-api/conformance";
-import { createHarness, harnessProfile, harnessRegistry, LOOP_AGENT, providerComponent, skillComponent, spawnSubagent, storageComponent, toolComponent, type Harness } from "../src/index.ts";
+import { rulePolicy } from "@godspeedai/cognate-kernel-api";
+import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
+import { createHarness, harnessProfile, harnessRegistry, LOOP_AGENT, providerComponent, skillComponent, spawnSubagent, storageComponent, subagentStartComponent, toolComponent, watchSubagentCompletions, type Harness } from "../src/index.ts";
 
 /** A model that calls the first offered tool whose name appears in the user message, then answers with the result. */
 function toolCallingModel(id: string) {
@@ -134,4 +136,72 @@ describe("Harness profile (§29.2)", () => {
     const { runId } = await h.runtime.service.startRun(alice, { agent: "agent.parent", input: { n: 21 }, idempotencyKey: "p" });
     expect((await waitRun(h, runId)).output).toEqual({ fromChild: { doubled: 42 } });
   });
+
+  test("watchSubagentCompletions settles spawnSubagent on a hand-composed createRuntime; dispose stops resolution", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const child: AgentDefinition = { id: "agent.child", version: "1.0.0", run: async (input) => ({ doubled: (input as { n: number }).n * 2 }) };
+    const gated: AgentDefinition = {
+      id: "agent.gated",
+      version: "1.0.0",
+      run: async (input) => {
+        await gate;
+        return { doubled: (input as { n: number }).n * 2 };
+      },
+    };
+    const parent: AgentDefinition = {
+      id: "agent.parent",
+      version: "1.0.0",
+      run: async (input, ctx) => {
+        const { agent, n } = input as { readonly agent: string; readonly n: number };
+        return { fromChild: await spawnSubagent(ctx, "sub", agent, { n }) };
+      },
+    };
+    const policy = rulePolicy("test-allow-all", [() => ({ allow: true, policyId: "test-allow-all", reason: "test composition" })]);
+    const runtime: Runtime = await createRuntime({
+      store: ":memory:",
+      policy,
+      actions: { authorize: () => ({ allow: true, reason: "test composition" }) },
+      governance: { mode: "off" },
+      agents: [child, gated, parent],
+    });
+    // A hand-composed app mounts the exported subagent.start provider, then the settler, as createHarness does.
+    const subagentStart = await runtime.kernel.mount(subagentStartComponent(runtime));
+    await subagentStart.waitFor("ACTIVE", 10_000).catch(() => {});
+    const dispose = await watchSubagentCompletions(runtime, alice);
+    try {
+      const done = await runtime.service.startRun(alice, { agent: "agent.parent", input: { agent: "agent.child", n: 21 }, idempotencyKey: "p1" });
+      expect((await waitForStatus(runtime, done.runId, "completed")).output).toEqual({ fromChild: { doubled: 42 } });
+
+      // After dispose, a child that finishes is no longer settled by this watcher: the parent stays waiting.
+      dispose();
+      const stalled = await runtime.service.startRun(alice, { agent: "agent.parent", input: { agent: "agent.gated", n: 5 }, idempotencyKey: "p2" });
+      await waitForStatus(runtime, stalled.runId, "waiting");
+      release();
+      await Bun.sleep(200);
+      expect((await runtime.service.getRun(alice, { runId: stalled.runId })).status).toBe("waiting");
+
+      // A new watcher settles the still-open continuation from the child's completed state.
+      const redispose = await watchSubagentCompletions(runtime, alice);
+      try {
+        expect((await waitForStatus(runtime, stalled.runId, "completed")).output).toEqual({ fromChild: { doubled: 10 } });
+      } finally {
+        redispose();
+      }
+    } finally {
+      release();
+      dispose();
+      await runtime.close();
+    }
+  });
 });
+
+/** Poll a run until it reaches `status`; bounded at ~3s so a hang fails the test instead of stalling it. */
+async function waitForStatus(runtime: Runtime, runId: string, status: string) {
+  for (let i = 0; i < 300; i++) {
+    const run = await runtime.service.getRun(alice, { runId });
+    if (run.status === status) return run;
+    await Bun.sleep(10);
+  }
+  throw new Error(`run ${runId} never reached ${status}`);
+}

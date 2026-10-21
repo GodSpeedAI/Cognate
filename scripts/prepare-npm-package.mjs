@@ -13,7 +13,9 @@
 // manifest. The rewrite mutates the working copy only; CI runners are
 // ephemeral, and local runs should `git checkout -- <dir>/package.json`.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const dir = process.argv[2];
 if (!dir) {
@@ -24,6 +26,21 @@ if (!dir) {
 const path = `${dir}/package.json`;
 const pkg = JSON.parse(readFileSync(path, "utf8"));
 let resolved = 0;
+
+// @godspeedai/cognate-cli ships the starter template so registry-mode `cognate create` works without a checkout.
+// templates/starter stays at the repo root (single source of truth); this copies it into the package working copy,
+// which is git-ignored (packages/cli/.gitignore) and never committed.
+if (pkg.name === "@godspeedai/cognate-cli") {
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const from = join(repoRoot, "templates", "starter");
+  const to = join(dir, "templates", "starter");
+  rmSync(to, { recursive: true, force: true });
+  cpSync(from, to, { recursive: true });
+  // npm never publishes .gitignore files, so the packaged copy stores it as _gitignore; `cognate create` restores the dot name.
+  const dotGitignore = join(to, "common", ".gitignore");
+  if (existsSync(dotGitignore)) renameSync(dotGitignore, join(to, "common", "_gitignore"));
+  console.log(`${pkg.name}: copied templates/starter into ${to}`);
+}
 
 for (const section of ["dependencies", "peerDependencies", "optionalDependencies"]) {
   const deps = pkg[section];

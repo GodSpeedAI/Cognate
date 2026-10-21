@@ -1,7 +1,11 @@
 // DEBT-002 goldens: every upstream diagnostic shape the adapter classifies, captured from the pinned binding.
 // Re-run before any DomainForge version change; a message drift fails here instead of silently becoming `unknown`.
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { classifyParseError, loadSemanticProjection } from "../src/index.ts";
+import { BINDING } from "../src/types.ts";
 
 const load = (source: string) => loadSemanticProjection(source, { uri: "file:///golden.sea" });
 
@@ -30,5 +34,14 @@ describe("DomainForge diagnostic goldens (DEBT-002)", () => {
 
   test("an unrecognized message falls back to unknown and keeps the text", () => {
     expect(classifyParseError(new Error("Parse error: something new at 0:0"))).toEqual({ kind: "unknown", message: "Parse error: something new at 0:0" });
+  });
+
+  test("BINDING, the package.json pin, and the installed binding agree", () => {
+    const pkgDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const pinned = (JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as { dependencies: Record<string, string> }).dependencies["@godspeedai/domainforge"];
+    const installed = (JSON.parse(readFileSync(Bun.resolveSync("@godspeedai/domainforge/package.json", pkgDir), "utf8")) as { version: string }).version;
+    if (pinned === undefined) throw new Error("packages/domainforge/package.json does not pin @godspeedai/domainforge");
+    expect(BINDING).toBe(`@godspeedai/domainforge@${pinned}`);
+    expect(installed).toBe(pinned);
   });
 });

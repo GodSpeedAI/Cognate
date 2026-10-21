@@ -1,5 +1,9 @@
 # @godspeedai/cognate-provider-openai-oauth
 
+> **Preview — not validated against production.** The adapter passes a fake-issuer
+> conformance suite, but no live ChatGPT sign-in has been recorded yet. Treat
+> plan-backed inference as unsupported until that evidence exists.
+
 Sign in with ChatGPT (SIWC) for open-source, locally hosted Cognate runs: an OAuth/OIDC
 credential adapter and a governed subscription-backed Responses provider.
 
