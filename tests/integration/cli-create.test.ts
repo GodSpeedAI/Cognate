@@ -43,6 +43,22 @@ describe("cognate create / dev (Phase 10)", () => {
     expect(manifest.scripts.dev).toContain("cognate dev");
   }, 120_000);
 
+  test("registry mode (no --source) pins cognate deps to the CLI version without packing, vendoring, or overrides", async () => {
+    const registryApp = join(root, "registry-app");
+    const cliVersion = (await Bun.file(join(repo, "packages/cli/package.json")).json()).version as string;
+    const result = await run(["bun", bin, "create", registryApp, "--profile", "copilot"], root);
+    expect(result.exit).toBe(0);
+    expect(result.stdout).toMatch(/npm registry/);
+    const manifest = await Bun.file(join(registryApp, "package.json")).json();
+    const cognateDeps = Object.entries(manifest.dependencies as Record<string, string>).filter(([name]) => name.startsWith("@godspeedai/cognate-"));
+    expect(cognateDeps.map(([name]) => name)).toContain("@godspeedai/cognate-profile-copilot");
+    for (const [, version] of cognateDeps) expect(version).toBe(cliVersion);
+    expect(manifest.overrides).toBeUndefined();
+    expect(JSON.stringify(manifest)).not.toContain("workspace:");
+    expect(JSON.stringify(manifest)).not.toContain("file:");
+    expect(existsSync(join(registryApp, ".cognate", "vendor"))).toBe(false);
+  }, 120_000);
+
   test("the generated app installs its pinned packages and passes its own tests", async () => {
     expect((await run(["bun", "install"], app)).exit).toBe(0);
     const tests = await run(["bun", "test"], app);
@@ -80,4 +96,25 @@ describe("cognate create / dev (Phase 10)", () => {
     expect(result.exit).toBe(0);
     expect(existsSync(join(root, "my-agent", "cognate.config.ts"))).toBe(true);
   }, 120_000);
+});
+
+describe("published CLI ships the starter template (registry mode)", () => {
+  test("packages/cli/package.json publishes templates alongside src", async () => {
+    const manifest = await Bun.file(join(repo, "packages/cli/package.json")).json();
+    expect(manifest.files).toContain("src");
+    expect(manifest.files).toContain("templates");
+  });
+
+  test("prepare-npm-package copies templates/starter into a copy of the CLI package", async () => {
+    const copy = mkdtempSync(join(tmpdir(), "cognate-cli-prepare-"));
+    try {
+      await Bun.write(join(copy, "package.json"), await Bun.file(join(repo, "packages/cli/package.json")).text());
+      const result = await run([process.execPath, resolve(repo, "scripts/prepare-npm-package.mjs"), copy], root);
+      expect(result.exit).toBe(0);
+      for (const path of ["common", "copilot", "harness", "README.md", "common/_gitignore"]) expect(existsSync(join(copy, "templates", "starter", path))).toBe(true);
+      expect(await Bun.file(join(copy, "templates", "starter", "README.md")).text()).toBe(await Bun.file(join(repo, "templates", "starter", "README.md")).text());
+    } finally {
+      rmSync(copy, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

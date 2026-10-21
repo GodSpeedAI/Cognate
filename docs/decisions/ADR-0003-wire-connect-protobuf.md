@@ -74,6 +74,15 @@ Summary of the mode matrix (HTTP/1.1, `Bun.serve()` default, no TLS/h2c negotiat
   here (`protoc-gen-es` with `target=ts`, no separate Connect-ES plugin) when Phase 4
   implements the canonical schemas.
 
+## Addendum (2026-10-21): 1.0 streaming scope
+
+The runtime contract (`proto/cognate/v1/runtime.proto`) uses unary and server-streaming
+RPCs only, and no product surface needs a client-to-server stream. For 1.0, client and
+bidirectional streaming are **out of scope**, not pending: the mode matrix above is the
+supported contract, and DEBT-004 is closed by this decision. Reopen it only when a
+product RPC needs client or bidi streaming; that RPC then carries the h2c spike below
+as its gate.
+
 ## Open follow-ups
 
 - HTTP/2 (h2c) under `Bun.serve()` is unspiked; client streaming and bidi remain

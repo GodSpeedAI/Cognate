@@ -1,17 +1,17 @@
 == bun .sea/interaction/validation/check-cognate-adapter.ts ==
 errors: 0
-Total objects: 80
+Total objects: 139
 By kind: {
-  "Entity": 17,
-  "Resource": 18,
-  "Role": 3,
-  "Flow": 18,
-  "Relation": 2,
+  "Entity": 39,
+  "Resource": 30,
+  "Role": 4,
+  "Flow": 30,
+  "Relation": 3,
   "Policy": 1,
   "Metric": 1,
-  "EntityInstance": 20
+  "EntityInstance": 31
 }
-Relations (edges): 58
+Relations (edges): 96
 Journey ids (20 expected: 10 product + 10 Remote Workspaces): [
   "J-A-first-use",
   "J-B-basic-session",
@@ -32,5 +32,16 @@ Journey ids (20 expected: 10 product + 10 Remote Workspaces): [
   "J-RW-reconnect",
   "J-RW-select-world",
   "J-RW-switch",
+  "J-WB-automation",
+  "J-WB-capability-lifecycle",
+  "J-WB-economics",
+  "J-WB-focus",
+  "J-WB-grounded-feedback",
+  "J-WB-parallelism",
+  "J-WB-protected-evidence",
+  "J-WB-review-gate",
+  "J-WB-steering",
+  "J-WB-task-contract",
+  "J-WB-workflow",
   "J-WS-select"
 ]

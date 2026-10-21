@@ -27,16 +27,23 @@ export function resolveLocal(root: string, path: string): string {
   return resolved;
 }
 
+/** Sub-second mtime plus inode: a same-size rewrite within one second still changes the version. */
+function versionOf(stats: { mtimeNs: bigint; size: bigint; ino: bigint }): string {
+  return `${stats.mtimeNs}:${stats.size}:${stats.ino}`;
+}
+
+const statBigint = (path: string) => statFile(path, { bigint: true }).catch(() => undefined);
+
 function createLocalFileSystem(): FileSystemPort {
   return {
     resolve: resolveLocal,
     async stat(path) {
-      const stats = await statFile(path).catch(() => undefined);
+      const stats = await statBigint(path);
       if (!stats) return undefined;
-      return { kind: kindOf(stats), size: stats.size, version: `${stats.size}:${Math.trunc(stats.mtimeMs)}` };
+      return { kind: kindOf(stats), size: Number(stats.size), version: versionOf(stats) };
     },
     async exists(path) {
-      const stats = await statFile(path).catch(() => undefined);
+      const stats = await statBigint(path);
       return stats !== undefined;
     },
     async readText(path) {
@@ -50,8 +57,8 @@ function createLocalFileSystem(): FileSystemPort {
       await writeFile(path, content, "utf8");
     },
     async version(path) {
-      const stats = await statFile(path).catch(() => undefined);
-      return stats ? `${stats.size}:${Math.trunc(stats.mtimeMs)}` : undefined;
+      const stats = await statBigint(path);
+      return stats ? versionOf(stats) : undefined;
     },
   };
 }

@@ -199,6 +199,8 @@ export function sshExecutionWorld(options: SshWorldOptions): ExecutionWorldProvi
   });
   const guard = createRootGuard(realpath);
   const kindOf = (st: { isFile(): boolean; isDirectory(): boolean }): FileStat["kind"] => (st.isFile() ? "file" : st.isDirectory() ? "directory" : "other");
+  // SFTP attrs carry whole-second mtime only. A precise version would need an exec round trip per
+  // stat, doubling file-operation latency and adding a remote command to every read (DEBT-026).
   const versionOf = (st: { size: number; mtime: number }) => `${st.mtime}:${st.size}`;
 
   async function exec(spec: ExecSpec, o?: { readonly signal?: AbortSignal }): Promise<ExecResult> {

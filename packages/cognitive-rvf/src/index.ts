@@ -4,7 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { RvfDatabase } from "@ruvector/rvf";
+import { RvfDatabase, RvfError, RvfErrorCode } from "@ruvector/rvf";
 
 /** Cognate-owned sidecar manifest (spec §18.2). RVF 0.3.4 does not verify integrity on open (DEBT-006). */
 export interface RvfManifest {
@@ -30,6 +30,8 @@ export interface RvfIndexOptions {
   readonly path: string;
   readonly dimension: number;
   readonly id?: string;
+  /** test seam: overrides RvfDatabase.create (defaults to the real one). */
+  readonly create?: typeof RvfDatabase.create;
 }
 
 export interface SnapshotOptions {
@@ -304,8 +306,15 @@ function buildIndex(db: RvfDatabase, path: string, dimension: number, entries: M
  * RVF never silently serves an entry this adapter has no provenance for. The only way to open an
  * existing RVF file with its entries intact is `importSnapshot`, which verifies it first.
  */
-export async function createRvfIndex(options: RvfIndexOptions): Promise<RvfIndex> {
-  const { path, dimension } = options;
+/** Total attempts `createRvfIndex` makes when the native backend reports FsyncFailed (DEBT-018). */
+const RVF_CREATE_ATTEMPTS = 5;
+
+/** True when RVF reported a transient fsync failure; matched by error code, never by message. */
+export function isFsyncFailed(err: unknown): boolean {
+  return err instanceof RvfError && err.code === RvfErrorCode.FsyncFailed;
+}
+
+function removeRvfFiles(path: string): void {
   try {
     rmSync(path, { force: true });
     rmSync(idmapSidecarPath(path), { force: true });
@@ -313,7 +322,24 @@ export async function createRvfIndex(options: RvfIndexOptions): Promise<RvfIndex
   } catch {
     // best effort; RvfDatabase.create below surfaces a real failure if the path is unusable.
   }
-  const db = await RvfDatabase.create(path, { dimensions: dimension, overwrite: true });
+}
+
+async function createWithFsyncRetry(create: typeof RvfDatabase.create, path: string, dimension: number): Promise<RvfDatabase> {
+  for (let attempt = 1; ; attempt++) {
+    removeRvfFiles(path);
+    try {
+      return await create(path, { dimensions: dimension, overwrite: true });
+    } catch (error) {
+      if (!isFsyncFailed(error) || attempt >= RVF_CREATE_ATTEMPTS) throw error;
+      await Bun.sleep(50 * attempt);
+    }
+  }
+}
+
+export async function createRvfIndex(options: RvfIndexOptions): Promise<RvfIndex> {
+  const { path, dimension } = options;
+  const create = options.create ?? RvfDatabase.create.bind(RvfDatabase);
+  const db = await createWithFsyncRetry(create, path, dimension);
   const entries = new Map<string, CognitiveEntry>();
   persistEntries(path, entries);
   return buildIndex(db, path, dimension, entries, options.id ?? "rvf");

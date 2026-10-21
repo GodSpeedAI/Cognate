@@ -5,6 +5,7 @@ import { createMemoryStore } from "@godspeedai/cognate-store-memory";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { RvfDatabase, RvfError, RvfErrorCode } from "@ruvector/rvf";
 import { createRvfIndex, importSnapshot, type RvfIndex, type SnapshotOptions } from "../src/index.ts";
 
 const root = mkdtempSync(join(tmpdir(), "cognate-rvf-"));
@@ -113,5 +114,43 @@ describe("RVF snapshots and branches (§18)", () => {
     await expect(i.snapshot(store, snap("/proc/definitely/not/writable"))).rejects.toThrow();
     expect((await q(i, [1, 0, 0, 0]))[0]!.id).toBe("a");
     expect(await store.listRecords("rvf_snapshots")).toEqual([]);
+  });
+});
+
+describe("createRvfIndex FsyncFailed retry (DEBT-018)", () => {
+  const fsyncFailed = () => new RvfError(RvfErrorCode.FsyncFailed, "injected fsync failure");
+
+  test("retries FsyncFailed twice, then delegates to the real create and the index works", async () => {
+    let calls = 0;
+    const create: typeof RvfDatabase.create = async (p, o, b) => {
+      calls++;
+      if (calls <= 2) throw fsyncFailed();
+      return RvfDatabase.create(p, o, b);
+    };
+    const i = await createRvfIndex({ dimension: 4, path: join(root, `retry-${crypto.randomUUID()}.rvf`), create });
+    open.push(i);
+    expect(calls).toBe(3);
+    await i.upsert([entry("a", [1, 0, 0, 0])]);
+    expect((await q(i, [1, 0, 0, 0]))[0]!.id).toBe("a");
+  });
+
+  test("a non-FsyncFailed error is not retried", async () => {
+    let calls = 0;
+    const create: typeof RvfDatabase.create = async () => {
+      calls++;
+      throw new RvfError(RvfErrorCode.DiskFull, "injected disk full");
+    };
+    await expect(createRvfIndex({ dimension: 4, path: join(root, `nonfsync-${crypto.randomUUID()}.rvf`), create })).rejects.toMatchObject({ code: RvfErrorCode.DiskFull });
+    expect(calls).toBe(1);
+  });
+
+  test("a persistent FsyncFailed gives up after 5 attempts and rethrows", async () => {
+    let calls = 0;
+    const create: typeof RvfDatabase.create = async () => {
+      calls++;
+      throw fsyncFailed();
+    };
+    await expect(createRvfIndex({ dimension: 4, path: join(root, `persist-${crypto.randomUUID()}.rvf`), create })).rejects.toMatchObject({ code: RvfErrorCode.FsyncFailed });
+    expect(calls).toBe(5);
   });
 });

@@ -73,6 +73,29 @@ Entity "UsageLedger"
 // frozen when a message is sent, so a referent never silently changes while an agent works.
 Entity "AttentionFocus"
 
+// Cognitive navigation (the cybernetic-navigation proof; src/capabilities/cognitive.ts). `Case` is the
+// desired difference and its derived projection; `Criterion` is its frozen evaluation; `WorldSnapshot`
+// is a content-addressed world (baseline, candidate or settled) with lineage; `Verification` is one
+// frozen check run against a candidate; `Risk` is the mediated assessment of one consequential
+// operation; `Experiment` is a bounded search over candidate worlds; `Method` is the active,
+// human-accepted method; `UiFocus` is the shared attention a person publishes to the page. A forked or
+// attached candidate world is an `ExecutionWorld`, not a new entity.
+Entity "Case"
+
+Entity "Criterion"
+
+Entity "WorldSnapshot"
+
+Entity "Verification"
+
+Entity "Risk"
+
+Entity "Experiment"
+
+Entity "Method"
+
+Entity "UiFocus"
+
 Resource "ModelConfig" units
 
 Resource "WorkspaceSelection" units

@@ -203,6 +203,49 @@ export function bindExecutionWorlds(domain: Domain) {
 }
 
 /**
+ * Cognitive navigation (DEBT-023): the capabilities `src/capabilities/cognitive.ts` publishes, each
+ * anchored on the Entity it acts on. `world.fork|attach|discard` act on execution worlds (a forked
+ * candidate is an `ExecutionWorld`); `world.freeze|settle` act on the content-addressed `WorldSnapshot`.
+ * Explicit, like every binding here: nothing is inferred from the capability's name.
+ */
+export const COGNITIVE_ANCHORS: Readonly<Record<string, string>> = {
+  "case.open": "Case",
+  "case.derive": "Case",
+  "case.observe": "Case",
+  "criterion.freeze": "Criterion",
+  "world.freeze": "WorldSnapshot",
+  "world.settle": "WorldSnapshot",
+  "world.fork": "ExecutionWorld",
+  "world.attach": "ExecutionWorld",
+  "world.discard": "ExecutionWorld",
+  "verification.run": "Verification",
+  "risk.assess": "Risk",
+  "experiment.round": "Experiment",
+  "experiment.status": "Experiment",
+  "method.review": "Method",
+  "method.accept": "Method",
+  "method.active": "Method",
+  "ui.focus.publish": "UiFocus",
+  "ui.context": "UiFocus",
+  "ui.request": "UiFocus",
+  "ui.pending": "UiFocus",
+};
+
+export function cognitiveBindings(domain: Domain): readonly CapabilityBinding[] {
+  return Object.entries(COGNITIVE_ANCHORS).map(([id, entity]) => ({ semanticId: domain.semanticId(entity), capability: { id, version: "1.0.0" } }));
+}
+
+export function bindCognitive(domain: Domain): Readonly<Record<string, NonNullable<CapabilityContract["semanticRef"]>>> {
+  const bindings = cognitiveBindings(domain);
+  const contracts = bindCapabilities(domain.projection, bindings);
+  if (contracts.length !== bindings.length) throw new Error(`domain: expected ${bindings.length} cognitive contracts, got ${contracts.length}`);
+  return Object.fromEntries(contracts.map((c) => {
+    if (!c.semanticRef) throw new Error(`domain: cognitive contract ${c.id} has no semantic anchor`);
+    return [c.id, c.semanticRef];
+  }));
+}
+
+/**
  * Workbench layer (Unified Harness Experience Model v2): every `WORKBENCH_CAPABILITY_IDS` entry is
  * anchored on one of the workbench Entities the IDM extension declares. `authority.check` is the
  * only capability the tool loop invokes; `workbench.seed` is infrastructure (loads the catalog) and
