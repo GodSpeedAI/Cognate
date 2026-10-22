@@ -142,3 +142,68 @@ describe("governance escalation: durable wait and revalidated resume", () => {
     expect(providerRuns).toBe(0);
   });
 });
+
+describe("governance: an approval belongs to the operation it was granted for", () => {
+  let runtime: Runtime | undefined;
+  afterEach(async () => {
+    await runtime?.close();
+    runtime = undefined;
+  });
+
+  test("a provider's nested calls during an approved revalidation are governed on their own, without the approval", async () => {
+    // Like SEA-Forge: tool.outer escalates until approved; any call citing an approval granted for a
+    // different operation is refused; tool.inner on its own is allowed.
+    const asked: { capability: string; approval: string | undefined }[] = [];
+    let approved = false;
+    const authority: GovernanceAuthority = {
+      decide(operation: GovernedOperation, _world: string, approval?: ApprovalReference): GovernanceDecision {
+        if (operation.kind !== "capability") return { disposition: "allow", reason: "actions allowed" };
+        const capability = operation.request.capability.id;
+        asked.push({ capability, approval: approval?.approvalId });
+        if (capability === "tool.inner") {
+          return approval ? { disposition: "deny", reason: "approval was granted for another operation" } : { disposition: "allow", reason: "inner allowed" };
+        }
+        if (approval && approved) return { disposition: "allow", reason: "approved" };
+        return { disposition: "escalate", reason: "needs a human", escalation: { approvalId: "apr-outer" } };
+      },
+      approvalState: async () => (approved ? "approved" : "pending"),
+    };
+    let innerRuns = 0;
+    let outerRuns = 0;
+    const inner: Component = { id: "inner", provides: [{ id: "tool.inner", version: "1.0.0" }], activate: (fiber) => fiber.provide({ id: "tool.inner", version: "1.0.0" }, () => (innerRuns++, { inner: true })) };
+    const outer: Component = {
+      id: "outer",
+      provides: [{ id: "tool.outer", version: "1.0.0" }],
+      requires: { inner: { capability: "tool.inner" } },
+      activate: (fiber) => fiber.provide({ id: "tool.outer", version: "1.0.0" }, async (_input, ctx) => {
+        outerRuns++;
+        const result = await fiber.dependencies.inner!.invoke({}, ctx);
+        if (!result.ok) throw new Error(`nested call refused: ${JSON.stringify(result.failure)}`);
+        return { outer: true, nested: result.value };
+      }),
+    };
+    const agent: AgentDefinition = { id: "agent.outer", version: "1.0.0", async run(_i, ctx) { return { output: await ctx.invoke("tool.outer", {}) }; } };
+    runtime = await createRuntime({
+      store: ":memory:",
+      policy: { authorize: () => ({ allow: true, policyId: "p", reason: "ok" }) },
+      actions: { authorize: () => ({ allow: true, reason: "ok" }) },
+      agents: [agent],
+      components: [inner, outer],
+      governance: { mode: "sea-forge", worldRef: WORLD, authority },
+    });
+    const rt = runtime;
+    const run = await rt.service.startRun(alice, { agent: agent.id, input: {}, idempotencyKey: nextKey() });
+    await until(() => rt.service.getRun(alice, { runId: run.runId }).then((r) => r.status), (s) => s === "waiting", "waits on approval");
+    expect(outerRuns).toBe(0);
+
+    approved = true;
+    expect(await rt.pollApprovals()).toBe(1);
+    const done = await until(() => rt.service.getRun(alice, { runId: run.runId }), (r) => r.status !== "running" && r.status !== "waiting", "run finishes");
+    expect(done.status).toBe("completed");
+    expect(outerRuns).toBe(1);
+    expect(innerRuns).toBe(1);
+    // The approval was cited only for the operation it was granted for.
+    expect(asked.filter((a) => a.approval !== undefined).map((a) => a.capability)).toEqual(["tool.outer"]);
+  });
+});
+
