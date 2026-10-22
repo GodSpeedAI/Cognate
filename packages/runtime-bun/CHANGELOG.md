@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.6.1...cognate-runtime-bun-v0.6.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **domainforge:** complete canonical composed-world integration ([a477933](https://github.com/GodSpeedAI/Cognate/commit/a477933a1ddf1a8bcd64b4e762ccbb56e5fbd7d5))
+* **runtime-bun:** an approval governs only the operation it was granted for ([#60](https://github.com/GodSpeedAI/Cognate/issues/60)) ([84ddb6e](https://github.com/GodSpeedAI/Cognate/commit/84ddb6ef21aca67f9a99f669584bb40dd221162c))
+
 ## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.6.0...cognate-runtime-bun-v0.6.1) (2026-10-17)
 
 

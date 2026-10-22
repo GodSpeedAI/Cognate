@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-store-memory",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "In-memory DurableStore with the same semantics as the SQLite store (tests, ephemeral runtimes).",
   "type": "module",
   "license": "Apache-2.0",
