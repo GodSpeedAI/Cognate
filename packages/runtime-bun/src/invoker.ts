@@ -22,6 +22,10 @@ export interface InvocationOutcome {
 }
 
 interface Slot {
+  /** The capability this slot belongs to: only its own authorization reads or writes the slot. */
+  readonly capability: string;
+  /** Set once the owning call has been authorized; later authorizations in this async context are nested calls. */
+  authorized?: boolean;
   decision?: PolicyDecision;
   /** The approval being relied on, when this call revalidates an approved escalation. */
   approval?: { readonly approvalId: string };
@@ -44,7 +48,13 @@ export class Invoker {
    */
   readonly policy: Policy = {
     authorize: async (request) => {
-      const slot = this.slots.getStore();
+      // The slot belongs to the call `invoke` started. A provider's nested calls run in the same async
+      // context, but the approval being relied on was granted for the owning operation only, and the
+      // decision, escalation and governed deadline recorded here are the owning call's. A nested call is
+      // governed on its own: no approval, no writes to the owner's slot.
+      const outer = this.slots.getStore();
+      const slot = outer && !outer.authorized && outer.capability === request.capability.id ? outer : undefined;
+      if (slot) slot.authorized = true;
       const decision = await this.governor.governCapability(request, {
         ...(slot?.approval ? { approval: slot.approval } : {}),
         applied: (applied) => {
@@ -75,7 +85,7 @@ export class Invoker {
     const base = { capability: request.capability, providerId: null, componentId: null, fiberId: null, decision: null, semanticRef: null, value: null };
     if (isUnavailable(lease)) return { ...base, ok: false, failure: { kind: "unavailable", reason: lease.reason } };
 
-    const slot: Slot = request.approval ? { approval: request.approval } : {};
+    const slot: Slot = request.approval ? { capability: request.capability, approval: request.approval } : { capability: request.capability };
     // The call gets its own signal so a governed deadline (decided during authorization, after the call has
     // started) can abort the provider; the caller's signal still aborts it too.
     const controller = new AbortController();
