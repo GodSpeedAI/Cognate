@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-provider-openai-oauth",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Sign in with ChatGPT (SIWC) OAuth/OIDC credential adapter: dynamic client registration, PKCE sign-in, validated tokens, rotating refresh, and governed subscription inference.",
   "type": "module",
   "license": "Apache-2.0",
