@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-ruvector-v0.6.1...cognate-cognitive-ruvector-v0.6.2) (2026-10-22)
+
+
+### Miscellaneous Chores
+
+* **cognate-cognitive-ruvector:** Synchronize cognate SDK packages versions
+
 ## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-ruvector-v0.6.0...cognate-cognitive-ruvector-v0.6.1) (2026-10-17)
 
 

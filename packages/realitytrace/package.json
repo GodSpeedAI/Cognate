@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-realitytrace",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Observation port, committed-outbox delivery, receipts, strict gating, and the SXR CLI adapter (spec §20). RealityTrace stays unchanged.",
   "type": "module",
   "license": "Apache-2.0",

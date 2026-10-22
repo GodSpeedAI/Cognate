@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-artifacts-v0.6.1...cognate-artifacts-v0.6.2) (2026-10-22)
+
+
+### Miscellaneous Chores
+
+* **cognate-artifacts:** Synchronize cognate SDK packages versions
+
 ## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-artifacts-v0.6.0...cognate-artifacts-v0.6.1) (2026-10-17)
 
 

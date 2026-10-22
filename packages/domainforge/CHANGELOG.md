@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.6.1...cognate-domainforge-v0.6.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **domainforge:** complete canonical composed-world integration ([a477933](https://github.com/GodSpeedAI/Cognate/commit/a477933a1ddf1a8bcd64b4e762ccbb56e5fbd7d5))
+
 ## [0.6.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.6.0...cognate-domainforge-v0.6.1) (2026-10-17)
 
 
