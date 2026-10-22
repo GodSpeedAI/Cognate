@@ -47,6 +47,9 @@ const POLICY = [
 ].join("\n");
 
 const alice = { tenant: "tenant-a", actor: { id: "alice", kind: "user" as const } };
+/** The service principal speaks for itself; a human approver is reached through the gateway's delegation. */
+const asActor = (actor: { actor_id: string; role: string }) =>
+  actor.actor_id === "cognate-service" ? { actor } : { actor: { actor_id: "cognate-service", role: "service" }, on_behalf_of: actor };
 const bob = { tenant: "tenant-a", actor: { id: "bob", kind: "user" as const } };
 const slow: Component = {
   id: "slow-provider",
@@ -84,7 +87,11 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
       JSON.stringify({
         socket_path: socket,
         root,
-        identity: { bindings: [{ uid: process.getuid!(), actor_id: "cognate-service", roles: ["service"] }, { uid: process.getuid!(), actor_id: "op-alice", roles: ["operator"] }] },
+        // One OS user maps to exactly one actor (SEA-Forge refuses a second binding on a uid at load).
+        // This process is the service principal and the gateway; the human approver has no uid of
+        // its own and is reached only through the gateway's delegation (`on_behalf_of`).
+        identity: { bindings: [{ uid: process.getuid!(), actor_id: "cognate-service", roles: ["service"] }, { actor_id: "op-alice", roles: ["operator"] }] },
+        gateway: { uid: process.getuid!(), actor: "cognate-service", delegable_actors: ["op-alice"] },
         cep_authority: { enabled: true, policy: "sea-forge-policy.yaml", worlds: ["worlds", "worlds-edited", "worlds-changed"].map((base) => ({ name: "demo", base, entry: "demo.sea", files: ["demo.sea"] })) },
       }),
     );
@@ -158,7 +165,7 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
   describe("escalation to a human approval, end to end", () => {
     const call = (frame: Record<string, unknown>) => exchange(socket, frame, 3_000, 256 * 1024) as Promise<Record<string, any>>;
     const resolve = (approvalId: string, resolution: "approved" | "rejected", actor = { actor_id: "op-alice", role: "operator" }) =>
-      call({ verb: "authority_approval", approval_id: approvalId, resolution, request_id: `res-${approvalId}-${resolution}-${actor.actor_id}`, actor });
+      call({ verb: "authority_approval", approval_id: approvalId, resolution, request_id: `res-${approvalId}-${resolution}-${actor.actor_id}`, ...asActor(actor) });
     const pending = async (rt: Awaited<ReturnType<typeof open>>, runId: string) => (await rt.service.listContinuations(alice, { runId, status: "OPEN" }))[0]!;
     const state = (rt: Awaited<ReturnType<typeof open>>, runId: string) => rt.service.getRun(alice, { runId }).then((r) => r.status);
     const until = async <T,>(read: () => Promise<T>, ok: (v: T) => boolean, what: string): Promise<T> => {
@@ -273,7 +280,7 @@ describe.skipIf(!BIN)("live CEP authority loop (SEA-Forge server + DomainForge C
 
       // The requester's own identity cannot approve; a different operator can.
       expect((await call({ verb: "authority_approval", approval_id: approvalId, resolution: "approved", request_id: "t-self", actor: { actor_id: "cognate-service", role: "service" } })).ok).not.toBe(true);
-      const resolved = await call({ verb: "authority_approval", approval_id: approvalId, resolution: "approved", request_id: "t-ok", actor: { actor_id: "op-alice", role: "operator" } });
+      const resolved = await call({ verb: "authority_approval", approval_id: approvalId, resolution: "approved", request_id: "t-ok", ...asActor({ actor_id: "op-alice", role: "operator" }) });
       expect(resolved.state).toBe("approved");
 
       // The retry names the approval; the client links it back to the escalated request.
