@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setSystemTime, test } from "bun:test";
 import { evidencePacketEnvelope, executionTraceEnvelope, executionTraceId, governedTraceFor } from "../src/index.ts";
 
 const WORLD = `world:demo@sha256:${"a".repeat(64)}`;
@@ -38,6 +38,21 @@ describe("execution_trace", () => {
     const governed = governedTraceFor({ ...base, metadata: { capability: "tool.ping", ok: true, decision: { authority: { ...authority, worldRef: WORLD } } } }) as any;
     expect(governed.envelope_id).toBe(executionTraceId("op-1"));
     expect(governed.observations[0].observation_id).toBe("obs-e1");
+  });
+
+  test("governedTraceFor is a pure function of the event: re-deriving it later yields the same bytes", () => {
+    const event = { eventId: "e1", correlationId: "c1", occurredAt: "2026-10-05T01:02:03Z", metadata: { capability: "tool.ping", ok: true, decision: { authority: { ...authority, worldRef: WORLD } } } };
+    let first: string, later: string;
+    try {
+      setSystemTime(new Date("2026-10-05T01:02:03.900Z"));
+      first = JSON.stringify(governedTraceFor(event));
+      setSystemTime(new Date("2026-10-06T09:00:00Z"));
+      later = JSON.stringify(governedTraceFor(event));
+    } finally {
+      setSystemTime();
+    }
+    expect(later).toBe(first);
+    expect(JSON.parse(first).created_at).toBe("2026-10-05T01:02:03Z");
   });
 });
 
