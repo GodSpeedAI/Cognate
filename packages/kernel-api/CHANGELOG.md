@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-kernel-api-v0.6.2...cognate-kernel-api-v0.6.3) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-kernel-api:** Synchronize cognate SDK packages versions
+
 ## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-kernel-api-v0.6.1...cognate-kernel-api-v0.6.2) (2026-10-22)
 
 

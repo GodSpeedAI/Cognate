@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-profile",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "defineProfile: reusable application compositions that select and configure components without new kernel concepts (spec §29).",
   "type": "module",
   "license": "Apache-2.0",
