@@ -19,7 +19,36 @@ export type ActionName = Parameters<ActionPolicy["authorize"]>[0]["action"];
 
 export type GovernedOperation =
   | { readonly kind: "action"; readonly action: ActionName; readonly caller: Caller; readonly resource: string }
-  | { readonly kind: "capability"; readonly request: AuthorizationRequest };
+  | { readonly kind: "capability"; readonly request: AuthorizationRequest; readonly claims?: AuthorityClaims };
+
+/**
+ * What the caller asserts about one governed capability call, carried verbatim to the authority (for SEA-Forge,
+ * under `claims` in the authority_request extension) so the authority records it with its decision. Claims are
+ * assertions, never credentials: an authority may record them and must not grant on them alone.
+ */
+export type AuthorityClaims = Readonly<Record<string, string | number>>;
+
+const CLAIM_KEY = /^[a-z][a-z0-9_]{0,63}$/;
+export const MAX_AUTHORITY_CLAIMS = 16;
+export const MAX_AUTHORITY_CLAIM_LENGTH = 512;
+
+/** Validate claims before they leave the process: bounded, flat, JSON-scalar, with plain keys. */
+export function assertAuthorityClaims(value: unknown): AuthorityClaims {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("authorityClaims must be an object");
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length === 0 || entries.length > MAX_AUTHORITY_CLAIMS) throw new TypeError(`authorityClaims must hold 1 to ${MAX_AUTHORITY_CLAIMS} entries`);
+  const out: Record<string, string | number> = {};
+  for (const [key, claim] of entries) {
+    if (!CLAIM_KEY.test(key)) throw new TypeError(`authority claim key ${JSON.stringify(key)} must match ${CLAIM_KEY}`);
+    if (typeof claim === "string") {
+      if (claim.length === 0 || claim.length > MAX_AUTHORITY_CLAIM_LENGTH) throw new TypeError(`authority claim ${key} must be 1 to ${MAX_AUTHORITY_CLAIM_LENGTH} characters`);
+    } else if (typeof claim !== "number" || !Number.isFinite(claim)) {
+      throw new TypeError(`authority claim ${key} must be a string or a finite number`);
+    }
+    out[key] = claim;
+  }
+  return Object.freeze(out);
+}
 
 /** One constraint the authority attached to a constrained disposition, e.g. `{ type: "timeout_secs", value: "30" }`. */
 export interface GovernanceConstraint {
@@ -151,6 +180,8 @@ export function validateGovernance(options: GovernanceOptions): void {
 export interface CapabilityHooks {
   /** Set when revalidating an approved escalation. */
   readonly approval?: ApprovalReference;
+  /** The owning call's authority claims; nested calls never inherit them. */
+  readonly claims?: AuthorityClaims;
   readonly applied?: (applied: readonly GovernanceConstraint[]) => void;
   readonly escalated?: (escalation: GovernanceEscalation) => void;
 }
@@ -234,7 +265,7 @@ export class Governor {
    * constraints that were enforced before the allow, so the invoker can put them in force for the call.
    */
   async governCapability(request: AuthorizationRequest, hooks: CapabilityHooks = {}): Promise<PolicyDecision> {
-    const result = await this.govern({ kind: "capability", request }, hooks.approval);
+    const result = await this.govern({ kind: "capability", request, ...(hooks.claims ? { claims: hooks.claims } : {}) }, hooks.approval);
     if (result.allow && result.applied?.length) hooks.applied?.(result.applied);
     if (!result.allow && result.escalation) hooks.escalated?.(result.escalation);
     // `authority` rides in the recorded decision (run.invocation metadata), so a later trace can name it.
