@@ -205,8 +205,32 @@ export function interpretDecision(response: unknown, sent: { envelope: Obj; oper
   return { disposition: decision as GovernanceDecision["disposition"], ...base, policyBasis, constraints, ...(controls ? { compensatingControls: controls } : {}) };
 }
 
+/** SEA-Forge's answer when its request admission is full: `server_busy` with `no_side_effect: true`. It is
+ *  backpressure, not a decision, and the request did nothing, so it is safe to send again. */
+export function isServerBusy(response: unknown): boolean {
+  const r = response as { error_class?: unknown; no_side_effect?: unknown } | null;
+  return typeof r === "object" && r !== null && r.error_class === "server_busy" && r.no_side_effect === true;
+}
+
+/**
+ * One request/response exchange with SEA-Forge, retrying only `server_busy` answers that carry
+ * `no_side_effect: true`, with jittered exponential backoff inside the same `timeoutMs` budget. When the budget
+ * runs out the last busy answer is returned unchanged, so callers interpret it exactly as before.
+ */
+export async function exchange(socketPath: string, request: unknown, timeoutMs: number, maxBytes: number): Promise<unknown> {
+  const deadline = Date.now() + timeoutMs;
+  for (let attempt = 0; ; attempt++) {
+    const remaining = deadline - Date.now();
+    const response = await exchangeOnce(socketPath, request, Math.max(1, remaining), maxBytes);
+    if (!isServerBusy(response)) return response;
+    const backoff = Math.min(400, 20 * 2 ** attempt) * (0.5 + Math.random() / 2);
+    if (deadline - Date.now() <= backoff) return response;
+    await Bun.sleep(backoff);
+  }
+}
+
 /** One NDJSON request/response exchange over a Unix socket. Rejects on timeout, close, or oversize. */
-export function exchange(socketPath: string, request: unknown, timeoutMs: number, maxBytes: number): Promise<unknown> {
+export function exchangeOnce(socketPath: string, request: unknown, timeoutMs: number, maxBytes: number): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let buffered = "";
     let settled = false;

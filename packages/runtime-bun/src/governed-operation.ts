@@ -98,6 +98,19 @@ export interface GovernanceOptions {
   readonly enforcers?: Readonly<Record<string, ConstraintEnforcer>>;
   /** When set (>0) and the authority can report approval state, poll for approved escalations this often. */
   readonly approvalPollMs?: number;
+  /**
+   * Send `thread.state.read` by the runtime's own `system` principal to the external authority too. Off by
+   * default: such a read has no side effect and is the runtime reading its own state (schedulers, caches,
+   * registries), so local policy decides it alone. Reads by users and agents, and every write, are always
+   * governed. Observed without this: an idle Workbench sent SEA-Forge about two such reads per second
+   * (99.6% of its ledger) and slowed every real decision.
+   */
+  readonly governSystemReads?: boolean;
+}
+
+/** A read of runtime state by the runtime's own system principal: no side effect, no external decision needed. */
+export function isSystemRead(operation: GovernedOperation): boolean {
+  return operation.kind === "action" && operation.action === "thread.state.read" && operation.caller.actor.kind === "system";
 }
 
 export interface GovernedResult {
@@ -161,6 +174,9 @@ export class Governor {
     const localDecision = await this.localDecision(operation);
     if (!localDecision.allow) return { allow: false, mode, disposition: "deny", reason: localDecision.reason };
     if (mode === "off") return { allow: true, mode, disposition: "allow", reason: `${localDecision.reason} (governance off: local policy only)` };
+    if (isSystemRead(operation) && this.options.governSystemReads !== true) {
+      return { allow: true, mode, disposition: "allow", reason: `${localDecision.reason} (system read of runtime state: local policy only)` };
+    }
 
     let decision: GovernanceDecision;
     try {
