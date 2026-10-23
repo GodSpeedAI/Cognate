@@ -146,5 +146,8 @@ export function governedTraceFor(event: {
     ...(typeof metadata.failureKind === "string" ? { failureKind: metadata.failureKind } : {}),
     observationId: `obs-${event.eventId}`,
     occurredAt: event.occurredAt,
+    // Created at the event's own time, not "now": the trace is a pure function of the committed event, so
+    // re-deriving it (redelivery, recovery, a verifier) yields the same bytes and the same content hash.
+    createdAt: new Date(event.occurredAt),
   });
 }
