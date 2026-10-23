@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-agent-discovery",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Read-only agent CLI, configuration, skills, extensions and hook discovery with provenance.",
   "type": "module",
   "license": "Apache-2.0",
