@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-a2a",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "A2A adapter: publishes a runtime agent as an A2A agent; continuations map to input-required tasks.",
   "type": "module",
   "license": "Apache-2.0",

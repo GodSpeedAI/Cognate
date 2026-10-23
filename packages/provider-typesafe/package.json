@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-provider-typesafe",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Native TypeSafe/System One typed decision provider, not a chat completion shim.",
   "type": "module",
   "license": "Apache-2.0",
