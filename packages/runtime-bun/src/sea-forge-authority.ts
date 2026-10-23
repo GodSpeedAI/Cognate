@@ -4,7 +4,7 @@
 // NDJSON protocol (`authority_request` verb), and accepts only a response that is demonstrably the decision
 // for *this* request in *this* world. Anything else is `unknown`, which the Governor refuses.
 import { createHash, randomUUID } from "node:crypto";
-import type { ApprovalReference, ApprovalState, AuthorityReference, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernedOperation } from "./governed-operation.ts";
+import type { ApprovalReference, ApprovalState, AuthorityClaims, AuthorityReference, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernedOperation } from "./governed-operation.ts";
 
 export interface SeaForgeAuthorityOptions {
   /** Path of the SEA-Forge cell's `server.sock`. */
@@ -27,12 +27,12 @@ const isObj = (value: unknown): value is Obj => typeof value === "object" && val
 const str = (value: unknown): string | undefined => (typeof value === "string" && value.length > 0 ? value : undefined);
 const strings = (value: unknown): string[] | undefined => (Array.isArray(value) && value.every((v) => typeof v === "string" && v.length > 0) ? (value as string[]) : undefined);
 
-function describe(operation: GovernedOperation): { kind: "action" | "capability"; name: string; resource: string; subject: string; correlation: string } {
+function describe(operation: GovernedOperation): { kind: "action" | "capability"; name: string; resource: string; subject: string; correlation: string; claims?: AuthorityClaims } {
   if (operation.kind === "action") {
     return { kind: "action", name: operation.action, resource: operation.resource, subject: `actor:${operation.caller.tenant}/${operation.caller.actor.id}`, correlation: "" };
   }
   const { request } = operation;
-  return { kind: "capability", name: "invoke", resource: request.capability.id, subject: `actor:${request.tenant}/${request.actor.id}`, correlation: request.correlationId };
+  return { kind: "capability", name: "invoke", resource: request.capability.id, subject: `actor:${request.tenant}/${request.actor.id}`, correlation: request.correlationId, ...(operation.claims ? { claims: operation.claims } : {}) };
 }
 
 /** The CEP `authority_request` envelope for one operation (profile godspeed.authority_request). */
@@ -89,7 +89,7 @@ function buildEnvelope(d: ReturnType<typeof describe>, worldRef: string, now: Da
     states: [{ state_id: `st-${operationId}`, state_type: "declared_state", subject_ref: `operation:${operationId}` }],
     extensions: {
       "cep.profile": { profile_id: REQUEST_PROFILE, profile_version: PROFILE_VERSION },
-      [REQUEST_PROFILE]: { operation_id: operationId, correlation_id: d.correlation || operationId, operation_kind: d.kind, operation_name: d.name, resource_id: d.resource, ...(approval ? { approval_id: approval.approvalId } : {}), ...(carry ? { transition_ref: carry.transitionLedgerEntry } : {}) },
+      [REQUEST_PROFILE]: { operation_id: operationId, correlation_id: d.correlation || operationId, operation_kind: d.kind, operation_name: d.name, resource_id: d.resource, ...(approval ? { approval_id: approval.approvalId } : {}), ...(carry ? { transition_ref: carry.transitionLedgerEntry } : {}), ...(d.claims ? { claims: { ...d.claims } } : {}) },
     },
   };
   return { envelope, operationId };
