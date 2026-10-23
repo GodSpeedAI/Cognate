@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-ag-ui-v0.6.2...cognate-ag-ui-v0.6.3) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-ag-ui:** Synchronize cognate SDK packages versions
+
 ## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-ag-ui-v0.6.1...cognate-ag-ui-v0.6.2) (2026-10-22)
 
 

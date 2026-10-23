@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-cognitive-api",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Dependency-free CognitiveIndex contract, retrieval pipeline, indexing projection, and conformance kit (spec §14–16).",
   "type": "module",
   "license": "Apache-2.0",

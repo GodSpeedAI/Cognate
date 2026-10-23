@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-realitytrace-v0.6.2...cognate-realitytrace-v0.6.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* **realitytrace:** an execution trace is a pure function of its event ([#61](https://github.com/GodSpeedAI/Cognate/issues/61)) ([f160d8b](https://github.com/GodSpeedAI/Cognate/commit/f160d8b069959233be97ae2dbf786da76cfa7f1d))
+
 ## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-realitytrace-v0.6.1...cognate-realitytrace-v0.6.2) (2026-10-22)
 
 

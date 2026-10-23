@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-ssh-v0.6.2...cognate-execution-ssh-v0.6.3) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-execution-ssh:** Synchronize cognate SDK packages versions
+
 ## [0.6.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-ssh-v0.6.1...cognate-execution-ssh-v0.6.2) (2026-10-22)
 
 
