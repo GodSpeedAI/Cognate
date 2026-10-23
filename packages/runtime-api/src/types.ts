@@ -42,8 +42,12 @@ export interface RunContext {
   step<T extends Json>(id: string, fn: () => T | Promise<T>): Promise<T>;
   /** Record a run-scoped fact (e.g. `message.delta`, `state.changed`). Emitted once across replays. */
   emit(eventType: string, payload: Json): Promise<void>;
-  /** Resolve and invoke a capability through the kernel and policy; the result is recorded. Throws `InvocationFailedError` on typed failure. */
-  invoke(capability: string, input: Json, options?: { readonly version?: string }): Promise<Json>;
+  /**
+   * Resolve and invoke a capability through the kernel and policy; the result is recorded. Throws `InvocationFailedError` on typed failure.
+   * `authorityClaims` are this call's assertions (flat string/number values), carried verbatim to the governance
+   * authority with the decision request and recorded with the invocation; they never grant anything by themselves.
+   */
+  invoke(capability: string, input: Json, options?: { readonly version?: string; readonly authorityClaims?: Readonly<Record<string, string | number>> }): Promise<Json>;
   /** Produce a durable artifact attributed to this run; returns its id. */
   artifact(input: ArtifactInput): Promise<string>;
   /**

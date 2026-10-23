@@ -5,6 +5,7 @@ import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, typ
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@godspeedai/cognate-runtime-api";
 import type { Core, RecallResultJson } from "./core.ts";
+import { assertAuthorityClaims } from "./governed-operation.ts";
 import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 /** Internal control flow: the execution stops here (suspended, cancelled, or lost a write race). */
@@ -162,8 +163,10 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       await append({ eventType, payload: toJson(payload), metadata: { stepId } });
     },
 
-    async invoke(capability: string, input: Json, options?: { readonly version?: string }): Promise<Json> {
+    async invoke(capability: string, input: Json, options?: { readonly version?: string; readonly authorityClaims?: Readonly<Record<string, string | number>> }): Promise<Json> {
       guard();
+      // Refused before anything is recorded or sent: claims leave the process only in a validated shape.
+      const claims = options?.authorityClaims === undefined ? undefined : assertAuthorityClaims(options.authorityClaims);
       const stepId = `invoke:${++counters.invoke}`;
       // G1: progress events share this stepId (so a replayed invoke advances past them like any other
       // recorded event) but are a distinct event type, so the completion check must name it explicitly.
@@ -220,6 +223,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
             input: toJson(input),
             tenant: view.tenant,
             ...(approval ? { approval } : {}),
+            ...(claims ? { claims } : {}),
             context: { actor: context.actor, correlationId: view.correlationId, causationId: lastEventId, runId, signal: controller.signal, progress },
           });
         // Governance escalation (migration Stage 7). The decision to wait is recorded once, so a replay of
@@ -255,6 +259,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
           metadata: {
             stepId,
             capability,
+            ...(claims ? { authorityClaims: claims } : {}),
             providerId: outcome.providerId,
             fiberId: outcome.fiberId,
             decision: outcome.decision as unknown as Json,

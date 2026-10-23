@@ -2,7 +2,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Json } from "@godspeedai/cognate-events";
 import { type InvocationResult, isUnavailable } from "@godspeedai/cognate-kernel-api";
-import { type GovernanceEscalation, type Governor, parseTimeoutSeconds } from "./governed-operation.ts";
+import { type AuthorityClaims, type GovernanceEscalation, type Governor, parseTimeoutSeconds } from "./governed-operation.ts";
 import type { Component, ComponentHandle, InvocationContext, InvocationFailure, Kernel, Policy, PolicyDecision, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { messageOf, toJson } from "./fold.ts";
 
@@ -29,6 +29,8 @@ interface Slot {
   decision?: PolicyDecision;
   /** The approval being relied on, when this call revalidates an approved escalation. */
   approval?: { readonly approvalId: string };
+  /** The owning call's authority claims, carried to the authority with its decision request. */
+  claims?: AuthorityClaims;
   /** Set by the policy wrapper when authorization escalated to a human approval. */
   escalation?: GovernanceEscalation;
   /** Puts a governed deadline in force for this call (set by `invoke`, called by the policy wrapper). */
@@ -57,6 +59,7 @@ export class Invoker {
       if (slot) slot.authorized = true;
       const decision = await this.governor.governCapability(request, {
         ...(slot?.approval ? { approval: slot.approval } : {}),
+        ...(slot?.claims ? { claims: slot.claims } : {}),
         applied: (applied) => {
           const seconds = applied.map((c) => (c.type === "timeout_secs" ? parseTimeoutSeconds(c.value) : undefined)).filter((n): n is number => n !== undefined);
           if (seconds.length && slot?.arm) slot.arm(Math.min(...seconds) * 1000);
@@ -80,12 +83,12 @@ export class Invoker {
     await Promise.all(this.mounted.map(({ handle }) => handle.waitFor("ACTIVE", 10_000).catch(() => {})));
   }
 
-  async invoke(request: { readonly capability: string; readonly version?: string; readonly input: Json; readonly tenant: string; readonly context: InvocationContext; readonly approval?: { readonly approvalId: string } }): Promise<InvocationOutcome> {
+  async invoke(request: { readonly capability: string; readonly version?: string; readonly input: Json; readonly tenant: string; readonly context: InvocationContext; readonly approval?: { readonly approvalId: string }; readonly claims?: AuthorityClaims }): Promise<InvocationOutcome> {
     const lease = this.kernel!.resolve(request.version ? { capability: request.capability, version: request.version } : { capability: request.capability });
     const base = { capability: request.capability, providerId: null, componentId: null, fiberId: null, decision: null, semanticRef: null, value: null };
     if (isUnavailable(lease)) return { ...base, ok: false, failure: { kind: "unavailable", reason: lease.reason } };
 
-    const slot: Slot = request.approval ? { capability: request.capability, approval: request.approval } : { capability: request.capability };
+    const slot: Slot = { capability: request.capability, ...(request.approval ? { approval: request.approval } : {}), ...(request.claims ? { claims: request.claims } : {}) };
     // The call gets its own signal so a governed deadline (decided during authorization, after the call has
     // started) can abort the provider; the caller's signal still aborts it too.
     const controller = new AbortController();
