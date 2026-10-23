@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-provider-auth",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "description": "Ephemeral credential-source and usage authorization boundary for model providers.",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-typesafe-v0.6.4...cognate-provider-typesafe-v0.7.0) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-provider-typesafe:** Synchronize cognate SDK packages versions
+
 ## [0.6.4](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-typesafe-v0.6.3...cognate-provider-typesafe-v0.6.4) (2026-10-23)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-cognitive-memory",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "description": "In-process exact-cosine CognitiveIndex and a deterministic hashing embedder; the fallback implementation for core cognition.",
   "type": "module",
   "license": "Apache-2.0",
