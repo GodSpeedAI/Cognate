@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.6.3...cognate-runtime-bun-v0.6.4) (2026-10-23)
+
+
+### Bug Fixes
+
+* **runtime-bun:** SEA-Forge client under load: retry server_busy, decide system reads locally ([#63](https://github.com/GodSpeedAI/Cognate/issues/63)) ([6b60f47](https://github.com/GodSpeedAI/Cognate/commit/6b60f470beb473f1334d4d88e6c1e69f0ae834b2))
+
 ## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.6.2...cognate-runtime-bun-v0.6.3) (2026-10-23)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-memory-v0.6.3...cognate-cognitive-memory-v0.6.4) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-cognitive-memory:** Synchronize cognate SDK packages versions
+
 ## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-memory-v0.6.2...cognate-cognitive-memory-v0.6.3) (2026-10-23)
 
 

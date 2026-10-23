@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-api-v0.6.3...cognate-runtime-api-v0.6.4) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-runtime-api:** Synchronize cognate SDK packages versions
+
 ## [0.6.3](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-api-v0.6.2...cognate-runtime-api-v0.6.3) (2026-10-23)
 
 

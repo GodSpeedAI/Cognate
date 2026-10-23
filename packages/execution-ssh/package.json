@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-execution-ssh",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "SSH host as an execution world: SFTP filesystem and remote exec over ssh2, with mandatory host-key verification, ProxyJump and clean disposal. Same contracts as every other provider.",
   "type": "module",
   "license": "Apache-2.0",
