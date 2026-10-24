@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-cognitive-rvf",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "description": "Optional RVF-backed CognitiveIndex with snapshot/branch, Cognate-owned integrity manifests, and attached/detached import classification (spec §18; DEBT-006 mitigations).",
   "type": "module",
   "license": "Apache-2.0",
