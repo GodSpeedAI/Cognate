@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-agent-discovery-v0.7.0...cognate-agent-discovery-v0.7.1) (2026-10-24)
+
+
+### Miscellaneous Chores
+
+* **cognate-agent-discovery:** Synchronize cognate SDK packages versions
+
 ## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-agent-discovery-v0.6.4...cognate-agent-discovery-v0.7.0) (2026-10-23)
 
 

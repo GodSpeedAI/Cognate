@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-protocol-connect-v0.7.0...cognate-protocol-connect-v0.7.1) (2026-10-24)
+
+
+### Miscellaneous Chores
+
+* **cognate-protocol-connect:** Synchronize cognate SDK packages versions
+
 ## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-protocol-connect-v0.6.4...cognate-protocol-connect-v0.7.0) (2026-10-23)
 
 
