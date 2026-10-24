@@ -137,17 +137,19 @@ export const MIGRATIONS: readonly Migration[] = [
 /** Apply any migration not yet recorded in `schema_versions`, inside one transaction. */
 export function migrate(db: Database): void {
   db.exec("CREATE TABLE IF NOT EXISTS schema_versions (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)");
-  const applied = new Set((db.query("SELECT version FROM schema_versions").all() as { version: number }[]).map((r) => r.version));
-  // Refuse before applying anything: a store written by a newer build may hold rows this build
-  // would otherwise silently ignore. Nothing is written on this path.
-  const newest = Math.max(0, ...applied);
   const known = Math.max(...MIGRATIONS.map((m) => m.version));
-  if (newest > known) {
-    throw new Error(
-      `store-sqlite: the database records schema version ${newest}, newer than this build supports (${known}); refusing to open it. Upgrade Cognate or restore a backup made by this version.`,
-    );
-  }
+  // Read the applied versions under the write lock that `immediate` takes, so a concurrent opener cannot
+  // record a version between this check and the migrations below.
   const run = db.transaction((): void => {
+    const applied = new Set((db.query("SELECT version FROM schema_versions").all() as { version: number }[]).map((r) => r.version));
+    // Refuse before applying anything: a store written by a newer build may hold rows this build
+    // would otherwise silently ignore. Throwing rolls the transaction back, so nothing is written.
+    const newest = Math.max(0, ...applied);
+    if (newest > known) {
+      throw new Error(
+        `store-sqlite: the database records schema version ${newest}, newer than this build supports (${known}); refusing to open it. Upgrade Cognate or restore a backup made by this version.`,
+      );
+    }
     for (const migration of MIGRATIONS) {
       if (applied.has(migration.version)) continue;
       db.exec(migration.sql);
