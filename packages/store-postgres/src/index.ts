@@ -193,7 +193,12 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
   // idempotency results); render it as the 'null' jsonb literal instead.
   const jsonb = (value: Json): Fragment => (value === null ? sql`'null'::jsonb` : sql`${sql.json(value)}::jsonb`);
 
-  await migrate(sql, schema, t.schemaVersions);
+  try {
+    await migrate(sql, schema, t.schemaVersions);
+  } catch (error) {
+    await sql.end({ timeout: 5 });
+    throw error;
+  }
 
   let closed = false;
   const listeners = new Set<(events: readonly StoredEvent[]) => void>();
@@ -911,6 +916,15 @@ async function migrate(sql: postgres.Sql, schema: string, schemaVersions: postgr
     await tx.unsafe(`SET LOCAL search_path = ${schema}`);
     await tx`CREATE TABLE IF NOT EXISTS ${schemaVersions} (version integer PRIMARY KEY, applied_at text NOT NULL)`;
     const applied = new Set(((await tx`SELECT version FROM ${schemaVersions}`) as Row[]).map((r) => num(r.version)));
+    // Refuse before applying anything: a schema written by a newer build may hold rows this build
+    // would otherwise silently ignore. Throwing rolls back the transaction, so nothing is written.
+    const known = Math.max(...migrations().map((m) => m.version));
+    const newest = Math.max(0, ...applied);
+    if (newest > known) {
+      throw new PostgresStoreError(
+        `store-postgres: the schema records schema version ${newest}, newer than this build supports (${known}); refusing to open it. Upgrade Cognate or restore a backup made by this version.`,
+      );
+    }
     for (const migration of migrations()) {
       if (applied.has(migration.version)) continue;
       for (const statement of migration.statements) await tx.unsafe(statement);
