@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-postgres-v0.7.0...cognate-store-postgres-v0.7.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **store:** refuse a store whose schema version is newer than this build ([#67](https://github.com/GodSpeedAI/Cognate/issues/67)) ([30052c7](https://github.com/GodSpeedAI/Cognate/commit/30052c78b7f9fa384fede32c678862f183263737))
+
 ## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-postgres-v0.6.4...cognate-store-postgres-v0.7.0) (2026-10-23)
 
 

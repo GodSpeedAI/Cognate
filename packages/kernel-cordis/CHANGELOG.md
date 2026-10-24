@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-kernel-cordis-v0.7.0...cognate-kernel-cordis-v0.7.1) (2026-10-24)
+
+
+### Miscellaneous Chores
+
+* **cognate-kernel-cordis:** Synchronize cognate SDK packages versions
+
 ## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-kernel-cordis-v0.6.4...cognate-kernel-cordis-v0.7.0) (2026-10-23)
 
 

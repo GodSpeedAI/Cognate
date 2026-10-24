@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-proto-v0.7.0...cognate-proto-v0.7.1) (2026-10-24)
+
+
+### Miscellaneous Chores
+
+* **cognate-proto:** Synchronize cognate SDK packages versions
+
 ## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-proto-v0.6.4...cognate-proto-v0.7.0) (2026-10-23)
 
 
