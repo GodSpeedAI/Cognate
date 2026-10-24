@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-execution-wsl",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "WSL distribution as an execution world: filesystem and process ports over `wsl.exe -e sh -s`. Same contracts as every other provider.",
   "type": "module",
   "license": "Apache-2.0",

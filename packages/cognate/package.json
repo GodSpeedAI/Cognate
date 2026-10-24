@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Cognate SDK umbrella: one import for the reference runtime, the headless client, and their core contracts.",
   "type": "module",
   "license": "Apache-2.0",
