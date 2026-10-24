@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-api-v0.6.4...cognate-runtime-api-v0.7.0) (2026-10-23)
+
+
+### Features
+
+* **runtime:** carry a governed call's authority claims to the authority ([#65](https://github.com/GodSpeedAI/Cognate/issues/65)) ([c254d2b](https://github.com/GodSpeedAI/Cognate/commit/c254d2b7f961f3808237f9fe4ddd40c32cdf62ee))
+
 ## [0.6.4](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-api-v0.6.3...cognate-runtime-api-v0.6.4) (2026-10-23)
 
 

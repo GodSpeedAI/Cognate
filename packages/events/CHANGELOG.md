@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-events-v0.6.4...cognate-events-v0.7.0) (2026-10-23)
+
+
+### Miscellaneous Chores
+
+* **cognate-events:** Synchronize cognate SDK packages versions
+
 ## [0.6.4](https://github.com/GodSpeedAI/Cognate/compare/cognate-events-v0.6.3...cognate-events-v0.6.4) (2026-10-23)
 
 
