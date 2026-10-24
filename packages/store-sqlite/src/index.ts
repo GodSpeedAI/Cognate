@@ -136,7 +136,12 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
   // Erased payload bytes are overwritten in place rather than merely unlinked, so `erasePayload`
   // (spec §32) leaves nothing recoverable from freed pages once the WAL is checkpointed.
   db.exec("PRAGMA secure_delete = ON");
-  migrate(db);
+  try {
+    migrate(db);
+  } catch (error) {
+    db.close();
+    throw error;
+  }
 
   let closed = false;
   const listeners = new Set<(events: readonly StoredEvent[]) => void>();
