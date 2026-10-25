@@ -13,7 +13,22 @@ import { openPostgresStore } from "@godspeedai/cognate-store-postgres";
 const url = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres";
 
 const dir = mkdtempSync(join(tmpdir(), "cognate-pg-mp-"));
-afterAll(() => rmSync(dir, { recursive: true, force: true }));
+// Every schema this file creates is dropped at the end, including by tests that fail before their own
+// cleanup line runs.
+const createdSchemas: string[] = [];
+afterAll(async () => {
+  const dropper = postgres(url, { max: 1, onnotice: () => {} });
+  const failed: string[] = [];
+  try {
+    for (const schema of createdSchemas) {
+      await dropper.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`).catch(() => failed.push(schema));
+    }
+    if (failed.length > 0) throw new Error(`could not drop test schemas: ${failed.join(", ")}`);
+  } finally {
+    await dropper.end({ timeout: 1 });
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 // One worker program, one process per invocation: opens its own store instance on the shared schema,
 // performs the operation named in argv[2], prints one JSON line, exits. All modes are intentionally
@@ -96,7 +111,9 @@ try {
 
 let schemaCounter = 0;
 function freshSchema(): string {
-  return `cognate_mp_${Date.now().toString(36)}_${schemaCounter++}`;
+  const schema = `cognate_mp_${Date.now().toString(36)}_${schemaCounter++}`;
+  createdSchemas.push(schema);
+  return schema;
 }
 
 interface Worker {
