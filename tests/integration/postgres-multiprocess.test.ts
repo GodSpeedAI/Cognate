@@ -18,8 +18,12 @@ const dir = mkdtempSync(join(tmpdir(), "cognate-pg-mp-"));
 const createdSchemas: string[] = [];
 afterAll(async () => {
   const dropper = postgres(url, { max: 1, onnotice: () => {} });
+  const failed: string[] = [];
   try {
-    for (const schema of createdSchemas) await dropper.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+    for (const schema of createdSchemas) {
+      await dropper.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`).catch(() => failed.push(schema));
+    }
+    if (failed.length > 0) throw new Error(`could not drop test schemas: ${failed.join(", ")}`);
   } finally {
     await dropper.end({ timeout: 1 });
     rmSync(dir, { recursive: true, force: true });
