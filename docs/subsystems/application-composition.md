@@ -126,7 +126,7 @@ both servers and closes the profile app.
 
 | Symptom | Cause | Recovery |
 |---|---|---|
-| `cognate create: --source is required` | packages are not published | pass a local checkout (DEBT-016) |
+| `cognate create: --source is required` | CLI older than 0.8.0 (registry mode landed in 0.8.0) | upgrade, or pass a local checkout (`--source`, DEBT-016) |
 | `cannot find source package "X" under --source` | the checkout does not contain a package the closure needs | check `--source` points at a full Cognate checkout |
 | `bun pm pack failed in <dir>` | the package manifest is unreadable or the directory is not a package | run it manually to see the error |
 | `unsupported: sona (SONA was rejected…)` | a `--with` name with a known reason | informational; SONA stays rejected (ADR-0005) |

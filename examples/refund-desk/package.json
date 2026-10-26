@@ -9,11 +9,11 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@godspeedai/cognate-client": "0.7.1",
-    "@godspeedai/cognate-domainforge": "0.7.1",
-    "@godspeedai/cognate-kernel-api": "0.7.1",
-    "@godspeedai/cognate-runtime-api": "0.7.1",
-    "@godspeedai/cognate-runtime-bun": "0.7.1"
+    "@godspeedai/cognate-client": "0.8.0",
+    "@godspeedai/cognate-domainforge": "0.8.0",
+    "@godspeedai/cognate-kernel-api": "0.8.0",
+    "@godspeedai/cognate-runtime-api": "0.8.0",
+    "@godspeedai/cognate-runtime-bun": "0.8.0"
   },
   "devDependencies": {
     "@types/bun": "1.3.4",

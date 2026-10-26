@@ -116,15 +116,14 @@ import { createRuntime, createClient } from "@godspeedai/cognate";
 
 [Getting started](docs/getting-started.md) walks through a first app by hand, and [run your first agent](docs/tutorials/run-your-first-agent.md) is a guided tutorial.
 
-To scaffold a reference profile, run the CLI in this repository: it creates from the npm registry with no source checkout. The published `0.7.1` CLI still vendors packages from a checkout, so on npm you point `--source` at one until the next release (tracked as DEBT-016 in the [debt register](.agents/DEBT.md)):
+To scaffold a reference profile, run the CLI. It creates from the npm registry, pins the `@godspeedai/cognate-*` packages at its own version, and needs no source checkout:
 
 ```bash
-git clone https://github.com/GodSpeedAI/Cognate.git
-bun packages/cli/src/bin.ts create my-app --profile copilot
+bunx @godspeedai/cognate-cli create my-app --profile copilot
 cd my-app && bun install && bun dev
 ```
 
-The published `0.7.1` CLI takes the same arguments with `--source ./Cognate` added.
+To try unreleased local changes, add `--source <checkout>` to vendor the packages from a Cognate checkout instead (tracked as DEBT-016 in the [debt register](.agents/DEBT.md)).
 
 `bun dev` loads the `domain/*.sea` projection through DomainForge, restores durable state from `.cognate/app.sqlite`, mounts the profile's components, and serves the Connect runtime service, AG-UI (copilot profile), and the Astryx reference UI. Use `--profile harness` for an autonomous agent harness. The scaffold flow is proven end to end by `tests/integration/cli-create.test.ts`.
 
@@ -309,7 +308,7 @@ Each runs independently and verifies its own outcome (`tests/examples.test.ts`).
 
 Cognate is v0: published, tested, and in active use by downstream applications — with APIs that will still change before 1.0. The honest short list:
 
-- **The SDK installs from npm and works there.** The published `0.7.1` CLI scaffold needs a source checkout (`--source`) until the next release; the CLI in this repository creates from the registry. Known gaps are tracked per item in the [debt register](.agents/DEBT.md), and package READMEs state their own limits.
+- **The SDK installs from npm and works there.** `cognate create` generates an app from the registry with no checkout (verified from a clean directory on 0.8.0, including the generated app's own test). Known gaps are tracked per item in the [debt register](.agents/DEBT.md), and package READMEs state their own limits.
 - **Connect supports unary and server-streaming only** ([ADR-0003](docs/decisions/ADR-0003-wire-connect-protobuf.md)).
 - **Runs execute one at a time by default.** `maxConcurrentRuns` (1–64) is process-local; there is no distributed run ownership ([runtime concurrency](docs/runtime-concurrency.md)).
 - **The RVF Bun binding is experimental**, per its own package documentation; cognition is exposed through the API, not yet the CLI.

@@ -15,7 +15,7 @@ cd cognate
 bun install
 ```
 
-There is no npm-published `@godspeedai/*` package yet. Every workspace package is private with `workspace:*` internal dependencies, so `bunx cognate create my-app` from a clean machine does not work — see [DEBT-016](../.agents/DEBT.md). `cognate create --source <checkout>` (below) works from a local checkout by vendoring packed packages; the rest of this page uses that path.
+Every `@godspeedai/cognate-*` package is published on npm, and `cognate create` generates an app from the registry with no checkout. To work on Cognate itself, `--source <checkout>` vendors the packages from a local checkout instead ([DEBT-016](../.agents/DEBT.md)); the create section below shows both paths.
 
 ## Verify the substrate
 
@@ -43,11 +43,11 @@ Tests under `tests/`, `packages/*/test`, and `compatibility/phase0/*` are the so
 [`@godspeedai/cognate-cli`](../packages/cli/README.md) (`CG-CLI-001`, implemented) provides both commands:
 
 ```bash
-cognate create my-app --profile copilot|harness --source /path/to/cognate/checkout [--with a,b]
+cognate create my-app --profile copilot|harness [--source /path/to/cognate/checkout] [--with a,b]
 cd my-app && bun install && bun dev --port N
 ```
 
-`create` copies the profile's starter template, then vendors every `@godspeedai/*` package the profile needs from `--source` with `bun pm pack` into `.cognate/vendor/`, pinning each with a `file:` dependency and a matching `package.json` `overrides` entry — because the packages are not published yet ([DEBT-016](../.agents/DEBT.md)). `--with <a,b>` reports unsupported extras (`unsupported: <name> (<reason>)`) and never silently imports them.
+`create` copies the profile's starter template and pins every `@godspeedai/*` package the profile needs at the CLI's version from npm. With `--source <checkout>` it instead packs the packages out of that checkout and vendors them into `.cognate/vendor/`, which is how you try unreleased local changes. `--with <a,b>` reports unsupported extras (`unsupported: <name> (<reason>)`) and never silently imports them.
 
 `dev` (run from the generated app) loads `cognate.config.ts`, parses `domain/*.sea` through the DomainForge adapter (see [semantics.md](semantics.md)), starts the profile's app on `.cognate/app.sqlite` (state survives restart), and serves one `Bun.serve`: `GET /health`, the Connect `RuntimeService` at `/cognate.v1.RuntimeService/*` (dev-only `Bearer <tenant>:<user>` auth), `/agui` (copilot only), and `/` — an Astryx chat UI for copilot, a health JSON page for harness.
 

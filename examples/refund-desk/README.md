@@ -5,7 +5,7 @@ Refunds **over $50** suspend on a durable human-approval continuation until a pe
 Every step is written to Cognate's durable event log. Refunds survive a restart.
 
 This is the app the landing page's first request describes: a small app that a coding agent can build
-with Cognate and show working. It is standalone. It consumes the published `@godspeedai/cognate-*@0.7.1`
+with Cognate and show working. It is standalone. It consumes the published `@godspeedai/cognate-*@0.8.0`
 npm packages, not a Cognate source checkout.
 
 ## Prerequisites

@@ -15,9 +15,9 @@ cd /path/to/cognate
 bun cognate/packages/cli/src/bin.ts create my-app --profile copilot --source .
 ```
 
-`--source .` is required and is not a workaround: the CLI packs the `@godspeedai/*` packages your
-profile needs out of the checkout and vendors them into `my-app/.cognate/vendor/`, pinning each
-as a `file:` dependency with a matching `overrides` entry.
+`--source .` is optional: omit it to pin the published `@godspeedai/*` packages from npm, or keep it
+to pack the packages out of this checkout into `my-app/.cognate/vendor/`, pinning each as a `file:`
+dependency with a matching `overrides` entry. The checkout path is how you try unreleased local changes.
 
 Expected output ends with something like:
 
@@ -151,8 +151,8 @@ Three edits, in the order that pays off:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `cognate create: --source is required` | you omitted `--source` | pass the Cognate checkout path |
-| `cannot find source package "…" under --source` | `--source` is not a full checkout | point it at the repository root |
+| `cognate create: --source is required` | CLI older than 0.8.0 | upgrade, or pass `--source` with the Cognate checkout path |
+| `cannot find source package "…" under --source` | `--source` is not a full checkout | drop `--source` (registry mode) or point it at the repository root |
 | the browser shows "not found" for `/` | you are on the harness profile | use `--profile copilot` |
 | `/health` reports 0 objects | `domain/` is empty or has no `.sea` files | add a file; the loader only reads `*.sea` |
 | `bun install` fails on a vendored package | a stale `.cognate/vendor` | delete `.cognate/vendor` and re-run `create` |

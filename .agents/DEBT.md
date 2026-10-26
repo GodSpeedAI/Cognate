@@ -139,6 +139,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Consequence:** The Quick Start still requires a Cognate checkout on disk for `create --source`. Everything else the exit criterion asked for exists: versioned packages, a release process, and an installable CLI.
 **Exit criterion:** `cognate create my-app` generates a working app resolving `@godspeedai/cognate-*` dependencies from the npm registry without `--source` (a registry-only mode for `create`), or an ADR records that vendoring remains the supported path; provenance stays accepted-as-N/A for the private repository per ADR-0012.
 **Progress (2026-10-21):** packed-tarball smoke outside the repo: create → install from npm → app test pass; `tests/integration/cli-create.test.ts` 18 pass; README Quick Start uses `bunx @godspeedai/cognate-cli create`.
+**Progress (2026-10-26):** registry mode published in 0.8.0. Clean-room check outside the repo: `bunx @godspeedai/cognate-cli@0.8.0 create my-app --profile copilot` → `created my-app (cognate packages resolve from the npm registry)`, then `bun install` and the generated app's own test pass (1 pass). `--source` remains for unreleased local changes only.
 
 ## DEBT-017 — Bun 1.4.0 `toMatchObject` mutates the received object
 **Status:** Open (worked around in tests)
