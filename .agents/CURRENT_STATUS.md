@@ -1,37 +1,29 @@
 # Current status
 
-**Status revision:** 71
+**Status revision:** 72
 
-**Summary:** Main now carries three reconciled lines of work: the debt burndown (revision 70), the README reframe, and the standalone explainers.
+**Summary:** Main now carries four reconciled lines of work with every gate re-run on the merged tree: the debt burndown, the README reframe, the standalone explainers, and the landing page with the unique work it owned. Superseded material was dropped rather than merged: the landing branch's README, its pre-debt CLI and create test, its templates move, and its 0.5.0-era doc and skill edits. The repository is reduced to main as the only branch, with the other branches archived in a local bundle.
 
-The debt burndown closes eleven entries, makes the runtime loop event-driven, and makes
-registry-mode `create` the default in the repository's CLI: `cognate create` pins the
-`@godspeedai/cognate-*` packages from npm without a source checkout, and `templates/starter`
-stays at the repository root as the single copy, copied into the CLI tarball at pack time.
-The published `0.7.1` CLI still requires `--source`, and the README says so; that line flips
-after the next release.
+The debt burndown (revision 70) closes eleven entries, makes the runtime loop event-driven,
+and makes registry-mode `create` the default in the repository's CLI. `templates/starter`
+stays at the repository root as the single copy and is copied into the CLI tarball at pack
+time. The published `0.7.1` CLI still requires `--source`, and the README says so; that line
+flips after the next release.
 
 The root README is reframed around the public positioning — Cognate is an open-source
 semantic application SDK for building agent-native software — with a verified two-path
-quick start. The 1541-line front page became an orientation document: one definition, why
-the semantic center matters, what you can build, the Refund Desk working example, one
-architecture diagram with the six-plane table, the one-operation-many-representations idea,
-a mechanism map linking each idea to the doc that owns it, Workbench and Horizon with honest
-scope, the 15-example tree, and an explicit what-works-today list. Deep material lives where
-it was always owned: in `docs/`.
+quick start. The standalone explainers are under `docs/explainers/`, and the deeper
+explanation pages (`design-principles`, `under-the-hood`, `what-you-can-build`,
+`comparisons`) now exist where the README links to them, so no link is broken.
 
-The standalone explainers are new under `docs/explainers/`: an index, a run execution and
-replay stepper, a planes and invariants explorer, and a concurrency and leases model. The
-docs index, the README documentation map, and the architecture, verification, durable state,
-runtime, and run execution pages link to them. The store wording now names SQLite and
-PostgreSQL (pg0) where the docs previously said SQLite only.
+The landing page is the repository's own site: the semantic application SDK framing, the
+one-application-many-doors beat, the build-time npm version chip, and the Expert Teams
+evidence re-pinned to Workbench main. Its gates pass on the merged tree.
 
-Gates observed on the merged branches: documentation links and map (5/5), README examples
-(16/16), package READMEs (45/45), proof routing (5/5), release publication (9/9), and the
-substrate check (81 requirements, 0 blocked). The merged tree is re-verified in the next
-snapshot. Details are in
-[`.agents/evidence/2026-10-26-readme-reframe.md`](.agents/evidence/2026-10-26-readme-reframe.md)
-and [`.agents/reports/debt-and-open-questions-2026-10-21.md`](.agents/reports/debt-and-open-questions-2026-10-21.md).
+Gates observed on merged main: 81/81 substrate gates, 81 requirements implemented with none
+blocked, docs 5/5, examples 16/16, package READMEs 45/45, landing 49 unit and 36 e2e tests,
+source verification 19 excerpts and 16 edges, shots PASS at every width, and the Refund Desk
+example 7/7 at 0.7.1.
 
-Next: merge the landing branch, re-run the full gate set on the merged tree, then release
-0.8.x and flip the README `--source` wording. Ledger freeze remains an operator decision.
+Next: release 0.8.x from main, then flip the README `--source` wording. Ledger freeze
+remains an operator decision.
