@@ -87,3 +87,14 @@ dependencies; gamification; autonomous method or criterion mutation.
 
 Every requirement has a deterministic test or an explicit, recorded unmet-gate entry in
 `.agents/DEBT.md` / the plan's deviations; verification results are reported exactly.
+
+## Decision (2026-10-21): deferred from 1.0
+
+Dropped from the 1.0 proof scope (DEBT-024), with no journey test claimed: a UI path that opens a
+Case from a human purpose (Cases open through `case.open`); `criterion.revise` as a capability/UI
+(the pure `reviseCriterion` remains); parallel candidate search and ownership-based subagent
+concurrency; payment/budget estimates; recovery to a prior settled world from an old `worldHash`;
+plan-deviation representation; method-recommendation controls other than Accept; Preflight Revise.
+Per-step narrowing of the general tool catalog to the Case neighbourhood is also deferred: Cases
+do not yet model `tool.*` affordances, so narrowing hid `edit` and broke `J-COG-cleanup`. Each
+returns only with its own journey test.

@@ -15,6 +15,8 @@ export interface ExecutionConformanceHarness {
     readonly fail: (marker: string, code: number) => ExecSpec;
     readonly slow: () => ExecSpec;
   };
+  /** The provider's `version` is documented as whole-second `mtime:size` (e.g. SSH over SFTP attrs). */
+  readonly coarseVersion?: boolean;
   cleanup?(): Promise<void>;
 }
 
@@ -77,6 +79,20 @@ export function executionWorldConformance(name: string, make: () => Promise<Exec
       const first = await provider.fileSystem.version(path);
       expect(first).toBeString();
       await provider.fileSystem.writeText(path, "two-longer");
+      expect(await provider.fileSystem.version(path)).not.toBe(first);
+    });
+
+    test("a same-size rewrite within the same second still changes version", async () => {
+      const harness = await fresh();
+      if (harness.coarseVersion) return; // documented limit: seconds-only versions cannot see this rewrite
+      const { provider } = harness;
+      const path = nextPath(harness);
+      await provider.fileSystem.writeText(path, "aaaa");
+      const first = await provider.fileSystem.version(path);
+      expect(first).toBeString();
+      await provider.fileSystem.writeText(path, "bbbb");
+      expect(await provider.fileSystem.readText(path)).toBe("bbbb");
+      expect((await provider.fileSystem.stat(path))?.size).toBe(4);
       expect(await provider.fileSystem.version(path)).not.toBe(first);
     });
 

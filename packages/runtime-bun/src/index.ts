@@ -64,7 +64,11 @@ export interface RuntimeOptions {
    * intents. Receives the event before commit: `eventId` is pre-assigned; `recordedAt` is provisional (= occurredAt).
    */
   readonly outboxFor?: (event: PendingEvent) => readonly OutboxIntent[];
-  /** Background work loop interval (run execution, resume delivery, expiry). Default 10 ms. */
+  /**
+   * Background loop safety-net interval (ms) for run execution, resume delivery, outbox retries and
+   * continuation expiry. Store commits wake the loop immediately; this interval only covers missed
+   * notifications and future-dated retries. Default 250 ms.
+   */
   readonly tickMs?: number;
   /** Explicit single-process execution admission; defaults to serial compatibility. */
   readonly execution?: {

@@ -26,7 +26,9 @@ Identity is pinned to source revision: a rename or namespace change mints a **ne
 
 ### Mapping table (spec §19)
 
-The adapter supports both a legacy one-source projection and an import-aware composed organizational world. The canonical composed-world loader pins references to DomainForge's verified root `world_ref`; see [the composed-world guide](how-to/load-a-composed-semantic-world.md).\n\nThe following rows describe the mapping. DEBT-003 closed when the pin moved to `@godspeedai/domainforge` 0.18.1, which exposes every SEA-declared collection; the golden gate passes against the published binding. The pre-existing CG-SEM-001 baseline remains implemented in the ledger.
+The adapter supports both a legacy one-source projection and an import-aware composed organizational world. The canonical composed-world loader pins references to DomainForge's verified root `world_ref`; see [the composed-world guide](how-to/load-a-composed-semantic-world.md).
+
+The following rows describe the mapping. DEBT-003 closed when the pin moved to `@godspeedai/domainforge` 0.18.1, which exposes every SEA-declared collection; the golden gate passes against the published binding. The pre-existing CG-SEM-001 baseline remains implemented in the ledger.
 
 | Kind | Supported | View |
 |---|---|---|
@@ -45,6 +47,7 @@ The full row data (meaning, cardinality, provenance, reason) is in `mappingTable
 - **[DEBT-001](../.agents/DEBT.md) — Flow ids are random per parse.** `Graph.parse` assigns a fresh UUID to each Flow on every parse; only Entity/Resource ids are stable. The adapter derives Flow identity from `(resource, from, to)` plus the source digest instead of using the native id.
 - **[DEBT-002](../.agents/DEBT.md) — DomainForge errors share one code.** Missing-reference and syntax errors both throw `Error` with `code: "GenericFailure"`; the adapter currently classifies failures by message text, which is fragile across DomainForge releases.
 - **[DEBT-003](../.agents/DEBT.md) — Kinds without a Graph accessor (closed).** DomainForge 0.18.1 exposes every SEA-declared collection to TypeScript, and the adapter maps them, including Policy as a read-only constraint. `External` is not a SEA declaration and remains unmapped.
+- **SemanticPack ingestion is not supported in 1.0.** The adapter reads `.sea` sources only; no SemanticPack compatibility or behavior proof exists (spec §37), so no release claims it. Add it when an application needs it, with its own fixture.
 
 ## Status
 

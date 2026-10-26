@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { ArtifactService } from "@godspeedai/cognate-artifacts";
 import { ContinuationService } from "@godspeedai/cognate-continuations";
-import { type DurableStore, type Json, NotFoundError, OutboxDispatcher, RunOwnershipHeldError } from "@godspeedai/cognate-events";
+import { type DrainReport, type DurableStore, type Json, NotFoundError, OutboxDispatcher, RunOwnershipHeldError } from "@godspeedai/cognate-events";
 import { createCordisKernel } from "@godspeedai/cognate-kernel-cordis";
 import type { Principal } from "@godspeedai/cognate-kernel-api";
 import type { RunView } from "@godspeedai/cognate-runtime-api";
@@ -152,6 +152,9 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   const recoveryEpoch = randomUUID();
   let recoverySequence = 0;
   const recoveryReconciliationIntervalMs = 250;
+  // Safety-net interval: wake-ups normally come from commit notifications, so this only bounds latency
+  // for missed notifications and for outbox retries whose availableAt lies in the future.
+  const safetyNetMs = options.tickMs ?? 250;
   let nextRecoveryReconciliationAt = 0;
   const recoveryOutboxByRun = new Map<string, string>();
   const deliveries = new Set<Promise<void>>();
@@ -259,7 +262,11 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     // durable retry schedule; rescanning the complete pending topic every timer tick is needless.
     if (pending.size === 0) return;
     const now = performance.now();
-    if (now < nextRecoveryReconciliationAt) return;
+    if (now < nextRecoveryReconciliationAt) {
+      // Wake at the throttle deadline rather than leaving a candidate queued inside the window.
+      reconcileTimer ??= setTimeout(() => { reconcileTimer = undefined; kick(); }, nextRecoveryReconciliationAt - now);
+      return;
+    }
     // Set the deadline before awaiting: a slow or failing store query must not hot-loop scans.
     nextRecoveryReconciliationAt = now + recoveryReconciliationIntervalMs;
     const pendingItems = await store.listOutbox({ topic: RUN_EXECUTE_TOPIC, status: "pending" });
@@ -290,22 +297,72 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
     }
   }
 
+  // Continuation expiry: the store has no next-expiry query, so the loop cannot arm a per-record
+  // timer from data it already reads. The scan runs when woken by a commit, and otherwise at most
+  // once per safety-net interval.
+  let expiryDirty = true;
+  let nextExpiryScanAt = 0;
+  // Resume dispatch runs on continuation commits, at startup, and at the safety-net cadence.
+  let resumeDirty = true;
+  let nextResumeScanAt = 0;
+  let reconcileTimer: ReturnType<typeof setTimeout> | undefined;
+  // A drain that settled work frees admission and may make other items claimable. Those items can
+  // have been refused by this drain while the slot was held, and no later commit may arrive to wake
+  // the loop, so re-drain once. A drain that settled nothing does not re-kick, so this cannot spin.
+  const trackDrain = (job: Promise<DrainReport>): void => {
+    trackDelivery(job.then((report) => {
+      for (const retry of report.retried) armRetryWake(retry.retryAt);
+      // A drain that settled anything may have held the shared admission permit that refused the
+      // other topic. Re-kick: the run drain then runs alone, since resume drains are gated, and a
+      // backoff item is not claimable before its retry time, so this cannot spin.
+      if (report.delivered.length + report.retried.length + report.poisoned.length > 0) kick();
+    }, () => {}));
+  };
+  // Future-dated outbox retries (backoff) do not produce commits. One timer, armed for the earliest
+  // known retry time from drain reports or pending-item listings, wakes the loop exactly when due.
+  let retryWake: ReturnType<typeof setTimeout> | undefined;
+  let retryWakeAt = Infinity;
+  const armRetryWake = (at: number): void => {
+    if (closed || at >= retryWakeAt) return;
+    if (retryWake) clearTimeout(retryWake);
+    retryWakeAt = at;
+    retryWake = setTimeout(() => {
+      retryWake = undefined;
+      retryWakeAt = Infinity;
+      kick();
+    }, Math.max(0, at - Date.now()) + 1);
+  };
   let resumeFirst = false;
   async function tick(): Promise<void> {
-    for (const record of await continuations.expireDue()) pending.add(record.runId);
+    const scanNow = performance.now();
+    if (expiryDirty || scanNow >= nextExpiryScanAt) {
+      expiryDirty = false;
+      nextExpiryScanAt = scanNow + safetyNetMs;
+      for (const record of await continuations.expireDue()) pending.add(record.runId);
+    }
     await persistRecoveryIntents();
+    // Resume delivery is driven by continuation commits and the safety-net cadence, not every pass.
+    // An empty resume drain still holds the shared admission permit while its claim is in flight,
+    // so running it on every wake would refuse the run drain with no later wake to retry it.
+    const drainResumes = resumeDirty || scanNow >= nextResumeScanAt;
+    if (drainResumes) {
+      resumeDirty = false;
+      nextResumeScanAt = scanNow + safetyNetMs;
+    }
     // Dispatchers reserve a bounded set of slots across overlapping drains. A new runnable
     // arrival can fill a free slot while an earlier long-running delivery is still executing.
     // Rotate priority: even an empty topic briefly reserves capacity while its claim is
     // in flight. A fixed first topic could otherwise starve the other at capacity one.
-    if (resumeFirst) {
-      trackDelivery(continuations.dispatchResumes());
-      trackDelivery(runDispatcher.drain());
+    if (resumeFirst && drainResumes) {
+      trackDrain(continuations.dispatchResumes());
+      trackDrain(runDispatcher.drain());
     } else {
-      trackDelivery(runDispatcher.drain());
-      trackDelivery(continuations.dispatchResumes());
+      trackDrain(runDispatcher.drain());
+      if (drainResumes) trackDrain(continuations.dispatchResumes());
     }
-    resumeFirst = !resumeFirst;
+    // Rotate only on passes that drained both topics. Toggling on run-only passes can phase-lock
+    // the order so resumes always start second and lose the shared permit at capacity one.
+    if (drainResumes) resumeFirst = !resumeFirst;
   }
 
   let ticking: Promise<void> | null = null;
@@ -459,7 +516,14 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
 
   await resumeErasureJobs();
 
-  const timer = setInterval(kick, options.tickMs ?? 10);
+  // Commit notifications wake the loop directly (local commits, and PostgreSQL's LISTEN drain for other
+  // processes). The interval is only a safety net for missed notifications and outbox retry backoff.
+  const unsubscribeCommits = store.onCommitted((events) => {
+    expiryDirty = true;
+    if (events.some((event) => event.eventType.startsWith("continuation."))) resumeDirty = true;
+    kick();
+  });
+  const timer = setInterval(kick, safetyNetMs);
   kick();
 
   const names = [...(options.projections ?? []).map((p) => p.projection.name), ...(cognitionRunner ? [COGNITION_PROJECTION.name] : [])];
@@ -546,7 +610,10 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
       if (closed) return;
       closed = true;
       shutdown.abort();
+      unsubscribeCommits();
       clearInterval(timer);
+      if (reconcileTimer) clearTimeout(reconcileTimer);
+      if (retryWake) clearTimeout(retryWake);
       if (approvalTimer) clearInterval(approvalTimer);
       await ticking;
       await Promise.allSettled([...deliveries]);

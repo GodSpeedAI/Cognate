@@ -110,8 +110,12 @@ export function storageComponent(store: DurableStore): Component {
   };
 }
 
-/** Publishes `subagent.start`: starts a run as the system caller with a durable idempotency key. */
-function subagentStartComponent(runtime: Runtime): Component {
+/**
+ * Publishes `subagent.start`: starts a run as the system caller with a durable idempotency key. `createHarness` mounts
+ * it; a hand-composed `createRuntime` app mounts it too (`runtime.kernel.mount(subagentStartComponent(runtime))`) so
+ * `spawnSubagent` can start children.
+ */
+export function subagentStartComponent(runtime: Runtime): Component {
   return {
     id: "subagent:start",
     provides: [{ id: "subagent.start", version: "1.0.0" }],
@@ -197,6 +201,67 @@ function sessionInputOf(input: Json): string | undefined {
 }
 
 /**
+ * Settle the `run_completion` continuations that `spawnSubagent` opens: when a child run reaches a terminal state, the
+ * parent waiting on it resumes with the child's output. Call it once on a runtime composed with `createRuntime`
+ * (`createHarness` calls it for you); without it, `spawnSubagent` waits forever.
+ *
+ * It first settles children that already finished (a child can finish before its continuation is durably opened, or
+ * during a crash/restart window), then subscribes to commits. `caller` is the identity the runtime's runs use; the
+ * resolver acts as the system actor in that caller's tenant and defaults to LOCAL_OPERATOR.
+ *
+ * Returns a dispose function that stops further resolution. Continuations left open stay open and settle when a new
+ * watcher starts.
+ */
+export async function watchSubagentCompletions(runtime: Runtime, caller: Caller = LOCAL_OPERATOR): Promise<() => void> {
+  const system: Caller = { actor: { id: "system", kind: "system" }, tenant: caller.tenant };
+  let active = true;
+
+  async function resolveSubagentCompletion(runId: string): Promise<void> {
+    if (!active) return;
+    const view = await runtime.service.getRun(system, { runId }).catch(() => undefined);
+    if (!view || view.status === "running" || view.status === "waiting") return;
+    for (const continuation of await runtime.service.listContinuations(system, { status: "OPEN" })) {
+      if (continuation.type !== "subagent") continue;
+      const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
+      if (condition.kind !== "run_completion" || condition.runId !== runId) continue;
+      await runtime.service
+        .resolveContinuation(system, { continuationId: continuation.id, action: "resume", input: view.output, idempotencyKey: `subagent-complete:${continuation.id}` })
+        .catch(() => {});
+    }
+  }
+
+  // A child may finish before its parent's `run_completion` continuation is even durably opened (ordinary
+  // race) or before the watcher restarts and resubscribes (crash/restart window); check both directions.
+  async function checkAlreadyResolved(parentRunId: string): Promise<void> {
+    for (const continuation of await runtime.service.listContinuations(system, { runId: parentRunId, status: "OPEN" })) {
+      if (continuation.type !== "subagent") continue;
+      const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
+      if (condition.kind === "run_completion" && condition.runId) await resolveSubagentCompletion(condition.runId);
+    }
+  }
+
+  const unsubscribeCommits = runtime.store.onCommitted((events) => {
+    for (const event of events) {
+      if (!event.runId) continue;
+      if (event.eventType === "run.completed" || event.eventType === "run.failed" || event.eventType === "run.cancelled") void resolveSubagentCompletion(event.runId);
+      if (event.eventType === "run.waiting") void checkAlreadyResolved(event.runId);
+    }
+  });
+
+  // On start, a child may already have finished before its continuation was durably recorded (crash/restart window).
+  for (const continuation of await runtime.service.listContinuations(system, { status: "OPEN" })) {
+    if (continuation.type !== "subagent") continue;
+    const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
+    if (condition.kind === "run_completion" && condition.runId) await resolveSubagentCompletion(condition.runId);
+  }
+
+  return () => {
+    active = false;
+    unsubscribeCommits();
+  };
+}
+
+/**
  * Build a harness. Built-in components: the loop agent (model → tool calls → tools → model, tools discovered from the
  * kernel each step), `storage.kv` backed by durable records, `sandbox.exec`, the scheduler, and sessions.
  */
@@ -272,44 +337,7 @@ export async function createHarness(options: HarnessOptions): Promise<Harness> {
   await mount(sandboxComponent(sandboxLimits));
   await mount(subagentStartComponent(runtime));
 
-  // Resolve any subagent `run_completion` continuation whose child run `runId` is already terminal.
-  async function resolveSubagentCompletion(runId: string): Promise<void> {
-    const view = await runtime.service.getRun(HARNESS_SYSTEM, { runId }).catch(() => undefined);
-    if (!view || view.status === "running" || view.status === "waiting") return;
-    for (const continuation of await runtime.service.listContinuations(HARNESS_SYSTEM, { status: "OPEN" })) {
-      if (continuation.type !== "subagent") continue;
-      const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
-      if (condition.kind !== "run_completion" || condition.runId !== runId) continue;
-      await runtime.service
-        .resolveContinuation(HARNESS_SYSTEM, { continuationId: continuation.id, action: "resume", input: view.output, idempotencyKey: `subagent-complete:${continuation.id}` })
-        .catch(() => {});
-    }
-  }
-
-  // A child may finish before its parent's `run_completion` continuation is even durably opened (ordinary
-  // race) or before the harness restarts and resubscribes (crash/restart window); check both directions.
-  async function checkAlreadyResolved(parentRunId: string): Promise<void> {
-    for (const continuation of await runtime.service.listContinuations(HARNESS_SYSTEM, { runId: parentRunId, status: "OPEN" })) {
-      if (continuation.type !== "subagent") continue;
-      const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
-      if (condition.kind === "run_completion" && condition.runId) await resolveSubagentCompletion(condition.runId);
-    }
-  }
-
-  const unsubscribeCommits = runtime.store.onCommitted((events) => {
-    for (const event of events) {
-      if (!event.runId) continue;
-      if (event.eventType === "run.completed" || event.eventType === "run.failed" || event.eventType === "run.cancelled") void resolveSubagentCompletion(event.runId);
-      if (event.eventType === "run.waiting") void checkAlreadyResolved(event.runId);
-    }
-  });
-
-  // On start, a child may already have finished before its continuation was durably recorded (crash/restart window).
-  for (const continuation of await runtime.service.listContinuations(HARNESS_SYSTEM, { status: "OPEN" })) {
-    if (continuation.type !== "subagent") continue;
-    const condition = continuation.condition as { readonly kind?: string; readonly runId?: string };
-    if (condition.kind === "run_completion" && condition.runId) await resolveSubagentCompletion(condition.runId);
-  }
+  const stopWatchingSubagents = await watchSubagentCompletions(runtime, HARNESS_USER);
 
   async function send(sessionId: string, message: string): Promise<string> {
     const view = await runtime.service.startRun(HARNESS_USER, { agent: LOOP_AGENT, input: { message, sessionId }, idempotencyKey: crypto.randomUUID(), correlationId: `session:${sessionId}` });
@@ -346,14 +374,20 @@ export async function createHarness(options: HarnessOptions): Promise<Harness> {
 
   async function close(): Promise<void> {
     clearInterval(schedulerTimer);
-    unsubscribeCommits();
+    stopWatchingSubagents();
     await runtime.close();
   }
 
   return { runtime, storage: storageHandle, mount, send, session, schedule, close };
 }
 
-/** Durably start a subagent run from inside a run and wait for its output (resumes across restarts). */
+/**
+ * Durably start a subagent run from inside a run and wait for its output (resumes across restarts).
+ *
+ * The wait only settles if something resolves `run_completion` continuations: `createHarness` does that, and a
+ * hand-composed `createRuntime` app must call `watchSubagentCompletions(runtime, caller)` first. Without either,
+ * the parent waits forever.
+ */
 export async function spawnSubagent(ctx: RunContext, id: string, agent: string, input: Json): Promise<Json> {
   const { runId } = (await ctx.invoke("subagent.start", { agent, input, key: `${ctx.runId}:${id}` })) as { readonly runId: string };
   return ctx.waitFor(id, { type: "subagent", condition: { kind: "run_completion", runId }, payload: { agent } });
