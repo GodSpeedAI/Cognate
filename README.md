@@ -257,10 +257,10 @@ Strong defaults should reduce decisions, not become architectural traps. The fai
 
 ## What Cognate is not
 
-- **Not only an agent framework.** Cognate can run agents, but the agent is a component inside a larger semantic application — one that also has people, state, UI, policy, and external systems.
-- **Not a frontend agent SDK.** The UI is one surface over the application. React, Astryx, Slack, a mobile app, and a CLI can all be different surfaces; the application survives the surface.
-- **Not a memory framework.** Memory is derived. RuVector makes prior experience discoverable; SQLite preserves durable history; RealityTrace preserves evidence; DomainForge preserves meaning. Each has a different job.
-- **Not a workflow engine.** Workflow is one form of execution. A deterministic service, an agent, a UI component, a human decision, and a scheduled process all participate in the same capability and event model.
+- **An agent framework runs agents.** In Cognate the agent is a component inside a larger semantic application — one that also has people, state, UI, policy, and external systems.
+- **A frontend agent SDK renders the conversation.** In Cognate the UI is one surface over the application. React, Astryx, Slack, a mobile app, and a CLI can all be different surfaces; the application survives the surface.
+- **A memory framework makes experience searchable.** In Cognate memory is derived. RuVector makes prior experience discoverable; SQLite preserves durable history; RealityTrace preserves evidence; DomainForge preserves meaning. Each has a different job.
+- **A workflow engine runs long, interruptible procedures.** In Cognate workflow is one form of execution. A deterministic service, an agent, a UI component, a human decision, and a scheduled process all participate in the same capability and event model.
 
 ---
 
