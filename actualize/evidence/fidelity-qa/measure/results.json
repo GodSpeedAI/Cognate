@@ -1,0 +1,7555 @@
+{
+ "w320-light-home": {
+  "scheme": "light",
+  "visibleCount": 532,
+  "textNodes": 364,
+  "contrastChecked": 364,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 320,
+   "clientWidth": 320,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 380
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 103
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "17px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 84
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 73
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "15px",
+    "selector": "a.btn.btn-primary",
+    "count": 37
+   },
+   {
+    "size": "20px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "40px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "18px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 58
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 41
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a.btn.btn-primary",
+    "count": 37
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mono.tag-num",
+    "count": 26
+   },
+   {
+    "size": "13px",
+    "lineHeight": "15.6px",
+    "selector": "span.tag-label",
+    "count": 26
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "40px",
+    "lineHeight": "46px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 44
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 35
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "button.m-cart[data-part-id=C-01]",
+    "count": 26
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 272,
+    "clientWidth": 270,
+    "scrollHeight": 242,
+    "clientHeight": 240,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 272,
+    "need": 272,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 274,
+    "need": 274,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 274,
+    "need": 274,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 274,
+    "need": 274,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 274,
+    "need": 274,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 234,
+    "need": 234,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 274,
+    "need": 274,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 234,
+    "need": 234,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 320,
+  "dpr": 1
+ },
+ "w320-light-keyframe": {
+  "scheme": "light",
+  "visibleCount": 144,
+  "textNodes": 115,
+  "contrastChecked": 115,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 320,
+   "clientWidth": 320,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "main.qa",
+    "count": 111
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "p.eyebrow",
+    "count": 31
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "h1",
+    "count": 2
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "17px",
+    "selector": "p",
+    "count": 37
+   },
+   {
+    "size": "12px",
+    "selector": "p.eyebrow",
+    "count": 30
+   },
+   {
+    "size": "14px",
+    "selector": "p",
+    "count": 30
+   },
+   {
+    "size": "13px",
+    "selector": "span.agent-chip",
+    "count": 16
+   },
+   {
+    "size": "40px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "28px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p",
+    "count": 37
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p",
+    "count": 30
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "p.eyebrow",
+    "count": 18
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mono.tag-num",
+    "count": 12
+   },
+   {
+    "size": "13px",
+    "lineHeight": "15.6px",
+    "selector": "span.tag-label",
+    "count": 12
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.agent-chip",
+    "count": 4
+   },
+   {
+    "size": "40px",
+    "lineHeight": "46px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "button.m-cart[data-part-id=C-01]",
+    "count": 12
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "div.m-plate.m-plate-l1",
+    "count": 5
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.agent-chip",
+    "count": 3
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [],
+  "clipped": [
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 234,
+    "need": 234,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/keyframe/",
+  "width": 320,
+  "dpr": 1
+ },
+ "w375-light-home": {
+  "scheme": "light",
+  "visibleCount": 532,
+  "textNodes": 364,
+  "contrastChecked": 364,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 375,
+   "clientWidth": 375,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 380
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 103
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "17px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 84
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 73
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "15px",
+    "selector": "a.btn.btn-primary",
+    "count": 37
+   },
+   {
+    "size": "20px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "40px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "18px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 58
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 41
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a.btn.btn-primary",
+    "count": 37
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mono.tag-num",
+    "count": 26
+   },
+   {
+    "size": "13px",
+    "lineHeight": "15.6px",
+    "selector": "span.tag-label",
+    "count": 26
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "40px",
+    "lineHeight": "46px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 44
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 35
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "button.m-cart[data-part-id=C-01]",
+    "count": 26
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 327,
+    "clientWidth": 325,
+    "scrollHeight": 242,
+    "clientHeight": 240,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 327,
+    "need": 327,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 329,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 329,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 329,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 329,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 289,
+    "need": 289,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 329,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 289,
+    "need": 289,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 375,
+  "dpr": 1
+ },
+ "w375-light-keyframe": {
+  "scheme": "light",
+  "visibleCount": 144,
+  "textNodes": 115,
+  "contrastChecked": 115,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 375,
+   "clientWidth": 375,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "main.qa",
+    "count": 111
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "p.eyebrow",
+    "count": 31
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "h1",
+    "count": 2
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "17px",
+    "selector": "p",
+    "count": 37
+   },
+   {
+    "size": "12px",
+    "selector": "p.eyebrow",
+    "count": 30
+   },
+   {
+    "size": "14px",
+    "selector": "p",
+    "count": 30
+   },
+   {
+    "size": "13px",
+    "selector": "span.agent-chip",
+    "count": 16
+   },
+   {
+    "size": "40px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "28px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p",
+    "count": 37
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p",
+    "count": 30
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "p.eyebrow",
+    "count": 18
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mono.tag-num",
+    "count": 12
+   },
+   {
+    "size": "13px",
+    "lineHeight": "15.6px",
+    "selector": "span.tag-label",
+    "count": 12
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.agent-chip",
+    "count": 4
+   },
+   {
+    "size": "40px",
+    "lineHeight": "46px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "button.m-cart[data-part-id=C-01]",
+    "count": 12
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "div.m-plate.m-plate-l1",
+    "count": 5
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.agent-chip",
+    "count": 3
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [],
+  "clipped": [
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 289,
+    "need": 289,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/keyframe/",
+  "width": 375,
+  "dpr": 1
+ },
+ "w768-light-home": {
+  "scheme": "light",
+  "visibleCount": 579,
+  "textNodes": 380,
+  "contrastChecked": 380,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 768,
+   "clientWidth": 768,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   },
+   {
+    "prop": "background-color",
+    "value": "#dedede",
+    "selector": "span.mini-cart.mini-reused",
+    "nearest": "--part-history (dist 17)",
+    "count": 4
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 416
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 112
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 29
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 94
+   },
+   {
+    "size": "18px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 42
+   },
+   {
+    "size": "15px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 30
+   },
+   {
+    "size": "20px",
+    "selector": "p.sub",
+    "count": 11
+   },
+   {
+    "size": "28px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "24px",
+    "selector": "h3#inspector-title",
+    "count": 3
+   },
+   {
+    "size": "17px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "46.08px",
+    "selector": "h1#hero-title",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 55
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 36
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 24
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 24
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 8
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 6
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3#inspector-title",
+    "count": 3
+   },
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "46.08px",
+    "lineHeight": "52.992px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "20px",
+    "lineHeight": "32px",
+    "selector": "p.sub",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 71
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 68
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 24
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 6
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 720,
+    "clientWidth": 718,
+    "scrollHeight": 242,
+    "clientHeight": 240,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-01]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-01 Models"
+   },
+   {
+    "selector": "button.face[data-part-id=C-02]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-02 Tools"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-05]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-05 Approvals"
+   },
+   {
+    "selector": "button.face[data-part-id=C-06]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-06 Work"
+   },
+   {
+    "selector": "button.face[data-part-id=C-07]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-07 Evidence"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-09]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-09 Skills"
+   },
+   {
+    "selector": "button.face[data-part-id=C-10]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-10 History"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 24,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   },
+   {
+    "selector": "button.face[data-part-id=C-12]",
+    "scrollWidth": 78,
+    "clientWidth": 78,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-12 Interfaces"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 720,
+    "need": 720,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 722,
+    "need": 722,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 722,
+    "need": 722,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 722,
+    "need": 722,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 722,
+    "need": 722,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 558.8,
+    "need": 559,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 722,
+    "need": 722,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 670.3,
+    "need": 670,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 768,
+  "dpr": 1
+ },
+ "w768-light-keyframe": {
+  "scheme": "light",
+  "visibleCount": 195,
+  "textNodes": 135,
+  "contrastChecked": 135,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 768,
+   "clientWidth": 768,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "background-color",
+    "value": "#eaf0f5",
+    "selector": "button.face[data-part-id=C-01]",
+    "nearest": "--paper (dist 16)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-02]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-03]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#efdccb",
+    "selector": "button.face[data-part-id=C-05]",
+    "nearest": "--part-work (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-06]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-07]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-08]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-09]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-11]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-12]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "main.qa",
+    "count": 154
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "p.eyebrow",
+    "count": 37
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "h1",
+    "count": 3
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "18px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "selector": "p.eyebrow",
+    "count": 32
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 15
+   },
+   {
+    "size": "13px",
+    "selector": "span.ledger-text",
+    "count": 4
+   },
+   {
+    "size": "46.08px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "28px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "p.eyebrow",
+    "count": 15
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 4
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.ledger-text",
+    "count": 3
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 3
+   },
+   {
+    "size": "46.08px",
+    "lineHeight": "52.992px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.8px",
+    "selector": "span.mono",
+    "count": 1
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "div.plate.plate-l4",
+    "count": 26
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "button.face[data-part-id=C-01]",
+    "count": 20
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 12
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 3
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 670.3,
+    "need": 670,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/keyframe/",
+  "width": 768,
+  "dpr": 1
+ },
+ "w1024-light-home": {
+  "scheme": "light",
+  "visibleCount": 573,
+  "textNodes": 376,
+  "contrastChecked": 376,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1024,
+   "clientWidth": 1024,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   },
+   {
+    "prop": "background-color",
+    "value": "#dedede",
+    "selector": "span.mini-cart.mini-reused",
+    "nearest": "--part-history (dist 17)",
+    "count": 4
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 412
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 112
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 94
+   },
+   {
+    "size": "18px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 42
+   },
+   {
+    "size": "15px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 30
+   },
+   {
+    "size": "20px",
+    "selector": "p.sub",
+    "count": 11
+   },
+   {
+    "size": "34.816px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "61.44px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 55
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 36
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 24
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 24
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "34.816px",
+    "lineHeight": "40.0384px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 8
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 6
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "61.44px",
+    "lineHeight": "70.656px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "20px",
+    "lineHeight": "32px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 71
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 66
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 24
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 6
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 464,
+    "clientWidth": 462,
+    "scrollHeight": 362,
+    "clientHeight": 360,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 434,
+    "clientWidth": 1,
+    "scrollHeight": 40,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-01]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-01 Models"
+   },
+   {
+    "selector": "button.face[data-part-id=C-02]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-02 Tools"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 67,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 69,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-05]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-05 Approvals"
+   },
+   {
+    "selector": "button.face[data-part-id=C-06]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-06 Work"
+   },
+   {
+    "selector": "button.face[data-part-id=C-07]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-07 Evidence"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 66,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-09]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-09 Skills"
+   },
+   {
+    "selector": "button.face[data-part-id=C-10]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-10 History"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 24,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   },
+   {
+    "selector": "button.face[data-part-id=C-12]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-12 Interfaces"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 434,
+    "clientWidth": 1,
+    "scrollHeight": 40,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 67,
+    "clientWidth": 64,
+    "scrollHeight": 35,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 69,
+    "clientWidth": 64,
+    "scrollHeight": 35,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 66,
+    "clientWidth": 64,
+    "scrollHeight": 35,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 39,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 464,
+    "need": 464,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 978,
+    "need": 978,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 316.7,
+    "need": 317,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 316.7,
+    "need": 317,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 316.7,
+    "need": 317,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 466.5,
+    "need": 467,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 978,
+    "need": 978,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 559.6,
+    "need": 560,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 1024,
+  "dpr": 1
+ },
+ "w1024-light-keyframe": {
+  "scheme": "light",
+  "visibleCount": 195,
+  "textNodes": 135,
+  "contrastChecked": 135,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1024,
+   "clientWidth": 1024,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "background-color",
+    "value": "#eaf0f5",
+    "selector": "button.face[data-part-id=C-01]",
+    "nearest": "--paper (dist 16)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-02]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-03]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#efdccb",
+    "selector": "button.face[data-part-id=C-05]",
+    "nearest": "--part-work (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-06]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-07]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-08]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-09]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-11]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-12]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "main.qa",
+    "count": 154
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "p.eyebrow",
+    "count": 37
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "h1",
+    "count": 3
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "18px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "selector": "p.eyebrow",
+    "count": 32
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 15
+   },
+   {
+    "size": "13px",
+    "selector": "span.ledger-text",
+    "count": 4
+   },
+   {
+    "size": "61.44px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "34.816px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "p.eyebrow",
+    "count": 15
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 4
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.ledger-text",
+    "count": 3
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 3
+   },
+   {
+    "size": "61.44px",
+    "lineHeight": "70.656px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "34.816px",
+    "lineHeight": "40.0384px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.8px",
+    "selector": "span.mono",
+    "count": 1
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "div.plate.plate-l4",
+    "count": 25
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "button.face[data-part-id=C-01]",
+    "count": 20
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 12
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 3
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 434,
+    "clientWidth": 1,
+    "scrollHeight": 40,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 67,
+    "clientWidth": 64,
+    "scrollHeight": 35,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 69,
+    "clientWidth": 64,
+    "scrollHeight": 35,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 66,
+    "clientWidth": 64,
+    "scrollHeight": 35,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 64,
+    "clientWidth": 64,
+    "scrollHeight": 39,
+    "clientHeight": 35,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 559.6,
+    "need": 560,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/keyframe/",
+  "width": 1024,
+  "dpr": 1
+ },
+ "w1440-light-home": {
+  "scheme": "light",
+  "visibleCount": 591,
+  "textNodes": 384,
+  "contrastChecked": 384,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   },
+   {
+    "prop": "background-color",
+    "value": "#dedede",
+    "selector": "span.mini-cart.mini-reused",
+    "nearest": "--part-history (dist 17)",
+    "count": 4
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 430
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 112
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 102
+   },
+   {
+    "size": "18px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 42
+   },
+   {
+    "size": "15px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 30
+   },
+   {
+    "size": "20px",
+    "selector": "p.sub",
+    "count": 11
+   },
+   {
+    "size": "42px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 63
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 36
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 24
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 24
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "42px",
+    "lineHeight": "48.3px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 8
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 6
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "lineHeight": "87.4px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "20px",
+    "lineHeight": "32px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 71
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 66
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 24
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 6
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 576,
+    "clientWidth": 574,
+    "scrollHeight": 362,
+    "clientHeight": 360,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-01]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-01 Models"
+   },
+   {
+    "selector": "button.face[data-part-id=C-02]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-02 Tools"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-05]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-05 Approvals"
+   },
+   {
+    "selector": "button.face[data-part-id=C-06]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-06 Work"
+   },
+   {
+    "selector": "button.face[data-part-id=C-07]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-07 Evidence"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-09]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-09 Skills"
+   },
+   {
+    "selector": "button.face[data-part-id=C-10]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-10 History"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 24,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   },
+   {
+    "selector": "button.face[data-part-id=C-12]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-12 Interfaces"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 576,
+    "need": 576,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 1102,
+    "need": 1102,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 586.3,
+    "need": 586,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 1202,
+    "need": 1202,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 703.3,
+    "need": 703,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 1440,
+  "dpr": 1
+ },
+ "w1440-light-keyframe": {
+  "scheme": "light",
+  "visibleCount": 195,
+  "textNodes": 135,
+  "contrastChecked": 135,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "background-color",
+    "value": "#eaf0f5",
+    "selector": "button.face[data-part-id=C-01]",
+    "nearest": "--paper (dist 16)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-02]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-03]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#efdccb",
+    "selector": "button.face[data-part-id=C-05]",
+    "nearest": "--part-work (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-06]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-07]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-08]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-09]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-11]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-12]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "main.qa",
+    "count": 154
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "p.eyebrow",
+    "count": 37
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "h1",
+    "count": 3
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "18px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "selector": "p.eyebrow",
+    "count": 32
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 15
+   },
+   {
+    "size": "13px",
+    "selector": "span.ledger-text",
+    "count": 4
+   },
+   {
+    "size": "76px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "42px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "p.eyebrow",
+    "count": 15
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 4
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.ledger-text",
+    "count": 3
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 3
+   },
+   {
+    "size": "76px",
+    "lineHeight": "87.4px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "42px",
+    "lineHeight": "48.3px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.8px",
+    "selector": "span.mono",
+    "count": 1
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "div.plate.plate-l4",
+    "count": 25
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "button.face[data-part-id=C-01]",
+    "count": 20
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 12
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 3
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 703.3,
+    "need": 703,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/keyframe/",
+  "width": 1440,
+  "dpr": 1
+ },
+ "w1440-dark-home": {
+  "scheme": "dark",
+  "visibleCount": 591,
+  "textNodes": 384,
+  "contrastChecked": 384,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(19% .012 250)",
+   "--paper-2": "oklch(23% .014 250)",
+   "--ink": "oklch(93% .01 85)",
+   "--ink-2": "oklch(76% .012 85)",
+   "--rule": "oklch(36% .014 250)",
+   "--signal": "oklch(72% .15 50)",
+   "--human": "oklch(74% .1 165)",
+   "--part-model": "oklch(34% .035 250)",
+   "--part-act": "oklch(34% .035 200)",
+   "--part-control": "oklch(34% .035 305)",
+   "--part-work": "oklch(34% .035 90)",
+   "--part-history": "oklch(34% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(19% .012 250)",
+    "spec": "oklch(19% 0.012 250)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(23% .014 250)",
+    "spec": "oklch(23% 0.014 250)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(93% .01 85)",
+    "spec": "oklch(93% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(76% .012 85)",
+    "spec": "oklch(76% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(36% .014 250)",
+    "spec": "oklch(36% 0.014 250)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(72% .15 50)",
+    "spec": "oklch(72% 0.15 50)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(74% .1 165)",
+    "spec": "oklch(74% 0.10 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(34% .035 250)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(34% .035 200)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(34% .035 305)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(34% .035 90)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(34% .035 150)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--paper (dist 36)",
+    "count": 11
+   },
+   {
+    "prop": "background-color",
+    "value": "#dedede",
+    "selector": "span.mini-cart.mini-reused",
+    "nearest": "--ink (dist 16)",
+    "count": 4
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 430
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 112
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 102
+   },
+   {
+    "size": "18px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 42
+   },
+   {
+    "size": "15px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 30
+   },
+   {
+    "size": "20px",
+    "selector": "p.sub",
+    "count": 11
+   },
+   {
+    "size": "42px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 63
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 36
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 24
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 24
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "42px",
+    "lineHeight": "48.3px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 8
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 6
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "lineHeight": "87.4px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "20px",
+    "lineHeight": "32px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 71
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 66
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   }
+  ],
+  "contrastFails": [
+   {
+    "selector": "span.mini-cart.mini-reused",
+    "text": "Runtime",
+    "fg": "#b4b1a9",
+    "bg": "#dedede",
+    "ratio": 1.59,
+    "need": 4.5,
+    "size": "12px",
+    "weight": "400",
+    "count": 4
+   }
+  ],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 24
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 6
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 576,
+    "clientWidth": 574,
+    "scrollHeight": 362,
+    "clientHeight": 360,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-01]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-01 Models"
+   },
+   {
+    "selector": "button.face[data-part-id=C-02]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-02 Tools"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-05]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-05 Approvals"
+   },
+   {
+    "selector": "button.face[data-part-id=C-06]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-06 Work"
+   },
+   {
+    "selector": "button.face[data-part-id=C-07]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-07 Evidence"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-09]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-09 Skills"
+   },
+   {
+    "selector": "button.face[data-part-id=C-10]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-10 History"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 24,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   },
+   {
+    "selector": "button.face[data-part-id=C-12]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-12 Interfaces"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 576,
+    "need": 576,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 1102,
+    "need": 1102,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 586.3,
+    "need": 586,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 1202,
+    "need": 1202,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 703.3,
+    "need": 703,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 1440,
+  "dpr": 1
+ },
+ "w1440-dark-keyframe": {
+  "scheme": "dark",
+  "visibleCount": 195,
+  "textNodes": 135,
+  "contrastChecked": 135,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(19% .012 250)",
+   "--paper-2": "oklch(23% .014 250)",
+   "--ink": "oklch(93% .01 85)",
+   "--ink-2": "oklch(76% .012 85)",
+   "--rule": "oklch(36% .014 250)",
+   "--signal": "oklch(72% .15 50)",
+   "--human": "oklch(74% .1 165)",
+   "--part-model": "oklch(34% .035 250)",
+   "--part-act": "oklch(34% .035 200)",
+   "--part-control": "oklch(34% .035 305)",
+   "--part-work": "oklch(34% .035 90)",
+   "--part-history": "oklch(34% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(19% .012 250)",
+    "spec": "oklch(19% 0.012 250)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(23% .014 250)",
+    "spec": "oklch(23% 0.014 250)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(93% .01 85)",
+    "spec": "oklch(93% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(76% .012 85)",
+    "spec": "oklch(76% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(36% .014 250)",
+    "spec": "oklch(36% 0.014 250)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(72% .15 50)",
+    "spec": "oklch(72% 0.15 50)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(74% .1 165)",
+    "spec": "oklch(74% 0.10 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(34% .035 250)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(34% .035 200)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(34% .035 305)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(34% .035 90)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(34% .035 150)",
+    "L": 34,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "background-color",
+    "value": "#1a232c",
+    "selector": "button.face[data-part-id=C-01]",
+    "nearest": "--paper-2 (dist 10)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#162528",
+    "selector": "button.face[data-part-id=C-02]",
+    "nearest": "--paper-2 (dist 9)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#162528",
+    "selector": "button.face[data-part-id=C-03]",
+    "nearest": "--paper-2 (dist 9)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#2f241f",
+    "selector": "button.face[data-part-id=C-05]",
+    "nearest": "--paper-2 (dist 24)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#23221d",
+    "selector": "button.face[data-part-id=C-06]",
+    "nearest": "--paper-2 (dist 13)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#23221d",
+    "selector": "button.face[data-part-id=C-07]",
+    "nearest": "--paper-2 (dist 13)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#23221d",
+    "selector": "button.face[data-part-id=C-08]",
+    "nearest": "--paper-2 (dist 13)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#23221d",
+    "selector": "button.face[data-part-id=C-09]",
+    "nearest": "--paper-2 (dist 13)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#162528",
+    "selector": "button.face[data-part-id=C-11]",
+    "nearest": "--paper-2 (dist 9)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#23221d",
+    "selector": "button.face[data-part-id=C-12]",
+    "nearest": "--paper-2 (dist 13)",
+    "count": 1
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "main.qa",
+    "count": 154
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "p.eyebrow",
+    "count": 37
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "h1",
+    "count": 3
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "18px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "selector": "p.eyebrow",
+    "count": 32
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 15
+   },
+   {
+    "size": "13px",
+    "selector": "span.ledger-text",
+    "count": 4
+   },
+   {
+    "size": "76px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "42px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p",
+    "count": 48
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p",
+    "count": 33
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "p.eyebrow",
+    "count": 15
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 12
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 4
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.ledger-text",
+    "count": 3
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 3
+   },
+   {
+    "size": "76px",
+    "lineHeight": "87.4px",
+    "selector": "h1",
+    "count": 1
+   },
+   {
+    "size": "42px",
+    "lineHeight": "48.3px",
+    "selector": "h2#exploded-title.visually-hidden",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3#inspector-title",
+    "count": 1
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.8px",
+    "selector": "span.mono",
+    "count": 1
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "div.plate.plate-l4",
+    "count": 25
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "button.face[data-part-id=C-01]",
+    "count": 20
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 12
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 3
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 703.3,
+    "need": 703,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/keyframe/",
+  "width": 1440,
+  "dpr": 1
+ },
+ "w1440-hold-home": {
+  "scheme": "light",
+  "visibleCount": 626,
+  "textNodes": 394,
+  "contrastChecked": 394,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   },
+   {
+    "prop": "background-color",
+    "value": "#eaf0f5",
+    "selector": "button.face[data-part-id=C-01]",
+    "nearest": "--paper (dist 16)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-02]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-03]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#efdccb",
+    "selector": "button.face[data-part-id=C-05]",
+    "nearest": "--part-work (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-06]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-07]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-08]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-09]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#e6f2ef",
+    "selector": "button.face[data-part-id=C-11]",
+    "nearest": "--paper-2 (dist 15)",
+    "count": 1
+   },
+   {
+    "prop": "background-color",
+    "value": "#f4efe1",
+    "selector": "button.face[data-part-id=C-12]",
+    "nearest": "--paper-2 (dist 8)",
+    "count": 1
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 462
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 113
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 28
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 12
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "18px",
+    "selector": "a.skip",
+    "count": 99
+   },
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 96
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 54
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 44
+   },
+   {
+    "size": "15px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 30
+   },
+   {
+    "size": "20px",
+    "selector": "p.sub",
+    "count": 11
+   },
+   {
+    "size": "42px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "24px",
+    "selector": "h3#inspector-title",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "selector": "h1#hero-title",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "a.skip",
+    "count": 99
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 63
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 48
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 37
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 24
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 24
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "42px",
+    "lineHeight": "48.3px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 8
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 7
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 6
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3#inspector-title",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "lineHeight": "87.4px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "20px",
+    "lineHeight": "32px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.8px",
+    "selector": "span.mono",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 78
+   },
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 75
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 24
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 6
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 576,
+    "clientWidth": 574,
+    "scrollHeight": 362,
+    "clientHeight": 360,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 576,
+    "need": 576,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 1102,
+    "need": 1102,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 391,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 703.3,
+    "need": 703,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 1202,
+    "need": 1202,
+    "pass": false
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 670.3,
+    "need": 670,
+    "pass": true
+   }
+  ],
+  "hold": {
+   "unit": 84,
+   "scrollY": 5977,
+   "split": "true",
+   "inspectorVisible": true,
+   "inspectorText": "C-05 ApprovalsCloseFrom Cognate, built in WorkbenchWhat it doesPauses the agent "
+  },
+  "pageErrors": [],
+  "path": "/",
+  "width": 1440,
+  "dpr": 1
+ },
+ "w1440-dpr2-home": {
+  "scheme": "light",
+  "visibleCount": 591,
+  "textNodes": 384,
+  "contrastChecked": 384,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   },
+   {
+    "prop": "background-color",
+    "value": "#dedede",
+    "selector": "span.mini-cart.mini-reused",
+    "nearest": "--part-history (dist 17)",
+    "count": 4
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 430
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 112
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 102
+   },
+   {
+    "size": "18px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 42
+   },
+   {
+    "size": "15px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "11px",
+    "selector": "span.face-num.mono",
+    "count": 30
+   },
+   {
+    "size": "20px",
+    "selector": "p.sub",
+    "count": 11
+   },
+   {
+    "size": "42px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "a.skip",
+    "count": 88
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 63
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a",
+    "count": 40
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 36
+   },
+   {
+    "size": "11px",
+    "lineHeight": "12.1px",
+    "selector": "span.face-num.mono",
+    "count": 24
+   },
+   {
+    "size": "12px",
+    "lineHeight": "13.2px",
+    "selector": "span.face-name",
+    "count": 24
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "42px",
+    "lineHeight": "48.3px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "12px",
+    "lineHeight": "15.6px",
+    "selector": "span.layer-tag",
+    "count": 8
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   },
+   {
+    "size": "11px",
+    "lineHeight": "17.6px",
+    "selector": "span.token",
+    "count": 6
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "p.footline",
+    "count": 2
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "76px",
+    "lineHeight": "87.4px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "20px",
+    "lineHeight": "32px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 71
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 66
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "span.mini-cart.mini-reused",
+    "count": 7
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [
+   {
+    "selector": "span.face-num.mono",
+    "size": "11px",
+    "text": "C-01",
+    "count": 24
+   },
+   {
+    "selector": "span.token",
+    "size": "11px",
+    "text": "Config agent",
+    "count": 6
+   }
+  ],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 576,
+    "clientWidth": 574,
+    "scrollHeight": 362,
+    "clientHeight": 360,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "button.face[data-part-id=C-01]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-01 Models"
+   },
+   {
+    "selector": "button.face[data-part-id=C-02]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-02 Tools"
+   },
+   {
+    "selector": "button.face[data-part-id=C-03]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-03 Workspace"
+   },
+   {
+    "selector": "button.face[data-part-id=C-04]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-04 Permissions"
+   },
+   {
+    "selector": "button.face[data-part-id=C-05]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-05 Approvals"
+   },
+   {
+    "selector": "button.face[data-part-id=C-06]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-06 Work"
+   },
+   {
+    "selector": "button.face[data-part-id=C-07]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-07 Evidence"
+   },
+   {
+    "selector": "button.face[data-part-id=C-08]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-08 Workflows"
+   },
+   {
+    "selector": "button.face[data-part-id=C-09]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-09 Skills"
+   },
+   {
+    "selector": "button.face[data-part-id=C-10]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-10 History"
+   },
+   {
+    "selector": "button.face[data-part-id=C-11]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 24,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-11 Sandbox worlds"
+   },
+   {
+    "selector": "button.face[data-part-id=C-12]",
+    "scrollWidth": 82,
+    "clientWidth": 82,
+    "scrollHeight": 17,
+    "clientHeight": 4,
+    "textOverflow": "clip",
+    "text": "C-12 Interfaces"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 517,
+    "clientWidth": 1,
+    "scrollHeight": 48,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 576,
+    "need": 1152,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 1102,
+    "need": 2204,
+    "pass": false
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 783,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 783,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 391.3,
+    "need": 783,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 586.3,
+    "need": 1173,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 1202,
+    "need": 2404,
+    "pass": false
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 703.3,
+    "need": 1407,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 1440,
+  "dpr": 2
+ },
+ "w375-dpr2-home": {
+  "scheme": "light",
+  "visibleCount": 532,
+  "textNodes": 364,
+  "contrastChecked": 364,
+  "unmeasuredBg": 0,
+  "docOverflow": {
+   "scrollWidth": 375,
+   "clientWidth": 375,
+   "overflow": false
+  },
+  "tokens": {
+   "--paper": "oklch(97.2% .008 85)",
+   "--paper-2": "oklch(94% .01 85)",
+   "--ink": "oklch(22% .015 255)",
+   "--ink-2": "oklch(42% .015 255)",
+   "--rule": "oklch(82% .012 85)",
+   "--signal": "oklch(54% .17 45)",
+   "--human": "oklch(46% .11 165)",
+   "--part-model": "oklch(92% .035 250)",
+   "--part-act": "oklch(92% .035 200)",
+   "--part-control": "oklch(92% .035 305)",
+   "--part-work": "oklch(92% .035 90)",
+   "--part-history": "oklch(92% .035 150)"
+  },
+  "specRes": {
+   "--paper": {
+    "raw": "oklch(97.2% .008 85)",
+    "spec": "oklch(97.2% 0.008 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--paper-2": {
+    "raw": "oklch(94% .01 85)",
+    "spec": "oklch(94% 0.010 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink": {
+    "raw": "oklch(22% .015 255)",
+    "spec": "oklch(22% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--ink-2": {
+    "raw": "oklch(42% .015 255)",
+    "spec": "oklch(42% 0.015 255)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--rule": {
+    "raw": "oklch(82% .012 85)",
+    "spec": "oklch(82% 0.012 85)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--signal": {
+    "raw": "oklch(54% .17 45)",
+    "spec": "oklch(54% 0.17 45)",
+    "maxChannelDelta": 0,
+    "match": true
+   },
+   "--human": {
+    "raw": "oklch(46% .11 165)",
+    "spec": "oklch(46% 0.11 165)",
+    "maxChannelDelta": 0,
+    "match": true
+   }
+  },
+  "parts": {
+   "--part-model": {
+    "raw": "oklch(92% .035 250)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-act": {
+    "raw": "oklch(92% .035 200)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-control": {
+    "raw": "oklch(92% .035 305)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-work": {
+    "raw": "oklch(92% .035 90)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   },
+   "--part-history": {
+    "raw": "oklch(92% .035 150)",
+    "L": 92,
+    "C": 0.035,
+    "ok": true
+   }
+  },
+  "faces": [
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "unloaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Newsreader Variable",
+    "status": "loaded",
+    "weight": "200 800"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "unloaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Hanken Grotesk Variable",
+    "status": "loaded",
+    "weight": "100 900"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "unloaded",
+    "weight": "100 800"
+   },
+   {
+    "family": "Martian Mono Variable",
+    "status": "loaded",
+    "weight": "100 800"
+   }
+  ],
+  "colorDefects": [
+   {
+    "prop": "color",
+    "value": "#000000",
+    "selector": "input",
+    "nearest": "--ink (dist 49)",
+    "count": 11
+   }
+  ],
+  "fontFamilies": [
+   {
+    "family": "Hanken Grotesk Variable",
+    "selector": "a.skip",
+    "count": 380
+   },
+   {
+    "family": "Martian Mono Variable",
+    "selector": "span.status-chip",
+    "count": 103
+   },
+   {
+    "family": "Newsreader Variable",
+    "selector": "a.wordmark",
+    "count": 27
+   },
+   {
+    "family": "Arial",
+    "selector": "input",
+    "count": 11
+   },
+   {
+    "family": "monospace",
+    "selector": "code",
+    "count": 11
+   }
+  ],
+  "fontSizes": [
+   {
+    "size": "17px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "selector": "span.status-chip",
+    "count": 84
+   },
+   {
+    "size": "13px",
+    "selector": "span.who",
+    "count": 73
+   },
+   {
+    "size": "14px",
+    "selector": "p.side-note",
+    "count": 52
+   },
+   {
+    "size": "15px",
+    "selector": "a.btn.btn-primary",
+    "count": 37
+   },
+   {
+    "size": "20px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "22px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "26px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "40px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "18px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "lineHeights": [
+   {
+    "size": "17px",
+    "lineHeight": "27.2px",
+    "selector": "a.skip",
+    "count": 90
+   },
+   {
+    "size": "12px",
+    "lineHeight": "19.2px",
+    "selector": "span.status-chip",
+    "count": 58
+   },
+   {
+    "size": "14px",
+    "lineHeight": "22.4px",
+    "selector": "p.side-note",
+    "count": 46
+   },
+   {
+    "size": "13px",
+    "lineHeight": "20.8px",
+    "selector": "span.who",
+    "count": 41
+   },
+   {
+    "size": "15px",
+    "lineHeight": "24px",
+    "selector": "a.btn.btn-primary",
+    "count": 37
+   },
+   {
+    "size": "12px",
+    "lineHeight": "14.4px",
+    "selector": "span.mono.tag-num",
+    "count": 26
+   },
+   {
+    "size": "13px",
+    "lineHeight": "15.6px",
+    "selector": "span.tag-label",
+    "count": 26
+   },
+   {
+    "size": "20px",
+    "lineHeight": "23px",
+    "selector": "h3",
+    "count": 10
+   },
+   {
+    "size": "28px",
+    "lineHeight": "32.2px",
+    "selector": "h2#proof-title",
+    "count": 9
+   },
+   {
+    "size": "14px",
+    "lineHeight": "16.1px",
+    "selector": "span.step-n",
+    "count": 6
+   },
+   {
+    "size": "13px",
+    "lineHeight": "19.5px",
+    "selector": "code",
+    "count": 6
+   },
+   {
+    "size": "22px",
+    "lineHeight": "35.2px",
+    "selector": "a.wordmark",
+    "count": 4
+   },
+   {
+    "size": "26px",
+    "lineHeight": "41.6px",
+    "selector": "p.transition",
+    "count": 2
+   },
+   {
+    "size": "40px",
+    "lineHeight": "46px",
+    "selector": "h1#hero-title",
+    "count": 1
+   },
+   {
+    "size": "18px",
+    "lineHeight": "28.8px",
+    "selector": "p.sub",
+    "count": 1
+   },
+   {
+    "size": "24px",
+    "lineHeight": "27.6px",
+    "selector": "h3",
+    "count": 1
+   }
+  ],
+  "radii": [
+   {
+    "value": "4px 4px 4px 4px",
+    "selector": "span.status-chip",
+    "count": 44
+   },
+   {
+    "value": "0px 0px 0px 0px",
+    "selector": "a.skip",
+    "count": 35
+   },
+   {
+    "value": "10px 10px 10px 10px",
+    "selector": "button.m-cart[data-part-id=C-01]",
+    "count": 26
+   }
+  ],
+  "contrastFails": [],
+  "smallText": [],
+  "clipped": [
+   {
+    "selector": "figure.capture.hero-plate",
+    "scrollWidth": 327,
+    "clientWidth": 325,
+    "scrollHeight": 242,
+    "clientHeight": 240,
+    "textOverflow": "clip",
+    "text": "Real screen from Cognate-Workbench"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   },
+   {
+    "selector": "h2#exploded-title.visually-hidden",
+    "scrollWidth": 343,
+    "clientWidth": 1,
+    "scrollHeight": 32,
+    "clientHeight": 1,
+    "textOverflow": "clip",
+    "text": "Cognate's parts, drawn apart"
+   }
+  ],
+  "rightEdge": [],
+  "images": [
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 327,
+    "need": 654,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 658,
+    "pass": true
+   },
+   {
+    "src": "e2e-05-authority-and-blocked.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 658,
+    "pass": true
+   },
+   {
+    "src": "e2e-07-review-gate.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 658,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 658,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 289,
+    "need": 578,
+    "pass": true
+   },
+   {
+    "src": "e2e-08-accepted.webp",
+    "natural": 1440,
+    "displayed": 329,
+    "need": 658,
+    "pass": true
+   },
+   {
+    "src": "e2e-03-contract-complete.png",
+    "natural": 1440,
+    "displayed": 289,
+    "need": 578,
+    "pass": true
+   }
+  ],
+  "pageErrors": [],
+  "path": "/",
+  "width": 375,
+  "dpr": 2
+ },
+ "_placeholders": {
+  "index.html": [
+   {
+    "pattern": "lorem",
+    "hits": 0
+   },
+   {
+    "pattern": "TODO",
+    "hits": 0
+   },
+   {
+    "pattern": "TBD",
+    "hits": 0
+   },
+   {
+    "pattern": "example.com",
+    "hits": 0
+   },
+   {
+    "pattern": "xxx",
+    "hits": 0
+   },
+   {
+    "pattern": "[placeholder]",
+    "hits": 0
+   },
+   {
+    "pattern": "FIXME",
+    "hits": 0
+   }
+  ],
+  "keyframe/index.html": [
+   {
+    "pattern": "lorem",
+    "hits": 0
+   },
+   {
+    "pattern": "TODO",
+    "hits": 0
+   },
+   {
+    "pattern": "TBD",
+    "hits": 0
+   },
+   {
+    "pattern": "example.com",
+    "hits": 0
+   },
+   {
+    "pattern": "xxx",
+    "hits": 0
+   },
+   {
+    "pattern": "[placeholder]",
+    "hits": 0
+   },
+   {
+    "pattern": "FIXME",
+    "hits": 0
+   }
+  ]
+ }
+}

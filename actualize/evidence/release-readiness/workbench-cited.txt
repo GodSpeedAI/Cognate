@@ -1,0 +1,174 @@
+## src/server.ts @d208cd0 409,442p
+      if (url.pathname === "/health") {
+        return Response.json({ ok: true, semantic: { objects: domain.projection.objects.length, digest: domain.projection.source.digest } });
+      }
+      if (url.pathname.startsWith("/cognate.v1.RuntimeService/")) {
+        const handler = connectHandlersByPath.get(url.pathname);
+        return handler ? handler(request) : new Response("not found", { status: 404 });
+      }
+      // The bundle is rebuilt at every boot, so the browser must never hold one across restarts —
+      // no-store keeps a stale UI (with stale handlers) from surviving a harness restart.
+      if (url.pathname === "/app.js") return new Response(bundleJs, { headers: { "content-type": "text/javascript", "cache-control": "no-store" } });
+      if (url.pathname === "/astryx.css" && cssPaths[0]) return new Response(Bun.file(cssPaths[0]));
+      if (url.pathname === "/theme.css" && cssPaths[1]) return new Response(Bun.file(cssPaths[1]));
+      if (url.pathname === "/app.css") return new Response(appCss, { headers: { "content-type": "text/css", "cache-control": "no-store" } });
+      if (url.pathname === "/") return new Response(indexHtml(), { headers: { "content-type": "text/html" } });
+      return new Response("not found", { status: 404 });
+    },
+  });
+
+  return {
+    url: `http://127.0.0.1:${server.port}`,
+    runtime,
+    async stop() {
+      eventsController.abort();
+      observations?.stop();
+      server.stop(true);
+      await runtime.close();
+      // Close every SSH/SFTP connection and WSL session this process opened.
+      await executionWorlds.dispose();
+    },
+  };
+}
+
+if (import.meta.main) {
+  const port = Number(process.env.PORT ?? 3180);
+## src/agents/agentCoding.ts @d208cd0 478,483p
+            const heading = extractPlanHeading(markdown);
+            await ctx.emit("plan.review.requested", { sessionId, toolCallId: call.id, heading, markdown });
+            const decision = (await ctx.waitFor(`plan-review:${call.id}`, {
+              type: "plan-review",
+              condition: { kind: "human_approval" },
+              payload: { tool: call.name, toolCallId: call.id, heading, markdown } as unknown as Json,
+## src/agents/agentCoding.ts @d208cd0 525,530p
+            ...(preflight?.surface ? { surface: preflight.surface } : {}),
+          } as unknown as Json);
+          const approval = (await ctx.waitFor(`approve:${call.id}`, {
+            type: "tool-approval",
+            condition: { kind: "human_approval" },
+            payload: { tool: call.name, args: summarizeArgs(args), permission, justification, ...(preflight?.surface ? { surface: preflight.surface } : {}) } as unknown as Json,
+## src/domain/approvalGate.ts @d208cd0 50,63p
+ * reach this gate.
+ */
+export function approvalGate(request: ApprovalDecisionRequest): ApprovalGateDecision {
+  if (request.tool !== "run_code") return { required: false };
+  const permission = request.args.sandbox_permissions;
+  if (typeof permission !== "string" || permission.length === 0) return { required: false };
+  const mode = request.mode ?? "read-only";
+  if (rank(permission) <= rank(mode)) return { required: false };
+  const justification = typeof request.args.justification === "string" ? request.args.justification : "";
+  return { required: true, permission, justification };
+}
+
+/** The exact denial text the reference feeds back to the model as the tool result on Reject
+ *  (`reference/observations/aria/12-approval-resolved-deny.desktop.txt`: `paragraph: "Tool result:
+## src/workbench/contract.ts @d208cd0 4,6p
+
+export function contractMissing(c: Partial<TaskContract>): ContractField[] {
+  const missing: ContractField[] = [];
+## src/workbench/contract.ts @d208cd0 50,52p
+
+export function isContractComplete(c: Partial<TaskContract>): boolean {
+  return contractMissing(c).length === 0;
+## src/capabilities/workbench.ts @d208cd0 194,196p
+        };
+        await record([{ type: "workbench.evidence.recorded", payload: { entry } as unknown as Json }]);
+        return { evidenceId: entry.id };
+## src/capabilities/workbench.ts @d208cd0 212,237p
+        const readiness = reviewReadiness({ acceptance: task.contract.acceptance ?? [], entries: await evidenceOf(task.id), ...(task.workerReturn ? { workerReturn: task.workerReturn } : {}) });
+        if (!readiness.ready) throw new Error(`task.review.request: not ready for review — ${readiness.blockers.join("; ")}`);
+        await record([{ type: "workbench.review.requested", payload: { taskId: task.id } as unknown as Json }]);
+        return { taskId: task.id, status: "READY_FOR_REVIEW" };
+      });
+
+      provide("task.review.decide", async (input: { taskId: string; decision: "accept" | "rework"; note?: string }, ctx) => {
+        requireUser(ctx, "task.review.decide");
+        const task = await getTask(input.taskId);
+        if (task.status !== "READY_FOR_REVIEW") throw new Error(`task.review.decide: task is ${task.status}, not READY_FOR_REVIEW`);
+        if (input.decision !== "accept" && input.decision !== "rework") throw new Error("task.review.decide: decision must be accept or rework");
+        const entries = await evidenceOf(task.id);
+        const events: RecordedEvent[] = [];
+        if (input.decision === "accept") {
+          const ready = acceptanceReady({ acceptance: task.contract.acceptance ?? [], entries, humanApproved: true });
+          if (!ready.ready) throw new Error(`task.review.decide: cannot accept — ${ready.blockers.join("; ")}`);
+          const humanCriterion = (task.contract.acceptance ?? []).find((c) => c.kind === "human");
+          events.push({
+            type: "workbench.evidence.recorded",
+            payload: { entry: { id: `ev-${randomUUID().slice(0, 8)}`, taskId: task.id, kind: "human", status: "pass", summary: input.note?.trim() || "accepted by reviewer", ...(humanCriterion ? { criterionId: humanCriterion.id } : {}), source: `user:${ctx.actor.id}` } } as unknown as Json,
+          });
+        } else {
+          events.push({ type: "workbench.evidence.recorded", payload: { entry: { id: `ev-${randomUUID().slice(0, 8)}`, taskId: task.id, kind: "human", status: "fail", summary: input.note?.trim() || "rework requested", source: `user:${ctx.actor.id}` } } as unknown as Json });
+        }
+        events.push({ type: "workbench.review.decided", payload: { taskId: task.id, decision: input.decision, ...(input.note ? { note: input.note } : {}) } as unknown as Json });
+        await record(events);
+## src/projections/sessionTrace.ts @d208cd0 77,79p
+
+export const sessionTraceProjection: Projection = {
+  name: "session-trace",
+## src/server.ts @d208cd0 254,266p
+      { projection: onboardingProjection, public: true },
+      { projection: settingsProjection, public: true },
+      { projection: sessionTraceProjection, public: true },
+      { projection: workbenchProjection, public: true },
+      { projection: pluginsProjection, public: true },
+    ],
+    system: SYSTEM_CALLER.actor,
+  });
+  serviceRef.current = runtime.service;
+
+  // Seed `knownWorkspaceIds` from the persisted projection (survives restart).
+  for (const row of ((await runtime.service.readProjection(LOCAL_OPERATOR, { name: "workspaces" }))).rows) {
+    if (row.key.startsWith("record/")) knownWorkspaceIds.add(row.key.slice("record/".length));
+## src/components/providerRegistry.ts @d208cd0 17,28p
+}
+export function buildProvider(config: ModelConfig, secrets: SecretStore): ModelProvider {
+  const key = async () => (await secrets.get("model-provider:" + config.providerId)) ?? "";
+  switch (config.protocol) {
+    case "openai-compatible":
+    case "openai-completions":
+      return openAICompatible({id:config.providerId,baseURL:config.baseURL,model:config.model,apiKey:key});
+    case "openai-responses":
+      return openAIResponses({id:config.providerId,baseURL:config.baseURL,model:config.model,credentials:apiKeySource(key)});
+    case "anthropic-messages":
+      return anthropicCompatible({id:config.providerId,baseURL:config.baseURL,model:config.model,credentials:apiKeySource(key,"x-api-key")});
+    default:
+## src/capabilities/workbench.ts @d208cd0 38,64p
+
+export const WORKBENCH_CAPABILITY_IDS = [
+  "task.create",
+  "task.contract.update",
+  "task.status.change",
+  "task.review.request",
+  "task.review.decide",
+  "worker.return",
+  "evidence.record",
+  "authority.check",
+  "authority.elevate",
+  "workflow.define",
+  "workflow.instantiate",
+  "workflow.node.advance",
+  "skill.register",
+  "skill.bind",
+  "skill.lifecycle.advance",
+  "automation.create",
+  "automation.advance",
+  "usage.record",
+  "parallelism.plan",
+  "steer.enqueue",
+  "steer.pending",
+  "feedback.record",
+  "workbench.seed",
+] as const;
+export type WorkbenchCapabilityId = (typeof WORKBENCH_CAPABILITY_IDS)[number];
+## test/E2E-workbench.test.ts @d208cd0 1,4p
+// Browser acceptance for the Workbench cockpit (real server, real SQLite store, aimock model, real
+// Chromium). Each step asserts what a person sees and what the durable log recorded. Screenshots land
+// in screenshots/workbench/ as evidence. Journeys: J-WB-task-contract, -protected-evidence,
+// -steering, -review-gate, -workflow, -capability-lifecycle (see .sea/interaction catalog).
+## README.md @d208cd0 55,60p
+| --- | --- |
+| Capability substitution | Recorded. Does not rebind a running tool. |
+| Parallelism plans | Recorded. Do not start workers. |
+| Automation records | Stored. No background scheduler. |
+| Budget information | Informational. Not enforced as a runtime limit. |
+

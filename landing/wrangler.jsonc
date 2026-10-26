@@ -1,0 +1,12 @@
+// Cloudflare Workers static-assets deploy for the landing page (no server code).
+// `just site-deploy` builds dist/ and runs `wrangler deploy`; the custom_domain route makes
+// Cloudflare create the DNS record and certificate for cognate.gspeedai.com on first deploy.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cognate-site",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [{ "pattern": "cognate.gspeedai.com", "custom_domain": true }]
+}

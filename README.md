@@ -2,8 +2,6 @@
 
 **Define meaning once. Project it everywhere.**
 
-> **Status: v0 — published, early.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented, verified, and **published on npm under the [`@godspeedai/cognate-*`](https://www.npmjs.com/package/@godspeedai/cognate) names** (releases are managed by Release Please; see [ADR-0012](docs/decisions/ADR-0012-cognate-package-naming.md) for the naming convention). `just gates` reports every ledger requirement passing, and `bun run test` passes across the workspace. The ledger is a *candidate* rather than a frozen contract, and the known gaps are tracked openly in the [debt register](.agents/DEBT.md) — for example Connect supports unary and server-streaming only ([ADR-0003](docs/decisions/ADR-0003-wire-connect-protobuf.md)), and runs default to one at a time ([runtime concurrency](docs/runtime-concurrency.md)). The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
-
 Cognate is an open-source **semantic application SDK for building agent-native software**. It runs on Bun, and every package is published and installable on its own.
 
 An application built with Cognate keeps its own meaning at the center: the domain it serves, the operations it can perform, the rules that decide who may do what, and the history of what actually happened. Agents, interfaces, tools, models, and protocols all interact with that one application through shared contracts. None of them carries a private copy of it.

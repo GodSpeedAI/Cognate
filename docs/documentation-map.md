@@ -59,6 +59,10 @@ adding, renaming, or removing a page means editing this list.
 | [explanation/why-projection-not-storage.md](explanation/why-projection-not-storage.md) | Explanation: why everything is a fold | the invariant, erasure, rebuild, tenancy, multiple surfaces, the costs, the line it will not cross | mental-model, durable-state |
 | [explanation/authority-and-learning.md](explanation/authority-and-learning.md) | Explanation: why learning cannot grant authority | the three "may I?" questions, what a ranker may do, durable feedback, UCB1, the cognitive analogue | capability-invocation, cognition |
 | [explanation/why-adapters.md](explanation/why-adapters.md) | Explanation: why adapters, and their rules | the boundary list, the three properties, the cost of mitigation, the "is it a new primitive?" rule | architecture |
+| [explanation/design-principles.md](explanation/design-principles.md) | Explanation: the design rules behind Cognate | semantics first, everything is a capability, live components, events as truth, cognition is not truth, the design rule (moved from the README) | mental-model |
+| [explanation/under-the-hood.md](explanation/under-the-hood.md) | Explanation: the README's technical detail | semantic modelling, contracts and providers, durable events, continuations, authority, recoverability, evidence, protocols, profiles (moved from the README) | architecture |
+| [explanation/what-you-can-build.md](explanation/what-you-can-build.md) | Explanation: application shapes | the kinds of application Cognate composes, one application with many representations (moved from the README) | README |
+| [comparisons.md](comparisons.md) | Explanation: Cognate compared with agent frameworks, frontend agent SDKs, memory frameworks and workflow engines; architecture lineage | comparisons, lineage (moved from the README) | README |
 
 ## Tutorials
 

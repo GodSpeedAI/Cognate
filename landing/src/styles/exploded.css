@@ -1,0 +1,696 @@
+/*
+ * Exploded assembly drawing, oblique shelf projection (lib/projection.ts).
+ * Plates are placed by one matrix() each. Standing cartridges are plain rectangles (their front faces lie in the
+ * x-z plane), so their labels are upright text on the face. Edges are orthogonal traces on the board, in SVG.
+ * No CSS transitions: everything is a pure function of scroll (rule: determinism). Below 768px the stage is
+ * hidden and the same parts are redrawn as a 2D parts list (rule R7).
+ */
+
+:root {
+  --header-h: 64px;
+  /* Exponential ease-out for UI response (route completion, ledger stamp, decision state). */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Pinned sequences fill the viewport below the sticky header. */
+@media (min-width: 768px) {
+  .seq-track.seq-c > .seq-pin,
+  .seq-track.seq-g > .seq-pin {
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+  }
+}
+
+.exploded-island {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0 0 var(--space-7);
+}
+
+.exploded {
+  margin: 0;
+  min-width: 0;
+}
+
+.frame {
+  position: relative;
+  width: 100%;
+}
+
+.stage-wrap {
+  position: relative;
+  height: clamp(420px, calc(100vh - var(--header-h) - 150px), 820px);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Every drawn element gets its own compositing layer, so a frame paints the same going down or back up. */
+.stage-wrap > * {
+  will-change: transform;
+}
+
+/* Plates: world units are element px; each is placed by one matrix() with transform-origin 0 0. */
+.plate {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  /* Own compositing layer: the plate is rasterised the same way on the way down and on the way back up. */
+  will-change: transform;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  pointer-events: none;
+}
+
+.plate-l1 {
+  overflow: hidden;
+}
+.plate-l1 img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plate-l2 {
+  /* Transparent: the agent layer sits above the board, and the back row stays visible through it. */
+  background: transparent;
+  border-style: dashed;
+}
+
+.plate-l3 {
+  background: var(--paper-2);
+}
+
+.ledger-rule {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  height: 1px;
+  background: var(--rule);
+}
+
+.ledger-text {
+  position: absolute;
+  left: 40px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* Standing cartridge: the front face is the button. Label and number are upright text on it. */
+.face {
+  position: absolute;
+  box-sizing: border-box;
+  will-change: transform;
+  margin: 0;
+  padding: 2px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ink-2);
+  border-radius: var(--radius-small);
+  background: var(--part-fill, var(--part-work));
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.face[data-cat='model'] {
+  --part-fill: var(--part-model);
+}
+.face[data-cat='act'] {
+  --part-fill: var(--part-act);
+}
+.face[data-cat='control'] {
+  --part-fill: var(--part-control);
+}
+.face[data-cat='history'] {
+  --part-fill: var(--part-history);
+}
+.face[data-cat='work'] {
+  --part-fill: var(--part-work);
+}
+
+/* Connector notch: a small gap centred on the top edge of the front face. */
+.face::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 6px;
+  height: 4px;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 1px solid var(--ink-2);
+  border-bottom: 0;
+}
+
+.face-branch-dashed {
+  border-style: dashed;
+  background: transparent;
+}
+
+.face-branch-solid {
+  border-style: solid;
+}
+
+/* Empty extension socket: a dashed outline on the board, no label (Sequence C). */
+.socket {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed var(--ink-2);
+  border-radius: var(--radius-small);
+  pointer-events: none;
+}
+
+.face-num {
+  font-size: 12px;
+  line-height: 1.1;
+  color: var(--ink-2);
+}
+
+.face-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.face[data-state='selected'] {
+  border: 2px solid var(--select);
+  background: color-mix(in srgb, var(--signal) 16%, var(--paper));
+}
+
+/* Dimmed parts keep full-contrast text on a lighter fill. */
+.face[data-state='dim'] {
+  background: color-mix(in srgb, var(--part-fill, var(--part-work)) 40%, var(--paper));
+  color: var(--ink);
+}
+
+/* Top face: a thin parallelogram on the board plane at the face height. */
+.face-top {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  border: 1px solid var(--ink-2);
+  background: var(--paper-2);
+  pointer-events: none;
+}
+
+/* Agent token: a standing face on L2, labelled upright. */
+.token {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ink-2);
+  border-radius: var(--radius-small);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.layer-tag {
+  position: absolute;
+  z-index: 8;
+  white-space: nowrap;
+  padding: 0 2px;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  text-align: left;
+  pointer-events: none;
+}
+
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  overflow: visible;
+  /* Above the faces so the verified edges stay legible; the drawing is otherwise unchanged. */
+  z-index: 7;
+}
+
+.overlay .mating {
+  stroke: var(--rule);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.overlay .edge {
+  fill: none;
+  stroke: var(--route);
+  stroke-width: 1.75;
+}
+
+.overlay .edge-consumer {
+  stroke-dasharray: 6 4;
+}
+
+/* Authority route: the selected part's verified edges, drawn in the signal gold. With motion allowed the route
+   completes in one exponential ease-out pass after selection (a UI response, not scroll). Reduced motion and no-JS
+   get the whole route at once. */
+.overlay .edge.route {
+  stroke: var(--signal);
+  stroke-width: 2;
+}
+
+/* The ledger row is the route's end: the L4 durable record writes the selected part's stores-in edge. */
+.ledger-row {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--signal);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overlay .edge.route {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: route-draw 380ms var(--ease-out-expo) both;
+  }
+  .ledger-row {
+    animation: stamp-in 240ms var(--ease-out-expo) both;
+  }
+}
+
+@keyframes route-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.capture-caption {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: var(--space-2);
+}
+
+/* Stage caption: one tight block under the drawing (the prose line-height is too loose for a caption). */
+.exploded figcaption {
+  margin-top: var(--space-3);
+}
+.exploded figcaption p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 68ch;
+  margin: 0 0 var(--space-1);
+}
+
+/* Inspector: a labelled region. Desktop: the right 40 percent column, visible during the hold. */
+.inspector {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-5);
+  max-width: 1100px;
+  margin: var(--space-5) auto 0;
+}
+
+.inspector-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.inspector-tags {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.inspector-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-4) 0;
+}
+
+.inspector-facts dt {
+  font-weight: 600;
+}
+
+.inspector-facts dd {
+  margin: 0;
+  max-width: 68ch;
+}
+
+.inspector-facts ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edge-word {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.code pre {
+  overflow-x: auto;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.code figcaption {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.sheet-close {
+  font: inherit;
+  font-size: 14px;
+  padding: 4px 10px;
+  border: 1px solid var(--ink-2);
+  border-radius: var(--radius-small);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.parts-text {
+  margin-top: var(--space-7);
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.parts-text summary {
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: var(--space-3);
+}
+
+.parts-text .parts {
+  padding-left: var(--space-5);
+}
+
+.parts-text .edges,
+.parts-text .kind {
+  display: block;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Mobile parts-list drawing: hidden on desktop and tablet. */
+.mobile-plates {
+  display: none;
+}
+
+/* Desktop: the stage is the left 60 percent and never rescales; the inspector column is the right 40 percent.
+   Before the hold it is kept in layout but hidden, so the stage does not move. */
+@media (min-width: 1024px) {
+  /* Grid: stage on the left 64 percent, inspector on the right 36 percent, both starting on one top line. */
+  .exploded-island {
+    grid-template-columns: minmax(0, 64fr) minmax(280px, 36fr);
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .stage-wrap {
+    margin: 0;
+    max-width: none;
+    height: clamp(420px, calc(100vh - var(--header-h) - 128px), 820px);
+  }
+
+  /* Beat C: the stage takes the drawing's own 4:3 proportion (the projection fits the stage width), so the stack
+     fills the box and there is no empty band under it. Capped by the viewport height. */
+  .seq-c .stage-wrap {
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: calc(100vh - var(--header-h) - 150px);
+  }
+
+  .seq-g .stage-wrap {
+    height: clamp(400px, calc(100vh - var(--header-h) - 176px), 780px);
+  }
+
+  .inspector {
+    margin: 0;
+    padding-top: 0;
+    border-top: 0;
+    max-width: none;
+    max-height: calc(100vh - var(--header-h) - 80px);
+    overflow-y: auto;
+  }
+
+  .exploded-island[data-split='false'] .inspector {
+    visibility: hidden;
+  }
+}
+
+/* Tablet: the same geometry; the inspector sits below the stage within the pin and may scroll. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .exploded-island {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stage-wrap {
+    height: clamp(420px, calc(100vh - var(--header-h) - 230px), 620px);
+  }
+
+  .inspector {
+    margin-top: var(--space-4);
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+}
+
+/* Mobile (R7): no 3D, no overlay. Plates stack with 2D offsets; cartridges form a two-column grid. */
+@media (max-width: 767px) {
+  .frame {
+    display: none;
+  }
+
+  .mobile-plates {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .m-plate {
+    border: 1px solid var(--rule);
+    padding: var(--space-3);
+    background: var(--paper);
+  }
+
+  .m-plate-l1 {
+    margin-right: var(--space-3);
+  }
+  .m-plate-l2 {
+    margin-left: var(--space-3);
+    border-style: dashed;
+    background: transparent;
+  }
+  .m-plate-l3 {
+    margin-left: 0;
+    background: var(--paper-2);
+  }
+  .m-plate-l4 {
+    margin-left: var(--space-5);
+    background: transparent;
+  }
+
+  .m-plate-l1 img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1440 / 900;
+  }
+
+  .m-layer {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-2);
+    margin: 0 0 var(--space-2);
+  }
+
+  .agents-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .agent-chip {
+    border: 1px solid var(--ink-2);
+    border-radius: var(--radius-small);
+    padding: 6px 10px;
+    font-size: 13px;
+    background: var(--paper);
+  }
+
+  .m-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .m-cart {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-height: 72px;
+    padding: 8px 10px;
+    border: 1px solid var(--ink-2);
+    border-radius: var(--radius-cartridge);
+    background: var(--part-fill, var(--part-work));
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .m-cart[data-cat='model'] {
+    --part-fill: var(--part-model);
+  }
+  .m-cart[data-cat='act'] {
+    --part-fill: var(--part-act);
+  }
+  .m-cart[data-cat='control'] {
+    --part-fill: var(--part-control);
+  }
+  .m-cart[data-cat='history'] {
+    --part-fill: var(--part-history);
+  }
+
+  .m-cart[data-state='dim'] {
+    background: var(--paper);
+  }
+
+  .m-cart[aria-pressed='true'] {
+    border: 2px solid var(--select);
+  }
+
+  .tag-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .tag-label {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .chip {
+    border: 1px solid var(--ink-2);
+    border-radius: var(--radius-small);
+    padding: 1px 6px;
+    font-size: 12px;
+  }
+
+  .m-ledger {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: var(--space-2) 0;
+  }
+
+  /* Inspector becomes a bottom sheet on mobile. */
+  .inspector {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    max-height: 72vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--space-4);
+    background: var(--paper);
+    border-top: 2px solid var(--ink-2);
+    border-radius: var(--radius-cartridge) var(--radius-cartridge) 0 0;
+    box-shadow: 0 -4px 16px oklch(0% 0 0 / 0.12);
+  }
+
+  .inspector[data-open='false'] {
+    display: none;
+  }
+
+  .inspector-facts {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .inspector-facts dd {
+    margin-bottom: var(--space-3);
+  }
+}
+
+/* Tablet and narrow desktop: the faces are about 64px wide here, so the labels step down to fit (C-04 Permissions
+   clipped at 1024). Checked by tests/e2e/exploded.spec.ts: no face label overflows its face. */
+/* Faces are 64 to 80px wide here, so a 12px name can wrap onto two lines inside the face (a long word breaks rather
+   than clipping). Line height 1 keeps number and two name lines inside the face's height. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .face {
+    padding: 0 2px;
+    gap: 0;
+    line-height: 1;
+  }
+  .face-num,
+  .face-name {
+    font-size: 12px;
+    line-height: 0.9;
+  }
+  .face-name {
+    overflow-wrap: anywhere;
+    line-height: 0.9;
+  }
+  .face-name wbr::after {
+    content: '-';
+  }
+}

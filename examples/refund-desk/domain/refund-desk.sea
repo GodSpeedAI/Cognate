@@ -1,0 +1,38 @@
+@namespace "refunds"
+@version "0.1.0"
+@owner "support-team"
+@profile "default"
+
+// Who and what the refund desk reasons about.
+Entity "Customer"
+Entity "Order"
+Entity "Refund"
+
+// Participant positions in a refund.
+Role "Support agent"
+Role "Approver"
+Role "Customer"
+
+Dimension "Currency"
+Unit "USD" of "Currency" factor 1 base "USD"
+Resource "Money" USD
+
+// The refund flow: money moves from the order back to the customer. Quantities are dollars.
+Flow "Money" from "Order" to "Customer" quantity 50
+
+// Who does what: a support agent proposes, an approver decides.
+Relation "Refund proposal"
+    subject: "Support agent"
+    predicate: "proposes"
+    object: "Approver"
+    via: flow "Money"
+
+Relation "Refund approval"
+    subject: "Approver"
+    predicate: "approves"
+    object: "Customer"
+    via: flow "Money"
+
+// Business rule: a refund over $50 needs an approval relation in the model.
+Policy refund_over_50_needs_approval as:
+    forall f in flows: (f.quantity <= 50 or exists r in relations: (r.predicate = "approves"))

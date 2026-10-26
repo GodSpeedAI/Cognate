@@ -1,0 +1,22 @@
+---
+// A real capture: bare image, hairline border, WebP with PNG fallback, width/height set, lazy unless eager.
+interface Props {
+  file: string;
+  alt: string;
+  caption: string;
+  width: number;
+  height: number;
+  eager?: boolean;
+  class?: string;
+}
+const { file, alt, caption, width, height, eager = false, class: extra } = Astro.props;
+const webp = file.replace(/\.png$/, '.webp');
+---
+
+<figure class:list={['capture', extra]}>
+  <picture>
+    <source type="image/webp" srcset={`/${webp}`} />
+    <img src={`/${file}`} width={width} height={height} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  </picture>
+  <figcaption>{caption}</figcaption>
+</figure>

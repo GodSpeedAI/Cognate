@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+import ExplodedView from '../../components/ExplodedView';
+import PartsText from '../../components/PartsText.astro';
+import '../../styles/exploded.css';
+---
+
+<Base title="Cognate parts: exploded keyframe (QA)" description="QA route for the exploded assembly drawing of Cognate's parts." noindex>
+  <main class="qa">
+    <header class="qa-head">
+      <p class="eyebrow">Take it apart · QA route</p>
+      <h1>What Workbench is made of.</h1>
+      <p>
+        Underneath the screen there are four layers. In the capabilities layer sit named parts, and each one does one job.
+      </p>
+    </header>
+    <ExplodedView client:load defaultSelection="C-05" split />
+    <PartsText />
+  </main>
+</Base>
