@@ -1,23 +1,37 @@
 # Current status
 
-**Status revision:** 70
+**Status revision:** 71
 
-**Summary:** SDK manifest is at 0.6.1. Branch `fix/debt-burndown-2026-10-21` (uncommitted) burns down the debt register: the runtime loop is event-driven, `cognate create` works from npm without a checkout, and 11 debt entries close. `just verify` passes 81/81 gates.
+**Summary:** Main now carries three reconciled lines of work: the debt burndown (revision 70), the README reframe, and the standalone explainers.
 
-Closed this pass: DEBT-004 (by ADR-0003 decision), 012, 015, 016, 018, 020, 023, 029, 030, 031 and 032.
-The runtime wakes on commit notifications with timers for retry backoff; the interval (default
-250 ms) is a safety net. A load benchmark is recorded in `docs/runtime-concurrency.md`.
-`cognate create` pins dependencies to the CLI version and ships the starter template in the CLI
-tarball (packed-tarball smoke passed outside the repo). RVF `FsyncFailed` retry moved into
-`cognitive-rvf`. Local and command execution worlds version files by `mtime ns:size:inode`.
+The debt burndown closes eleven entries, makes the runtime loop event-driven, and makes
+registry-mode `create` the default in the repository's CLI: `cognate create` pins the
+`@godspeedai/cognate-*` packages from npm without a source checkout, and `templates/starter`
+stays at the repository root as the single copy, copied into the CLI tarball at pack time.
+The published `0.7.1` CLI still requires `--source`, and the README says so; that line flips
+after the next release.
 
-Accepted limits: DEBT-005 (Cordis rc gaps, adapter-mitigated), 006 (closed locally, open upstream),
-007 (vector search only), 022 (no KVM host; opt-in bubblewrap forks) and 027 (inconclusive; overrides
-kept). Still open: 002 (DomainForge 0.21.1 still has one error code), 017 (Bun `toMatchObject`, still
-on 1.4.3), 024 (narrowed; deferred items recorded in the cybernetic-navigation spec), 025 (native
-WebMCP), 026 (WSL health, containment, SSH seconds-only versions) and 028 (SIWC live sign-in, an
-operator task).
+The root README is reframed around the public positioning — Cognate is an open-source
+semantic application SDK for building agent-native software — with a verified two-path
+quick start. The 1541-line front page became an orientation document: one definition, why
+the semantic center matters, what you can build, the Refund Desk working example, one
+architecture diagram with the six-plane table, the one-operation-many-representations idea,
+a mechanism map linking each idea to the doc that owns it, Workbench and Horizon with honest
+scope, the 15-example tree, and an explicit what-works-today list. Deep material lives where
+it was always owned: in `docs/`.
 
-Verified: `just verify` 81/81; runtime-bun 175 pass; `async-admission` 60/60 consecutive runs;
-deepseek-harness app suite 870/872 with the one failure fixed and re-run green; Journey A 2/2.
-Ledger freeze remains an operator decision. Nothing is committed or published.
+The standalone explainers are new under `docs/explainers/`: an index, a run execution and
+replay stepper, a planes and invariants explorer, and a concurrency and leases model. The
+docs index, the README documentation map, and the architecture, verification, durable state,
+runtime, and run execution pages link to them. The store wording now names SQLite and
+PostgreSQL (pg0) where the docs previously said SQLite only.
+
+Gates observed on the merged branches: documentation links and map (5/5), README examples
+(16/16), package READMEs (45/45), proof routing (5/5), release publication (9/9), and the
+substrate check (81 requirements, 0 blocked). The merged tree is re-verified in the next
+snapshot. Details are in
+[`.agents/evidence/2026-10-26-readme-reframe.md`](.agents/evidence/2026-10-26-readme-reframe.md)
+and [`.agents/reports/debt-and-open-questions-2026-10-21.md`](.agents/reports/debt-and-open-questions-2026-10-21.md).
+
+Next: merge the landing branch, re-run the full gate set on the merged tree, then release
+0.8.x and flip the README `--source` wording. Ledger freeze remains an operator decision.
