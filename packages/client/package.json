@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-client",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Headless client: runs, reconnecting event subscriptions, derived run state, shared projections, continuations, frontend capabilities, artifacts. No React (spec §25.1).",
   "type": "module",
   "license": "Apache-2.0",

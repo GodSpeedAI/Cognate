@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-hook-interoperability",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Evidence-preserving hook IR, CLI lifecycle adapters and governed dispatch; no implicit shell execution.",
   "type": "module",
   "license": "Apache-2.0",

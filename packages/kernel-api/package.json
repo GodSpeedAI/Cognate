@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-kernel-api",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Framework-owned kernel contract: contexts, scopes, capabilities, components, fibers, effects. No engine types.",
   "type": "module",
   "license": "Apache-2.0",

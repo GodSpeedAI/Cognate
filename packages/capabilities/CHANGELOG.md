@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-capabilities-v0.7.1...cognate-capabilities-v0.8.0) (2026-10-26)
+
+
+### Features
+
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([f85c523](https://github.com/GodSpeedAI/Cognate/commit/f85c523a62eb72f1b022d78f842245c52920f8bd))
+
 ## [0.7.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-capabilities-v0.7.0...cognate-capabilities-v0.7.1) (2026-10-24)
 
 
