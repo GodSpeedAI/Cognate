@@ -1,0 +1,40 @@
+{
+  "name": "cognate-landing",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && bun scripts/notices.ts",
+    "preview": "astro preview",
+    "check": "astro check && tsc --noEmit",
+    "test": "bun test tests/parts.test.ts tests/readme.test.ts tests/notices.test.ts tests/projection.test.ts tests/route.test.ts",
+    "verify:sources": "bun run scripts/verify-sources.ts",
+    "shots": "bun run scripts/shots.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@astrojs/react": "7.1.0",
+    "@bsmnt/scrollytelling": "0.3.3",
+    "@fontsource-variable/josefin-sans": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/josefin-slab": "5.3.0",
+    "astro": "7.4.0",
+    "gsap": "3.15.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.63.0",
+    "@types/bun": "1.4.3",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "playwright": "1.63.0",
+    "typescript": "6.0.3",
+    "wrangler": "4.151.0"
+  }
+}

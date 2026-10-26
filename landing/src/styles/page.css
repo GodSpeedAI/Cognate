@@ -1,0 +1,1120 @@
+/* Page sections, rail, top bar, demos, onboarding. Type scale 1.333; measure <= 68ch. */
+
+.skip {
+  position: absolute;
+  left: var(--space-3);
+  top: -100px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  z-index: 50;
+}
+.skip:focus {
+  top: var(--space-2);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar nav {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  font-size: 15px;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.wordmark-mark {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+.status-chip {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  padding: 2px 8px;
+  color: var(--ink-2);
+}
+
+.rail {
+  position: fixed;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+}
+.rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+/* The rail floats over dark bands too, so each link carries its own ivory ground for legibility. */
+.rail a {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--paper);
+  text-decoration: none;
+  padding: 1px 8px 1px 14px;
+  border-left: 2px solid var(--rule);
+}
+.rail a[aria-current='step'] {
+  color: var(--ink);
+  border-left-color: var(--signal);
+  font-weight: 600;
+}
+
+/* One frame for every beat: the 1200px text frame includes its gutters, so beat text and the hero share a left edge. */
+main {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+.beat {
+  padding: var(--space-9) 0 var(--space-8);
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: 80px;
+}
+.beat > p,
+.beat > ul,
+.beat > ol,
+.beat > h2,
+.beat > h3 {
+  max-width: 68ch;
+}
+
+/* Spacing rhythm: full beats open at 96 and close at 64; dense beats (fit, extension) at 64 and 48;
+   evidence beats (proof, agents at work) close at 96 so the proof gets air before the next claim. */
+.beat-dense {
+  padding: var(--space-8) 0 var(--space-7);
+}
+.beat-evidence {
+  padding-bottom: var(--space-9);
+}
+
+/* Section openers on evidence beats carry the gold proof marker: a small square, not text. */
+.beat-evidence .kicker::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  background: var(--signal);
+  vertical-align: 1px;
+}
+
+/* Authority record (one refund run from examples/refund-desk tests). Hairline rows, not cards. Mono for identifiers. */
+.record {
+  margin: var(--space-6) 0 var(--space-3);
+  max-width: 760px;
+  border-top: 2px solid var(--ink);
+}
+.record > div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.record dt {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.record dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 599px) {
+  .record > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}
+.record .mono {
+  font-size: 14px;
+}
+.record-decision dt {
+  color: var(--ink);
+}
+.record-decision dt::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  background: var(--signal);
+  vertical-align: 1px;
+}
+.record-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 760px;
+}
+
+/* Dark cinematic hero: a full-bleed near-black band in both schemes (the theme-dark scope sets the tokens). */
+.beat.hero {
+  padding-top: var(--space-9);
+  border-top: 0;
+  background: var(--paper);
+  color: var(--ink);
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
+  /* Extra right gutter keeps the capture clear of the section rail (fixed at the right edge). */
+  padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-8));
+}
+/* The headline spans the frame on its own row, so it sets in two or three lines, not five. */
+.hero-head h1 {
+  max-width: 20ch;
+  font-size: clamp(44px, 5.6vw, 80px);
+}
+.sub {
+  font-size: 20px;
+}
+/* The one-line answer to "what kinds of things can I build with this?" */
+.hero-kinds {
+  margin-top: var(--space-3);
+  font-size: 17px;
+  color: var(--ink-2);
+}
+
+/* Eyebrows and signal lines: Josefin Sans Medium, ALL CAPS, tracking +250 to +400. Engraved, not a subtitle. */
+.eyebrow,
+.kicker {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: var(--space-3);
+}
+
+.ctas {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 8px 14px;
+  border: 1px solid var(--ink-2);
+  border-radius: var(--radius-small);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-primary {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: var(--btn-ink);
+}
+.btn-human {
+  border-color: var(--human);
+  color: var(--human-text);
+}
+.btn-quiet {
+  border-color: transparent;
+  color: var(--ink-2);
+  text-decoration: underline;
+}
+
+.dialogue {
+  margin: var(--space-7) 0 var(--space-5);
+  padding: var(--space-5);
+  border-left: 2px solid var(--rule);
+  max-width: 68ch;
+}
+.dialogue .request {
+  font-family: var(--font-slab);
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1.3;
+}
+.dialogue .who {
+  font-family: var(--font-text);
+  font-style: normal;
+  font-size: 13px;
+  color: var(--ink-2);
+  display: block;
+}
+.dialogue ol {
+  padding-left: var(--space-5);
+  margin: 0 0 var(--space-3);
+}
+.dialogue figcaption {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.footline,
+.transition {
+  font-size: 17px;
+}
+.transition {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
+  margin-top: var(--space-5);
+}
+
+/* The proof marker: a small gold square in place of the glyph. Gold marks proof, it is not text. */
+.speed {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 var(--space-2) 2px 0;
+  background: var(--signal);
+  font-size: 0;
+  vertical-align: middle;
+}
+
+.capture {
+  margin: var(--space-5) 0;
+}
+.capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+}
+.capture figcaption {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: var(--space-2);
+}
+.capture-large {
+  max-width: 1100px;
+}
+
+.annotations {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  font-size: 15px;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.distinction {
+  font-family: var(--font-slab);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--ink);
+  border-left: 3px solid var(--signal);
+  padding-left: var(--space-3);
+}
+
+.side-note {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.legend-chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.legend-chips .chip {
+  border: 1px solid var(--ink-2);
+  border-radius: var(--radius-small);
+  padding: 2px 8px;
+  font-size: 13px;
+}
+.chip-cognate {
+  background: var(--part-model);
+}
+.chip-workbench {
+  background: var(--part-work);
+}
+.chip-branch {
+  border-style: dashed !important;
+}
+
+.seq-track {
+  position: relative;
+}
+.seq-pin {
+  position: relative;
+}
+.seq-c .seq-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.seq-c {
+  height: 420vh;
+}
+.seq-g {
+  height: 300vh;
+}
+.seq-g .seq-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.seq-caption {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 0 0 var(--space-3);
+  min-height: 1.4em;
+}
+/* The exploded-view stage is an instrument panel: a full-bleed dark band, the same gutter rule as the hero. */
+.seq-stage.theme-dark {
+  background: var(--paper);
+  color: var(--ink);
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
+  padding-right: calc(max(0px, (100vw - var(--text-frame)) / 2) + var(--space-5));
+}
+/* The pinned area is dark too (the stage is an instrument panel in both schemes), so no paper band shows around it. */
+.seq-c .seq-pin {
+  background: var(--near-black);
+}
+/* The stage fills the pinned area, so its full-bleed dark band covers the whole pin (no ivory corners). Its content
+   is centred inside it rather than the pin centring an undersized stage (which left the band short of the pin). */
+.seq-c .seq-stage.theme-dark {
+  flex: 1 1 auto;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.seq-skip {
+  font-size: 14px;
+  margin: var(--space-2) 0 0;
+}
+.stamps {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  font-size: 14px;
+  margin: var(--space-3) 0 0;
+}
+.stamps li {
+  color: var(--ink-2);
+  border: 1px dashed var(--rule);
+  padding: 2px 8px;
+  border-radius: var(--radius-small);
+}
+.stamps li[data-done='true'] {
+  color: var(--ink);
+  border-style: solid;
+  border-color: var(--ink-2);
+}
+.stamps li:last-child[data-done='true'] {
+  color: var(--human-text);
+  border-color: var(--human);
+}
+.branch-capture img {
+  display: block;
+  width: 100%;
+  max-width: 1100px;
+  height: auto;
+  border: 1px solid var(--rule);
+  margin: 0 auto;
+}
+.branch-capture figcaption {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* Demos */
+.demo {
+  margin: var(--space-5) 0;
+  padding: var(--space-5);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  background: var(--paper-2);
+  max-width: 900px;
+}
+.demo-label {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-bottom: var(--space-3);
+}
+.demo-controls {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.demo-controls legend {
+  font-weight: 600;
+  padding-right: var(--space-3);
+}
+.radio {
+  font-size: 15px;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.demo-note {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 0;
+}
+.demo-result {
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--signal);
+  background: var(--paper);
+}
+.demo-result p {
+  margin: 0 0 var(--space-2);
+}
+.denied {
+  color: var(--deny-text);
+  font-weight: 600;
+}
+.event-row {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.demo-takeaway,
+.demo-source {
+  font-size: 15px;
+}
+.demo-source {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.run-strip {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+}
+.run-strip li {
+  border: 1px solid var(--ink-2);
+  border-radius: var(--radius-small);
+  padding: 4px 8px;
+  font-size: 13px;
+}
+.run-strip li.gate {
+  border-color: var(--escalate-text);
+  border-width: 2px;
+}
+.gate-mark {
+  color: var(--escalate-text);
+  font-weight: 600;
+}
+/* Decision node: one box whose border and state move pending -> escalate -> allow or deny. */
+.decision-node {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 8px 12px;
+  border: 1px dashed var(--ink-2);
+  border-radius: var(--radius-small);
+  font-size: 15px;
+}
+.decision-node[data-phase='escalate'] {
+  border: 2px solid var(--escalate-text);
+}
+.decision-node[data-phase='allow'] {
+  border: 2px solid var(--allow);
+}
+.decision-node[data-phase='deny'] {
+  border: 2px solid var(--deny);
+}
+.decision-state {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.decision-node[data-phase='escalate'] .decision-state {
+  color: var(--escalate-text);
+}
+.decision-node[data-phase='allow'] .decision-state {
+  color: var(--human-text);
+}
+.decision-node[data-phase='deny'] .decision-state {
+  color: var(--deny-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .decision-node,
+  .decision-state {
+    transition:
+      border-color 240ms var(--ease-out-expo),
+      color 240ms var(--ease-out-expo);
+  }
+  .run-strip li {
+    animation: stamp-in 240ms var(--ease-out-expo) both;
+  }
+}
+.demo-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.demo-status {
+  font-size: 15px;
+  margin-top: var(--space-3);
+}
+
+/* Build steps (E) */
+.build {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+}
+.build > * {
+  min-width: 0;
+}
+.build-drawing {
+  position: sticky;
+  top: 90px;
+  align-self: start;
+}
+.mini-3d {
+  position: relative;
+  height: 340px;
+  perspective: 900px;
+}
+.mini-plate {
+  position: absolute;
+  left: 8%;
+  width: 84%;
+  height: 92px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  transform-style: preserve-3d;
+}
+.mini-plate-top {
+  top: 0;
+  background: transparent;
+  border-style: dashed;
+}
+.mini-plate-mid {
+  top: 96px;
+  background: var(--paper-2);
+  height: 112px;
+  padding: 8px;
+}
+.mini-plate-base {
+  top: 220px;
+  background: transparent;
+}
+.mini-label {
+  position: absolute;
+  left: 8px;
+  top: -20px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.mini-domain {
+  position: absolute;
+  left: 12px;
+  top: 30px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.mini-cart {
+  position: relative;
+  display: block;
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 8px 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-cartridge);
+  background: var(--paper);
+  color: var(--ink-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.mini-cart::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 5px;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 1px solid var(--ink-2);
+  border-top: 0;
+}
+.mini-reused {
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border-color: var(--rule);
+}
+.mini-outlined {
+  border: 2px dashed var(--ink);
+  color: var(--ink);
+}
+.mini-filled {
+  border: 1px solid var(--ink-2);
+  background: var(--part-act);
+  color: var(--ink);
+}
+.mini-stamp {
+  margin: var(--space-3) 0 0;
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--human-text);
+  border: 2px solid var(--human);
+  border-radius: var(--radius-small);
+  padding: 4px 10px;
+}
+.build-caption {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin: var(--space-6) 0 0;
+  max-width: 44ch;
+}
+.build-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.step {
+  padding: var(--space-4) 0 var(--space-7);
+  color: var(--ink-2);
+  border-top: 1px solid var(--rule);
+}
+.step.is-active {
+  color: var(--ink);
+}
+.step h3 {
+  font-size: 20px;
+}
+.step-n {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+.show-file {
+  margin-top: var(--space-3);
+}
+.show-file summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-decoration: underline;
+}
+.static-outcome {
+  font-size: 15px;
+}
+.excerpt {
+  margin: var(--space-3) 0 0;
+}
+.excerpt pre {
+  overflow-x: auto;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+.excerpt figcaption {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: var(--space-2);
+}
+.closing {
+  margin-top: var(--space-5);
+  font-family: var(--font-slab);
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+/* Onboarding (H) */
+.onboarding {
+  margin-top: var(--space-5);
+}
+.path {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--space-5);
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.path legend {
+  font-weight: 600;
+  margin-right: var(--space-2);
+}
+.path .btn[aria-pressed='true'] {
+  border-color: var(--ink);
+  border-width: 2px;
+}
+/* Steps share the text measure: code blocks stop at the same column as the prose beside them. */
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  max-width: 720px;
+}
+.ob-step {
+  padding: var(--space-5) 0 var(--space-6);
+  border-top: 1px solid var(--rule);
+}
+.ob-step .ob-check {
+  margin-bottom: var(--space-3);
+}
+.checklist > li:first-child {
+  border-top: 2px solid var(--ink);
+}
+.checklist > li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+/* The checkbox and the heading share one centred row, so the box sits on the heading's cap line. */
+.ob-check {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  cursor: pointer;
+}
+.ob-check input {
+  flex: none;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+.ob-check h3 {
+  display: block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.2;
+}
+.ob-step pre {
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.new-note {
+  font-size: 15px;
+  color: var(--ink-2);
+  border-left: 2px solid var(--rule);
+  padding-left: var(--space-2);
+}
+.copy-status {
+  font-size: 13px;
+  color: var(--ink-2);
+  order: -1;
+  margin-right: auto;
+  padding-left: var(--space-3);
+}
+.failed summary {
+  cursor: pointer;
+  color: var(--ink-2);
+  margin-top: var(--space-2);
+}
+.progress {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  margin: var(--space-5) 0;
+}
+.progress p {
+  margin: 0;
+}
+.success {
+  border: 1px solid var(--human);
+  padding: var(--space-4);
+  border-radius: var(--radius-small);
+}
+.success h3 {
+  color: var(--human-text);
+  font-size: 22px;
+}
+.honest-note {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Copy buttons exist only with JavaScript; without it the code is selectable text. */
+.copy-btn {
+  display: none;
+}
+.js .copy-btn {
+  display: inline-block;
+}
+/* A command block: its own top bar carries the Copy button (a 44px target, top right). Without JavaScript the bar is
+   not rendered and the command is plain selectable text. */
+.code-block {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  background: var(--paper-2);
+  margin: 0 0 var(--space-3);
+  max-width: 100%;
+}
+.code-bar {
+  display: none;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border-bottom: 1px solid var(--rule);
+}
+.js .code-bar {
+  display: flex;
+}
+.code-bar .copy-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-3);
+  font-size: 14px;
+}
+.code-block pre {
+  margin: 0;
+  padding: var(--space-3);
+  border: 0;
+  background: none;
+  overflow-x: auto;
+}
+
+/* Prussian authority surface (the .theme-prussian scope in tokens.css). Full-bleed, text inside the page measure. */
+.site-footer {
+  margin: var(--space-8) 0 0;
+  padding: var(--space-6) 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+}
+.site-footer > * {
+  width: min(var(--text-frame), 100% - 2 * var(--space-5));
+  margin-left: auto;
+  margin-right: auto;
+}
+.site-footer .links {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* The rail needs the right gutter; below 1280px it would sit over the content, so it steps aside. */
+@media (max-width: 1279px) {
+  .rail {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .build {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .build-drawing {
+    position: static;
+  }
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .topbar nav {
+    display: none;
+  }
+  /* The stacked build drawing has fixed plate heights; its steps are the readable version on small screens. */
+  .mini-3d {
+    display: none;
+  }
+  .status-chip {
+    margin-left: auto;
+  }
+  .seq-c,
+  .seq-g {
+    height: auto;
+  }
+  .seq-c .seq-pin,
+  .seq-g .seq-pin {
+    position: static;
+    height: auto;
+  }
+  .beat {
+    padding: var(--space-7) 0 var(--space-6);
+  }
+  .sub {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .seq-c {
+    height: 300vh;
+  }
+}
+
+/* Hero: headline on its own row; below it a 12-column grid. Copy takes columns 1 to 5; the real capture takes
+   columns 7 to 12 at full height, so the Workbench screen is the largest thing on the first screen. */
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--space-5);
+  align-items: start;
+  margin-top: var(--space-7);
+}
+.hero-copy {
+  min-width: 0;
+  grid-column: 1 / span 5;
+}
+.hero-art {
+  min-width: 0;
+  grid-column: 6 / -1;
+}
+/* The plate shows one deliberate window of the 1440 x 900 capture: from the sidebar's right rule (x = 280) to the
+   right edge, and from the top of the screen down to the rule under the acceptance table (y = 844). Both cut lines
+   fall between regions, never through a word or a row. Scaled and cropped only; no pixel edits. The plate is
+   1160 x 844 (its own proportion) and the capture is scaled to 1440 / 1160 of the plate width. */
+.hero-plate {
+  margin: 0;
+  aspect-ratio: 1160 / 844;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: var(--paper-2);
+}
+.hero-plate picture {
+  display: block;
+  width: 124.14%;
+  max-width: none;
+  margin-left: -24.14%;
+}
+.hero-plate img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-plate figcaption {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: var(--space-2);
+}
+@media (max-width: 1023px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-5);
+  }
+  .hero-copy,
+  .hero-art {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Code uses the mono token everywhere (fidelity-qa defect 2). */
+pre code,
+code {
+  font-family: var(--font-mono);
+}
+
+/* Touch targets: every control is at least 44px tall, and the whole row of a checkbox or radio is the target. */
+.btn,
+.wordmark,
+.ob-check,
+.radio {
+  min-height: 44px;
+}
+.seq-skip a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.radio input,
+.ob-check input {
+  width: 20px;
+  height: 20px;
+}
+.excerpt figcaption a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

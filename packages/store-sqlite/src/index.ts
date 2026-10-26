@@ -1,6 +1,8 @@
 // Authoritative DurableStore on bun:sqlite (spec §13). Single-process writer; see README.md.
 import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { ConcurrencyError, RecordConflictError, IdempotencyMismatchError, CheckpointConflictError, NotFoundError, validateNewEvent } from "@godspeedai/cognate-events";
 import type {
   DurableStore,
@@ -21,7 +23,7 @@ import type {
 import { migrate } from "./schema.ts";
 
 export interface SqliteStoreOptions {
-  /** Database file path, or ":memory:". */
+  /** Database file path (its parent directory is created if missing), ":memory:", or a `file:` URI. */
   readonly path: string;
 }
 
@@ -125,6 +127,7 @@ function mapCheckpointRow(row: Row): ProjectionCheckpoint {
 }
 
 export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
+  if (options.path !== ":memory:" && !options.path.startsWith("file:")) mkdirSync(dirname(options.path), { recursive: true });
   const db = new Database(options.path, { create: true });
   db.exec("PRAGMA journal_mode = WAL");
   // Durability over speed: fsync on every commit (spec §31.2 "fail closed" — a decision must

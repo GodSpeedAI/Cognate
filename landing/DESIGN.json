@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T03:37:50.153749Z",
+  "title": "Design System: Cognate Landing",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Ivory",
+        "canonical": "#f7f3ea",
+        "darkValue": "#05070a",
+        "purpose": "Light page ground; dark instrument-panel ground in dark scheme and on the hero, stage and footer surfaces (Prussian on the footer)."
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#e7ebee",
+        "darkValue": "#0b1a26",
+        "purpose": "Inset grounds: code, demos, plates."
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Prussian Blue",
+        "canonical": "#003153",
+        "darkValue": "#f7f3ea",
+        "purpose": "Headings and body text on light; ivory text on dark."
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "#566978",
+        "darkValue": "#a7b4bf",
+        "purpose": "Secondary text, captions, default borders."
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Mist step (hairline)",
+        "canonical": "#b3bfc8",
+        "darkValue": "#33495a",
+        "purpose": "Decorative section rules and plate borders at rest. Decorative only."
+      },
+      "signal": {
+        "role": "primary",
+        "displayName": "Muted Gold",
+        "canonical": "#d7a84a",
+        "darkValue": "#d7a84a",
+        "purpose": "Proof, authority, selection and route: primary CTA fill, proof marker, selected tint, route traces on dark. Never text on ivory."
+      },
+      "select": {
+        "role": "primary",
+        "displayName": "Selection outline",
+        "canonical": "#003153",
+        "darkValue": "#d7a84a",
+        "purpose": "Selected part outline and focus ring."
+      },
+      "route": {
+        "role": "primary",
+        "displayName": "Route trace",
+        "canonical": "#003153",
+        "darkValue": "#d7a84a",
+        "purpose": "Exploded-view edges and arrowheads."
+      },
+      "human": {
+        "role": "secondary",
+        "displayName": "Allow",
+        "canonical": "#2f8f5b",
+        "darkValue": "#4cb47a",
+        "purpose": "Approval strokes and fills. Only where a person decides."
+      },
+      "human-text": {
+        "role": "secondary",
+        "displayName": "Allow (text)",
+        "canonical": "#22774d",
+        "darkValue": "#4cb47a",
+        "purpose": "Decision text on light (4.97:1 on ivory). Brand Allow is 3.65:1 on ivory, so text uses this step."
+      },
+      "deny-text": {
+        "role": "utility",
+        "displayName": "Deny (text)",
+        "canonical": "#9e2f2f",
+        "darkValue": "#d9776f",
+        "purpose": "Refused-by-policy text in the permission demo."
+      },
+      "part-model": {
+        "role": "category",
+        "displayName": "Prussian tint 1",
+        "canonical": "oklch(92% 0.02 245)",
+        "darkValue": "oklch(27% 0.04 245)",
+        "purpose": "Cartridge fill, category Models."
+      },
+      "part-act": {
+        "role": "category",
+        "displayName": "Mist white",
+        "canonical": "oklch(97% 0.006 245)",
+        "darkValue": "oklch(22% 0.02 245)",
+        "purpose": "Cartridge fill, category Act."
+      },
+      "part-control": {
+        "role": "category",
+        "displayName": "Prussian tint 2",
+        "canonical": "oklch(88% 0.03 250)",
+        "darkValue": "oklch(33% 0.05 250)",
+        "purpose": "Cartridge fill, category Control."
+      },
+      "part-work": {
+        "role": "category",
+        "displayName": "Mist grey",
+        "canonical": "oklch(94.5% 0.008 230)",
+        "darkValue": "oklch(25% 0.012 240)",
+        "purpose": "Cartridge fill, category Work."
+      },
+      "part-history": {
+        "role": "category",
+        "displayName": "Slate tint",
+        "canonical": "oklch(86% 0.012 240)",
+        "darkValue": "oklch(38% 0.02 240)",
+        "purpose": "Cartridge fill, category History."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "family": "Josefin Sans Variable",
+        "weights": "500",
+        "use": "H1, H2, eyebrows, stage caption, transition line",
+        "tracking": "0 (display); 0.3em (eyebrow caps)"
+      },
+      "text": {
+        "family": "IBM Plex Sans",
+        "weights": "400, 600",
+        "use": "body, H3, buttons, labels"
+      },
+      "mono": {
+        "family": "IBM Plex Mono",
+        "weights": "400, 500",
+        "use": "code, commands, evidence, part numbers, diagram labels"
+      },
+      "slab": {
+        "family": "Josefin Slab",
+        "weights": "400",
+        "use": "editorial accent: dialogue request, pull line, closing line (sparingly)"
+      }
+    },
+    "shadows": {
+      "sheet": {
+        "value": "0 -4px 16px oklch(0% 0 0 / 0.12)",
+        "use": "Mobile inspector sheet only (below 768px)"
+      }
+    },
+    "motion": {
+      "principle": "No CSS transitions. Exploded view is a pure function of scroll. Reduced motion shows the final keyframe.",
+      "easing": "none declared"
+    },
+    "breakpoints": {
+      "mobile": "767px",
+      "tablet": "1023px",
+      "rail-hidden": "1100px",
+      "page-measure": "1200px"
+    },
+    "darkMode": {
+      "strategy": "prefers-color-scheme plus [data-theme]; dark scopes .theme-dark (hero, stage) and .theme-prussian (footer) apply in both schemes",
+      "instrumentPanel": "Near Black field, Prussian structure, ivory type, gold proof, gray-blue linework"
+    },
+    "focus": {
+      "style": "2px outline, 2px offset, Prussian (light) or gold (dark)"
+    }
+  },
+  "components": {
+    "button-primary": {
+      "backgroundColor": "#d7a84a",
+      "textColor": "#05070a",
+      "rounded": "4px",
+      "padding": "8px 14px",
+      "use": "Hero and start CTA, once per view"
+    },
+    "button-default": {
+      "backgroundColor": "paper",
+      "textColor": "ink",
+      "border": "1px ink-2",
+      "rounded": "4px"
+    },
+    "button-human": {
+      "backgroundColor": "paper",
+      "textColor": "human-text",
+      "border": "1px human",
+      "rounded": "4px",
+      "use": "Decision controls only"
+    },
+    "cartridge": {
+      "backgroundColor": "part tint",
+      "textColor": "ink",
+      "rounded": "10px",
+      "notch": "6px connector, top centre",
+      "selected": "2px select outline over 16% gold tint"
+    },
+    "code-block": {
+      "backgroundColor": "paper-2",
+      "textColor": "ink",
+      "rounded": "4px",
+      "padding": "12px"
+    },
+    "proof-marker": {
+      "backgroundColor": "signal",
+      "size": "8px square",
+      "use": "Replaces the lightning glyph in copy; aria-hidden"
+    }
+  },
+  "narrative": {
+    "northStar": "Receipts Visible",
+    "overview": "An authority manual for AI work: a dark cinematic hero, one exploded assembly drawing of a real capture as the signature, and ivory editorial sections. Evidence-disciplined: every proof is a real capture or a labelled drawing.",
+    "keyCharacteristics": [
+      "Ivory and near-black grounds; Prussian identity; contrast carries hierarchy.",
+      "Gold marks proof, selection and the one primary action; never text on ivory.",
+      "Allow green only where a person decides.",
+      "Flat surfaces and hairlines. No gradients, glow, particles or decorative shadows.",
+      "Josefin Sans display, IBM Plex Sans text, IBM Plex Mono evidence, Josefin Slab sparingly."
+    ],
+    "rules": [
+      "The Gold Is Proof Rule: gold is never body text on ivory and never a large wash.",
+      "The Person Decides Rule: Allow appears only at a human decision.",
+      "The Measure Rule: running text stops at 68ch.",
+      "The Mono Is For Identifiers Rule: Plex Mono sets identifiers, code and status, not sentences.",
+      "The Flat Paper Rule: depth is a tonal step or a hairline; the sheet lift is the only shadow.",
+      "The Hairline Rule: structure is drawn with 1px lines; selection is a 2px outline, not a glow."
+    ],
+    "dos": [
+      "Use gold for proof, selection, route and the one primary action.",
+      "Keep the connector notch and the dashed notation of the drawing.",
+      "Caption every capture as real or as an illustration.",
+      "Collapse every animation under reduced motion."
+    ],
+    "donts": [
+      "No gradients, glow, neon, particle fields or decorative glass.",
+      "No gold text on ivory.",
+      "No green headings or decorative green.",
+      "No glyph icons or emoji as signifiers.",
+      "No drop shadows on cards or buttons.",
+      "No 'effortless', 'magic', 'autonomous' as a selling point, and no 'done' without evidence."
+    ],
+    "adaptPolish": "Adapt and polish pass: authority route rerouted orthogonally; Escalate amber for approval gate; Beat F controls live after mount, no-JS shows the gate; hero window re-cropped; Copy in command bar; 12px face labels 768 to 1199; 44px touch targets."
+  }
+}

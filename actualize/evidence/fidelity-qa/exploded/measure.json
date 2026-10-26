@@ -1,0 +1,16 @@
+[
+  {
+    "viewport": "1440x900",
+    "faceWidthPx": 84,
+    "faceHeightPx": 47,
+    "stageWidthPx": 753,
+    "stageHeightPx": 708
+  },
+  {
+    "viewport": "1024x768",
+    "faceWidthPx": 66,
+    "faceHeightPx": 37,
+    "stageWidthPx": 609,
+    "stageHeightPx": 576
+  }
+]

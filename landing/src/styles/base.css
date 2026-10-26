@@ -1,0 +1,97 @@
+/* Base typography and page ground. Josefin Sans display, IBM Plex Sans text, IBM Plex Mono evidence. */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 18px;
+  line-height: 28px;
+}
+
+@media (max-width: 767px) {
+  body {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+/* Inline SVG keeps its viewBox aspect (default preserveAspectRatio) and never forces page overflow. */
+svg {
+  max-width: 100%;
+}
+
+/* Display headings: Josefin Sans Medium, tracking 0, line-height 105 to 115 percent. */
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.08;
+  margin: 0 0 var(--space-3);
+}
+
+/* Functional headings: IBM Plex Sans SemiBold, tracking -1, line-height 110 to 120 percent. */
+h3 {
+  font-family: var(--font-text);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
+}
+
+h1 {
+  font-size: clamp(44px, 6.6vw, 88px);
+}
+
+h2 {
+  font-size: clamp(36px, 4.6vw, 64px);
+}
+
+h3 {
+  font-size: 22px;
+}
+
+p {
+  max-width: 68ch;
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--ink);
+  text-decoration-color: var(--link-line);
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--select);
+  outline-offset: 2px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}

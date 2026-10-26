@@ -1,0 +1,180 @@
+## packages/kernel-api/src/types.ts 31-39
+31 export interface CapabilityContract {
+32 /** Stable capability identity, e.g. `customer.read`. */
+33 readonly id: string;
+34 /** Semantic version of the contract, `MAJOR.MINOR.PATCH`. */
+35 readonly version: string;
+36 readonly attributes?: Attributes;
+37 readonly semanticRef?: SemanticRef;
+38 }
+39
+## packages/kernel-api/src/types.ts 41-46
+41 export interface Requirement {
+42 readonly capability: string;
+43 /** Required major version; any provider with the same major and >= minor is compatible. */
+44 readonly version?: string;
+45 /** Every listed attribute must equal the provider's attribute. */
+46 readonly attributes?: Attributes;
+## packages/kernel-api/src/types.ts 167-176
+167 export interface Component {
+168 readonly id: string;
+169 readonly requires?: Readonly<Record<string, Requirement>>;
+170 readonly provides?: readonly CapabilityContract[];
+171 readonly semanticRef?: SemanticRef;
+172 readonly retry?: RetryPolicy;
+173 /** Activation longer than this fails transiently instead of staying ACTIVATING (spec §8.4). Default 30000. */
+174 readonly activationTimeoutMs?: number;
+175 activate(fiber: FiberContext): void | Promise<void>;
+176 }
+## packages/kernel-api/src/types.ts 193-208
+193 export interface ScopeOptions {
+194 readonly id?: string;
+195 /** A child may narrow its principal; it never gains authority by inheritance. */
+196 readonly principal?: Principal;
+197 }
+198
+199 export interface Scope {
+200 readonly id: string;
+201 readonly parentId: string | undefined;
+202 readonly tenant: string;
+203 readonly principal: Principal;
+204 readonly closed: boolean;
+205 child(options?: ScopeOptions): Scope;
+206 /** Close children first, then dispose this scope's components. */
+207 close(reason: string): Promise<void>;
+208 }
+## packages/kernel-api/src/compat.ts 13-20
+13 export function isCompatible(requirement: Requirement, contract: CapabilityContract): boolean {
+14 if (requirement.capability !== contract.id) return false;
+15 if (requirement.version !== undefined) {
+16 const [rMajor, rMinor, rPatch] = parse(requirement.version);
+17 const [cMajor, cMinor, cPatch] = parse(contract.version);
+18 if (rMajor !== cMajor) return false;
+19 if (cMinor < rMinor || (cMinor === rMinor && cPatch < rPatch)) return false;
+20 }
+## packages/kernel-cordis/src/registry.ts 50-56
+50 for (const scopeId of scopeChain) {
+51 const set = this.byScope.get(scopeId);
+52 if (!set) continue;
+53 for (const pub of set) if (pub.isActive() && isCompatible(requirement, pub.contract)) return pub;
+54 }
+55 return undefined;
+56 }
+## packages/kernel-cordis/src/lease.ts 56-68
+56 const callerTenant = context.tenant ?? tenant;
+57 const request: AuthorizationRequest = {
+58 operation: "invoke",
+59 actor: context.actor,
+60 tenant: callerTenant,
+61 scopeId: provider.scopeId,
+62 capability: provider.contract,
+63 providerId: provider.providerId,
+64 correlationId: context.correlationId,
+65 };
+66 const decision = await policy.authorize(request);
+67 emit({ type: "invocation", capability: provider.contract.id, providerId: provider.providerId, correlationId: context.correlationId, decision });
+68 if (!decision.allow) return { ok: false, failure: { kind: "denied", decision } };
+## packages/kernel-api/src/policy.ts 1-6
+1 import type { AuthorizationRequest, Policy, PolicyDecision } from "./types.ts";
+2
+3 /** Default policy: no authority (spec §32). */
+4 export const denyAll: Policy = {
+5 authorize: () => ({ allow: false, policyId: "deny-all", reason: "no policy grants this invocation" }),
+6 };
+## packages/runtime-api/src/types.ts 33-71
+33 readonly runId: string;
+34 readonly agent: string;
+35 readonly tenant: string;
+36 readonly scopeId: string;
+37 readonly correlationId: string;
+38 readonly actor: Principal;
+39 /** Aborted when the run is cancelled. */
+40 readonly signal: AbortSignal;
+41 /** Run a nondeterministic unit once and record its JSON result as `run.step.completed`. */
+42 step<T extends Json>(id: string, fn: () => T | Promise<T>): Promise<T>;
+43 /** Record a run-scoped fact (e.g. `message.delta`, `state.changed`). Emitted once across replays. */
+44 emit(eventType: string, payload: Json): Promise<void>;
+45 /** Resolve and invoke a capability through the kernel and policy; the result is recorded. Throws `InvocationFailedError` on typed failure. */
+46 invoke(capability: string, input: Json, options?: { readonly version?: string }): Promise<Json>;
+47 /** Produce a durable artifact attributed to this run; returns its id. */
+48 artifact(input: ArtifactInput): Promise<string>;
+49 /**
+50 * Suspend until a durable continuation is resolved. Returns the resolution input on resume.
+51 * Cancellation or expiry of the continuation fails the run with `ContinuationClosedError`.
+52 */
+53 waitFor(id: string, spec: WaitSpec): Promise<Json>;
+54 /**
+55 * Recall authorized prior knowledge relevant to `text` (spec §16). The result is recorded as a step so replay
+56 * is deterministic. Returns `{ status: "degraded" }` when cognition is unavailable or not configured.
+57 */
+58 recall(id: string, query: { readonly text: string; readonly k: number }): Promise<{ readonly status: "ok" | "degraded"; readonly items: readonly { readonly sourceRef: string; readonly score: number; readonly value: Json }[] }>;
+59 /**
+60 * The run's current shared state: the fold of every `state.changed` event for this run, whether emitted by the
+61 * agent or written by a caller through `RuntimeService.updateState`. Recorded as a step under `id`, so replay
+62 * returns the value that was read rather than re-reading state that may have changed since.
+63 */
+64 state(id: string): Promise<Json>;
+65 /**
+66 * A replay-safe snapshot of durable state shared by every run in this correlation/thread. The snapshot is
+67 * recorded under `id`, so a replay returns the value originally observed rather than a later caller edit.
+68 */
+69 sharedState(id: string): Promise<Json>;
+70 /** Atomically update durable thread state. The result is recorded under `id` and is replay-safe. */
+71 updateSharedState(id: string, update: StateUpdate): Promise<{ readonly state: Json; readonly version: number }>;
+## packages/continuations/src/continuations.ts 59-59
+59 async open(input: OpenContinuation): Promise<ContinuationRecord> {
+## packages/continuations/src/continuations.ts 128-128
+128 async resume(id: string, action: ContinuationAction & { readonly input: Json }): Promise<TransitionOutcome> {
+## packages/continuations/src/continuations.ts 176-176
+176 async cancel(id: string, action: ContinuationAction & { readonly reason: string }): Promise<TransitionOutcome> {
+## packages/continuations/src/continuations.ts 256-256
+256 async expireDue(): Promise<ContinuationRecord[]> {
+## packages/runtime-bun/src/runtime.ts 146-150
+146 // A runtime epoch gives recovery attempts fresh durable intent IDs after prior intents have
+147 // already been delivered. Existing pending run.execute intents retain their persisted backoff.
+148 const recoveryEpoch = randomUUID();
+149 let recoverySequence = 0;
+150 const recoveryReconciliationIntervalMs = 250;
+## packages/runtime-bun/src/runtime.ts 219-230
+219 // Reconcile only when a new recovery candidate exists. A tracked intent already has a
+220 // durable retry schedule; rescanning the complete pending topic every timer tick is needless.
+221 if (pending.size === 0) return;
+222 const now = performance.now();
+223 if (now < nextRecoveryReconciliationAt) return;
+224 // Set the deadline before awaiting: a slow or failing store query must not hot-loop scans.
+225 nextRecoveryReconciliationAt = now + recoveryReconciliationIntervalMs;
+226 const pendingItems = await store.listOutbox({ topic: RUN_EXECUTE_TOPIC, status: "pending" });
+227 const pendingItemIds = new Set(pendingItems.map((item) => item.id));
+228 for (const [runId, id] of recoveryOutboxByRun) {
+229 if (pendingItemIds.has(id)) pending.delete(runId);
+230 else recoveryOutboxByRun.delete(runId);
+## packages/runtime-bun/src/index.ts 67-71
+67 /** Background work loop interval (run execution, resume delivery, expiry). Default 10 ms. */
+68 readonly tickMs?: number;
+69 /** Explicit single-process execution admission; defaults to serial compatibility. */
+70 readonly execution?: {
+71 readonly maxConcurrentRuns?: number;
+## packages/events/src/types.ts 7-7
+7 export interface NewEvent {
+## packages/events/src/types.ts 164-164
+164 export interface DurableStore {
+## packages/protocol-connect-bun/src/index.ts 1-1
+1 // Serves RuntimeService on Bun.serve with authentication, payload limits, and a default deadline
+## packages/ag-ui/src/index.ts 1-2
+1 // CG-AGUI (spec §24, §31.8, §32; ADR-0008): AG-UI 1.0.0 interoperability adapter.
+2 // Outbound: durable Cognate events -> schema-valid AG-UI events (never the reverse: AG-UI never becomes
+## packages/react/src/index.tsx 1-1
+1 // React 19 bindings over the headless client (spec §25.2). All hooks are thin useSyncExternalStore
+## packages/provider-auth/src/index.ts 1-3
+1 /**
+2 * Credentials are leased per request; never copy this object into an event, projection,
+3 * model capability description, error or log. This contract does not grant permission
+## examples/human-approval/index.ts 13-18
+13 const decision = (await ctx.waitFor("approve", {
+14 type: "refund-approval",
+15 condition: { kind: "human_approval" },
+16 payload: { amount },
+17 })) as { readonly approved: boolean };
+18 return { amount, approved: decision.approved, status: decision.approved ? "refunded" : "denied" };
+## examples/human-approval/index.ts 39-39
+39 await client.resolveContinuation(approval.id, "resume", { approved: true });
