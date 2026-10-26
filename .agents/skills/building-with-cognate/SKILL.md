@@ -14,7 +14,7 @@ Build software as: **validated interaction model → explicit bindings → deter
 
 ## Tooling
 
-Invoke the Cognate CLI only as `cognate <command>`. Resolve what `cognate` means (the published [`@godspeedai/cognate-cli`](https://www.npmjs.com/package/@godspeedai/cognate-cli) package; `create` still needs `--source <checkout>`) from [references/cli.md](references/cli.md) before first use. Keep install paths and version pins out of every other file in this skill.
+Invoke the Cognate CLI only as `cognate <command>`. Resolve what `cognate` means (the published [`@godspeedai/cognate-cli`](https://www.npmjs.com/package/@godspeedai/cognate-cli) package; `create` resolves packages from npm by default, with `--source <checkout>` for unreleased local changes) from [references/cli.md](references/cli.md) before first use. Keep install paths and version pins out of every other file in this skill.
 
 ## References (load as needed)
 

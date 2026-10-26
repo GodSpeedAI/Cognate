@@ -425,8 +425,8 @@ operation on `isRecorded(eventId)`. Correlation ids round-trip through `realityt
 
 ## Gaps
 
-- No published `@godspeedai/*` npm packages yet (DEBT-016); every app is built from a local checkout
-  — see `cli.md`.
+- `@godspeedai/cognate-*` packages publish to npm and `create` resolves them without a checkout
+  (DEBT-016, closed); `--source <path>` vendors a local checkout — see `cli.md`.
 - `docs/getting-started.md` and `docs/reference/commands-and-configuration.md` both describe
   `cognate create --source <path>`; do not add a second description of that flag here — `cli.md`
   owns it.

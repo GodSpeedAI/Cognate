@@ -123,7 +123,7 @@ rather than restated here, so this page does not go stale. Recorded limits, verb
 | a single SQLite writer process | DEBT-011 |
 | erasure does not reach continuation records or recall step results | DEBT-014 |
 | the runtime loop polls and executes runs serially | DEBT-015 |
-| packages are unpublished; `create` vendors from a checkout | DEBT-016 |
+| `create` in a source checkout vendors via `--source`; npm provenance stays accepted-as-N/A | DEBT-016 |
 | Bun 1.4.0 `toMatchObject` mutates its argument | DEBT-017 |
 | RVF `FsyncFailed` under concurrent I/O | DEBT-018 |
 | RuVector core supports vector search only | DEBT-007 |

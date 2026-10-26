@@ -24,7 +24,7 @@ If a gate that should pass fails, run it directly — the gate command is in the
 | Symptom | Cause | Recovery | Source |
 |---|---|---|---|
 | `cognate: usage: cognate create …` | no or unknown subcommand | the usage line lists both commands | `packages/cli/src/bin.ts:55` |
-| `cognate create: --source is required` | packages are unpublished (DEBT-016) | pass a Cognate checkout | `packages/cli/src/bin.ts:33` |
+| `cognate create: --source is required` | CLI older than 0.8.0, before registry mode (DEBT-016, closed) | upgrade to 0.8.0 or later, or pass a Cognate checkout | `packages/cli/src/bin.ts:33` |
 | `cognate create: cannot find source package "X" under --source` | `--source` is not a full checkout | point at the repository root | `packages/cli/src/index.ts:71` |
 | `bun pm pack failed in <dir>` | the package manifest is unreadable | run `bun pm pack` manually in that directory | `packages/cli/src/index.ts:85` |
 | `unsupported: sona (…)` | a known-unsupported `--with` name | informational; SONA stays rejected (ADR-0005) | `packages/cli/src/index.ts:30` |
