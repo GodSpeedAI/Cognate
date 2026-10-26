@@ -1,6 +1,6 @@
 {
   "name": "@godspeedai/cognate-ui-astryx",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Reference Astryx surfaces over @godspeedai/cognate-react: shell, chat, approvals, artifacts, run and state inspection, themes (spec §25.3). A renderer, not the ontology.",
   "type": "module",
   "license": "Apache-2.0",
