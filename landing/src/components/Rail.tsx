@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 // Sticky slim progress rail: anchor links for each beat, aria-current on the beat in view.
 const BEATS = [
   { id: 'top', label: 'Overview' },
+  { id: 'meaning', label: 'The core idea' },
   { id: 'proof', label: 'Evidence' },
   { id: 'parts', label: 'Parts' },
   { id: 'fit', label: 'How parts fit' },

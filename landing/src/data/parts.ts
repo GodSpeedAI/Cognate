@@ -1,8 +1,9 @@
 import type { Edge, Layer, Part } from './types';
 
-// Pinned SHAs (full 40-char). Workbench main is d208cd0; the expert-teams branch is fdc709b.
+// Pinned SHAs (full 40-char). Workbench excerpts are pinned at main d208cd0, except C-13/C-14
+// and their edges, which are re-verified at main c2abce2 after Expert Teams merged.
 const WB = 'd208cd0491d5d76839ed4dedbababc589383ad09';
-const WB_BRANCH = 'fdc709b9ccff47d52619185f6e9e03fdd9ae8d08';
+const WB_MAIN2 = 'c2abce2496e19988d534e4b465a3c7204538e737';
 const CO = 'dd13c8422220ecbac61a92bdd90829218844bc2e';
 const WBR = 'GodSpeedAI/Cognate-Workbench';
 const COR = 'GodSpeedAI/Cognate';
@@ -257,13 +258,13 @@ export const parts: readonly Part[] = [
     why: 'Expert state is partitioned into the record and read back as shared state.',
     kind: 'workbench',
     branchOnly: true,
-    sources: [{ repo: WBR, sha: WB_BRANCH, path: 'src/experts/service.ts', startLine: 467, endLine: 469 }],
+    sources: [{ repo: WBR, sha: WB_MAIN2, path: 'src/experts/service.ts', startLine: 551, endLine: 553 }],
     excerpt: [
       'export function expertsComponent(options:{getExperts:()=>ExpertsService;semanticRefs:Readonly<Record<string,SemanticRef|undefined>>}): Component {',
       '  const ids=Object.keys(EXPERT_CAPABILITY_ANCHORS).filter(id=>!["expert.model.generate","expert.tool.invoke","expert.effect.resolve"].includes(id));',
       '  const contracts=ids.map(id=>({id,version:"1.0.0",semanticRef:options.semanticRefs[id]}));',
     ].join('\n'),
-    excerptCaption: 'Experts component (branch): the expert capability contracts it provides.',
+    excerptCaption: 'Experts component: the expert capability contracts it provides.',
   },
   {
     id: 'C-14',
@@ -272,7 +273,7 @@ export const parts: readonly Part[] = [
     why: 'Cancelling an occurrence also cancels its unfinished team assignment.',
     kind: 'workbench',
     branchOnly: true,
-    sources: [{ repo: WBR, sha: WB_BRANCH, path: 'src/schedules/service.ts', startLine: 269, endLine: 273 }],
+    sources: [{ repo: WBR, sha: WB_MAIN2, path: 'src/schedules/service.ts', startLine: 269, endLine: 273 }],
     excerpt: [
       '  const ids = ["schedule.save", "schedule.manage", "schedule.list", "schedule.dispatch"];',
       '  const contracts = ids.map((id) => ({ id, version: "1.0.0", semanticRef: options.semanticRefs[id] }));',
@@ -280,7 +281,7 @@ export const parts: readonly Part[] = [
       '    for (const contract of contracts) fiber.provide(contract, async (input, ctx: HandlerContext) => {',
       '      if (contract.id === "schedule.dispatch") {',
     ].join('\n'),
-    excerptCaption: 'Schedules component (branch): the dispatch capability and its contracts.',
+    excerptCaption: 'Schedules component: the dispatch capability and its contracts.',
   },
 ];
 
@@ -302,7 +303,7 @@ export const edges: readonly Edge[] = [
   { from: 'C-11', to: 'C-03', kind: 'requires', evidence: { repo: WBR, sha: WB, path: 'src/capabilities/cognitive.ts', line: 3 } },
   { from: 'C-11', to: 'C-10', kind: 'stores-in', evidence: { repo: WBR, sha: WB, path: 'src/capabilities/cognitive.ts', line: 4 } },
   { from: 'C-12', to: 'C-10', kind: 'invokes', evidence: { repo: WBR, sha: WB, path: 'src/server.ts', line: 413 } },
-  { from: 'C-13', to: 'C-10', kind: 'stores-in', evidence: { repo: WBR, sha: WB_BRANCH, path: 'src/experts/persistence.ts', line: 208 } },
-  { from: 'C-14', to: 'C-13', kind: 'invokes', evidence: { repo: WBR, sha: WB_BRANCH, path: 'src/schedules/evaluator.ts', line: 199 } },
-  { from: 'C-14', to: 'C-13', kind: 'stores-in', evidence: { repo: WBR, sha: WB_BRANCH, path: 'src/schedules/service.ts', line: 49 } },
+  { from: 'C-13', to: 'C-10', kind: 'stores-in', evidence: { repo: WBR, sha: WB_MAIN2, path: 'src/experts/persistence.ts', line: 189 } },
+  { from: 'C-14', to: 'C-13', kind: 'invokes', evidence: { repo: WBR, sha: WB_MAIN2, path: 'src/schedules/evaluator.ts', line: 199 } },
+  { from: 'C-14', to: 'C-13', kind: 'stores-in', evidence: { repo: WBR, sha: WB_MAIN2, path: 'src/schedules/service.ts', line: 49 } },
 ];

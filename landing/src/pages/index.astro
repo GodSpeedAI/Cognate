@@ -19,10 +19,23 @@ const blocked = byFile('e2e-05');
 const review = byFile('e2e-07');
 const accepted = byFile('e2e-08');
 const description =
-  'Describe the software you want. Your coding agent builds it with Cognate. AI agents can then work inside it, within permissions you set. Open source, Apache-2.0.';
+  'Cognate is an open-source semantic application SDK for building agent-native software. Your coding agent can build with it, and AI agents can work inside what it builds, within permissions you set.';
+
+// The status chip bakes in the latest published SDK version at build time, with a pinned fallback
+// so an offline build still shows a true statement.
+let npmVersion = '0.7.1';
+try {
+  const res = await fetch('https://registry.npmjs.org/@godspeedai/cognate/latest');
+  if (res.ok) {
+    const meta = (await res.json()) as { version?: unknown };
+    if (typeof meta.version === 'string' && meta.version.length > 0) npmVersion = meta.version;
+  }
+} catch {
+  // Offline build: keep the fallback above.
+}
 ---
 
-<Base title="Cognate: the agentic application framework" description={description}>
+<Base title="Cognate: the open-source semantic application SDK" description={description}>
   <a class="skip" href="#start">Skip to: Build your first app</a>
   <header class="topbar">
     <a class="wordmark" href="#top"><svg class="wordmark-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g transform="translate(-2.5 0)"><path d="M52 22A10 10 0 0 0 42 12H22A10 10 0 0 0 12 22V42A10 10 0 0 0 22 52H42A10 10 0 0 0 52 42" fill="none" stroke="currentColor" stroke-width="8"/><rect x="29" y="26.5" width="32" height="11" rx="2.5" fill="var(--signal)"/></g></svg>Cognate</a>
@@ -31,24 +44,25 @@ const description =
       <a href="#start">Build your first app</a>
       <a href="https://github.com/GodSpeedAI/Cognate">GitHub</a>
     </nav>
-    <span class="status-chip">v0 · 0.5.0 on npm</span>
+    <a class="status-chip" href="https://www.npmjs.com/package/@godspeedai/cognate">v0 · {npmVersion} on npm</a>
   </header>
   <Rail client:load />
 
   <main id="top">
     <section class="beat hero theme-dark" aria-labelledby="hero-title">
       <div class="hero-head">
-        <p class="eyebrow">The agentic application framework</p>
+        <p class="eyebrow">The open-source semantic application SDK</p>
         <h1 id="hero-title">You steer the software. AI agents build it, and work within it.</h1>
       </div>
       <div class="hero-grid">
       <div class="hero-copy">
       <p class="sub">
-        Describe the application you want. Your coding agent assembles it from Cognate's capabilities. Inside it, AI agents can do real work within permissions you set, and pause for you when it matters.
+        Cognate is an SDK for building agent-native software: one application with its own domain, operations, rules, and history. Your coding agent assembles it from reusable parts. Inside the finished app, AI agents do real work through permission-checked capabilities, and pause for you when it matters.
       </p>
+      <p class="hero-kinds">Copilots, agent harnesses, case management, multi-agent workspaces, governed workflows — different products, one substrate.</p>
       <p class="ctas">
         <a class="btn btn-primary" href="#start">Build your first app</a>
-        <a class="btn" href="#proof">See it taken apart</a>
+        <a class="btn" href="#meaning">See the core idea</a>
       </p>
       <figure class="dialogue">
         <p class="request"><span class="who">You</span> “Build me a refund desk. Small refunds can go through. Anything over $50 waits for me.”</p>
@@ -63,12 +77,33 @@ const description =
         <figcaption>Illustration of a request</figcaption>
       </figure>
       <p class="footline"><span class="speed" aria-hidden="true">⚡</span> You stay the one who decides. A prompt is not an authority boundary, so Cognate checks permissions in code.</p>
-      <p class="transition">Does this hold up for a real application?</p>
       </div>
       <div class="hero-art">
         <Capture file={contract.file} alt={contract.alt} caption="Real screen from Cognate-Workbench" width={contract.width} height={contract.height} eager class="hero-plate" />
       </div>
       </div>
+    </section>
+
+    <section class="beat" id="meaning" aria-labelledby="meaning-title">
+      <p class="kicker">The core idea</p>
+      <h2 id="meaning-title">One application. Every door leads to it.</h2>
+      <p>
+        An application built with Cognate has its own meaning: a domain, operations, rules, and a history. Everything else — the agent, the interface, the protocol, the memory — is a way to interact with that one application, not a second copy of it.
+      </p>
+      <p>
+        Take the refund operation in the app you'll build below, <span class="mono">refunds.issue</span>. It is one operation, and each door shows a different face of the same thing:
+      </p>
+      <ul class="annotations" aria-label="One operation, several doors">
+        <li>To the <strong>agent</strong>, a tool it may call — if the permission check allows it.</li>
+        <li>To the <strong>person</strong>, an approval card with a $75 decision on it.</li>
+        <li>To an <strong>outside agent</strong>, the same capability can appear as an authorized MCP tool.</li>
+        <li>To the <strong>audit trail</strong>, a short sequence of recorded events.</li>
+        <li>To a <strong>future run</strong>, a prior episode the cognitive index can recall.</li>
+      </ul>
+      <p>
+        Five doors, one operation. The tool your agent calls and the button your user clicks stay in step because they are the same thing. That is what <em>define meaning once, project it everywhere</em> means here, and it is why swapping a model, a renderer, or a database does not redraw the application around them.
+      </p>
+      <p class="transition">Does this hold up for a real application?</p>
     </section>
 
     <section class="beat beat-evidence" id="proof" aria-labelledby="proof-title">
@@ -101,7 +136,7 @@ const description =
       <p class="legend-chips" aria-label="Legend">
         <span class="chip chip-cognate">From Cognate</span>
         <span class="chip chip-workbench">Built in Workbench</span>
-        <span class="chip chip-branch">In development (branch)</span>
+        <span class="chip chip-branch">Added by extension</span>
       </p>
       <SequenceC client:visible />
       <PartsText />
@@ -162,7 +197,7 @@ const description =
       </p>
       <SequenceG client:visible />
       <p>
-        Real examples: Workbench's Expert Teams work added Experts, Teams and Schedules to the existing app. It is in development on a branch and not yet merged. In the refund desk, a receipt capability was added the same way, and tested.
+        Real examples: Workbench's Expert Teams work added Experts, Teams and Schedules to the existing app, and they are on Workbench's main branch today. In the refund desk, a receipt capability was added the same way, and tested.
       </p>
       <p class="caption-note">Same app, one more part, and the same structure.</p>
     </section>

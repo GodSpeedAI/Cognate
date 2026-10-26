@@ -23,6 +23,7 @@ export interface Part {
   readonly job: string;
   readonly why: string;
   readonly kind: PartKind;
+  /** The parts the extension beat adds later, after the first build. */
   readonly branchOnly?: true;
   /** sources[0] is the file the excerpt is copied from. */
   readonly sources: readonly SourceRef[];

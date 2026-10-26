@@ -15,10 +15,10 @@ Two kinds of file are shipped for each capture:
 | `workbench/e2e-05-authority-and-blocked.png` | GodSpeedAI/Cognate-Workbench | d208cd0491d5d76839ed4dedbababc589383ad09 | screenshots/workbench/e2e-05-authority-and-blocked.png |
 | `workbench/e2e-07-review-gate.png` | GodSpeedAI/Cognate-Workbench | d208cd0491d5d76839ed4dedbababc589383ad09 | screenshots/workbench/e2e-07-review-gate.png |
 | `workbench/e2e-08-accepted.png` | GodSpeedAI/Cognate-Workbench | d208cd0491d5d76839ed4dedbababc589383ad09 | screenshots/workbench/e2e-08-accepted.png |
-| `workbench-expert-teams/default-team-desktop.png` | GodSpeedAI/Cognate-Workbench (unmerged branch) | fdc709b9ccff47d52619185f6e9e03fdd9ae8d08 | screenshots/experts/default-team-desktop.png |
-| `workbench-expert-teams/team-conversation-handoff-desktop.png` | GodSpeedAI/Cognate-Workbench (unmerged branch) | fdc709b9ccff47d52619185f6e9e03fdd9ae8d08 | screenshots/experts/team-conversation-handoff-desktop.png |
+| `workbench-expert-teams/default-team-desktop.png` | GodSpeedAI/Cognate-Workbench | c2abce2496e19988d534e4b465a3c7204538e737 | screenshots/experts/default-team-desktop.png |
+| `workbench-expert-teams/team-conversation-handoff-desktop.png` | GodSpeedAI/Cognate-Workbench | c2abce2496e19988d534e4b465a3c7204538e737 | screenshots/experts/team-conversation-handoff-desktop.png |
 
-The Workbench `LICENSE` at commit d208cd04 is Apache-2.0 and is byte-identical to the Cognate project `LICENSE`, which is vendored as `licenses/Apache-2.0.txt`. The repository has no NOTICE file at either commit. The expert-teams captures come from an unmerged branch and are captioned as such on the page.
+The Workbench `LICENSE` at commits d208cd04 and c2abce24 is Apache-2.0 and is byte-identical to the Cognate project `LICENSE`, which is vendored as `licenses/Apache-2.0.txt`. The repository has no NOTICE file at either commit. The Expert Teams captures are taken from Workbench main, where that work is merged; the page presents them under the "added by extension" label because they are the extension story's worked example.
 
 ## Other generated images
 

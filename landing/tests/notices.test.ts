@@ -38,7 +38,7 @@ describe('third-party notices', () => {
     const text = readFileSync(notices, 'utf8');
     expect(text).toContain('Copyright GodSpeedAI');
     expect(text).toContain('d208cd0491d5d76839ed4dedbababc589383ad09');
-    expect(text).toContain('fdc709b9ccff47d52619185f6e9e03fdd9ae8d08');
+    expect(text).toContain('c2abce2496e19988d534e4b465a3c7204538e737');
     expect(text).toContain('Apache License');
   });
 });
