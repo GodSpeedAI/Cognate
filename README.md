@@ -2,227 +2,148 @@
 
 **Define meaning once. Project it everywhere.**
 
-> **Status: v0 — published, early.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented, verified, and **published on npm under the [`@godspeedai/cognate-*`](https://www.npmjs.com/package/@godspeedai/cognate) names** (releases are managed by Release Please; see [ADR-0012](docs/decisions/ADR-0012-cognate-package-naming.md) for the naming convention). `just gates` reports every ledger requirement passing, and `bun run test` passes across the workspace. The ledger is a *candidate* rather than a frozen contract, and the known gaps are tracked in the [debt register](.agents/DEBT.md) — for example erasure does not yet reach every derived copy, Connect supports unary and server-streaming only, and runs execute serially in a polling loop. The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
+> **Status: v0 — published, early.** The framework packages, reference profiles, CLI, examples, and documentation in this repository are implemented, verified, and **published on npm under the [`@godspeedai/cognate-*`](https://www.npmjs.com/package/@godspeedai/cognate) names** (releases are managed by Release Please; see [ADR-0012](docs/decisions/ADR-0012-cognate-package-naming.md) for the naming convention). `just gates` reports every ledger requirement passing, and `bun run test` passes across the workspace. The ledger is a *candidate* rather than a frozen contract, and the known gaps are tracked openly in the [debt register](.agents/DEBT.md) — for example Connect supports unary and server-streaming only ([ADR-0003](docs/decisions/ADR-0003-wire-connect-protobuf.md)), and runs default to one at a time ([runtime concurrency](docs/runtime-concurrency.md)). The [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd) is the normative contract; where this README describes behavior, the linked gates prove it.
 
-Cognate is an open-source semantic application framework for building agent-native software.
+Cognate is an open-source **semantic application SDK for building agent-native software**. It runs on Bun, and every package is published and installable on its own.
 
-Define your application's domain in `.sea`. Cognate turns those semantics into a live, composable system of agents, tools, state, workflows, UI, memory, protocols, and evidence — without making any one agent framework, frontend library, model provider, or transport the center of your architecture.
+An application built with Cognate keeps its own meaning at the center: the domain it serves, the operations it can perform, the rules that decide who may do what, and the history of what actually happened. Agents, interfaces, tools, models, and protocols all interact with that one application through shared contracts. None of them carries a private copy of it.
 
-Build a copilot. Build an autonomous agent harness. Build a case-management system with agents inside it. Build a multi-agent workspace, an adaptive application, or a governed enterprise workflow.
-
-They are all compositions of the same substrate.
-
-```text
-.sea
-  │
-  ▼
-DomainForge
-  │
-  ▼
-semantics
-  │
-  ▼
-Cognate
-  ├── agents
-  ├── capabilities
-  ├── tools
-  ├── workflows
-  ├── continuations
-  ├── state
-  ├── artifacts
-  ├── UI
-  ├── memory
-  └── protocols
-```
+That is the whole idea, and the rest of this page is its consequences.
 
 ---
 
 ## Why Cognate?
 
-Most agent applications are assembled vertically.
+Most agent software is assembled vertically. The agent framework owns the loop. The frontend SDK owns the chat. State lives in someone else's database. Memory becomes a vector store. Human approval gets its own widget. Observability is added after the fact. Each new capability means new glue, and eventually the glue becomes the architecture.
 
-An agent framework owns one part. A frontend SDK owns another. State lives somewhere else. Memory becomes a vector database. Human approval gets its own abstraction. Observability is added after the fact. Each protocol introduces another representation of the same application.
+Cognate starts one level lower, with the application's semantics.
 
-Eventually the glue becomes the architecture.
+Define the domain in [`.sea`](docs/semantics.md), a small semantic modeling language. [DomainForge](https://github.com/GodSpeedAI/DomainForge) validates it and projects it. The Cognate runtime turns that projection into a live, composable system of agents, capabilities, state, workflows, UI, memory, protocols, and evidence — without making any one agent framework, frontend library, model provider, or transport the center of your architecture.
 
-Cognate starts one level lower.
+The consequence is practical. A tool your agent can call and a button your user can click can be the *same operation*, permission-checked the same way, recorded the same way. Swap the model provider, the renderer, or the storage engine, and the application's meaning does not move. Deterministic code keeps doing what code is good at. Agents do the flexible, context-dependent work, behind the same contracts as everything else. People stay in the loop where the work is consequential.
 
-The application has **semantics**. Everything else is a representation of those semantics.
-
-Cognate provides the execution substrate that lets those representations live together without collapsing them into one framework.
-
-**Semantics constrain execution.
-Events preserve truth.
-Cognition discovers relevance.
-Observations record execution.
-Representations remain replaceable.**
+**Semantics constrain execution. Events preserve truth. Cognition discovers relevance. Observations record execution. Representations remain replaceable.**
 
 ---
 
-## Quick Start
+## What you can build
 
-Cognate targets Bun. The quickest way to scaffold an app is the published CLI (it vendors the profile's packages from a Cognate checkout into the new app, so they resolve without a workspace):
+Every kind of software below is a composition of the same substrate, not a separate template:
+
+- **Copilots that touch real state.** An agent reads application state through capability calls and writes back through the same events the UI observes. Chat is one surface of the product, not the product.
+- **Autonomous agent harnesses.** Models, tools, sessions, sandboxes, and schedulers are replaceable capabilities. Providers can appear, disappear, or be swapped while the app runs.
+- **Workflows and cases that wait for people.** An agent suspends on a durable continuation — for an approval, an OAuth flow, an external job, or a scheduled event. The process can stop and restart; the unfinished work survives and resumes.
+- **Multi-agent workspaces.** Runs spawn and await other runs. Every step lands in a durable event log with causal identity, so history can be replayed and audited.
+- **Governed systems.** Every capability call is authorized first, and the default answer is no. Events carry correlation and causation for audit; RealityTrace observations can be attached as external evidence.
+
+If your application has people, agents, state, interfaces, and consequences in it at the same time, Cognate gives all of them somewhere coherent to live.
+
+---
+
+## A real example: the refund desk
+
+The first app you build below is small on purpose. A support agent looks up an order and proposes a refund. Refunds of $50 or less complete on their own. Anything larger must wait for a person. Every step is written to a durable history.
+
+The interesting line is the wait. When the amount is large, the agent's run stops at an approval gate and records why:
+
+```ts
+if (amountCents > APPROVAL_THRESHOLD_CENTS) {
+  await ctx.emit("refund.awaiting_approval", { orderId, amountCents, thresholdCents: APPROVAL_THRESHOLD_CENTS });
+  const decision = await ctx.waitFor("approve-refund", {
+    type: "refund-approval",
+    condition: { kind: "human_approval" },
+    payload: { orderId, amountCents },
+  });
+  // deny ends the run with no refund; approve falls through to refunds.issue
+}
+```
+
+That `ctx.waitFor` is a **continuation**: a durable pause, not a sleeping process. The app can restart, the browser can close, the person can go home for the weekend. When someone answers the open approval, the run resumes from its checkpoint and the decision joins the history as events — `refund.approved` or `refund.denied`, then `refund.issued` or nothing.
+
+One small app, and most of Cognate's ideas are already in it: a semantic domain, capabilities the agent calls by name, a permission check before anything runs, a pause that survives a restart, and a record of what happened. The [quick start](#quick-start) builds it against the published packages, with no AI key, and proves it with tests you run yourself.
+
+---
+
+## Quick start
+
+Cognate targets **Bun ≥ 1.4**. The fastest path uses your coding agent, and the app it builds needs **no AI API key**: the first app runs without a model.
+
+### Build your first app with your coding agent
+
+You need Bun, git, Node.js (for `npx`), and a coding agent such as Claude Code. Optional: Rust's `cargo`, if your agent wants to install the DomainForge checker for the domain model (the skill also has a check that needs no install).
+
+**1. Make a project folder and give your agent the skill.**
 
 ```bash
-# From npm (no Cognate checkout needed to generate an app):
-bunx @godspeedai/cognate-cli@0.1 create my-app --profile copilot --source ./cognate
-cd my-app && bun install
+mkdir refund-desk && cd refund-desk && git init
+npx skills add GodSpeedAI/Cognate \
+  --skill building-with-cognate --skill deriving-interaction-domain-models --skill domainforge-sea \
+  -a claude-code -y
 ```
 
-`--source` points at a Cognate checkout whose packages get vendored into the app; clone the
-repository there first if you don't have one (`git clone <repository> cognate`). To develop
-Cognate itself, run the CLI from a checkout instead: `bun cognate/packages/cli/src/bin.ts`.
+This installs three skills into your project (under `.claude/skills/` for Claude Code, plus a project copy under `.agents/skills/` and a `skills-lock.json`). It does not install anything globally. For other agents, change `-a` (see `npx skills add --help`).
 
-Use `--profile harness` for an autonomous agent harness. The starter layout is:
+**2. Ask your agent for the app.** Paste this:
 
 ```text
-my-app/
-├── domain/              # .sea semantic model
-├── src/
-│   ├── agents/
-│   ├── capabilities/
-│   ├── components/
-│   ├── projections/
-│   └── ui/
-├── cognate.config.ts
-└── package.json
+Use the building-with-cognate skill to build a small Cognate app called Refund Desk.
+A support agent looks up an order and proposes a refund. Refunds of $50 or less go
+through on their own; anything over $50 must pause until a person approves or denies it.
+Keep a durable history of every step. Use the published @godspeedai/cognate-* packages
+from npm (no Cognate source checkout) and no AI API key.
+When you're done, run `bun test` and show me passing tests for:
+small refund completes, large refund waits for approval, approval completes it,
+denial refunds nothing, and the history records each step.
 ```
 
-Start the development runtime:
+**3. Check it yourself.** Run the tests:
 
 ```bash
-bun dev
+bun test
 ```
 
-`bun dev` runs `cognate dev`: it loads the `domain/*.sea` semantic projection through DomainForge, restores durable state from `.cognate/app.sqlite`, mounts the profile's components, and serves `/health`, the Connect runtime service, AG-UI (copilot), and the Astryx reference UI. Proven end to end by `tests/integration/cli-create.test.ts`.
+You should see all five behaviours pass. You are done when the tests pass on your machine; the agent saying it finished does not count. If your agent reaches for a Cognate source checkout, tell it to add the published `@godspeedai/cognate-*` packages with `bun add` and build directly. If something else fails, see [Troubleshooting](docs/troubleshooting.md).
 
-No Redis. No external database. No separate vector service. No mandatory cloud runtime.
+### Without a coding agent
 
-The local stack uses Bun and SQLite. RuVector is a derived cognitive index; RVF is an optional snapshot and portability format, not a required live database.
+The SDK is ordinary npm packages. Add the umbrella and you have the runtime and the headless client:
 
----
-
-# What You Can Build
-
-### Agent-native applications
-
-Agents can read application state, invoke capabilities, produce artifacts, suspend for input, resume later, collaborate with other agents, and participate in the same lifecycle as every other component.
-
-### Generative interfaces
-
-Project agent and application behavior into interactive UI rather than reducing every interaction to text.
-
-The design targets:
-
-* streamed responses;
-* tool rendering;
-* shared application state;
-* interactive artifacts;
-* human approval;
-* forms and structured input;
-* agent-generated surfaces;
-* long-running work;
-* resumable sessions.
-
-### Autonomous agent harnesses
-
-Models, tools, skills, storage, sandboxes, schedulers, agent loops, subagents, and other services can be composed as capabilities.
-
-Providers can appear, disappear, or be replaced at runtime.
-
-Consumers depend on capabilities, not implementations.
-
-### Stateful workflows and cases
-
-Cognate continuations make unfinished work explicit.
-
-An execution can pause because it is waiting for:
-
-* a human;
-* a tool;
-* another agent;
-* an OAuth flow;
-* an external job;
-* a capability;
-* a scheduled event;
-* additional information.
-
-When the condition is satisfied, execution resumes from durable state.
-
-### Cognitive applications
-
-Cognate applications can recall relevant:
-
-* domain objects;
-* previous cases;
-* artifacts;
-* agent runs;
-* decisions;
-* tool outcomes;
-* framework run records and accepted RealityTrace observation references;
-* related capabilities;
-* prior solutions.
-
-RuVector provides the reference cognitive implementation.
-
-RVF provides portable and branchable cognition through the `@godspeedai/cognate-cognitive-rvf` adapter, with Cognate-owned integrity manifests because RVF 0.3.4 does not verify files on open ([ADR-0006](docs/decisions/ADR-0006-portable-cognition-rvf.md)).
-
-### Governed systems
-
-Cognate preserves the semantic identity and causal provenance needed for external governance.
-
-Because Cognate applications are grounded in `.sea`, existing SEA-Forge governance can operate over their semantics without becoming a Cognate dependency.
-
-The RealityTrace adapter submits observations through RealityTrace's CLI and leaves evidence derivation and settlement to RealityTrace. Each observation carries Cognate's correlation ids in the committed record's CEP `extensions.cognate` field, and the adapter reads them back by ledger position (`AK-006`).
-
----
-
-# One Application, Many Representations
-
-Consider a business operation called `ApproveRefund`.
-
-It may appear to a model as a tool.
-
-It may appear to a user as an approval card.
-
-It may appear over AG-UI as a tool call and state transition.
-
-It may appear over Connect as a protobuf RPC.
-
-It may appear in an audit system as a sequence of events.
-
-It may appear in RuVector as a retrievable prior episode.
-
-It may be correlated with a RealityTrace observation that later participates in evidence derivation.
-
-These are not seven unrelated integrations.
-
-They are projections of one semantic operation.
-
-```text
-                    ApproveRefund
-                         │
-            ┌────────────┼─────────────┐
-            │            │             │
-            ▼            ▼             ▼
-          Agent          UI          Connect
-           Tool       Projection       RPC
-            │            │             │
-            └────────────┼─────────────┘
-                         │
-                         ▼
-                      Events
-                    /        \
-                   ▼          ▼
-             RealityTrace   RuVector
-             Observation   Cognition
+```bash
+bun add @godspeedai/cognate
 ```
 
-That is the central idea behind Cognate.
+```ts
+import { createRuntime, createClient } from "@godspeedai/cognate";
+```
+
+[Getting started](docs/getting-started.md) walks through a first app by hand, and [run your first agent](docs/tutorials/run-your-first-agent.md) is a guided tutorial.
+
+To scaffold a reference profile, the published CLI currently vendors packages from a Cognate checkout, so clone this repository first and point `--source` at it (tracked as DEBT-016 in the [debt register](.agents/DEBT.md)):
+
+```bash
+git clone https://github.com/GodSpeedAI/Cognate.git
+bunx @godspeedai/cognate-cli create my-app --profile copilot --source ./Cognate
+cd my-app && bun install && bun dev
+```
+
+`bun dev` loads the `domain/*.sea` projection through DomainForge, restores durable state from `.cognate/app.sqlite`, mounts the profile's components, and serves the Connect runtime service, AG-UI (copilot profile), and the Astryx reference UI. Use `--profile harness` for an autonomous agent harness. The scaffold flow is proven end to end by `tests/integration/cli-create.test.ts`.
+
+The SDK itself never needs the checkout: applications depend on published packages, and the local stack is just Bun and SQLite. No Redis, no external database, no separate vector service, no mandatory cloud.
 
 ---
 
-# Architecture
+## The architecture in one picture
+
+Cognate separates six concerns that agent frameworks often mix together:
+
+| Plane | Responsibility |
+| --- | --- |
+| **Semantic** | What the application means |
+| **Execution** | What is currently alive and what can happen |
+| **Durable** | What happened |
+| **Cognitive** | What is relevant now |
+| **Wire** | How representations cross boundaries |
+| **Presentation** | How people and agents interact with them |
 
 ```mermaid
 flowchart TD
@@ -259,1260 +180,213 @@ flowchart TD
     A2A --> EXT
 ```
 
-Cognate separates six concerns that agent frameworks often mix together:
-
-| Plane            | Responsibility                              |
-| ---------------- | ------------------------------------------- |
-| **Semantic**     | What the application means                  |
-| **Execution**    | What is currently alive and what can happen |
-| **Durable**      | What happened                               |
-| **Cognitive**    | What is relevant now                        |
-| **Wire**         | How representations cross boundaries        |
-| **Presentation** | How people and agents interact with them    |
+Read it with the refund desk in mind. The `.sea` model gives the app its vocabulary (orders, refunds, the $50 rule). The runtime executes runs as **components** — each live instance a *fiber* with its own scope, dependencies, and lifecycle. Agents, tools, storage, and the model behind them all plug in as **capabilities**: named contracts that components provide or require. Everything a run does becomes an append-only **event**. State, history, UI, analytics, and the cognitive index are all **projections** of those events, which is why they can crash, disappear, and be rebuilt without losing the truth. Interfaces and protocols are adapters at the edge, and none of them is the application.
 
 ---
 
-# Semantics First
+## One operation, many representations
 
-Cognate is grounded in `.sea`.
+Take the operation `refunds.issue`.
 
-`.sea` describes domain semantics. DomainForge projects those semantics into representations Cognate can consume.
-
-Cognate does **not** extend `.sea` with framework-specific syntax.
-
-There is no:
+To the agent, it is a tool it may call — if policy allows. To the person, it is an approval card with a $75 decision to make. To another service, it is a protobuf RPC over Connect. To the audit system, it is a short sequence of events. To a future run, it is a retrievable prior episode in the cognitive index.
 
 ```text
-react_component
-grpc_service
-copilot_tool
-ruvector_memory
+                    refunds.issue
+                          │
+             ┌────────────┼─────────────┐
+             │            │             │
+             ▼            ▼             ▼
+           Agent          UI          Connect
+            Tool       Projection       RPC
+             │            │             │
+             └────────────┼─────────────┘
+                          │
+                          ▼
+                       Events
+                     /        \
+                    ▼          ▼
+              RealityTrace   Cognition
+              Observation   (derived)
 ```
 
-in the language simply because a framework integration needs it.
+These are not five integrations to build and keep in sync. They are views of one semantic operation, and Cognate keeps them coherent because they all read from the same source. That is what *define meaning once, project it everywhere* buys you in practice.
 
-Integrations are projections.
-
-```text
-                    .sea
-                     │
-                DomainForge
-                     │
-          ┌──────────┼──────────┐
-          ▼          ▼          ▼
-       Cognate      Tests       Other
-       Runtime    Projection  Projections
-```
-
-New integrations should require new adapters, not new semantics.
-
-The `.sea` grammar changes only when the domain itself gains a genuinely new semantic concept.
+(Bindings are explicit: a semantic id becomes a capability contract because your app binds it, in code — not by magic. See [Semantics](docs/semantics.md).)
 
 ---
 
-# Everything Is a Capability
+## How the substrate works
 
-Models are capabilities.
+Each mechanism below has a dedicated doc. This table is the map.
 
-Tools are capabilities.
+| Mechanism | What it gives you | Read |
+| --- | --- | --- |
+| **Semantics** | `.sea` defines the domain; DomainForge projects it; Cognate consumes it read-only and never adds framework syntax to the language. New integrations are new adapters, not new semantics. | [docs/semantics.md](docs/semantics.md) |
+| **Capabilities** | Everything — models, tools, storage, browsers, renderers, even a human — can be provided behind a named, versioned contract. Consumers ask by name; providers can be swapped live. | [docs/concepts.md](docs/concepts.md) |
+| **Live components** | Each running instance is a fiber that owns its effects. Register a tool, listener, renderer, or timer, and the fiber unloads — everything it registered unwinds automatically. | [docs/architecture.md](docs/architecture.md) |
+| **Durable events** | The append-only event log is the application's truth, with correlation and causation on every event. Current state, run history, UI state, and analytics are projections, rebuildable from history. | [docs/explanation/why-replay.md](docs/explanation/why-replay.md) |
+| **Continuations** | `ctx.waitFor` records a durable pause for a human, a tool, an OAuth flow, an external job, or a schedule. The run resumes from its checkpoint when the condition is satisfied. | [docs/subsystems/continuations-and-commitments.md](docs/subsystems/continuations-and-commitments.md) |
+| **Cognition** | A `CognitiveIndex` (RuVector reference implementation) answers *what is relevant now* — semantic, temporal, causal, and episodic retrieval. It is derived: delete it and the application stays correct; rebuild it and recall returns. Learning can optimize selection. It can never grant authority. | [docs/cognition.md](docs/cognition.md) |
+| **Evidence** | The RealityTrace adapter (version-pinned) carries correlation ids into RealityTrace observations. A receipt is not evidence and a recorded event is not settled reality; derivation stays with RealityTrace. | [docs/evidence.md](docs/evidence.md) |
+| **UI** | A headless client, React bindings, and the Astryx reference UI — chat, generative UI, artifacts, approval surfaces. The browser can *provide* capabilities too, and Astryx is a renderer you can replace, not the ontology. | [docs/ui.md](docs/ui.md) |
+| **Protocols** | Cross-process contracts are protobuf, served over Connect. AG-UI, MCP, and A2A are adapters for interop; Cognate does not adopt any of them as its internal model. | [docs/protocols.md](docs/protocols.md) |
+| **Models** | Any provider — OpenAI-compatible, Anthropic, local llama.cpp/Ollama, your own — behind one capability contract, with credentials leased per request and never written into events. | [docs/concepts.md](docs/concepts.md) |
+| **Portable cognition** | RVF snapshots let you export, import, and branch cognitive state for experiments and evaluations, with Cognate-owned integrity manifests. | [docs/rvf.md](docs/rvf.md) |
+| **Security** | Possessing relevant information does not imply permission to act on it. Capability invocation and cognitive retrieval are scoped separately; similarity cannot bypass authorization. | [docs/security.md](docs/security.md) |
 
-Storage is a capability.
+A built-in stack, with the boundaries kept honest:
 
-A browser is a capability.
+| Concern | Reference implementation | Cognate boundary |
+| --- | --- | --- |
+| Runtime | Bun | Runtime |
+| Composition | Cordis | Kernel |
+| Durable state | `bun:sqlite` (PostgreSQL adapter available) | EventStore |
+| Semantics | DomainForge / `.sea` | Semantic projection |
+| Cognition | RuVector | CognitiveIndex |
+| Portable cognition | RVF | CognitiveSnapshot |
+| Observations/evidence | RealityTrace | ObservationPort |
+| RPC | Connect | Service transport |
+| Wire schema | Protobuf | Message contracts |
+| Agent/UI interop | AG-UI | Projection adapter |
+| UI framework | React | Headless client |
+| Design system | Astryx | Renderer |
 
-A renderer is a capability.
-
-An agent loop is a capability.
-
-A human can provide a capability.
-
-A remote service can provide a capability.
-
-Components declare what they **require** and what they **provide**.
-
-Cognate resolves the rest.
-
-```text
-Component A
-    provides: customer.read
-
-Component B
-    requires: customer.read
-    provides: case.resolve
-```
-
-When `customer.read` becomes available, B can activate.
-
-If its provider disappears, B deactivates.
-
-If a compatible replacement appears, B can activate against the new provider.
-
-Consumers depend on capability contracts rather than concrete implementations.
-
----
-
-# Components Are Alive
-
-A component definition is not the running component.
-
-Each live instance is represented by a **fiber** with its own:
-
-* context;
-* scope;
-* dependencies;
-* effects;
-* lifecycle;
-* identity.
-
-```text
-DECLARED
-   │
-   ▼
-WAITING
-   │ dependencies satisfied
-   ▼
-ACTIVATING
-   │
-   ▼
-ACTIVE
-   │ dependency lost / unload
-   ▼
-DEACTIVATING
-   │
-   ▼
-DISPOSED
-```
-
-Cognate's reference composition engine is Cordis, hidden behind Cognate's own kernel contracts.
-
-Applications never need to depend on Cordis directly.
+Strong defaults should reduce decisions, not become architectural traps. The failure model is part of the design: if the cognitive index is unavailable, deterministic execution continues; if a client disconnects, durable events keep accruing and the client reconnects from a known position; if a provider disappears, dependents deactivate or resolve a compatible replacement; if a projection crashes, history remains and the projection rebuilds.
 
 ---
 
-# Effects Undo Themselves
+## What Cognate is not
 
-Runtime changes belong to their component.
-
-Register an event listener, tool, capability, timer, renderer, subscription, or hook and the registration is owned by the fiber that created it.
-
-When that fiber unloads, its reversible effects unwind automatically.
-
-```text
-mount component
-     │
-     ├── register tool
-     ├── register listener
-     ├── register renderer
-     └── start timer
-
-unmount component
-     │
-     ├── stop timer
-     ├── remove renderer
-     ├── remove listener
-     └── remove tool
-```
-
-Lifecycle ownership is part of the runtime rather than cleanup convention.
+- **Not only an agent framework.** Cognate can run agents, but the agent is a component inside a larger semantic application — one that also has people, state, UI, policy, and external systems.
+- **Not a frontend agent SDK.** The UI is one surface over the application. React, Astryx, Slack, a mobile app, and a CLI can all be different surfaces; the application survives the surface.
+- **Not a memory framework.** Memory is derived. RuVector makes prior experience discoverable; SQLite preserves durable history; RealityTrace preserves evidence; DomainForge preserves meaning. Each has a different job.
+- **Not a workflow engine.** Workflow is one form of execution. A deterministic service, an agent, a UI component, a human decision, and a scheduled process all participate in the same capability and event model.
 
 ---
 
-# Not Everything Is Reversible
+## Applications built on Cognate
 
-Cognate distinguishes three kinds of change.
+**[Cognate-Workbench](https://github.com/GodSpeedAI/Cognate-Workbench)** is a working, open-source coding-agent harness built on the published SDK: a browser cockpit where AI agents plan, write and run code, and carry out tasks in conversation with you, with task contracts, approvals, review gates, and evidence records instead of a final chat message as proof of work. It is an application built *from* Cognate — runtime, kernel, event store, projections, continuations, Connect transport, client, React bindings, and provider adapters all come from `@godspeedai/cognate-*` packages — not an example shipped in this repository. Its own README and debt register state plainly what is enforced there and what is not.
 
-### Reversible effects
+**[Horizon](https://github.com/GodSpeedAI/Horizon)** is a second application in early development on the same substrate: an operational navigation environment that connects a shared semantic model of the world to contextual discovery, governed action, observation, and learning. Its README describes the intended product and marks it as such.
 
-Runtime registrations and local resources that can be cleanly removed.
-
-### Durable facts
-
-Things that happened and belong in history.
-
-A user approved a request.
-
-A tool returned a result.
-
-A case changed state.
-
-An agent completed a run.
-
-These become append-only events.
-
-### External commitments
-
-Actions that cross a system boundary.
-
-An email was sent.
-
-A payment was charged.
-
-A remote record changed.
-
-Cognate treats these as explicit commitments with support for idempotency, durable intent, result recording, and compensation where available.
-
-An external action is never disguised as a local disposer.
+A demonstration establishes what it actually exercises. Neither app is a universal production-readiness claim for the SDK, and the SDK needs neither of them.
 
 ---
 
-# Events Are Truth
+## Examples
 
-Cognate's durable application history is an append-only event log.
-
-The default implementation uses `bun:sqlite`.
-
-Events preserve causal identity:
-
-```text
-correlation
-    │
-    ▼
-   run
-    │
-    ▼
-  event
-    │
-    ▼
-causation
-    │
-    ├── component
-    ├── fiber
-    ├── capability
-    ├── provider
-    ├── semantic reference
-    └── artifact
-```
-
-Current state is a projection.
-
-Agent history is a projection.
-
-UI state is a projection.
-
-Analytics are a projection.
-
-Cognitive indexes are projections.
-
-If derived state disappears, Cognate can rebuild it from authoritative history.
-
----
-
-# Cognition Is Not Truth
-
-Cognate's design includes a first-class cognitive layer because agent-native applications need to answer a different question from ordinary storage:
-
-> Given what is happening now, what prior knowledge, relationships, experiences, artifacts, and capabilities are relevant?
-
-The public abstraction is `CognitiveIndex`.
-
-RuVector is the reference implementation.
-
-Cognate uses it for:
-
-* semantic retrieval;
-* vector similarity;
-* graph relationships;
-* temporal retrieval;
-* causal retrieval;
-* episodic memory;
-* relevant artifact discovery;
-* prior-run retrieval;
-* provider ranking;
-* learned routing.
-
-But cognition is derived.
-
-```text
-AUTHORITATIVE
-
-.sea / DomainForge
-       +
-Event Store
-       +
-Artifacts
-       +
-RealityTrace refs
-       │
-       ▼
-    Indexers
-       │
-       ▼
-    RuVector
-
-DERIVED
-```
-
-Delete the cognitive index and the application remains correct.
-
-Rebuild it and cognition returns.
-
-That is an intentional invariant.
-
----
-
-# Learning Cannot Grant Authority
-
-Cognate can learn which eligible option tends to work best.
-
-It cannot learn that an ineligible option is suddenly allowed.
-
-```text
-all providers
-      │
-      ▼
-semantic constraints
-      │
-      ▼
-security + policy
-      │
-      ▼
-compatible candidates
-      │
-      ▼
-RuVector / adaptive ranking
-      │
-      ▼
-selection
-```
-
-Adaptive ranking happens **after** deterministic eligibility.
-
-Use learning to optimize execution.
-
-Never use it to manufacture authority.
-
----
-
-# Portable Cognition with RVF
-
-Cognate targets RVF as an optional portable cognitive container. The current RVF Bun native binding is described as experimental by its package documentation, so export, import, and branching remain subject to an executable compatibility spike.
-
-An RVF can carry cognitive state such as:
-
-* vectors;
-* relationships;
-* metadata;
-* learned retrieval state;
-* provenance;
-* lineage;
-* witness information.
-
-Cognition can be snapshotted, exported with a Cognate integrity manifest, imported, and branched through `@godspeedai/cognate-cognitive-rvf` (runnable: `bun run example:rvf-branching`):
-
-```ts
-const index = await createRvfIndex({ path: "./cognition.rvf", dimension: 384 });
-const manifest = await index.snapshot(store, { dir: "./snapshots", name: "base", lineage: "my-app", indexedThrough, storeHead, onBehind: "fail", frameworkVersion: "0.0.0" });
-const experiment = await index.branch("./experiment-a.rvf");
-const imported = await importSnapshot(store, "./snapshots/base.manifest.json", { lineage: "my-app", storeHead, allowedTenants: ["tenant-a"], maxEntries: 100_000, maxBytes: 1 << 30 });
-```
-
-The CLI does not expose cognition commands yet; use the API above.
-
-This enables inexpensive cognitive forks for:
-
-* agent experiments;
-* simulations;
-* user-specific branches;
-* case branches;
-* evaluation environments;
-* sandboxes.
-
-```text
-base.rvf
-   │
-   ├── alice.rvf
-   ├── scenario-a.rvf
-   ├── agent-experiment.rvf
-   └── evaluation.rvf
-```
-
-A cognitive branch does not rewrite authoritative event history.
-
-Imported cognition is tracked with lineage and can remain detached until its relationship to the current application is verified.
-
----
-
-# RealityTrace Observations and Evidence
-
-Cognate provides a version-pinned adapter for RealityTrace (v0.3.0) without changing RealityTrace.
-
-The adapter records observations through RealityTrace's supported CLI and CEP workflow. RealityTrace currently requires repository enrollment, a snapshot, a declared question and threshold, a run, and a committed plan before the relevant observation can be recorded. An observation receipt alone is neither qualifying evidence nor a settled result.
-
-Where available, an observation carries:
-
-* event identity;
-* run identity;
-* causation;
-* component;
-* fiber;
-* capability;
-* provider;
-* continuation;
-* semantic reference;
-* artifact reference.
-
-```text
-.sea
- │
- ▼
-expected semantics
- │
- ▼
-Cognate execution
- │
- ├──────────────► durable events
- │
- └──────────────► RealityTrace observation
-                         │
-                  evidence derivation
-                         │
-                      settlement
-```
-
-This is the intended connection between declared semantics and observed execution. The adapter must preserve correlation in schema-valid fields and independently reconcile delivery; it cannot treat arbitrary framework events as understood RealityTrace evidence.
-
----
-
-# Continuations: Work That Is Not Done Yet
-
-Human-in-the-loop is useful, but it is only one instance of a broader problem.
-
-Sometimes valid execution cannot continue yet.
-
-Cognate represents that directly.
-
-```ts
-const approval = await ctx.waitFor("approval", {
-  type: "refund-approval",
-  condition: { kind: "human_approval" },
-  payload: { amount, account },
-});
-```
-
-A continuation can wait for:
-
-```text
-human approval
-tool result
-OAuth authorization
-remote agent
-external workflow
-scheduled event
-missing capability
-additional information
-```
-
-Continuations are durable.
-
-The process can stop.
-
-The browser can close.
-
-The application can restart.
-
-When the condition is satisfied, the run resumes.
-
----
-
-# Agent-Native UI
-
-The plan includes a headless client, React bindings, and a reference Astryx UI layer.
-
-```text
-Cognate
-   │
-   ▼
-Headless Client
-   │
-   ├── React
-   │     │
-   │     ▼
-   │   Astryx
-   │
-   └── other clients
-```
-
-The headless client supports:
-
-* runs;
-* state projections;
-* capability registration;
-* tools;
-* artifacts;
-* continuations;
-* cognition;
-* streaming;
-* reconnect/resume.
-
-The reference UI adds:
-
-* chat;
-* generative UI;
-* artifact viewers;
-* approval surfaces;
-* interactive state;
-* run inspection;
-* dark/light themes;
-* accessible application primitives.
-
-Astryx is a renderer, not the ontology.
-
-Replace it without rewriting your application.
-
----
-
-# Frontend Capabilities
-
-The browser is allowed to provide capabilities too.
-
-```ts
-useCapability("map.focus", async ({ latitude, longitude }) => {
-  map.flyTo({ latitude, longitude });
-});
-```
-
-An agent requiring `map.focus` does not need to know whether it is implemented by:
-
-* React;
-* a native application;
-* another browser framework;
-* a remote display.
-
-It requires a capability.
-
-The current client happens to provide it.
-
----
-
-# Shared State
-
-Application state is derived from semantic events and projections.
-
-Agents and UI can participate in the same state without maintaining unrelated copies of reality.
-
-```ts
-const entries = useProjection("orders"); // tenant-partitioned key/value entries
-const order = entries?.find((entry) => entry.key === "current")?.value;
-
-return <OrderCard order={order} />;
-```
-
-When an agent changes the underlying application state, subscribed projections update.
-
-When the UI performs a valid semantic action, the resulting events become visible to agents.
-
-Shared state is therefore not a special synchronization subsystem.
-
-It is two consumers observing and acting upon the same application.
-
----
-
-# Artifacts Are First-Class
-
-Agents produce more than messages.
-
-Cognate treats artifacts as durable, addressable outputs.
-
-Examples include:
-
-* documents;
-* tables;
-* graphs;
-* plans;
-* diffs;
-* reports;
-* images;
-* datasets;
-* code;
-* forms;
-* discussions;
-* domain-specific interactive objects.
-
-Artifacts can expose multiple projections.
-
-```text
-Artifact
-   │
-   ├── model representation
-   ├── React renderer
-   ├── document viewer
-   ├── table view
-   ├── graph view
-   ├── diff view
-   └── external serialization
-```
-
-The artifact remains the same semantic object.
-
-The representation changes.
-
----
-
-# Protocols Are Adapters
-
-Cognate does not turn transport protocols into application architecture.
-
-Native cross-process contracts use Protocol Buffers.
-
-The reference RPC transport is Connect.
-
-Optional adapters include:
-
-* AG-UI;
-* MCP;
-* A2A;
-* SSE;
-* WebSocket;
-* gRPC-compatible services;
-* custom transports.
-
-```text
-             Cognate
-                │
-          service contracts
-                │
-       ┌────────┼──────────┐
-       ▼        ▼          ▼
-    Connect   AG-UI       MCP
-       │        │          │
-       ▼        ▼          ▼
-   services   clients    tools
-```
-
----
-
-# AG-UI Compatibility
-
-Cognate can project its native execution model into AG-UI.
-
-That includes mappings for:
-
-* run lifecycle;
-* streamed messages;
-* tool calls;
-* tool results;
-* state snapshots;
-* state deltas;
-* activities;
-* custom events.
-
-This allows Cognate applications and agents to participate in the broader AG-UI ecosystem without using AG-UI as their internal event ontology.
-
-Use AG-UI because you need interoperability.
-
-Not because your application should become AG-UI internally.
-
----
-
-# Protobuf + Connect
-
-Cross-language boundaries use protobuf contracts.
-
-```text
-TypeScript / Bun
-       │
-       ▼
-    Protobuf
-       │
-     Connect
-   /    │     \
-  ▼     ▼      ▼
- Rust   Go   Browser
-```
-
-Cognate's reference runtime uses Connect over Bun's Web-standard request/response APIs.
-
-Application services are defined independently from the transport, so another RPC implementation can replace Connect without redefining the application.
-
----
-
-# Bun Native
-
-Cognate uses Bun as the reference runtime and development platform.
-
-Bun provides the default:
-
-* runtime;
-* TypeScript execution;
-* package management;
-* workspaces;
-* bundling;
-* test runner;
-* HTTP server;
-* WebSockets;
-* SQLite.
-
-Typical development is intentionally boring:
-
-```bash
-bun install
-bun dev
-bun test
-```
-
-A local Cognate application does not require an infrastructure diagram before it can say hello.
-
----
-
-# Any Model
-
-Models are capability providers.
-
-The core does not depend on an LLM SDK.
-
-Use:
-
-* OpenAI-compatible APIs;
-* Anthropic;
-* DeepSeek;
-* local llama.cpp servers;
-* Ollama;
-* custom inference;
-* your own provider.
-
-```ts
-components: [
-  modelComponent(
-    openAICompatible({
-      id: "local",
-      baseURL: "http://localhost:8080/v1",
-      model: "qwen2.5-7b-instruct",
-    }),
-  ),
-];
-```
-
-Consumers request model capabilities.
-
-They do not need to know which provider eventually satisfies them.
-
----
-
-# Providers Can Be Replaced Live
-
-Suppose an application requires a model capable of structured output.
-
-```text
-Agent
-  requires
-model.generate
-  +
-structured_output
-```
-
-Three configured providers satisfy that contract.
-
-Cognate can filter them deterministically and optionally rank the remaining providers using historical outcomes.
-
-If the selected provider disappears, the runtime can resolve another compatible provider.
-
-No consumer import changes.
-
----
-
-# Profiles
-
-Cognate profiles are reusable application compositions.
-
-A profile selects and configures capabilities without adding new kernel concepts.
-
-The design calls for two reference profiles.
-
-## Copilot
-
-```bash
-cognate create my-app --profile copilot --source ./cognate
-```
-
-Includes:
-
-* agent runtime;
-* headless client;
-* React bindings;
-* Astryx UI;
-* shared state;
-* frontend tools;
-* artifacts;
-* continuations;
-* generative UI;
-* AG-UI compatibility;
-* durable threads;
-* cognitive recall.
-
-## Harness
-
-```bash
-cognate create my-agent --profile harness --source ./cognate
-```
-
-Includes:
-
-* model providers;
-* agent loop;
-* tool registry;
-* skills;
-* sessions;
-* subagents;
-* scheduler;
-* workspace;
-* storage;
-* sandbox capability;
-* cognitive memory;
-* replaceable services.
-
-These profiles demonstrate a deliberate property of Cognate:
-
-> A user-facing agent framework and an autonomous agent harness do not require two unrelated architectures.
-
-They are different compositions of the same substrate.
-
----
-
-# Build Your Own Profile
-
-```ts
-import { defineProfile } from "@godspeedai/cognate-profile";
-
-export default defineProfile({
-  name: "research-workbench",
-
-  components: [
-    "sessions",
-    "agents",
-    "browser",
-    "artifacts",
-    "cognition",
-    "realitytrace",
-    "connect",
-    "ui",
-  ],
-});
-```
-
-Profiles are composition.
-
-They do not create privileged runtime features.
-
----
-
-# Packages
-
-Cognate is a modular workspace. Every package below exists in `packages/` with its own README and AGENTS guide — each is published on npm under its `@godspeedai/cognate-*` name, and every npm page carries a standalone, consumer-focused README ([standard](docs/package-readme-standard.md)).
-
-```text
-@godspeedai/cognate-kernel-api
-@godspeedai/cognate-kernel-cordis
-@godspeedai/cognate-runtime-bun
-@godspeedai/cognate-profile
-@godspeedai/cognate-cli
-
-@godspeedai/cognate-events
-@godspeedai/cognate-capabilities
-@godspeedai/cognate-continuations
-@godspeedai/cognate-projections
-@godspeedai/cognate-artifacts
-
-@godspeedai/cognate-store-memory
-@godspeedai/cognate-store-sqlite
-@godspeedai/cognate-store-postgres
-
-@godspeedai/cognate-cognitive-api
-@godspeedai/cognate-cognitive-memory
-@godspeedai/cognate-cognitive-ruvector
-@godspeedai/cognate-cognitive-rvf
-
-@godspeedai/cognate-proto
-@godspeedai/cognate-protocol-connect
-@godspeedai/cognate-protocol-connect-bun
-
-@godspeedai/cognate-client
-@godspeedai/cognate-react
-@godspeedai/cognate-ui-astryx
-
-@godspeedai/cognate-ag-ui
-@godspeedai/cognate-mcp
-@godspeedai/cognate-a2a
-
-@godspeedai/domainforge
-@godspeedai/cognate-realitytrace
-
-@godspeedai/cognate-provider-openai-compatible
-@godspeedai/cognate-provider-local
-```
-
-You do not install everything to use Cognate.
-
-Profiles select the packages they need.
-
----
-
-# Built In, Not Locked In
-
-The packages provide strong defaults while keeping implementation boundaries explicit.
-
-| Concern                   | Reference implementation | Cognate boundary    |
-| ------------------------- | ------------------------ | ------------------- |
-| Runtime                   | Bun                      | Runtime             |
-| Composition               | Cordis                   | Kernel              |
-| Durable state             | `bun:sqlite`             | EventStore          |
-| Semantics                 | DomainForge / `.sea`     | Semantic projection |
-| Cognition                 | RuVector                 | CognitiveIndex      |
-| Portable cognition        | RVF                      | CognitiveSnapshot   |
-| Observations/evidence     | RealityTrace             | ObservationPort     |
-| RPC                       | Connect                  | Service transport   |
-| Wire schema               | Protobuf                 | Message contracts   |
-| Agent/UI interoperability | AG-UI                    | Projection adapter  |
-| UI framework              | React                    | Headless client     |
-| Design system             | Astryx                   | Renderer            |
-
-Strong defaults should reduce decisions.
-
-They should not become architectural traps.
-
----
-
-# Failure Is Part of the Model
-
-Cognate assumes components fail, networks disconnect, providers disappear, applications restart, and indexes become stale.
-
-The architecture reflects that.
-
-### Cognitive index unavailable?
-
-Deterministic execution continues without cognitive optimization.
-
-### Client disconnected?
-
-Durable events continue. The client reconnects from a known position.
-
-### Provider removed?
-
-Dependent components deactivate or resolve another valid provider.
-
-### Projection crashes?
-
-Authoritative history remains intact and the projection can rebuild.
-
-### RVF snapshot fails?
-
-The active index and durable event history remain untouched.
-
-### UI fails?
-
-The UI can be restarted without redefining application state.
-
-Durability and rebuildability are properties of the architecture, not recovery scripts added later.
-
----
-
-# Security
-
-Cognate follows a simple authority rule:
-
-> Possessing relevant information does not imply permission to act on it.
-
-Capability invocation and cognitive retrieval are scoped independently.
-
-Similarity cannot bypass authorization.
-
-Adaptive ranking cannot bypass eligibility.
-
-External actions can use idempotency and durable commit records.
-
-Credentials remain provider concerns rather than becoming application semantics.
-
-Sensitive cognitive entries can store references or redacted projections instead of embedding unrestricted source payloads.
-
----
-
-# Testing the Substrate
-
-The test suite exercises the invariants underneath applications (`tests/properties`, the kernel and store conformance kits, and `tests/integration`).
-
-Examples:
-
-### Reversible composition
-
-```text
-state₀
- ↓ mount component
-state₁
- ↓ unmount component
-state₂
-
-state₂ == state₀
-```
-
-for all effects owned exclusively by that component.
-
-### Dependency closure
-
-A component cannot remain active without its required capabilities.
-
-### Scope isolation
-
-A child scope cannot leak isolated capabilities into its siblings or parent.
-
-### Cognitive non-authority
-
-Deleting the cognitive index cannot change deterministic authorization outcomes.
-
-### Adaptive containment
-
-An adaptive selector cannot return a candidate eliminated by deterministic eligibility.
-
-### Replay
-
-Deterministic projections replay to equivalent state from the same event sequence.
-
-These tests are part of Cognate's compatibility contract.
-
----
-
-# Agent-Friendly by Design
-
-Cognate is designed to be built by people and coding agents using the same contracts.
-
-The repository includes:
-
-* machine-readable package boundaries;
-* architecture documentation;
-* per-package `AGENTS.md` guidance;
-* generated dependency maps;
-* protobuf contracts;
-* executable examples;
-* invariant tests;
-* compatibility tests;
-* package-local extension documentation.
-
-An agent should be able to answer:
-
-> What can I extend?
-
-> What owns this behavior?
-
-> Which package may I depend on?
-
-> What invariant must this change preserve?
-
-without reverse-engineering the entire repository first.
-
----
-
-# Examples
-
-The examples demonstrate:
-
-```text
-examples/
-├── copilot/
-├── autonomous-harness/
-├── human-approval/
-├── generative-ui/
-├── shared-state/
-├── artifact-workbench/
-├── multi-agent/
-├── cognitive-memory/
-├── rvf-branching/       # conditional on the RVF Bun compatibility gate
-├── capability-hot-swap/
-├── domainforge/
-├── realitytrace/
-├── ag-ui/
-├── mcp/
-└── connect/
-```
-
-Each example runs independently and verifies its own outcome (`tests/examples.test.ts`).
+Fifteen runnable examples, one per topic, each a single self-contained file using only real exported package APIs, with in-memory or temp-dir state. Run any of them from a checkout and it verifies its own outcome:
 
 ```bash
 bun run example:generative-ui
 ```
 
----
+```text
+examples/
+├── copilot/              # the Copilot profile: a model and a backend tool loop
+├── autonomous-harness/   # the Harness profile: model providers, a tool registry, an agent loop
+├── human-approval/       # an agent waits on a durable continuation until a person resolves it
+├── generative-ui/        # ui.render events rendered to HTML through a component registry
+├── shared-state/         # state derived from snapshots and JSON Patch deltas
+├── artifact-workbench/   # a durable, content-addressed artifact written and read back
+├── multi-agent/          # a parent run spawns and awaits a child run
+├── cognitive-memory/     # indexing and semantic recall, with authorization
+├── rvf-branching/        # a branched RVF cognition file diverges from its parent
+├── capability-hot-swap/  # live replacement of a capability provider
+├── domainforge/          # a DomainForge model projected to read-only semantics, explicitly bound
+├── realitytrace/         # observation delivery through the committed outbox
+├── ag-ui/                # a run projected as an AG-UI event stream
+├── mcp/                  # runtime capabilities exposed as authorized MCP tools
+└── connect/              # the same RuntimeService served and consumed over Connect RPC
+```
 
-# Cognate vs. an Agent Framework
-
-Cognate can run agents, but **the agent is not the architecture**.
-
-Agents are components operating inside a larger semantic application.
-
-That distinction becomes important as soon as software contains:
-
-* people;
-* agents;
-* deterministic services;
-* persistent state;
-* UI;
-* policy;
-* external systems;
-* long-running work;
-* multiple representations of the same business object.
-
-Cognate gives all of them somewhere coherent to live.
-
----
-
-# Cognate vs. a Frontend Agent SDK
-
-The target architecture includes a frontend stack, but **the UI is not the architecture**.
-
-React, Astryx, AG-UI, Slack, a mobile application, and a CLI can all be different surfaces over the same running application.
-
-The application survives the surface.
+Each runs independently and verifies its own outcome (`tests/examples.test.ts`). The full table with documentation links is in [examples/README.md](examples/README.md).
 
 ---
 
-# Cognate vs. a Memory Framework
+## What works today, and what doesn't
 
-The target architecture includes cognitive memory, but **memory is not truth**.
+Cognate is v0: published, tested, and in active use by downstream applications — with APIs that will still change before 1.0. The honest short list:
 
-RuVector makes prior experience discoverable.
+- **The SDK installs from npm and works there.** The CLI scaffold currently needs a source checkout (`--source`), as above. Known gaps are tracked per item in the [debt register](.agents/DEBT.md), and package READMEs state their own limits.
+- **Connect supports unary and server-streaming only** ([ADR-0003](docs/decisions/ADR-0003-wire-connect-protobuf.md)).
+- **Runs execute one at a time by default.** `maxConcurrentRuns` (1–64) is process-local; there is no distributed run ownership ([runtime concurrency](docs/runtime-concurrency.md)).
+- **The RVF Bun binding is experimental**, per its own package documentation; cognition is exposed through the API, not yet the CLI.
+- **The event log is the application's record of itself.** For what happened *outside* the application, RealityTrace observations carry the correlation; a receipt is not evidence, and evidence is not settlement.
+- **Governance is integration, not enforcement.** Cognate keeps events inspectable and authorization deterministic, and it can hand semantics to an external authority such as SEA-Forge when one is configured. The enforcement belongs to that authority.
 
-SQLite preserves durable framework history.
-
-RealityTrace preserves execution evidence.
-
-DomainForge preserves connection to semantics.
-
-Each has a different job.
-
----
-
-# Cognate vs. a Workflow Engine
-
-Cognate can model long-running, interruptible workflows, but **workflow is only one form of execution**.
-
-A deterministic service, an agent, a UI component, a human decision, and a scheduled process all participate in the same capability and event model.
+The test suite treats these boundaries as invariants: reversible composition (unmounting a component returns the world to its prior state), dependency closure (no component stays active without its required capabilities), scope isolation, cognitive non-authority (deleting the index cannot change authorization outcomes), and replay (the same events rebuild equivalent state).
 
 ---
 
-# The Design Rule
+## Documentation
 
-When adding a feature to Cognate, ask:
-
-> Does this require a genuinely new semantic/runtime primitive, or is it another projection or composition of primitives we already have?
-
-If it is another representation, build an adapter.
-
-If it is another bundle of capabilities, build a profile.
-
-If it is another provider, implement the existing capability.
-
-Only enlarge the kernel when the existing model cannot express the new behavior without violating its invariants.
-
-That rule keeps Cognate small even as the ecosystem around it grows.
-
----
-
-# Documentation
-
-Start at **[docs/README.md](docs/README.md)** — it is the documentation home and navigates by intent
-(learn the system, get something done, understand why, look something up, follow execution, find the
-implementation).
+Start at **[docs/README.md](docs/README.md)** — the documentation home, navigated by intent.
 
 | Layer | Pages |
 | --- | --- |
 | Orientation and model | [docs/README.md](docs/README.md) · [docs/getting-started.md](docs/getting-started.md) · [docs/mental-model.md](docs/mental-model.md) · [docs/concepts.md](docs/concepts.md) · [docs/architecture.md](docs/architecture.md) |
+| Topic guides | [docs/semantics.md](docs/semantics.md) · [docs/cognition.md](docs/cognition.md) · [docs/rvf.md](docs/rvf.md) · [docs/evidence.md](docs/evidence.md) · [docs/ui.md](docs/ui.md) · [docs/protocols.md](docs/protocols.md) · [docs/extensions.md](docs/extensions.md) · [docs/security.md](docs/security.md) |
 | Subsystems | [docs/subsystems/](docs/subsystems/) — kernel, durable state, runtime, continuations and commitments, capabilities and cognition, wire and protocols, presentation, application composition |
 | Workflows | [docs/workflows/](docs/workflows/) — startup and the background loop, run execution, capability invocation, continuation and resume, shared state, evidence and observation, client and UI session |
-| Explanation | [docs/explanation/](docs/explanation/) — why replay, why projection, why learning cannot grant authority, why adapters · [docs/decisions/](docs/decisions/) — ADR-0001..0011 |
-| Plane pages | [docs/semantics.md](docs/semantics.md) · [docs/cognition.md](docs/cognition.md) · [docs/rvf.md](docs/rvf.md) · [docs/evidence.md](docs/evidence.md) · [docs/ui.md](docs/ui.md) · [docs/protocols.md](docs/protocols.md) · [docs/security.md](docs/security.md) · [docs/extensions.md](docs/extensions.md) |
+| Explanation | [docs/explanation/](docs/explanation/) — why replay, why projection, why learning cannot grant authority, why adapters · [docs/decisions/](docs/decisions/) — ADR-0001..0013 |
 | Tutorials | [docs/tutorials/](docs/tutorials/) — run your first agent, a human in the loop, start an app from a checkout |
 | How-to | [docs/how-to/](docs/how-to/) — add a capability, add a projection, add a protocol adapter, verify a change |
 | Reference | [docs/reference/](docs/reference/) — commands and configuration, the runtime service and agent surface, events and stores, capability and architecture contracts, the ledger and evidence model · [docs/troubleshooting.md](docs/troubleshooting.md) |
-| Maps | [docs/documentation-map.md](docs/documentation-map.md) — what every page is for and which concepts it owns · [docs/source-map.md](docs/source-map.md) — concept to implementation |
+| Maps | [docs/documentation-map.md](docs/documentation-map.md) · [docs/source-map.md](docs/source-map.md) |
 
-For implementation work today, start with the [agent operating guide](AGENTS.md), [current status](.agents/CURRENT_STATUS.md), and [software design specification](.agents/specs/software-design-spec-cognate.-frameworkmd). Each package and profile has its own `README.md` and `AGENTS.md`.
+For implementation work, start with the [agent operating guide](AGENTS.md) and [current status](.agents/CURRENT_STATUS.md). Each package and profile has its own `README.md` and `AGENTS.md`.
 
 ---
 
-# Development
+## Development
 
 Clone Cognate and install with Bun:
 
 ```bash
-git clone <repository>
-cd cognate
+git clone https://github.com/GodSpeedAI/Cognate.git
+cd Cognate
 bun install
 ```
 
+Install [`just`](https://github.com/casey/just) for the workspace recipes. The main ones:
+
 | Command | What it runs |
 | --- | --- |
-| `just verify` | Regression baseline: ledger/substrate check, typecheck, and every gate marked implemented |
+| `just verify` | Regression baseline: substrate check, typecheck, the README gate, and every gate marked implemented |
 | `just gates` | Every ledger gate with PASS/FAIL and status drift |
 | `just gate <ID>` | One requirement's proof, e.g. `just gate CG-KRN-001` |
 | `bun run test` | All workspace tests (packages, profiles, integration, architecture, properties, examples) |
-| `bun run test:properties` | fast-check invariant properties (`tests/properties`) |
-| `bun run test:e2e` | The §36 Playwright journey (`tests/e2e`) |
-| `bun run example:<name>` | One README example (see [examples/](examples/README.md)) |
+| `bun run test:properties` | fast-check invariant properties |
+| `bun run test:e2e` | The Playwright journey |
+| `bun run example:<name>` | One example from the list above |
 | `bun run typecheck` | TypeScript across packages, profiles, tests, and scripts |
-| `just setup-realitytrace` | Install the pinned RealityTrace CLI used by the RealityTrace gates |
+| `just setup-realitytrace` | Install the pinned RealityTrace CLI used by the evidence gates |
 
-Packages ship TypeScript source executed directly by Bun; there is no separate build step. Applications run with `cognate dev` (see Quick Start).
-
----
-
-# Contributing
-
-Cognate is being designed around explicit architectural boundaries.
-
-Before contributing to a package, read its available contracts:
-
-1. the root `AGENTS.md`;
-2. the package README;
-3. the package's dependency contract;
-4. the relevant architecture decision records;
-5. the invariants exercised by its tests.
-
-A contribution should extend Cognate without weakening the replaceability of its surrounding layers.
-
-Implementation contributions should follow the specification's staged acceptance criteria.
+Packages ship TypeScript source that Bun runs directly; there is no separate build step.
 
 ---
 
-# Architecture Lineage
+## Contributing
 
-Cognate stands on ideas developed across several open-source systems.
+Cognate is designed around explicit architectural boundaries. Before changing a package, read its `README.md` and `AGENTS.md`, its dependency contract, the relevant decision records in [docs/decisions/](docs/decisions/), and the invariants its tests exercise. A change should extend Cognate without weakening the replaceability of the layers around it.
 
-**Cordis and DeepSeek Harness** demonstrate runtime composition based on scoped capabilities, reactive dependencies, lifecycle-owned effects, and replaceable services.
-
-**CopilotKit and AG-UI** demonstrate rich agent/user interaction through shared state, frontend capabilities, generative UI, human interaction, and protocol-level interoperability.
-
-**DomainForge and `.sea`** provide Cognate's semantic grounding and projection model.
-
-**RealityTrace** provides the execution-evidence boundary.
-
-**RuVector** provides the reference cognitive implementation.
-
-**RVF** provides portable and branchable cognitive state.
-
-Cognate brings those concerns into one architecture without collapsing them into one implementation.
+The design rule that keeps the kernel small: when adding a feature, ask whether it needs a genuinely new semantic or runtime primitive. If it is another representation, build an adapter. If it is another bundle of capabilities, build a profile. If it is another provider, implement the existing capability.
 
 ---
 
-# Philosophy
+## Architecture lineage
 
-Software increasingly contains actors that do more than execute predefined procedures.
+Cognate stands on ideas proven by several open-source systems: runtime composition from **Cordis** and the DeepSeek harness; rich agent–user interaction from **CopilotKit** and **AG-UI**; semantic grounding from **DomainForge** and `.sea`; execution evidence from **RealityTrace**; cognitive memory from **RuVector** and portable, branchable cognition from **RVF**. Cognate brings those concerns into one architecture without collapsing them into one implementation.
 
-Agents interpret.
+---
 
-People intervene.
+## Philosophy
 
-Providers change.
+Software increasingly contains actors that do more than execute predefined procedures. Agents interpret. People intervene. Providers change. Work pauses and resumes. Interfaces are generated. Prior experience affects future behavior, and external actions have consequences. The architecture has to remain understandable while all of that is happening.
 
-Context evolves.
-
-Work pauses and resumes.
-
-Interfaces are generated dynamically.
-
-Prior experience affects future behavior.
-
-External actions have consequences.
-
-The architecture has to remain understandable while all of that is happening.
-
-Cognate's answer is to keep the layers distinct and connect them through semantics.
+Cognate's answer is to keep the layers distinct and connect them through semantics:
 
 ```text
 SEMANTICS
@@ -1536,6 +410,6 @@ PROJECTIONS
 
 ---
 
-# License
+## License
 
 [Apache 2.0 License](LICENSE)
