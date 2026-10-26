@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cognate Replay Execution Stepper & Simulator</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --surface-3: #374151;
+      --border: #2d3748;
+      --border-focus: #4b5563;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent-muted: #0284c7;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.1);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.1);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.1);
+      --purple: #c084fc;
+      --purple-bg: rgba(192, 132, 252, 0.1);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .breadcrumb a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+
+    .takeaway {
+      margin-top: 8px;
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 900px;
+    }
+    .takeaway strong { color: var(--text); }
+
+    /* Scenario selector */
+    .scenario-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .scenario-btn:hover {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: var(--border-focus);
+    }
+    .scenario-btn.active {
+      background: var(--surface-2);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn:hover:not(:disabled) {
+      background: var(--surface-3);
+      border-color: var(--border-focus);
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--accent-muted);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent);
+      color: #0b0f19;
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: var(--danger);
+      color: #0b0f19;
+    }
+    .btn-success {
+      background: rgba(52, 211, 153, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .btn-success:hover:not(:disabled) {
+      background: var(--success);
+      color: #0b0f19;
+    }
+
+    .step-indicator {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .step-indicator span {
+      color: var(--accent);
+    }
+
+    /* Main Grid */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1200px) {
+      .grid-container { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      padding: 10px 16px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-body {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 520px;
+    }
+
+    /* Code Block with Active Line Highlighting */
+    .code-view {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      background: #070a11;
+      border-radius: 6px;
+      padding: 12px 0;
+      overflow-x: auto;
+    }
+    .code-line {
+      padding: 0 16px;
+      display: flex;
+      gap: 14px;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .code-line.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-left-color: var(--accent);
+    }
+    .code-line.waiting {
+      background: rgba(251, 191, 36, 0.15);
+      border-left-color: var(--warning);
+    }
+    .line-num {
+      color: #4b5563;
+      user-select: none;
+      min-width: 20px;
+      text-align: right;
+    }
+    .line-content {
+      color: #e5e7eb;
+      white-space: pre;
+    }
+    .kw { color: #f472b6; }
+    .fn { color: #60a5fa; }
+    .str { color: #34d399; }
+    .comment { color: #6b7280; font-style: italic; }
+
+    /* Memoized Cache List */
+    .cache-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .cache-item {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      font-family: var(--font-mono);
+      transition: all 0.2s ease;
+    }
+    .cache-item.hit {
+      border-color: var(--success);
+      box-shadow: 0 0 8px var(--success-bg);
+    }
+    .cache-item.miss {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+    .cache-item-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .step-tag {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .cache-status {
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .status-hit { background: var(--success-bg); color: var(--success); }
+    .status-miss { background: var(--accent-glow); color: var(--accent); }
+    .status-wait { background: var(--warning-bg); color: var(--warning); }
+    .cache-val {
+      color: var(--text-muted);
+      overflow-wrap: anywhere;
+    }
+
+    /* Event Stream Table */
+    .event-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+    }
+    .event-table th {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .event-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(45, 55, 72, 0.4);
+      color: var(--text);
+    }
+    .event-row.newly-appended {
+      background: rgba(56, 189, 248, 0.12);
+      animation: pulseRow 1.2s ease;
+    }
+    .event-type-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+    }
+    .type-run-started { color: #38bdf8; border-color: #0284c7; }
+    .type-run-step { color: #34d399; border-color: #059669; }
+    .type-run-invocation { color: #a78bfa; border-color: #7c3aed; }
+    .type-run-waiting { color: #fbbf24; border-color: #d97706; }
+    .type-run-resumed { color: #34d399; border-color: #059669; }
+    .type-run-completed { color: #10b981; border-color: #047857; }
+
+    @keyframes pulseRow {
+      0% { background: rgba(56, 189, 248, 0.35); }
+      100% { background: rgba(56, 189, 248, 0.12); }
+    }
+
+    /* Lower Section: Telemetry & Projection */
+    .lower-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .lower-grid { grid-template-columns: 1fr; }
+    }
+
+    .telemetry-card {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+    }
+    .telemetry-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .telemetry-val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .live-chat-panel {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 180px;
+    }
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      max-width: 85%;
+    }
+    .bubble-user {
+      align-self: flex-end;
+      background: var(--surface-3);
+      color: #fff;
+    }
+    .bubble-assistant {
+      align-self: flex-start;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .approval-card-mock {
+      border: 1px solid var(--warning);
+      background: var(--warning-bg);
+      border-radius: 6px;
+      padding: 12px 14px;
+      align-self: flex-start;
+      width: 100%;
+    }
+    .approval-card-mock h4 {
+      font-size: 0.88rem;
+      color: var(--warning);
+      margin-bottom: 6px;
+    }
+    .approval-card-mock p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* Explanation & Theory Box */
+    .doctrine-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-top: 24px;
+    }
+    .doctrine-box h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .doctrine-box p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .doctrine-box code {
+      font-family: var(--font-mono);
+      background: var(--surface-2);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="breadcrumb">
+      <a href="../README.md">Docs</a> / <a href="./index.html">Cognitive Explorers</a> / <span>Run Execution & Replay</span>
+    </div>
+    <h1>
+      The Cognate Replay Execution Stepper
+      <span class="badge">Interactive Model</span>
+    </h1>
+    <p class="takeaway">
+      <strong>Core Invariant:</strong> A run is executed by <em>replay</em>, not resumption. Every execution attempt re-enters <code>agent.run(input, ctx)</code> from line 1. Steps recorded in prior events are satisfied immediately from the memoized stream index without re-triggering side effects.
+    </p>
+  </header>
+
+  <!-- Scenario Selector -->
+  <div class="scenario-nav">
+    <button class="scenario-btn active" id="btn-scen-1" onclick="loadScenario(1)">
+      <span>Scenario 1:</span> Normal Multi-Step Tool Execution
+    </button>
+    <button class="scenario-btn" id="btn-scen-2" onclick="loadScenario(2)">
+      <span>Scenario 2:</span> Human-in-the-Loop Continuation & Recovery
+    </button>
+    <button class="scenario-btn" id="btn-scen-3" onclick="loadScenario(3)">
+      <span>Scenario 3:</span> Write CAS Collision & Retry Loop
+    </button>
+    <button class="scenario-btn" id="btn-scen-4" onclick="loadScenario(4)">
+      <span>Scenario 4:</span> Caller-Seeded Shared State Fold
+    </button>
+  </div>
+
+  <!-- Execution Controls -->
+  <div class="controls-bar">
+    <div class="ctrl-group">
+      <button class="btn btn-primary" id="btn-next" onclick="stepForward()">Next Step ▶</button>
+      <button class="btn" id="btn-prev" onclick="stepBack()" disabled>◀ Back</button>
+      <button class="btn" id="btn-play" onclick="togglePlay()">Play ⏯</button>
+      <button class="btn" id="btn-reset" onclick="resetScenario()">Reset ↺</button>
+    </div>
+    <div class="ctrl-group">
+      <button class="btn btn-danger" id="btn-crash" onclick="simulateCrash()" title="Kills the process, clears RAM, and re-reads the event log from position 0">
+        ⚡ Simulate Crash & Restart
+      </button>
+      <button class="btn btn-success" id="btn-approve" onclick="resolveApproval()" style="display: none;">
+        ✓ Approve Continuation
+      </button>
+    </div>
+    <div class="step-indicator" id="step-indicator">
+      Step: <span id="cur-step-num">0</span> / <span id="total-step-num">6</span> | Attempt: <span id="attempt-num">1</span>
+    </div>
+  </div>
+
+  <!-- 3-Column Diagnostic Workbench -->
+  <div class="grid-container">
+    
+    <!-- Column 1: Agent Code Definition -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>1. Agent Code Stack (<code>packages/react</code> / definition)</span>
+        <span class="badge" id="code-status">Active</span>
+      </div>
+      <div class="panel-body">
+        <div class="code-view" id="code-view">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: RunContext Memoization Index -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>2. RunContext Cache (<code>recorded: Map&lt;stepId, Event&gt;</code>)</span>
+        <span class="badge" id="cache-count">0 steps</span>
+      </div>
+      <div class="panel-body">
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">
+          Built by <code>executeOnce</code> by folding stream events before calling <code>agent.run</code>:
+        </div>
+        <div class="cache-list" id="cache-list">
+          <div style="color: var(--text-muted); font-size: 0.82rem; font-style: italic;">Cache is empty (initial cold start).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: Append-Only Event Stream -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>3. Durable Event Stream (<code>run-&lt;runId&gt;</code> in SQLite/Postgres)</span>
+        <span class="badge" id="stream-version">v0</span>
+      </div>
+      <div class="panel-body" style="padding: 0;">
+        <table class="event-table">
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Seq</th>
+              <th>Event Type</th>
+              <th>Step ID</th>
+              <th>Causation ID</th>
+            </tr>
+          </thead>
+          <tbody id="event-stream-body">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Lower Row: Side Effects & Projections -->
+  <div class="lower-grid">
+    
+    <!-- Left: External Telemetry & Invariant Checks -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>External Side-Effect Telemetry & Outbox</span>
+        <span class="badge" id="side-effect-badge">Deterministic</span>
+      </div>
+      <div class="panel-body">
+        <div class="telemetry-card">
+          <div class="telemetry-title">External Model / Tool API Invocations</div>
+          <div class="telemetry-val">
+            <span id="external-call-count" style="color: var(--accent);">0</span>
+            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);" id="external-call-detail">
+              (Live: 0, Suppressed by Replay: 0)
+            </span>
+          </div>
+        </div>
+        <div class="telemetry-card">
+          <div class="telemetry-title">Active Outbox Intents (<code>outbox_intents</code>)</div>
+          <div class="telemetry-val" style="font-size: 0.95rem; color: var(--text-muted);" id="outbox-intent-detail">
+            None pending.
+          </div>
+        </div>
+        <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 10px;" id="execution-verdict">
+          Run initialized. Ready for first step.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Client / Astryx UI Projection -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>Client UI View (Folded by <code>@godspeedai/cognate-client</code>)</span>
+        <span class="badge" id="ui-run-status">pending</span>
+      </div>
+      <div class="panel-body">
+        <div class="live-chat-panel" id="live-chat-panel">
+          <div class="chat-bubble bubble-user" id="user-prompt-bubble">
+            User: "Process order #8492"
+          </div>
+          <!-- Assistant bubbles added dynamically -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Architectural Invariant Doctrine -->
+  <div class="doctrine-box">
+    <h3>Why Replay Solves The Distributed Execution Trap</h3>
+    <p>
+      Traditional workflows freeze threads or store complex execution state graphs in memory. When the host crashes or an unhandled exception occurs, the in-flight state is orphaned.
+    </p>
+    <p>
+      In <strong>Cognate</strong>, execution state is simply a pure function over the stream: <code>State = fold(Events)</code>.
+      When <code>executeOnce</code> wakes up, it re-reads <code>run-&lt;id&gt;</code> and calls the agent function from line 1.
+      When <code>ctx.invoke</code> is reached, it sees <code>stepId: "invoke:0"</code> already in the map, skips the remote API call, and immediately returns the recorded output. External models and payment APIs are called <strong>exactly once</strong>, while the code retains ordinary synchronous readability.
+    </p>
+    <p>
+      <strong>Verification Evidence:</strong> Proven by <code>packages/runtime-bun/test/run-execution.test.ts</code> (CAS race recovery) and <code>packages/runtime-bun/test/shutdown-recovery.test.ts</code>.
+    </p>
+  </div>
+
+  <script>
+    // Scenario Definitions
+    const scenarios = {
+      1: {
+        title: "Normal Multi-Step Tool Execution",
+        codeLines: [
+          { num: 1, text: 'export const refundAgent = defineAgent({', comment: '' },
+          { num: 2, text: '  id: "agent.refund",', comment: '' },
+          { num: 3, text: '  async run(input, ctx) {', comment: '' },
+          { num: 4, text: '    const order = await ctx.step("fetch-order", () => fetchOrder(input.id));', comment: '// Recorded as step:fetch-order' },
+          { num: 5, text: '    const quote = await ctx.invoke("billing.quote", { order });', comment: '// Recorded as invoke:0' },
+          { num: 6, text: '    await ctx.emit("message.delta", { text: `Quote: $${quote.amount}` });', comment: '// Recorded as emit:0' },
+          { num: 7, text: '    return { status: "quoted", amount: quote.amount };', comment: '// Appends run.completed' },
+          { num: 8, text: '  }', comment: '' },
+          { num: 9, text: '});', comment: '' }
+        ],
+        steps: [
+          {
+            desc: "1. Caller calls client.startRun('agent.refund', { id: '8492' })",
+            activeLine: 3,
+            attempt: 1,
+            events: [
+              { pos: 101, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { agent: "agent.refund", input: { id: "8492" } } }
+            ],
+            cache: {},
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "run.execute intent scheduled",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "RuntimeService committed run.started and scheduled run.execute outbox intent atomically."
+          },
+          {
+            desc: "2. Background loop invokes executeOnce; executes ctx.step('fetch-order')",
+            activeLine: 4,
+            attempt: 1,
+            events: [
+              { pos: 101, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { agent: "agent.refund", input: { id: "8492" } } },
+              { pos: 102, seq: 2, type: "run.step.completed", stepId: "step:fetch-order", causationId: "evt-101", payload: { result: { id: "8492", total: 45.00 } } }
+            ],
+            cache: {
+              "step:fetch-order": { type: "run.step.completed", result: { id: "8492", total: 45.00 }, status: "miss" }
+            },
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "Step 'fetch-order' executed and appended to stream under sequence 2."
+          },
+          {
+            desc: "3. Agent calls ctx.invoke('billing.quote', { order }) -> Model/Tool provider called",
+            activeLine: 5,
+            attempt: 1,
+            events: [
+              { pos: 101, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { agent: "agent.refund", input: { id: "8492" } } },
+              { pos: 102, seq: 2, type: "run.step.completed", stepId: "step:fetch-order", causationId: "evt-101", payload: { result: { id: "8492", total: 45.00 } } },
+              { pos: 103, seq: 3, type: "run.invocation", stepId: "invoke:0", causationId: "evt-102", payload: { capability: "billing.quote", result: { amount: 45.00 } } }
+            ],
+            cache: {
+              "step:fetch-order": { type: "run.step.completed", result: { id: "8492", total: 45.00 }, status: "hit" },
+              "invoke:0": { type: "run.invocation", result: { amount: 45.00 }, status: "miss" }
+            },
+            liveCalls: 1,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "Kernel authorized 'billing.quote'. LIVE side-effect performed; result committed to stream."
+          },
+          {
+            desc: "4. Agent calls ctx.emit('message.delta', { text: 'Quote: $45' })",
+            activeLine: 6,
+            attempt: 1,
+            events: [
+              { pos: 101, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { agent: "agent.refund", input: { id: "8492" } } },
+              { pos: 102, seq: 2, type: "run.step.completed", stepId: "step:fetch-order", causationId: "evt-101", payload: { result: { id: "8492", total: 45.00 } } },
+              { pos: 103, seq: 3, type: "run.invocation", stepId: "invoke:0", causationId: "evt-102", payload: { capability: "billing.quote", result: { amount: 45.00 } } },
+              { pos: 104, seq: 4, type: "message.delta", stepId: "emit:0", causationId: "evt-103", payload: { text: "Quote: $45.00" } }
+            ],
+            cache: {
+              "step:fetch-order": { type: "run.step.completed", result: { id: "8492", total: 45.00 }, status: "hit" },
+              "invoke:0": { type: "run.invocation", result: { amount: 45.00 }, status: "hit" },
+              "emit:0": { type: "message.delta", result: "emitted", status: "miss" }
+            },
+            liveCalls: 1,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: "Quote: $45.00",
+            verdict: "Event 'message.delta' appended. Client subscription delivers delta directly to ChatPanel."
+          },
+          {
+            desc: "5. Agent finishes and returns final output object",
+            activeLine: 7,
+            attempt: 1,
+            events: [
+              { pos: 101, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { agent: "agent.refund", input: { id: "8492" } } },
+              { pos: 102, seq: 2, type: "run.step.completed", stepId: "step:fetch-order", causationId: "evt-101", payload: { result: { id: "8492", total: 45.00 } } },
+              { pos: 103, seq: 3, type: "run.invocation", stepId: "invoke:0", causationId: "evt-102", payload: { capability: "billing.quote", result: { amount: 45.00 } } },
+              { pos: 104, seq: 4, type: "message.delta", stepId: "emit:0", causationId: "evt-103", payload: { text: "Quote: $45.00" } },
+              { pos: 105, seq: 5, type: "run.completed", stepId: "-", causationId: "evt-104", payload: { status: "quoted", amount: 45.00 } }
+            ],
+            cache: {
+              "step:fetch-order": { type: "run.step.completed", result: { id: "8492", total: 45.00 }, status: "hit" },
+              "invoke:0": { type: "run.invocation", result: { amount: 45.00 }, status: "hit" },
+              "emit:0": { type: "message.delta", result: "emitted", status: "hit" }
+            },
+            liveCalls: 1,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "completed",
+            uiMessage: "Quote: $45.00",
+            verdict: "Run terminal state reached. 'run.completed' appended. Execution loop finishes clean."
+          }
+        ]
+      },
+      2: {
+        title: "Human-in-the-Loop Continuation & Recovery",
+        codeLines: [
+          { num: 1, text: 'export const approvalAgent = defineAgent({', comment: '' },
+          { num: 2, text: '  id: "agent.approval",', comment: '' },
+          { num: 3, text: '  async run(input, ctx) {', comment: '' },
+          { num: 4, text: '    const quote = await ctx.invoke("billing.quote", { id: input.id });', comment: '// Step 1' },
+          { num: 5, text: '    const approval = await ctx.waitFor("approve", {', comment: '// Suspends here!' },
+          { num: 6, text: '      type: "refund_approval", condition: { kind: "human_approval" }', comment: '' },
+          { num: 7, text: '    });', comment: '' },
+          { num: 8, text: '    await ctx.invoke("billing.charge", { approved: approval.ok });', comment: '// Replays past 4 & 5' },
+          { num: 9, text: '    return { status: "settled" };', comment: '' },
+          { num: 10, text: '  }', comment: '' },
+          { num: 11, text: '});', comment: '' }
+        ],
+        steps: [
+          {
+            desc: "1. startRun committed. Agent executes line 4 (billing.quote).",
+            activeLine: 4,
+            attempt: 1,
+            events: [
+              { pos: 201, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { id: "8492" } },
+              { pos: 202, seq: 2, type: "run.invocation", stepId: "invoke:0", causationId: "evt-201", payload: { amount: 150.00 } }
+            ],
+            cache: {
+              "invoke:0": { type: "run.invocation", result: { amount: 150.00 }, status: "miss" }
+            },
+            liveCalls: 1,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "First invocation recorded. External quote generated."
+          },
+          {
+            desc: "2. Agent calls ctx.waitFor('approve') -> Continuation persisted, Run halts!",
+            activeLine: 5,
+            attempt: 1,
+            events: [
+              { pos: 201, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { id: "8492" } },
+              { pos: 202, seq: 2, type: "run.invocation", stepId: "invoke:0", causationId: "evt-201", payload: { amount: 150.00 } },
+              { pos: 203, seq: 3, type: "run.waiting", stepId: "wait:approve", causationId: "evt-202", payload: { continuationId: "cont-99", kind: "human_approval" } }
+            ],
+            cache: {
+              "invoke:0": { type: "run.invocation", result: { amount: 150.00 }, status: "hit" },
+              "wait:approve": { type: "run.waiting", result: "PENDING_APPROVAL", status: "wait" }
+            },
+            liveCalls: 1,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "waiting",
+            uiMessage: null,
+            showApproval: true,
+            verdict: "Continuation persisted. Halt sentinel escaped agent.run. No process or thread remains in memory!"
+          },
+          {
+            desc: "3. Operator clicks 'Approve' -> resolveContinuation appends continuation.resumed and kicks loop.",
+            activeLine: 3,
+            attempt: 2,
+            events: [
+              { pos: 201, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { id: "8492" } },
+              { pos: 202, seq: 2, type: "run.invocation", stepId: "invoke:0", causationId: "evt-201", payload: { amount: 150.00 } },
+              { pos: 203, seq: 3, type: "run.waiting", stepId: "wait:approve", causationId: "evt-202", payload: { continuationId: "cont-99", kind: "human_approval" } },
+              { pos: 204, seq: 4, type: "continuation.resumed", stepId: "wait:approve", causationId: "evt-203", payload: { ok: true } }
+            ],
+            cache: {
+              "invoke:0": { type: "run.invocation", result: { amount: 150.00 }, status: "hit" },
+              "wait:approve": { type: "continuation.resumed", result: { ok: true }, status: "hit" }
+            },
+            liveCalls: 1,
+            suppressedCalls: 0,
+            outbox: "continuation.resume intent",
+            uiStatus: "active",
+            uiMessage: null,
+            showApproval: false,
+            verdict: "Attempt 2 re-enters agent.run from line 1! Replay will satisfy lines 4 and 5 instantly from cache."
+          },
+          {
+            desc: "4. Replay passes line 4 (Cached!) and line 5 (Cached!). Now executing line 8 (billing.charge).",
+            activeLine: 8,
+            attempt: 2,
+            events: [
+              { pos: 201, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { id: "8492" } },
+              { pos: 202, seq: 2, type: "run.invocation", stepId: "invoke:0", causationId: "evt-201", payload: { amount: 150.00 } },
+              { pos: 203, seq: 3, type: "run.waiting", stepId: "wait:approve", causationId: "evt-202", payload: { continuationId: "cont-99", kind: "human_approval" } },
+              { pos: 204, seq: 4, type: "continuation.resumed", stepId: "wait:approve", causationId: "evt-203", payload: { ok: true } },
+              { pos: 205, seq: 5, type: "run.invocation", stepId: "invoke:1", causationId: "evt-204", payload: { capability: "billing.charge", charged: true } }
+            ],
+            cache: {
+              "invoke:0": { type: "run.invocation", result: { amount: 150.00 }, status: "hit" },
+              "wait:approve": { type: "continuation.resumed", result: { ok: true }, status: "hit" },
+              "invoke:1": { type: "run.invocation", result: { charged: true }, status: "miss" }
+            },
+            liveCalls: 2,
+            suppressedCalls: 1, // invoke:0 was skipped on replay!
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: "Charge approved and processed.",
+            verdict: "Line 4 was SUPPRESSED on replay (0 double charges). Line 8 invoked fresh."
+          },
+          {
+            desc: "5. Run completes cleanly.",
+            activeLine: 9,
+            attempt: 2,
+            events: [
+              { pos: 201, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { id: "8492" } },
+              { pos: 202, seq: 2, type: "run.invocation", stepId: "invoke:0", causationId: "evt-201", payload: { amount: 150.00 } },
+              { pos: 203, seq: 3, type: "run.waiting", stepId: "wait:approve", causationId: "evt-202", payload: { continuationId: "cont-99", kind: "human_approval" } },
+              { pos: 204, seq: 4, type: "continuation.resumed", stepId: "wait:approve", causationId: "evt-203", payload: { ok: true } },
+              { pos: 205, seq: 5, type: "run.invocation", stepId: "invoke:1", causationId: "evt-204", payload: { capability: "billing.charge", charged: true } },
+              { pos: 206, seq: 6, type: "run.completed", stepId: "-", causationId: "evt-205", payload: { status: "settled" } }
+            ],
+            cache: {
+              "invoke:0": { type: "run.invocation", result: { amount: 150.00 }, status: "hit" },
+              "wait:approve": { type: "continuation.resumed", result: { ok: true }, status: "hit" },
+              "invoke:1": { type: "run.invocation", result: { charged: true }, status: "hit" }
+            },
+            liveCalls: 2,
+            suppressedCalls: 1,
+            outbox: "idle",
+            uiStatus: "completed",
+            uiMessage: "Charge approved and processed.",
+            verdict: "Run settled across process restarts without losing state or duplicating external actions."
+          }
+        ]
+      },
+      3: {
+        title: "Write CAS Collision & Retry Loop",
+        codeLines: [
+          { num: 1, text: 'export const concurrentAgent = defineAgent({', comment: '' },
+          { num: 2, text: '  id: "agent.concurrent",', comment: '' },
+          { num: 3, text: '  async run(input, ctx) {', comment: '' },
+          { num: 4, text: '    const data = await ctx.step("analyze", () => compute(input));', comment: '' },
+          { num: 5, text: '    // Concurrency collision simulated at this commit!', comment: '' },
+          { num: 6, text: '    await ctx.emit("analysis.done", data);', comment: '// CAS expectedVersion: 2' },
+          { num: 7, text: '    return { done: true };', comment: '' },
+          { num: 8, text: '  }', comment: '' },
+          { num: 9, text: '});', comment: '' }
+        ],
+        steps: [
+          {
+            desc: "1. Attempt 1 begins. 'analyze' step completes.",
+            activeLine: 4,
+            attempt: 1,
+            events: [
+              { pos: 301, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { val: 42 } },
+              { pos: 302, seq: 2, type: "run.step.completed", stepId: "step:analyze", causationId: "evt-301", payload: { score: 99 } }
+            ],
+            cache: { "step:analyze": { type: "run.step.completed", result: { score: 99 }, status: "miss" } },
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "Attempt 1 computed step:analyze. Next append expects stream sequence 3."
+          },
+          {
+            desc: "2. Another process appends to stream (e.g. cancelRun or external event). Stream is now at v3!",
+            activeLine: 6,
+            attempt: 1,
+            events: [
+              { pos: 301, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { val: 42 } },
+              { pos: 302, seq: 2, type: "run.step.completed", stepId: "step:analyze", causationId: "evt-301", payload: { score: 99 } },
+              { pos: 303, seq: 3, type: "note.added", stepId: "-", causationId: "evt-302", payload: { note: "admin tag" } }
+            ],
+            cache: { "step:analyze": { type: "run.step.completed", result: { score: 99 }, status: "hit" } },
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "Stream version mismatch! Executor's append with expectedVersion=2 throws ConcurrencyError."
+          },
+          {
+            desc: "3. ConcurrencyError triggers Halt{retry: true}. Attempt 1 terminates without failing the run.",
+            activeLine: 3,
+            attempt: 2,
+            events: [
+              { pos: 301, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { val: 42 } },
+              { pos: 302, seq: 2, type: "run.step.completed", stepId: "step:analyze", causationId: "evt-301", payload: { score: 99 } },
+              { pos: 303, seq: 3, type: "note.added", stepId: "-", causationId: "evt-302", payload: { note: "admin tag" } }
+            ],
+            cache: { "step:analyze": { type: "run.step.completed", result: { score: 99 }, status: "hit" } },
+            liveCalls: 0,
+            suppressedCalls: 1,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "Attempt 2 re-reads the full stream (seeing note.added), rebuilds cache, and enters agent.run fresh."
+          },
+          {
+            desc: "4. Attempt 2 satisfies 'analyze' from cache, successfully appends analysis.done at expectedVersion=3.",
+            activeLine: 6,
+            attempt: 2,
+            events: [
+              { pos: 301, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { val: 42 } },
+              { pos: 302, seq: 2, type: "run.step.completed", stepId: "step:analyze", causationId: "evt-301", payload: { score: 99 } },
+              { pos: 303, seq: 3, type: "note.added", stepId: "-", causationId: "evt-302", payload: { note: "admin tag" } },
+              { pos: 304, seq: 4, type: "analysis.done", stepId: "emit:0", causationId: "evt-303", payload: { score: 99 } },
+              { pos: 305, seq: 5, type: "run.completed", stepId: "-", causationId: "evt-304", payload: { done: true } }
+            ],
+            cache: {
+              "step:analyze": { type: "run.step.completed", result: { score: 99 }, status: "hit" },
+              "emit:0": { type: "analysis.done", result: "ok", status: "miss" }
+            },
+            liveCalls: 0,
+            suppressedCalls: 1,
+            outbox: "idle",
+            uiStatus: "completed",
+            uiMessage: "Analysis complete.",
+            verdict: "CAS retry succeeded transparently. Determinism preserved despite write collision."
+          }
+        ]
+      },
+      4: {
+        title: "Caller-Seeded Shared State Fold",
+        codeLines: [
+          { num: 1, text: 'export const sharedStateAgent = defineAgent({', comment: '' },
+          { num: 2, text: '  id: "agent.shared",', comment: '' },
+          { num: 3, text: '  async run(input, ctx) {', comment: '' },
+          { num: 4, text: '    // ctx.state reads the folded state at read time', comment: '' },
+          { num: 5, text: '    const current = await ctx.state("order");', comment: '// Stream: run-state-<runId>' },
+          { num: 6, text: '    await ctx.emit("state.acknowledged", { current });', comment: '' },
+          { num: 7, text: '    return { final: current };', comment: '' },
+          { num: 8, text: '  }', comment: '' },
+          { num: 9, text: '});', comment: '' }
+        ],
+        steps: [
+          {
+            desc: "1. startRun called with seed state: { state: { order: { qty: 5 } } }",
+            activeLine: 3,
+            attempt: 1,
+            events: [
+              { pos: 401, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { user: "alice" } },
+              { pos: 402, seq: 1, type: "state.changed", stepId: "-", causationId: "evt-401", payload: { snapshot: { order: { qty: 5 } }, source: "caller" } }
+            ],
+            cache: {},
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "run.started committed on run-<id>; state.changed committed on run-state-<id>."
+          },
+          {
+            desc: "2. ctx.state('order') records snapshot into run stream under state:order.",
+            activeLine: 5,
+            attempt: 1,
+            events: [
+              { pos: 401, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { user: "alice" } },
+              { pos: 402, seq: 1, type: "state.changed", stepId: "-", causationId: "evt-401", payload: { snapshot: { order: { qty: 5 } }, source: "caller" } },
+              { pos: 403, seq: 2, type: "run.step.completed", stepId: "state:order", causationId: "evt-401", payload: { result: { qty: 5 } } }
+            ],
+            cache: {
+              "state:order": { type: "run.step.completed", result: { qty: 5 }, status: "miss" }
+            },
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "active",
+            uiMessage: null,
+            verdict: "Crucial rule: ctx.state memoizes the state value at read time. Replays will see this exact snapshot even if caller updates later!"
+          },
+          {
+            desc: "3. Run completes.",
+            activeLine: 7,
+            attempt: 1,
+            events: [
+              { pos: 401, seq: 1, type: "run.started", stepId: "-", causationId: "null", payload: { user: "alice" } },
+              { pos: 402, seq: 1, type: "state.changed", stepId: "-", causationId: "evt-401", payload: { snapshot: { order: { qty: 5 } }, source: "caller" } },
+              { pos: 403, seq: 2, type: "run.step.completed", stepId: "state:order", causationId: "evt-401", payload: { result: { qty: 5 } } },
+              { pos: 404, seq: 3, type: "state.acknowledged", stepId: "emit:0", causationId: "evt-403", payload: { current: { qty: 5 } } },
+              { pos: 405, seq: 4, type: "run.completed", stepId: "-", causationId: "evt-404", payload: { final: { qty: 5 } } }
+            ],
+            cache: {
+              "state:order": { type: "run.step.completed", result: { qty: 5 }, status: "hit" },
+              "emit:0": { type: "state.acknowledged", result: "ok", status: "miss" }
+            },
+            liveCalls: 0,
+            suppressedCalls: 0,
+            outbox: "idle",
+            uiStatus: "completed",
+            uiMessage: "Order qty: 5 processed.",
+            verdict: "Bidirectional shared state verified. Proven by packages/runtime-bun/test/shared-state.test.ts."
+          }
+        ]
+      }
+    };
+
+    let curScenarioId = 1;
+    let curStepIdx = 0;
+    let isPlaying = false;
+    let playTimer = null;
+
+    function loadScenario(id) {
+      curScenarioId = id;
+      curStepIdx = 0;
+      pausePlay();
+      document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('btn-scen-' + id);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderCode();
+      renderStep();
+    }
+
+    function renderCode() {
+      const scen = scenarios[curScenarioId];
+      const codeView = document.getElementById('code-view');
+      codeView.innerHTML = scen.codeLines.map(line => `
+        <div class="code-line" id="line-${line.num}">
+          <span class="line-num">${line.num}</span>
+          <span class="line-content">${colorize(line.text)} ${line.comment ? `<span class="comment">${line.comment}</span>` : ''}</span>
+        </div>
+      `).join('');
+    }
+
+    function colorize(txt) {
+      return txt
+        .replace(/\b(export|const|async|await|return|defineAgent)\b/g, '<span class="kw">$1</span>')
+        .replace(/\b(ctx|step|invoke|emit|waitFor|state)\b/g, '<span class="fn">$1</span>')
+        .replace(/(["'`].*?["'`])/g, '<span class="str">$1</span>');
+    }
+
+    function renderStep() {
+      const scen = scenarios[curScenarioId];
+      const step = scen.steps[curStepIdx];
+      const total = scen.steps.length;
+
+      // Update counters
+      document.getElementById('cur-step-num').textContent = curStepIdx + 1;
+      document.getElementById('total-step-num').textContent = total;
+      document.getElementById('attempt-num').textContent = step.attempt;
+
+      // Button states
+      document.getElementById('btn-prev').disabled = curStepIdx === 0;
+      document.getElementById('btn-next').disabled = curStepIdx === total - 1;
+
+      // Highlight active code line
+      document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active', 'waiting'));
+      const activeLineEl = document.getElementById('line-' + step.activeLine);
+      if (activeLineEl) {
+        if (step.showApproval) {
+          activeLineEl.classList.add('waiting');
+        } else {
+          activeLineEl.classList.add('active');
+        }
+      }
+
+      // Update cache list
+      const cacheList = document.getElementById('cache-list');
+      const cacheKeys = Object.keys(step.cache);
+      document.getElementById('cache-count').textContent = cacheKeys.length + " keys";
+      if (cacheKeys.length === 0) {
+        cacheList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem; font-style: italic;">Cache is empty (cold start).</div>';
+      } else {
+        cacheList.innerHTML = cacheKeys.map(k => {
+          const item = step.cache[k];
+          const hitClass = item.status === 'hit' ? 'hit' : (item.status === 'wait' ? 'wait' : 'miss');
+          const badgeClass = item.status === 'hit' ? 'status-hit' : (item.status === 'wait' ? 'status-wait' : 'status-miss');
+          const label = item.status === 'hit' ? 'CACHE HIT (REPLAY)' : (item.status === 'wait' ? 'SUSPENDED' : 'LIVE COMMITTED');
+          return `
+            <div class="cache-item ${hitClass}">
+              <div class="cache-item-head">
+                <span class="step-tag">${k}</span>
+                <span class="cache-status ${badgeClass}">${label}</span>
+              </div>
+              <div class="cache-val">${JSON.stringify(item.result)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Update Event Stream Table
+      const streamBody = document.getElementById('event-stream-body');
+      document.getElementById('stream-version').textContent = "v" + step.events.length;
+      streamBody.innerHTML = step.events.map((evt, idx) => {
+        const isNew = idx === step.events.length - 1;
+        const typeClass = "type-" + evt.type.replace(/\./g, '-');
+        return `
+          <tr class="event-row ${isNew ? 'newly-appended' : ''}">
+            <td style="color: var(--accent); font-weight: 600;">${evt.pos}</td>
+            <td>${evt.seq}</td>
+            <td><span class="event-type-badge ${typeClass}">${evt.type}</span></td>
+            <td><code>${evt.stepId}</code></td>
+            <td style="color: var(--text-muted); font-size: 0.75rem;">${evt.causationId}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Telemetry
+      document.getElementById('external-call-count').textContent = step.liveCalls;
+      document.getElementById('external-call-detail').textContent = 
+        `(Live Executions: ${step.liveCalls}, Suppressed by Replay: ${step.suppressedCalls})`;
+      document.getElementById('outbox-intent-detail').textContent = step.outbox;
+      document.getElementById('execution-verdict').textContent = step.verdict;
+
+      // Approval Button
+      const approveBtn = document.getElementById('btn-approve');
+      if (step.showApproval) {
+        approveBtn.style.display = 'inline-flex';
+      } else {
+        approveBtn.style.display = 'none';
+      }
+
+      // UI View Projection
+      document.getElementById('ui-run-status').textContent = step.uiStatus;
+      document.getElementById('ui-run-status').className = 'badge ' + 
+        (step.uiStatus === 'completed' ? 'status-hit' : (step.uiStatus === 'waiting' ? 'status-wait' : 'status-miss'));
+
+      const liveChat = document.getElementById('live-chat-panel');
+      let chatContent = '<div class="chat-bubble bubble-user">User: "Process order #8492"</div>';
+      if (step.showApproval) {
+        chatContent += `
+          <div class="approval-card-mock">
+            <h4>⚠️ Continuation: Human Approval Required</h4>
+            <p>Refund amount: $150.00 exceeds automated threshold ($100). Please approve or deny.</p>
+          </div>
+        `;
+      }
+      if (step.uiMessage) {
+        chatContent += `<div class="chat-bubble bubble-assistant">Assistant: ${step.uiMessage}</div>`;
+      }
+      liveChat.innerHTML = chatContent;
+    }
+
+    function stepForward() {
+      const scen = scenarios[curScenarioId];
+      if (curStepIdx < scen.steps.length - 1) {
+        curStepIdx++;
+        renderStep();
+      } else {
+        pausePlay();
+      }
+    }
+
+    function stepBack() {
+      if (curStepIdx > 0) {
+        curStepIdx--;
+        renderStep();
+      }
+    }
+
+    function resetScenario() {
+      curStepIdx = 0;
+      pausePlay();
+      renderStep();
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pausePlay();
+      } else {
+        isPlaying = true;
+        document.getElementById('btn-play').textContent = "Pause ⏸";
+        playTimer = setInterval(() => {
+          const scen = scenarios[curScenarioId];
+          if (curStepIdx < scen.steps.length - 1) {
+            stepForward();
+          } else {
+            pausePlay();
+          }
+        }, 1800);
+      }
+    }
+
+    function pausePlay() {
+      isPlaying = false;
+      clearInterval(playTimer);
+      const playBtn = document.getElementById('btn-play');
+      if (playBtn) playBtn.textContent = "Play ⏯";
+    }
+
+    function simulateCrash() {
+      alert("⚡ PROCESS KILLED! Simulating hard crash.\nIn-memory state and call stacks wiped clean.\nRuntime restarts and loads the event stream from disk...");
+      // Re-evaluate from attempt + 1
+      resetScenario();
+    }
+
+    function resolveApproval() {
+      stepForward();
+    }
+
+    // Initialize on load
+    loadScenario(1);
+  </script>
+</body>
+</html>

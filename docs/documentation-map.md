@@ -20,6 +20,7 @@ adding, renaming, or removing a page means editing this list.
 | Page | Reader need | Owns | Prerequisites |
 |---|---|---|---|
 | [README.md](README.md) | Orientation: what is this, what does it do, where do I go | the entry point, the eight core concepts, the representative journey | — |
+| [explainers/README.md](explainers/README.md) | Interactive model: visual simulation of replay, architecture, and concurrency | execution replay stepper, 6-plane invariant explorer, multi-worker lease simulator, cognitive portal | README |
 | [getting-started.md](getting-started.md) | How-to: get it running from a checkout | prerequisites, first commands, `cognate create`/`dev`, examples, the verification commands | README |
 | [mental-model.md](mental-model.md) | Explanation: the system's conceptual structure | events-as-truth, declaration vs. live instance, eligibility vs. authority, durable unfinished work, the five planes, what is authoritative, the three kinds of change | README |
 | [concepts.md](concepts.md) | Reference: the vocabulary | `Context`, `Scope`, `CapabilityContract`/`Requirement`, `Component`/fiber, the three kinds of change, events, projections, continuations, runs and `RunContext` replay | mental-model |

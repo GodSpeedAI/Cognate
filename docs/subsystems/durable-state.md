@@ -13,11 +13,15 @@ collections is in [../reference/events-and-stores.md](../reference/events-and-st
 ## Responsibilities
 
 - The event envelope and the store port (`packages/events`), plus the conformance kit every store
-  must pass.
-- The authoritative SQLite implementation (`packages/store-sqlite`) and an in-memory twin with the
-  same semantics (`packages/store-memory`).
+  must pass (`CG-EVT-008`).
+- The authoritative SQLite implementation (`packages/store-sqlite`) for single-process low-latency apps.
+- The authoritative PostgreSQL implementation (`packages/store-postgres`, [ADR-0013](../decisions/ADR-0013-postgresql-authoritative-store.md)) for multi-worker environments with locked-counter commit ordering and cross-process LISTEN/NOTIFY.
+- An in-memory twin with the same semantics for tests (`packages/store-memory`).
 - Checkpointed, rebuildable projections (`packages/projections`).
-- At-least-once delivery of work committed alongside an event (the outbox dispatcher).
+- At-least-once delivery of work committed alongside an event (the outbox dispatcher with fenced leases, [contracts/fenced-outbox-leases.md](../contracts/fenced-outbox-leases.md)).
+- Multi-process run ownership and write fencing (`claimRunOwnership`, [contracts/run-write-ownership.md](../contracts/run-write-ownership.md)).
+
+> **Interactive model:** Simulate outbox `FOR UPDATE SKIP LOCKED` leases, heartbeat renewal, and two-worker run ownership fencing in the **[Concurrency, Fenced Outbox & Ownership Simulator](../explainers/concurrency-and-leases.html)**.
 
 ## Non-responsibilities
 
@@ -32,7 +36,7 @@ collections is in [../reference/events-and-stores.md](../reference/events-and-st
 
 Everything durable depends on `events`. `runtime-bun` owns one store; `continuations`,
 `artifacts`, `capabilities`, `cognitive-rvf`, and `realitytrace` all write through it. `events`
-depends only on `kernel-api` (for `SemanticRef`). `store-sqlite` and `store-memory` depend only on
+depends only on `kernel-api` (for `SemanticRef`). `store-sqlite`, `store-postgres`, and `store-memory` depend only on
 `events`. `projections` depends only on `events`.
 
 ## Core abstractions

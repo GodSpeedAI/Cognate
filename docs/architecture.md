@@ -2,11 +2,13 @@
 
 Cognate separates six concerns that a monolithic agent framework usually conflates: what something means, what is currently executing, what happened, what is relevant, how it is represented, and how it is transported (spec §2). No layer may silently become authoritative for a responsibility belonging to another layer.
 
+> **Interactive explorer:** Explore all 6 planes, 45 packages, dependency guards, and invariant tests in the **[Planes, Boundaries & Invariants Explorer](explainers/architecture-and-invariants.html)**.
+
 ```mermaid
 flowchart TD
     sea[".sea source"] --> forge["DomainForge"] --> semantic["Semantic plane"]
     semantic --> execution["Execution plane"]
-    execution --> log[("Durable event log · SQLite")]
+    execution --> log[("Durable event log<br/>SQLite · PostgreSQL (pg0)")]
     execution -. optional observation .-> trace["RealityTrace"]
     log --> cognition["Cognitive plane · RuVector / RVF"]
     log --> projection["Projection / wire · Protobuf / Connect / AG-UI"]
@@ -18,8 +20,8 @@ flowchart TD
 | Plane | Responsibilities | Reference implementation |
 |---|---|---|
 | Semantic | `.sea` meaning, DomainForge projection into `SemanticRef` | [`@godspeedai/domainforge`](../packages/domainforge/README.md) — see [semantics.md](semantics.md) |
-| Execution | contexts, scopes, capabilities, components, fibers, dependencies, reversible effects, continuations, event emission, boundary classification | [`@godspeedai/cognate-kernel-api`](../packages/kernel-api/README.md) + [`@godspeedai/cognate-kernel-cordis`](../packages/kernel-cordis/README.md) |
-| Durable state | authoritative event log, idempotency, outbox, projections | [`@godspeedai/cognate-events`](../packages/events/README.md), [`@godspeedai/cognate-store-sqlite`](../packages/store-sqlite/README.md), [`@godspeedai/cognate-projections`](../packages/projections/README.md) |
+| Execution | contexts, scopes, capabilities, components, fibers, dependencies, reversible effects, continuations, event emission, boundary classification, isolation | [`@godspeedai/cognate-kernel-api`](../packages/kernel-api/README.md) + [`@godspeedai/cognate-kernel-cordis`](../packages/kernel-cordis/README.md) + [`@godspeedai/cognate-execution`](../packages/execution/README.md) |
+| Durable state | authoritative event log, idempotency, outbox, projections | [`@godspeedai/cognate-events`](../packages/events/README.md), [`@godspeedai/cognate-store-sqlite`](../packages/store-sqlite/README.md), [`@godspeedai/cognate-store-postgres`](../packages/store-postgres/README.md), [`@godspeedai/cognate-projections`](../packages/projections/README.md) |
 | Cognitive | recall, ranking, portable snapshots | [`@godspeedai/cognate-cognitive-api`](../packages/cognitive-api/README.md), [`@godspeedai/cognate-cognitive-ruvector`](../packages/cognitive-ruvector/README.md), [`@godspeedai/cognate-cognitive-rvf`](../packages/cognitive-rvf/README.md) — see [cognition.md](cognition.md), [rvf.md](rvf.md) |
 | Wire/interop | Protobuf schema, Connect RPC, AG-UI, MCP, A2A | [`@godspeedai/cognate-proto`](../packages/proto/README.md), [`@godspeedai/cognate-protocol-connect`](../packages/protocol-connect/README.md), [`@godspeedai/cognate-ag-ui`](../packages/ag-ui/README.md), [`@godspeedai/cognate-mcp`](../packages/mcp/README.md), [`@godspeedai/cognate-a2a`](../packages/a2a/README.md) — see [protocols.md](protocols.md) |
 | Presentation | headless client, React bindings, Astryx renderer | [`@godspeedai/cognate-client`](../packages/client/README.md), [`@godspeedai/cognate-react`](../packages/react/README.md), [`@godspeedai/cognate-ui-astryx`](../packages/ui-astryx/README.md) — see [ui.md](ui.md) |
@@ -36,7 +38,7 @@ Two paths run through the same durable event log but never merge:
 ```mermaid
 flowchart LR
     context["Context"] --> capability["Capability: eligibility and policy"] --> fiber["Component / fiber"]
-    fiber --> events[("Durable event log")]
+    fiber --> events[("Durable event log (SQLite / Postgres)")]
     fiber -. guarded external commitment .-> outside["External system"]
     events --> projection["Rebuildable projection"]
     projection --> views["UI · AG-UI · cognition · audit"]
@@ -48,14 +50,15 @@ flowchart LR
 packages/
 ├── kernel-api/, kernel-cordis/
 ├── events/, capabilities/, continuations/, projections/, artifacts/
-├── store-memory/, store-sqlite/
+├── store-memory/, store-sqlite/, store-postgres/
 ├── cognitive-api/, cognitive-memory/, cognitive-ruvector/, cognitive-rvf/
 ├── proto/, protocol-connect/, protocol-connect-bun/
 ├── runtime-api/, runtime-bun/
 ├── client/, react/, ui-astryx/
 ├── ag-ui/, mcp/, a2a/
 ├── domainforge/, realitytrace/
-├── provider-openai-compatible/, provider-local/
+├── provider-openai-compatible/, provider-local/, provider-anthropic-compatible/
+├── execution/, execution-ssh/, execution-wsl/
 ├── profile/                 # defineProfile composition API
 └── cli/                     # create/dev commands
 profiles/
@@ -104,11 +107,15 @@ Framework-owned packages (`kernel-api`, `events`, `runtime-api`, `cognitive-api`
 | [kernel-cordis](../packages/kernel-cordis/README.md) | Cordis-backed kernel engine | implemented |
 | [events](../packages/events/README.md) | Canonical event envelope, append store contract | implemented (`CG-EVT-001..006`) |
 | [store-sqlite](../packages/store-sqlite/README.md) | Authoritative SQLite event/record store | implemented ([DEBT-011](../.agents/DEBT.md)) |
+| [store-postgres](../packages/store-postgres/README.md) | Authoritative PostgreSQL event/record store | implemented ([ADR-0013](decisions/ADR-0013-postgresql-authoritative-store.md), `CG-EVT-008..010`) |
 | [store-memory](../packages/store-memory/README.md) | In-memory store for tests | implemented |
 | [projections](../packages/projections/README.md) | Checkpointed, rebuildable projections | implemented |
 | [capabilities](../packages/capabilities/README.md) | Two-phase eligibility/selection, adaptive ranking | implemented (`CG-CAP-001/002`) |
 | [continuations](../packages/continuations/README.md) | Continuations and external commitments | implemented |
 | [artifacts](../packages/artifacts/README.md) | Content-addressed artifact records | implemented (`CG-ART-001`) |
+| [execution](../packages/execution/README.md) | Execution world provider & Linux Bubblewrap containment | implemented |
+| [execution-ssh](../packages/execution-ssh/README.md) | Remote OpenSSH execution world adapter | implemented |
+| [execution-wsl](../packages/execution-wsl/README.md) | Windows Subsystem for Linux execution adapter | implemented |
 | [runtime-api](../packages/runtime-api/README.md) | Transport-independent runtime service contract | implemented |
 | [runtime-bun](../packages/runtime-bun/README.md) | In-process runtime, run execution | implemented ([DEBT-011](../.agents/DEBT.md), [DEBT-015](../.agents/DEBT.md)) |
 | [cognitive-api](../packages/cognitive-api/README.md) | `CognitiveIndex` contract, recall pipeline | implemented (`CG-COG-001/002`) |

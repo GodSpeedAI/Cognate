@@ -71,7 +71,7 @@ Statuses: `candidate`, `implemented`, `blocked`. **No requirement is currently f
 On success it prints:
 
 ```text
-Substrate check passed: 78 requirements (78 implemented, 0 blocked, 0 candidate); no freeze claimed.
+Substrate check passed: 81 requirements (81 implemented, 0 blocked, 0 candidate); no freeze claimed.
 ```
 
 ## What `gate.ts` does
@@ -114,8 +114,7 @@ A fixture that has not been run is an unmet gate, not a pass — which is why
 
 ## The current state
 
-78 requirements, all `implemented`; `just gates` reports 78/78; `bun run test` passes across 76
-test files. The exact counts are recorded in [`.agents/CURRENT_STATUS.yaml`](../../.agents/CURRENT_STATUS.yaml)
+81 requirements, all `implemented`; `just check` reports 81/81 requirements passing. The exact counts are recorded in [`.agents/CURRENT_STATUS.yaml`](../../.agents/CURRENT_STATUS.yaml)
 rather than restated here, so this page does not go stale. Recorded limits, verbatim in scope:
 
 | Limit | Id |

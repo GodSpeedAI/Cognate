@@ -1,7 +1,7 @@
 # Cognate documentation
 
 Cognate is a Bun workspace that composes dynamically-mounted components over an append-only
-SQLite event log into in-process and Connect-served runtimes, so agents, UI, wire protocols,
+event log (SQLite for single-process apps and PostgreSQL with pg0 for multi-worker environments) into in-process and Connect-served runtimes, so agents, UI, wire protocols,
 cognition, and execution evidence are projections of one durable event history.
 
 This page is the entry point. It assumes no prior knowledge of the repository. Every page below
@@ -12,6 +12,7 @@ links to the next one, and each page names the source files that establish its c
 | If you want to | Read |
 |---|---|
 | run something in five minutes | [getting-started.md](getting-started.md) |
+| explore interactive visual models | [explainers/index.html](explainers/index.html) |
 | understand the system without code | [mental-model.md](mental-model.md) |
 | know the vocabulary | [concepts.md](concepts.md) |
 | see the whole architecture and its dependency rules | [architecture.md](architecture.md) |
@@ -29,7 +30,7 @@ flowchart LR
 
     AG["AgentDefinition.run(input, ctx)"] --> RC["RunContext"]
     RC --> EX["@godspeedai/cognate-runtime-bun<br/>executor"]
-    EX --> ST[("SQLite event log<br/>@godspeedai/cognate-store-sqlite")]
+    EX --> ST[("Durable event log<br/>SQLite · PostgreSQL (pg0)<br/>@godspeedai/cognate-store-*")]
     RC -.invoke.-> KN["Kernel<br/>@godspeedai/cognate-kernel-cordis"]
     KN --> PR["capability provider<br/>(model, tool, storage, …)"]
     RC -.waitFor.-> CT["continuation<br/>@godspeedai/cognate-continuations"]
@@ -46,6 +47,15 @@ flowchart LR
 
 What to notice: the event log is the only thing arrows point *into* for state. The kernel, the
 protocols, the client, and the cognitive index are all readers. Nothing else is authoritative.
+
+## Interactive cognitive models
+
+Interactive, offline, single-file explanatory applications to explore and simulate Cognate's runtime mechanisms:
+
+- **[Run Execution & Replay Stepper](explainers/run-execution-replay.html)** — Step through `agent.run` re-entry, step-id memoization (`recorded: Map<stepId, Event>`), continuation suspension, crash restart, and CAS conflict recovery.
+- **[Planes, Boundaries & Invariant Explorer](explainers/architecture-and-invariants.html)** — Explore the 6 planes and 45 packages. Filter by Authority Flow (Context → Policy → Fiber → Commit) vs Projection Flow (Events → UI / Wire / RuVector), and test architectural acceptance criteria in the interactive lab.
+- **[Concurrency, Fenced Outbox & Ownership Simulator](explainers/concurrency-and-leases.html)** — Simulate bounded native execution (`maxConcurrentRuns`, `resourceKeys`), PostgreSQL outbox batches (`FOR UPDATE SKIP LOCKED`), and multi-worker run-write ownership fencing.
+- **[Cognitive Representation Portal](explainers/index.html)** — Central launchpad with the complete question-to-explainer matrix.
 
 ## The eight concepts you need first
 
@@ -93,6 +103,7 @@ recorded events.
 
 - **I want to run it.** [getting-started.md](getting-started.md), then
   [how-to/start-an-app.md](tutorials/start-an-app-from-a-checkout.md).
+- **I want to explore interactively.** [explainers/index.html](explainers/index.html).
 - **I want to understand the architecture.** [mental-model.md](mental-model.md) →
   [architecture.md](architecture.md) → [subsystems/](subsystems/).
 - **I want to watch it work.** [workflows/](workflows/).
@@ -108,7 +119,7 @@ recorded events.
 ## Status: read this before trusting a claim
 
 Every requirement in [requirements/ledger.yaml](../requirements/ledger.yaml) is currently
-`implemented`, and `just gates` reports 78/78 passing. That is a statement about the local
+`implemented`, and `just check` reports 81/81 requirements passing. That is a statement about the local
 substrate under Bun 1.4.0, not about production readiness. The known limits are enumerated in
 [.agents/DEBT.md](../.agents/DEBT.md) and summarized in
 [reference/verification.md](reference/verification.md). Where a page names a requirement id, the
