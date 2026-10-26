@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cognate — Cognitive Representation Portal</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --surface-3: #374151;
+      --border: #2d3748;
+      --border-focus: #4b5563;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent-muted: #0284c7;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.1);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.1);
+      --purple: #c084fc;
+      --purple-bg: rgba(192, 132, 252, 0.1);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding: 32px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .breadcrumb a { color: var(--accent); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 850px;
+    }
+    .subtitle strong { color: #fff; }
+
+    /* Highlights Grid */
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .explainer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .explainer-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+
+    .card-top {
+      margin-bottom: 16px;
+    }
+    .card-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .card-badge-replay { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+    .card-badge-arch { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple); }
+    .card-badge-conc { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .card-question {
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-features {
+      margin: 16px 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: #e5e7eb;
+    }
+    .card-features li::before {
+      content: "✓";
+      color: var(--accent);
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    .card-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .open-btn {
+      background: var(--accent-muted);
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .open-btn:hover {
+      background: var(--accent);
+      color: #0b0f19;
+    }
+    .evidence-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Core Law Banner */
+    .law-banner {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+    .law-head {
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .law-body {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .law-explanation {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 950px;
+    }
+
+    /* Matrix Table */
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-bottom: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .matrix-table th {
+      background: var(--surface-2);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .matrix-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(45, 55, 72, 0.4);
+      color: var(--text);
+    }
+    .matrix-table tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="breadcrumb">
+      <a href="../README.md">Docs</a> / <span>Cognitive Representation Portal</span>
+    </div>
+    <h1>
+      Cognate Cognitive Representation Portal
+      <span class="badge">Visual Models & Explorers</span>
+    </h1>
+    <p class="subtitle">
+      A verified, navigable, and interactively explorable mental model of Cognate.
+      Designed for <strong>recognition over recall, direct manipulation over unnecessary abstraction, and visible causality over unexplained sequence</strong>.
+    </p>
+  </header>
+
+  <!-- Bret Victor / Law of Cognate Banner -->
+  <div class="law-banner">
+    <div class="law-head">Architectural Invariant</div>
+    <div class="law-body">
+      Semantics constrain execution. Events preserve truth. Cognition discovers relevance. Observations record execution. Representations remain replaceable.
+    </div>
+    <div class="law-explanation">
+      In Cognate, <code>canonical_history != derived_state</code>. Two paths run through the same durable event log and never merge: the <strong>Authority Path</strong> (which decides what is true or admitted) and the <strong>Projection Path</strong> (which folds events into read models, UI state, and vector indices).
+    </div>
+  </div>
+
+  <div class="section-title">
+    <span>Interactive Explanatory Applications</span>
+    <span class="badge">100% Offline · Standalone</span>
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Card 1: Replay Stepper -->
+    <div class="explainer-card">
+      <div class="card-top">
+        <span class="card-badge card-badge-replay">Execution & State Machine</span>
+        <div class="card-title">Run Execution & Replay Stepper</div>
+        <div class="card-question">"How does an agent run re-execute from line 1 without re-triggering side effects?"</div>
+        <p class="card-desc">
+          Step through live agent executions. Watch <code>executeOnce</code> fold the event log into <code>recorded: Map&lt;stepId, Event&gt;</code>, memoize step results, survive process crashes, handle <code>ctx.waitFor</code> continuations, and recover from CAS version collisions.
+        </p>
+        <ul class="card-features">
+          <li>Synchronized code line pointer & event stream table</li>
+          <li>Replay hit vs miss telemetry for external provider APIs</li>
+          <li>Continuation suspension & approve-to-resume workflow</li>
+          <li>Simulation of hard crashes & CAS write races</li>
+        </ul>
+      </div>
+      <div class="card-footer">
+        <a class="open-btn" href="./run-execution-replay.html">Open Replay Stepper ↗</a>
+        <span class="evidence-tag">packages/runtime-bun</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Architecture & Invariants -->
+    <div class="explainer-card">
+      <div class="card-top">
+        <span class="card-badge card-badge-arch">Architecture & Topology</span>
+        <div class="card-title">Planes, Boundaries & Invariant Explorer</div>
+        <div class="card-question">"How do the 6 planes and 45 packages isolate authority from projections?"</div>
+        <p class="card-desc">
+          Navigate the complete 6-plane architecture. Filter by Authority Flow (Context → Policy → Fiber → Commit) vs Projection Flow (Events → UI / Wire / RuVector). Inspect dependencies and test architectural invariants in the interactive lab.
+        </p>
+        <ul class="card-features">
+          <li>Filterable 6-plane topology & 45-package dependency matrix</li>
+          <li>Enforcement of forbidden edges (e.g. kernel-api → cordis is illegal)</li>
+          <li>Interactive Invariant Lab (Ranker Authority, Projection Rebuild, Store Hot-Swap)</li>
+          <li>Verified against architectural acceptance criteria (Spec §40)</li>
+        </ul>
+      </div>
+      <div class="card-footer">
+        <a class="open-btn" href="./architecture-and-invariants.html">Open Architecture Explorer ↗</a>
+        <span class="evidence-tag">packages/kernel-api</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Concurrency & Leases -->
+    <div class="explainer-card">
+      <div class="card-top">
+        <span class="card-badge card-badge-conc">Concurrency & Multi-Worker</span>
+        <div class="card-title">Concurrency, Fenced Outbox & Ownership</div>
+        <div class="card-question">"How does Cognate schedule runs with resource keys and fence multi-worker writes?"</div>
+        <p class="card-desc">
+          Simulate bounded native execution (<code>maxConcurrentRuns</code> 1–64) and <code>resourceKeys(run)</code> serialization. Test PostgreSQL outbox dispatching (<code>FOR UPDATE SKIP LOCKED</code>) and two-worker run ownership fencing under network partitions.
+        </p>
+        <ul class="card-features">
+          <li>Live concurrency scheduler with disjoint key overlap</li>
+          <li>Fenced outbox lease table with generation token increments</li>
+          <li>Two-worker duel: lease expiry, takeover, and StaleRunOwnerError rejection</li>
+          <li>Ambiguous step handling (<code>ambiguousSteps: "wait"</code>)</li>
+        </ul>
+      </div>
+      <div class="card-footer">
+        <a class="open-btn" href="./concurrency-and-leases.html">Open Concurrency Simulator ↗</a>
+        <span class="evidence-tag">packages/store-postgres</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-title">
+    <span>Cognitive Matrix: Reading by Question</span>
+  </div>
+
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th>If your question is...</th>
+        <th>Recommended Explainer</th>
+        <th>Canonical Documentation Page</th>
+        <th>Source Implementation Evidence</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>How does an agent resume after a crash without repeating tool calls?</td>
+        <td><a href="./run-execution-replay.html" style="color: var(--accent);">Replay Stepper</a></td>
+        <td><a href="../workflows/run-execution.md" style="color: var(--accent);">workflows/run-execution.md</a></td>
+        <td><code>packages/runtime-bun/src/executor.ts:17</code></td>
+      </tr>
+      <tr>
+        <td>Why can a learned vector ranker never authorize a capability?</td>
+        <td><a href="./architecture-and-invariants.html" style="color: var(--accent);">Architecture Explorer</a></td>
+        <td><a href="../explanation/authority-and-learning.md" style="color: var(--accent);">explanation/authority-and-learning.md</a></td>
+        <td><code>packages/kernel-cordis/src/kernel.ts</code> (CG-CAP-002)</td>
+      </tr>
+      <tr>
+        <td>How do multiple workers drain outbox events without double-sending?</td>
+        <td><a href="./concurrency-and-leases.html" style="color: var(--accent);">Concurrency Simulator</a></td>
+        <td><a href="../contracts/fenced-outbox-leases.md" style="color: var(--accent);">contracts/fenced-outbox-leases.md</a></td>
+        <td><code>packages/events/src/outbox-dispatcher.ts</code></td>
+      </tr>
+      <tr>
+        <td>How does PostgreSQL enforce commit order equal to position order?</td>
+        <td><a href="./architecture-and-invariants.html" style="color: var(--accent);">Architecture Explorer</a></td>
+        <td><a href="../decisions/ADR-0013-postgresql-authoritative-store.md" style="color: var(--accent);">ADR-0013 (PostgreSQL Store)</a></td>
+        <td><code>packages/store-postgres/src/index.ts</code></td>
+      </tr>
+      <tr>
+        <td>How does human approval continuation work end-to-end?</td>
+        <td><a href="./run-execution-replay.html" style="color: var(--accent);">Replay Stepper</a></td>
+        <td><a href="../workflows/continuation-and-resume.md" style="color: var(--accent);">workflows/continuation-and-resume.md</a></td>
+        <td><code>packages/continuations/src/index.ts</code></td>
+      </tr>
+      <tr>
+        <td>How do resource keys prevent concurrent writes to the same workspace?</td>
+        <td><a href="./concurrency-and-leases.html" style="color: var(--accent);">Concurrency Simulator</a></td>
+        <td><a href="../runtime-concurrency.md" style="color: var(--accent);">runtime-concurrency.md</a></td>
+        <td><code>packages/runtime-bun/src/runtime.ts</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+</html>

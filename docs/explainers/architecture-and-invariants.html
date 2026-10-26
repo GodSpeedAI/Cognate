@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cognate Architecture, Planes & Invariants Explorer</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --surface-3: #374151;
+      --border: #2d3748;
+      --border-focus: #4b5563;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent-muted: #0284c7;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.1);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.1);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.1);
+      --purple: #c084fc;
+      --purple-bg: rgba(192, 132, 252, 0.1);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .breadcrumb a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+
+    .takeaway {
+      margin-top: 8px;
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 900px;
+    }
+    .takeaway strong { color: var(--text); }
+
+    /* Mode Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+    }
+    .filter-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .mode-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-btn:hover {
+      background: var(--surface-3);
+      color: #fff;
+    }
+    .mode-btn.active-all {
+      border-color: var(--accent);
+      background: var(--surface-3);
+      color: #fff;
+    }
+    .mode-btn.active-authority {
+      border-color: var(--success);
+      background: var(--success-bg);
+      color: var(--success);
+      box-shadow: 0 0 10px var(--success-bg);
+    }
+    .mode-btn.active-projection {
+      border-color: var(--purple);
+      background: var(--purple-bg);
+      color: var(--purple);
+      box-shadow: 0 0 10px var(--purple-bg);
+    }
+
+    /* Main Grid */
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1100px) {
+      .layout-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Planes Diagram Container */
+    .planes-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .plane-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .plane-card:hover {
+      border-color: var(--border-focus);
+    }
+    .plane-card.in-path-authority {
+      border-left: 4px solid var(--success);
+      background: rgba(17, 24, 39, 0.95);
+    }
+    .plane-card.in-path-projection {
+      border-left: 4px solid var(--purple);
+      background: rgba(17, 24, 39, 0.95);
+    }
+    .plane-card.dimmed {
+      opacity: 0.35;
+    }
+
+    .plane-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .plane-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .plane-badge {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+    }
+
+    .plane-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .pkg-chip-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pkg-chip {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 0.76rem;
+      font-family: var(--font-mono);
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pkg-chip:hover {
+      border-color: var(--accent);
+      background: var(--surface-2);
+    }
+    .pkg-chip.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .pkg-chip.chip-engine {
+      border-style: dashed;
+      color: #93c5fd;
+    }
+
+    /* Package Detail & Invariant Inspector Panel */
+    .inspector-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .inspector-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .inspector-section {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .section-head {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .dep-pill-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .dep-pill {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .dep-pill-forbidden {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-weight: 600;
+    }
+    .dep-pill-allowed {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    /* Invariant Lab */
+    .lab-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .lab-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .lab-head h3 {
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .lab-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .lab-tab {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .lab-tab.active {
+      border-color: var(--accent);
+      color: #fff;
+      background: var(--surface-3);
+    }
+
+    .lab-content {
+      background: #070a11;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .lab-result {
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-family: var(--font-mono);
+    }
+    .res-passed {
+      background: var(--success-bg);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+    .res-halted {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .doctrine-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 16px 20px;
+    }
+    .doctrine-box h3 { font-size: 1rem; color: #fff; margin-bottom: 8px; }
+    .doctrine-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="breadcrumb">
+      <a href="../README.md">Docs</a> / <a href="./index.html">Cognitive Explorers</a> / <span>Architecture & Invariants</span>
+    </div>
+    <h1>
+      Cognate Architecture, Planes & Invariants Explorer
+      <span class="badge">Interactive Model</span>
+    </h1>
+    <p class="takeaway">
+      <strong>Core Invariant:</strong> <code>canonical_history != derived_state</code>.
+      Two paths run through the same durable event log and never merge. The <strong>Authority Path</strong> decides what is admitted and committed. The <strong>Projection Path</strong> computes rebuildable views, UI state, and cognitive relevance.
+    </p>
+  </header>
+
+  <!-- Filter & Path Selector -->
+  <div class="filter-bar">
+    <span class="filter-label">Highlight Path:</span>
+    <button class="mode-btn active-all" id="btn-path-all" onclick="setFlowPath('all')">
+      All 6 Planes (Full System)
+    </button>
+    <button class="mode-btn" id="btn-path-authority" onclick="setFlowPath('authority')">
+      🟢 Authority Path (Context → Policy → Fiber → Store Commit)
+    </button>
+    <button class="mode-btn" id="btn-path-projection" onclick="setFlowPath('projection')">
+      🟣 Projection Path (Durable Events → Projections → UI / Wire / RuVector)
+    </button>
+  </div>
+
+  <!-- Main Split Layout -->
+  <div class="layout-grid">
+    
+    <!-- Left Column: The 6 Planes Diagram -->
+    <div class="planes-container" id="planes-container">
+      
+      <!-- Plane 1: Semantic -->
+      <div class="plane-card" id="plane-semantic" onclick="selectPlane('semantic')">
+        <div class="plane-header">
+          <div class="plane-title">
+            <span>1. Semantic Plane</span>
+            <span class="plane-badge">Domain Meaning</span>
+          </div>
+          <span class="badge">Read-Only Source</span>
+        </div>
+        <p class="plane-desc">
+          Parses <code>domain/*.sea</code> into a canonical Graph using DomainForge. Projects into opaque, content-addressed <code>SemanticRef</code> handles. Pinned to source revision; rename mints a new identity.
+        </p>
+        <div class="pkg-chip-list">
+          <span class="pkg-chip" onclick="inspectPackage('domainforge')">@godspeedai/domainforge</span>
+        </div>
+      </div>
+
+      <!-- Plane 2: Execution -->
+      <div class="plane-card" id="plane-execution" onclick="selectPlane('execution')">
+        <div class="plane-header">
+          <div class="plane-title">
+            <span>2. Execution Plane</span>
+            <span class="plane-badge">What May Act</span>
+          </div>
+          <span class="badge">Kernel & Fibers</span>
+        </div>
+        <p class="plane-desc">
+          Contexts, scopes, capability eligibility, fibers, dependencies, and reversible effects. Runtime service orchestrates <code>agent.run</code> and outbox intents.
+        </p>
+        <div class="pkg-chip-list">
+          <span class="pkg-chip" onclick="inspectPackage('kernel-api')">kernel-api</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('kernel-cordis')">kernel-cordis (engine)</span>
+          <span class="pkg-chip" onclick="inspectPackage('runtime-api')">runtime-api</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('runtime-bun')">runtime-bun (engine)</span>
+          <span class="pkg-chip" onclick="inspectPackage('capabilities')">capabilities</span>
+          <span class="pkg-chip" onclick="inspectPackage('continuations')">continuations</span>
+          <span class="pkg-chip" onclick="inspectPackage('execution')">execution</span>
+        </div>
+      </div>
+
+      <!-- Plane 3: Durable State -->
+      <div class="plane-card" id="plane-durable-state" onclick="selectPlane('durable-state')">
+        <div class="plane-header">
+          <div class="plane-title">
+            <span>3. Durable State Plane</span>
+            <span class="plane-badge">What Happened</span>
+          </div>
+          <span class="badge">Canonical Truth</span>
+        </div>
+        <p class="plane-desc">
+          Append-only event log, CAS stream versioning, outbox intents, and checkpointed projections. Both SQLite (single-process) and PostgreSQL (multi-worker) pass the identical conformance suite.
+        </p>
+        <div class="pkg-chip-list">
+          <span class="pkg-chip" onclick="inspectPackage('events')">events (port)</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('store-sqlite')">store-sqlite (engine)</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('store-postgres')">store-postgres (engine)</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('store-memory')">store-memory</span>
+          <span class="pkg-chip" onclick="inspectPackage('projections')">projections</span>
+          <span class="pkg-chip" onclick="inspectPackage('artifacts')">artifacts</span>
+        </div>
+      </div>
+
+      <!-- Plane 4: Cognitive -->
+      <div class="plane-card" id="plane-cognitive" onclick="selectPlane('cognitive')">
+        <div class="plane-header">
+          <div class="plane-title">
+            <span>4. Cognitive Plane</span>
+            <span class="plane-badge">What is Relevant</span>
+          </div>
+          <span class="badge">Derived Index</span>
+        </div>
+        <p class="plane-desc">
+          Embeddings, semantic recall, and RVF snapshots. Crucial invariant: Cognitive rankers can narrow eligible choices, but can <em>never</em> grant authority or override invocation policy.
+        </p>
+        <div class="pkg-chip-list">
+          <span class="pkg-chip" onclick="inspectPackage('cognitive-api')">cognitive-api (port)</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('cognitive-ruvector')">cognitive-ruvector (engine)</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('cognitive-rvf')">cognitive-rvf (portable)</span>
+          <span class="pkg-chip" onclick="inspectPackage('cognitive-memory')">cognitive-memory</span>
+        </div>
+      </div>
+
+      <!-- Plane 5: Wire & Interop -->
+      <div class="plane-card" id="plane-wire" onclick="selectPlane('wire')">
+        <div class="plane-header">
+          <div class="plane-title">
+            <span>5. Wire / Interoperability Plane</span>
+            <span class="plane-badge">Transport Surfaces</span>
+          </div>
+          <span class="badge">RPC & Protocols</span>
+        </div>
+        <p class="plane-desc">
+          Connect RPC, Protobuf schema, AG-UI state streaming, Model Context Protocol (MCP), and Agent-to-Agent (A2A). Transports are replaceable without modifying runtime service.
+        </p>
+        <div class="pkg-chip-list">
+          <span class="pkg-chip" onclick="inspectPackage('proto')">proto</span>
+          <span class="pkg-chip" onclick="inspectPackage('protocol-connect')">protocol-connect</span>
+          <span class="pkg-chip" onclick="inspectPackage('ag-ui')">ag-ui</span>
+          <span class="pkg-chip" onclick="inspectPackage('mcp')">mcp</span>
+          <span class="pkg-chip" onclick="inspectPackage('a2a')">a2a</span>
+        </div>
+      </div>
+
+      <!-- Plane 6: Presentation -->
+      <div class="plane-card" id="plane-presentation" onclick="selectPlane('presentation')">
+        <div class="plane-header">
+          <div class="plane-title">
+            <span>6. Presentation Plane</span>
+            <span class="plane-badge">Surfaces Seen by Humans</span>
+          </div>
+          <span class="badge">UI Components</span>
+        </div>
+        <p class="plane-desc">
+          Headless TypeScript client, React 19 hooks, and Astryx reference design system. Strict type boundary: Astryx types never leak into React or Client.
+        </p>
+        <div class="pkg-chip-list">
+          <span class="pkg-chip" onclick="inspectPackage('client')">client (headless)</span>
+          <span class="pkg-chip" onclick="inspectPackage('react')">react (hooks)</span>
+          <span class="pkg-chip chip-engine" onclick="inspectPackage('ui-astryx')">ui-astryx (renderer)</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Package Dependency & Boundary Inspector -->
+    <div class="inspector-panel" id="inspector-panel">
+      <div class="inspector-title" id="pkg-name">
+        <span>kernel-api</span>
+        <span class="badge" id="pkg-plane-badge">Execution Plane</span>
+      </div>
+      <p style="font-size: 0.88rem; color: var(--text-muted);" id="pkg-summary">
+        Framework-owned kernel contract: defines Component, Fiber, CapabilityContract, Policy, and Context interfaces.
+      </p>
+
+      <div class="inspector-section">
+        <div class="section-head">Allowed Inward Dependencies (Who imports this)</div>
+        <div class="dep-pill-list" id="pkg-inward">
+          <span class="dep-pill dep-pill-allowed">kernel-cordis</span>
+          <span class="dep-pill dep-pill-allowed">runtime-api</span>
+          <span class="dep-pill dep-pill-allowed">runtime-bun</span>
+          <span class="dep-pill dep-pill-allowed">events</span>
+          <span class="dep-pill dep-pill-allowed">domainforge</span>
+        </div>
+      </div>
+
+      <div class="inspector-section">
+        <div class="section-head">Allowed Outward Dependencies (What this imports)</div>
+        <div class="dep-pill-list" id="pkg-outward">
+          <span class="dep-pill dep-pill-allowed">none (leaf contract)</span>
+        </div>
+      </div>
+
+      <div class="inspector-section">
+        <div class="section-head">Strictly Forbidden Dependencies (Spec §28 / Acceptance Criteria)</div>
+        <div class="dep-pill-list" id="pkg-forbidden">
+          <span class="dep-pill dep-pill-forbidden">cordis</span>
+          <span class="dep-pill dep-pill-forbidden">ruvector</span>
+          <span class="dep-pill dep-pill-forbidden">react</span>
+          <span class="dep-pill dep-pill-forbidden">astryx</span>
+          <span class="dep-pill dep-pill-forbidden">ag-ui</span>
+        </div>
+      </div>
+
+      <div class="inspector-section" style="border-left: 3px solid var(--accent);">
+        <div class="section-head" style="color: var(--accent);">Architectural Invariant Guarantee</div>
+        <div style="font-size: 0.82rem; color: #e5e7eb;" id="pkg-guarantee">
+          <strong>Replaceable Engine Rule:</strong> The kernel contract knows nothing of Cordis. Replacing Cordis requires implementing <code>KernelFactory</code>; zero application code changes.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Interactive Invariant Testing Lab -->
+  <div class="lab-container">
+    <div class="lab-head">
+      <h3>Interactive Invariant Testing Lab</h3>
+      <span class="badge">Behavioral Proof Simulator</span>
+    </div>
+    <div class="lab-tabs">
+      <button class="lab-tab active" id="tab-inv-1" onclick="loadLab(1)">1. Learned Ranker Authority Test</button>
+      <button class="lab-tab" id="tab-inv-2" onclick="loadLab(2)">2. Projection Catastrophe & Replay Test</button>
+      <button class="lab-tab" id="tab-inv-3" onclick="loadLab(3)">3. Store Engine Hot-Swap Test</button>
+    </div>
+
+    <div class="lab-content" id="lab-content">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- Doctrine -->
+  <div class="doctrine-box">
+    <h3>The Ports-and-Adapters Law of Cognate</h3>
+    <p>
+      In many agent frameworks, database types leak into business logic, or React components depend directly on concrete transport protocols.
+    </p>
+    <p>
+      Cognate prevents this structurally: every layer has an abstract contract package (<code>*-api</code> or <code>events</code>) and a swappable implementation adapter. The <code>just check</code> and <code>just gate CG-ARC-001</code> recipes enforce an acyclic graph with zero illegal cross-boundary imports across all 45 packages.
+    </p>
+  </div>
+
+  <script>
+    const packagesData = {
+      'kernel-api': {
+        name: 'kernel-api',
+        plane: 'Execution Plane',
+        summary: 'Framework-owned kernel contract: defines Component, Fiber, CapabilityContract, Policy, and Context interfaces.',
+        inward: ['kernel-cordis', 'runtime-api', 'runtime-bun', 'events', 'domainforge'],
+        outward: ['(none - leaf contract)'],
+        forbidden: ['cordis', 'ruvector', 'react', 'astryx', 'ag-ui', 'domainforge', 'realitytrace'],
+        guarantee: 'Engine Replaceability: KernelFactory isolates the framework from Cordis. Verified by CG-ARC-001.'
+      },
+      'kernel-cordis': {
+        name: 'kernel-cordis',
+        plane: 'Execution Plane',
+        summary: 'Cordis-backed kernel engine implementing the kernel-api interface.',
+        inward: ['runtime-bun', 'profiles/*'],
+        outward: ['kernel-api', 'cordis'],
+        forbidden: ['runtime-api', 'react', 'astryx', 'ui-astryx'],
+        guarantee: 'Encapsulation: Cordis types are never exported through public framework interfaces.'
+      },
+      'events': {
+        name: 'events',
+        plane: 'Durable State Plane',
+        summary: 'Canonical event envelope, StoredEvent, and DurableStore port interface.',
+        inward: ['store-sqlite', 'store-postgres', 'store-memory', 'runtime-bun', 'projections', 'continuations', 'artifacts'],
+        outward: ['kernel-api (SemanticRef only)'],
+        forbidden: ['store-sqlite', 'store-postgres', 'ruvector', 'react', 'connect'],
+        guarantee: 'Durable Authority: Events depend only on kernel-api for semantic refs, never on concrete database drivers.'
+      },
+      'store-sqlite': {
+        name: 'store-sqlite',
+        plane: 'Durable State Plane',
+        summary: 'Authoritative SQLite event and projection store using bun:sqlite with separate payloads table for erasure.',
+        inward: ['runtime-bun', 'profiles/copilot'],
+        outward: ['events', 'bun:sqlite'],
+        forbidden: ['kernel-cordis', 'client', 'react', 'astryx'],
+        guarantee: 'Single-process high-throughput authority: passes identical 29-test conformance suite as PostgreSQL.'
+      },
+      'store-postgres': {
+        name: 'store-postgres',
+        plane: 'Durable State Plane',
+        summary: 'PostgreSQL authoritative store (ADR-0013) with locked-counter commit ordering and fenced outbox leases.',
+        inward: ['runtime-bun', 'profiles/*'],
+        outward: ['events', 'postgres npm'],
+        forbidden: ['kernel-cordis', 'client', 'react', 'astryx'],
+        guarantee: 'Multi-worker scalability: supports concurrent processes with position order = commit order via locked counter row.'
+      },
+      'cognitive-api': {
+        name: 'cognitive-api',
+        plane: 'Cognitive Plane',
+        summary: 'Contract for semantic recall, CognitiveIndex, and candidate capability ranking.',
+        inward: ['cognitive-ruvector', 'cognitive-rvf', 'cognitive-memory', 'runtime-bun'],
+        outward: ['kernel-api'],
+        forbidden: ['ruvector', 'cordis', 'store-sqlite'],
+        guarantee: 'Relevance != Authority: Ranking can reorder eligible candidates, but cannot grant authority.'
+      },
+      'cognitive-ruvector': {
+        name: 'cognitive-ruvector',
+        plane: 'Cognitive Plane',
+        summary: 'RuVector-backed vector and graph search implementation of CognitiveIndex.',
+        inward: ['runtime-bun', 'profiles/*'],
+        outward: ['cognitive-api', 'ruvector'],
+        forbidden: ['kernel-cordis', 'react'],
+        guarantee: 'Derived state: Wiping the vector index causes zero event data loss; index is 100% rebuildable.'
+      },
+      'client': {
+        name: 'client',
+        plane: 'Presentation Plane',
+        summary: 'Headless client over RuntimeService: connection subscriptions, run folding, state updates.',
+        inward: ['react', 'ag-ui'],
+        outward: ['runtime-api', 'events'],
+        forbidden: ['react', 'astryx', 'ui-astryx', 'cordis', 'store-sqlite'],
+        guarantee: 'Framework-agnostic: Can run in CLI, background workers, Node, or browser without React.'
+      },
+      'react': {
+        name: 'react',
+        plane: 'Presentation Plane',
+        summary: 'React 19 hooks (useCognate, useRun, useSharedState) wrapping the headless client.',
+        inward: ['ui-astryx', 'examples/*'],
+        outward: ['client', 'react'],
+        forbidden: ['astryx', 'ui-astryx', 'cordis', 'store-sqlite'],
+        guarantee: 'Renderer Isolation: Zero Astryx types exported; works with any custom design system.'
+      },
+      'ui-astryx': {
+        name: 'ui-astryx',
+        plane: 'Presentation Plane',
+        summary: 'Reference application shell and components (ChatPanel, ApprovalCard, ArtifactViewer) built on Astryx.',
+        inward: ['profiles/copilot', 'examples/*'],
+        outward: ['react', 'client', 'astryx'],
+        forbidden: ['kernel-api', 'kernel-cordis', 'events'],
+        guarantee: 'Replaceable UI Shell: Can be completely deleted or replaced without altering backend runtimes.'
+      },
+      'domainforge': {
+        name: 'domainforge',
+        plane: 'Semantic Plane',
+        summary: 'Pinned adapter to DomainForge Graph API; projects SEA semantics to SemanticRef.',
+        inward: ['runtime-bun', 'profiles/*'],
+        outward: ['kernel-api', 'projections', '@godspeedai/domainforge'],
+        forbidden: ['cordis', 'ruvector', 'react'],
+        guarantee: 'Semantic Immutability: Source-addressed digest pinning; never invents domain ontology.'
+      }
+    };
+
+    function setFlowPath(mode) {
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.className = 'mode-btn');
+      const planes = document.querySelectorAll('.plane-card');
+      planes.forEach(p => p.classList.remove('in-path-authority', 'in-path-projection', 'dimmed'));
+
+      if (mode === 'all') {
+        document.getElementById('btn-path-all').classList.add('active-all');
+      } else if (mode === 'authority') {
+        document.getElementById('btn-path-authority').classList.add('active-authority');
+        document.getElementById('plane-semantic').classList.add('in-path-authority');
+        document.getElementById('plane-execution').classList.add('in-path-authority');
+        document.getElementById('plane-durable-state').classList.add('in-path-authority');
+        document.getElementById('plane-cognitive').classList.add('dimmed');
+        document.getElementById('plane-wire').classList.add('dimmed');
+        document.getElementById('plane-presentation').classList.add('dimmed');
+      } else if (mode === 'projection') {
+        document.getElementById('btn-path-projection').classList.add('active-projection');
+        document.getElementById('plane-semantic').classList.add('dimmed');
+        document.getElementById('plane-execution').classList.add('dimmed');
+        document.getElementById('plane-durable-state').classList.add('in-path-projection');
+        document.getElementById('plane-cognitive').classList.add('in-path-projection');
+        document.getElementById('plane-wire').classList.add('in-path-projection');
+        document.getElementById('plane-presentation').classList.add('in-path-projection');
+      }
+    }
+
+    function inspectPackage(pkgKey) {
+      const data = packagesData[pkgKey] || {
+        name: pkgKey,
+        plane: 'Component Package',
+        summary: 'Standard package adhering to strict downward ports-and-adapters layering.',
+        inward: ['monorepo consumers'],
+        outward: ['base contracts'],
+        forbidden: ['engine internals'],
+        guarantee: 'Verified by CG-ARC-001 architecture tests.'
+      };
+
+      document.getElementById('pkg-name').innerHTML = `<span>${data.name}</span> <span class="badge">${data.plane}</span>`;
+      document.getElementById('pkg-summary').textContent = data.summary;
+
+      document.getElementById('pkg-inward').innerHTML = data.inward.map(p => 
+        `<span class="dep-pill dep-pill-allowed">${p}</span>`
+      ).join('');
+
+      document.getElementById('pkg-outward').innerHTML = data.outward.map(p => 
+        `<span class="dep-pill dep-pill-allowed">${p}</span>`
+      ).join('');
+
+      document.getElementById('pkg-forbidden').innerHTML = data.forbidden.map(p => 
+        `<span class="dep-pill dep-pill-forbidden">${p}</span>`
+      ).join('');
+
+      document.getElementById('pkg-guarantee').innerHTML = `<strong>Architectural Rule:</strong> ${data.guarantee}`;
+
+      document.querySelectorAll('.pkg-chip').forEach(el => el.classList.remove('active'));
+      const activeChip = Array.from(document.querySelectorAll('.pkg-chip')).find(el => el.textContent.includes(pkgKey));
+      if (activeChip) activeChip.classList.add('active');
+    }
+
+    function loadLab(id) {
+      document.querySelectorAll('.lab-tab').forEach(t => t.classList.remove('active'));
+      const activeTab = document.getElementById('tab-inv-' + id);
+      if (activeTab) activeTab.classList.add('active');
+
+      const lab = document.getElementById('lab-content');
+      if (id === 1) {
+        lab.innerHTML = `
+          <div style="font-size: 0.9rem; color: #fff;">
+            <strong>Test Claim:</strong> A learned cognitive ranker suggests capability <code>"finance.transfer"</code> as top rank (#1), but caller lacks invocation policy permission.
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="mode-btn active-all" onclick="runLab1()">Execute Invocation Request</button>
+          </div>
+          <div id="lab-res-1"></div>
+        `;
+      } else if (id === 2) {
+        lab.innerHTML = `
+          <div style="font-size: 0.9rem; color: #fff;">
+            <strong>Test Claim:</strong> The read-side projection cache or vector index is completely corrupted or deleted. Can authoritative state be restored?
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="mode-btn active-all" onclick="runLab2()">Simulate Disaster & Trigger Rebuild</button>
+          </div>
+          <div id="lab-res-2"></div>
+        `;
+      } else if (id === 3) {
+        lab.innerHTML = `
+          <div style="font-size: 0.9rem; color: #fff;">
+            <strong>Test Claim:</strong> Switch storage backend from SQLite to PostgreSQL (ADR-0013). Does any application agent code require modification?
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="mode-btn active-all" onclick="runLab3()">Swap Engine Adapter</button>
+          </div>
+          <div id="lab-res-3"></div>
+        `;
+      }
+    }
+
+    function runLab1() {
+      const res = document.getElementById('lab-res-1');
+      res.innerHTML = `
+        <div class="lab-result res-halted">
+          ⛔ INVOCATION HALTED: Policy.authorize("finance.transfer", caller) returned DENIED.<br>
+          <em>Result:</em> Learned UCB1 ranker reordered candidate list, but Kernel invocation guard enforced default-deny.<br>
+          <strong>Invariant Confirmed:</strong> Cognitive ranking CANNOT grant authority (CG-CAP-002 / Spec §3.6).
+        </div>
+      `;
+    }
+
+    function runLab2() {
+      const res = document.getElementById('lab-res-2');
+      res.innerHTML = `
+        <div class="lab-result res-passed">
+          ✓ PROJECTION RESTORED: rebuildProjections(store) replayed 4,120 events from position 0.<br>
+          <em>Outcome:</em> 0 events lost. UI state, chat text, and vector index regenerated with 100% fidelity.<br>
+          <strong>Invariant Confirmed:</strong> Events are truth; everything else is a fold (Spec §11).
+        </div>
+      `;
+    }
+
+    function runLab3() {
+      const res = document.getElementById('lab-res-3');
+      res.innerHTML = `
+        <div class="lab-result res-passed">
+          ✓ ENGINE SWAPPED: RuntimeOptions.store switched from "file:local.db" to "postgres://localhost/cognate".<br>
+          <em>Diff:</em> 0 lines of agent definition changed. Both stores pass identical conformance kit (CG-EVT-008).<br>
+          <strong>Invariant Confirmed:</strong> Ports-and-Adapters isolation holds across relational engines (ADR-0013).
+        </div>
+      `;
+    }
+
+    // Default inspection
+    inspectPackage('kernel-api');
+    loadLab(1);
+  </script>
+</body>
+</html>

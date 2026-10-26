@@ -104,11 +104,13 @@ event is in the stream.
 
 ## Sequence diagram
 
+> **Interactive model:** Step through this execution trace line-by-line, inspect the memoized `recorded` step map, trigger crash restarts, and observe continuation resolution in the **[Run Execution & Replay Stepper](../explainers/run-execution-replay.html)**.
+
 ```mermaid
 sequenceDiagram
     participant C as Caller / client
     participant S as RuntimeService
-    participant D as DurableStore
+    participant D as DurableStore (SQLite/PostgreSQL)
     participant L as Background loop
     participant E as executeOnce
     participant A as agent.run(input, ctx)
@@ -120,26 +122,45 @@ sequenceDiagram
     S->>L: core.kick()
     S-->>C: RunView { status: "running" }
 
+    Note over L,E: Gated by maxConcurrentRuns & resourceKeys(run)
     L->>E: execute(runId)
+    E->>D: claimRunOwnership(runId, workerId) [PostgreSQL fencing]
     E->>D: readStream("run-<id>")
-    E->>E: foldRun → index recorded results by stepId
-    E->>A: agent.run(input, ctx)  (re-entered from the top)
-    A->>E: ctx.invoke("billing.quote", …)
-    E->>D: commit(run.invocation)  [invoker → kernel.resolve → Policy → handler]
-    A->>E: ctx.emit("message.delta", …)
-    E->>D: commit(message.delta)
-    A->>E: ctx.waitFor("approve", …)
-    E->>D: commit(continuation.opened + continuation record)
-    E->>D: commit(run.waiting)
-    A-->>E: (suspended — never returns)
-    E-->>L: Halt{retry:false} → "done"
+    E->>E: foldRun → build recorded: Map<stepId, StoredEvent[]>
+    E->>A: agent.run(input, ctx)  (re-entered from line 1)
+    
+    rect rgb(30, 41, 59)
+        Note over A,E: Attempt 1: First time execution
+        A->>E: ctx.invoke("billing.quote", …) [stepId: invoke:0]
+        E->>E: Cache miss → invoke kernel & provider
+        E->>D: commit(run.invocation)
+        A->>E: ctx.emit("message.delta", …) [stepId: emit:0]
+        E->>D: commit(message.delta)
+        A->>E: ctx.waitFor("approve", …) [stepId: wait:approve]
+        E->>D: commit(run.waiting + continuation record)
+        A-->>E: (Halt sentinel escaped — execution suspends)
+    end
+    E->>D: releaseRunOwnership(runId)
+    E-->>L: Halt{retry:false} → "done" (No active thread in memory)
 
-    Note over D: human resolves the continuation → continuation.resume outbox
-    L->>E: execute(runId)  (replay)
-    E->>A: agent.run(…) again
-    A->>E: ctx.invoke("refund.approve", …)  (recorded result returned, not re-executed)
-    A-->>E: { approved: true }
+    Note over D: Human resolves continuation → continuation.resume outbox committed
+    L->>E: execute(runId)  (Replay Attempt 2)
+    E->>D: claimRunOwnership(runId, workerId) [Fresh lease]
+    E->>D: readStream("run-<id>") (Includes continuation.resumed)
+    E->>E: Rebuild recorded map (invoke:0, emit:0, wait:approve cached!)
+    E->>A: agent.run(input, ctx) (re-entered from line 1)
+    
+    rect rgb(15, 23, 42)
+        Note over A,E: Attempt 2: Replay skips side-effects
+        A->>E: ctx.invoke("billing.quote") → CACHE HIT (Suppressed, 0 duplicate API calls)
+        A->>E: ctx.emit("message.delta") → CACHE HIT (Suppressed)
+        A->>E: ctx.waitFor("approve") → CACHE HIT (Returns { ok: true })
+        A->>E: ctx.invoke("billing.charge") → CACHE MISS (Fresh execution)
+        E->>D: commit(run.invocation)
+        A-->>E: return { status: "settled" }
+    end
     E->>D: commit(run.completed { output })
+    E->>D: releaseRunOwnership(runId)
 ```
 
 ## What replay guarantees, and what it does not

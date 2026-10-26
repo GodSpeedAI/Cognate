@@ -56,9 +56,15 @@ Both profiles depend on `runtime-bun`; `cli` depends on the profiles and the ser
 - **`RunView`** — a fold, not a stored row: `runId`, `agent`, `tenant`, `status`, `input`,
   `output`, `error`, `correlationId`, `startedBy`, `waitingOn`.
 - **`RuntimeOptions`** — `store`, `policy`, `actions`, `agents`, `components?`, `cognition?`,
-  `projections?`, `outboxFor?`, `tickMs?`, `system?`.
+  `projections?`, `outboxFor?`, `tickMs?`, `system?`, and `execution?` (`maxConcurrentRuns` 1–64, `resourceKeys(run)`).
 - **`ActionPolicy`** — the service-level allow/deny over `run.start`, `run.cancel`,
   `continuation.resume`, `continuation.cancel`, `run.state.update`. Default deny.
+- **`ExecutionOptions`** — bounded native execution ([runtime-concurrency.md](../runtime-concurrency.md)):
+  `maxConcurrentRuns` caps process-local concurrency (defaults to 1); `resourceKeys(run)` returns resource identities (e.g. `["workspace:repo-alpha"]`). Runs with common keys serialize; independent runs overlap.
+
+> **Interactive models:**
+> - Step through `agent.run` replay and step-id memoization in the **[Run Execution & Replay Stepper](../explainers/run-execution-replay.html)**.
+> - Simulate bounded concurrency and PostgreSQL run-write ownership in the **[Concurrency, Fenced Outbox & Ownership Simulator](../explainers/concurrency-and-leases.html)**.
 
 ## Internal operation
 
