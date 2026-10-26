@@ -36,7 +36,7 @@ export default function Inspector({ part, onClose }: Props) {
       </div>
       <p className="inspector-tags">
         {kindLabel(part.kind)}
-        {part.branchOnly ? ' · in development (branch)' : ''}
+        {part.branchOnly ? ' · added by extension' : ''}
       </p>
       <dl className="inspector-facts">
         <dt>What it does</dt>

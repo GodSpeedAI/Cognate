@@ -67,5 +67,5 @@ export function edgeWord(kind: Edge['kind']): string {
   return kind === 'stores-in' ? 'stores in' : kind;
 }
 
-/** Sequence G shows the core twelve plus C-13 (branch only). C-14 is in the text list only. */
+/** Sequence G shows the core twelve plus C-13 (added by extension). C-14 is in the text list only. */
 export const extensionParts: readonly Part[] = parts.filter((p) => KEYFRAME_IDS.has(p.id) || p.id === 'C-13');

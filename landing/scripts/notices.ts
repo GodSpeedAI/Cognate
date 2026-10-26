@@ -63,7 +63,7 @@ export const WORKBENCH = {
   owner: 'GodSpeedAI',
   repo: 'https://github.com/GodSpeedAI/Cognate-Workbench',
   licenseSha: 'd208cd0491d5d76839ed4dedbababc589383ad09',
-  expertTeamsSha: 'fdc709b9ccff47d52619185f6e9e03fdd9ae8d08',
+  expertTeamsSha: 'c2abce2496e19988d534e4b465a3c7204538e737',
   files: [
     'captures/workbench/e2e-03-contract-complete.png',
     'captures/workbench/e2e-05-authority-and-blocked.png',
@@ -133,7 +133,7 @@ export function buildNotices(): string {
   out.push(`Copyright ${WORKBENCH.owner}. Source: ${WORKBENCH.repo}`);
   out.push(`Files, copied byte-for-byte from the repository at the commits below:`);
   out.push(`  - commit ${WORKBENCH.licenseSha} (main): ${WORKBENCH.files.slice(0, 4).join(', ')}`);
-  out.push(`  - commit ${WORKBENCH.expertTeamsSha} (unmerged branch): ${WORKBENCH.files.slice(4).join(', ')}`);
+  out.push(`  - commit ${WORKBENCH.expertTeamsSha} (main): ${WORKBENCH.files.slice(4).join(', ')}`);
   out.push('Modified files: the WebP files under captures/ are lossy re-encodings (WebP, quality 0.9) of the PNG');
   out.push('files above. The PNG pixels were not edited.');
   out.push('');

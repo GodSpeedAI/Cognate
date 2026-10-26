@@ -11,7 +11,7 @@ const rows = parts.map((p) => {
     id: p.id,
     label: titleCase(p.label),
     job: p.job,
-    kind: `${kindLabel(p.kind)}${p.branchOnly ? '; in development (branch)' : ''}`,
+    kind: `${kindLabel(p.kind)}${p.branchOnly ? '; added by extension' : ''}`,
     needs: needs.length > 0 ? needs.join(', ') : 'nothing in this view',
     neededBy: neededBy.length > 0 ? neededBy.join(', ') : 'nothing in this view',
   };

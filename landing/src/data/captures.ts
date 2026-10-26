@@ -1,8 +1,10 @@
 import type { Capture } from './types';
 
 // Bare captures copied byte-for-byte from the pinned Workbench SHAs (rule R8: no pixel edits).
+// The four contract captures are pinned at main d208cd0; the two Expert Teams captures at main
+// c2abce2, where that work merged.
 const WB = 'd208cd0491d5d76839ed4dedbababc589383ad09';
-const WB_BRANCH = 'fdc709b9ccff47d52619185f6e9e03fdd9ae8d08';
+const WB_MAIN2 = 'c2abce2496e19988d534e4b465a3c7204538e737';
 const WBR = 'GodSpeedAI/Cognate-Workbench';
 
 export const captures: readonly Capture[] = [
@@ -53,23 +55,23 @@ export const captures: readonly Capture[] = [
   {
     file: 'captures/workbench-expert-teams/default-team-desktop.png',
     repo: WBR,
-    sha: WB_BRANCH,
+    sha: WB_MAIN2,
     sourcePath: 'screenshots/experts/default-team-desktop.png',
     width: 1440,
     height: 900,
     shows: 'The Experts and Teams screen with the default Cognate Team and its specialists.',
-    caption: 'Real screen from the expert-teams development branch',
+    caption: 'Real screen from Cognate-Workbench',
     alt: 'Experts and Teams screen. The default Cognate Team lists a Product Manager orchestrator and Builder, Critic, Verifier and Reviewer specialists, with controls to open a team conversation.',
   },
   {
     file: 'captures/workbench-expert-teams/team-conversation-handoff-desktop.png',
     repo: WBR,
-    sha: WB_BRANCH,
+    sha: WB_MAIN2,
     sourcePath: 'screenshots/experts/team-conversation-handoff-desktop.png',
     width: 1440,
     height: 900,
     shows: 'A team conversation in which a message is sent to a specialist and the reply is shown.',
-    caption: 'Real screen from the expert-teams development branch',
+    caption: 'Real screen from Cognate-Workbench',
     alt: 'Team conversation screen for a Quality Review Team. A message addressed to the Builder specialist was sent, and the Product Manager replied with a summary.',
   },
 ];
