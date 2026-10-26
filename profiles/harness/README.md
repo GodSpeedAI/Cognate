@@ -77,6 +77,11 @@ const myAgent = {
 // pass it via createHarness({ agents: [myAgent], ... })
 ```
 
+`spawnSubagent` needs two things: a `subagent.start` provider, which lets the parent start its child, and something that
+settles its `run_completion` continuations. `createHarness` provides both. An app that composes `createRuntime` directly
+mounts the exported `subagentStartComponent(runtime)` on `runtime.kernel`, calls `watchSubagentCompletions(runtime, caller)`
+once, and keeps the returned dispose function for teardown. Without both, the parent waits forever.
+
 The exported `harnessProfile` and `harnessRegistry` declare the composition by name (resolvable with `resolveProfile` from [`@godspeedai/cognate-profile`](https://www.npmjs.com/package/@godspeedai/cognate-profile)), and every behaviour above is an ordinary component, agent definition, or durable-store/service call you can reassemble yourself.
 
 ## Limitations

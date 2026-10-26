@@ -20,6 +20,20 @@ The same execution gate covers started, recovered and resumed runs. Eligibility 
 
 Compatibility: default capacity one preserves current scheduling. Existing providers, run inputs and event formats remain valid. Agents using process-global mutable state must remain serialized or declare resource keys; concurrent operation is an explicitly granted affordance. Workbench must not consume this source checkout as its runtime dependency. A published linked SDK release and application eligibility tests are required for integration.
 
+Production setting: the default stays `maxConcurrentRuns: 1`, which is the right choice for local and
+development profiles. For server profiles that run agents with independent workspaces, a value of
+`4` is the recommended starting point, paired with an `execution.resourceKeys` policy that returns
+the canonical workspace or resource identity for each run (and `[]` only for runs that share no
+writable resource). `resourceKeys` decides which runs may overlap; `maxConcurrentRuns` only caps how
+many may overlap at once. Runs with a common key still serialize in the same process, so a policy
+that returns one key for everything gives capacity-1 behaviour regardless of the setting. Capacity
+above one also multiplies authoritative eligibility lookups and PostgreSQL outbox lease traffic by up
+to the same factor, so keep the policy cheap and side-effect free. Measured with the `runtime` mode of `scripts/bench-stores.ts` (200 no-op runs submitted as one burst,
+one process, event-driven wake-ups): capacity 8 gave about 4,300 runs/s against 3,900 at capacity 1
+on SQLite, and about 64 against 48 runs/s on PostgreSQL, where per-run round trips dominate. These
+no-op runs carry almost no work, so real agents with slower steps may gain more. Raise the value only
+after measuring the target workload.
+
 Acceptance: capacities 1/2/4/8 show exact observed maxima with distinguishable outputs; conflicting workspace keys serialize while independent keys overlap; cancellation, continuation, deterministic replay and service conformance pass. No exactly-once external effect claim is made.
 
 Injected legacy/custom stores without the complete fenced claim/renew/settle trio are rejected

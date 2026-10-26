@@ -18,8 +18,8 @@ generated apps) also needs the ambient type packages: `bun add -d @types/bun @ty
 
 ```sh
 # Scaffold an app from the copilot profile (an interactive chat app).
-# --source points at a Cognate checkout whose packages are vendored into the app.
-cognate create my-app --profile copilot --source /path/to/cognate/checkout
+# Cognate packages resolve from npm at this CLI's version.
+cognate create my-app --profile copilot
 
 cd my-app
 bun install
@@ -28,9 +28,10 @@ bun dev            # serves the app; print the URL and open it
 
 `create` copies the profile's starter layout (`domain/*.sea` semantic files,
 `src/{agents,capabilities,components,projections,ui}`, `cognate.config.ts`, `package.json`),
-then vendors every `@godspeedai/cognate-*` package the profile needs from `--source` into
-`.cognate/vendor/`, pinning each with a `file:` dependency — so the generated app is
-self-contained and reproducible against the checkout you generated it from. Pass
+then pins each `@godspeedai/cognate-*` dependency to this CLI's exact version, which npm resolves.
+With `--source <checkout>` it instead vendors every package the profile needs from that checkout into
+`.cognate/vendor/`, pinning each with a `file:` dependency, so the app is self-contained and matches
+your local edits. Pass
 `--with <name,name>` to request optional adapters: anything the profile can't wire yet is
 reported (`unsupported: <name> (<reason>)`) and never silently added.
 
@@ -47,16 +48,15 @@ the app's SQLite database at `.cognate/app.sqlite` (state survives restarts), an
 
 | Command | Purpose |
 | --- | --- |
-| `cognate create <dir> --profile copilot\|harness --source <checkout> [--with a,b]` | Generate a starter app |
+| `cognate create <dir> --profile copilot\|harness [--source <checkout>] [--with a,b]` | Generate a starter app (`--source` is optional: it vendors packages from a local checkout) |
 | `cognate dev [--port N]` | Run the app from its directory |
 
 Run `cognate` with no arguments to print the usage your installed version supports.
 
 ## Limitations
 
-- `create` requires `--source` pointing at a Cognate checkout; packages are vendored at
-  generation time rather than resolved from npm. A registry-only mode is a known, tracked
-  follow-up.
+- `create` without `--source` resolves packages from npm; the starter template is read from the
+  Cognate checkout the CLI runs from, so the published package alone cannot generate an app yet.
 - `dev` is a development server: its auth is dev-only and it runs a single process.
 
 ## Related packages

@@ -1,5 +1,5 @@
 == domainforge --version ==
-domainforge 0.18.1
+domainforge 0.19.0
 
 == domainforge validate --format human interaction-model.sea ==
 Validation succeeded: 0 violations total
@@ -12,13 +12,13 @@ Validation succeeded: 0 violations total
 
 == domainforge parse interaction-model.sea --format human ==
 Graph parsed successfully: interaction-model.sea
-Entities: 17
-Resources: 18
-Flows: 18
-Roles: 3
-Relations: 2
+Entities: 39
+Resources: 30
+Flows: 30
+Roles: 4
+Relations: 3
 Resource instances: 0
-Entity instances: 20
+Entity instances: 31
 Policies: 1
 Patterns: 0
 
@@ -26,12 +26,12 @@ Patterns: 0
 AST parsed successfully: interaction-model.sea
 Namespace: deepseek-harness.interaction
 Version: 1.0.0
-Declarations: 80
+Declarations: 139
 
-=== Workbench extension (2026-10-05): domainforge validate / parse on the extended model ===
+=== Cognitive-capability extension (2026-10-21): domainforge validate / parse on the extended model ===
 Validation succeeded: 0 violations total
 Graph parsed successfully: interaction-model.sea
-Entities: 31
+Entities: 39
 Resources: 30
 Flows: 30
 Roles: 4

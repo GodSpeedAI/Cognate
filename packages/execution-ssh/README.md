@@ -64,7 +64,7 @@ The `./fixture` subpath exports `startSshFixture` — a real in-process SSH serv
 ## Known limits
 
 - The remote login shell must accept `exec sh -c '<posix script>'`.
-- `version` is `mtime(seconds):size`, so two writes within the same second with equal size look unchanged.
+- `version` is `mtime(seconds):size` (SFTP attributes carry whole seconds only), so two writes within the same second with equal size look unchanged. Local and command worlds use `mtime(ns):size:inode`.
 - The symlink containment check is check-then-use: a concurrent swap between the check and the operation is not prevented.
 - No keyboard-interactive/2FA authentication and no `@cert-authority` support.
 

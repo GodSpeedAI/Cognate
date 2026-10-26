@@ -16,7 +16,8 @@
     "access": "public"
   },
   "files": [
-    "src"
+    "src",
+    "templates"
   ],
   "exports": {
     ".": "./src/index.ts"

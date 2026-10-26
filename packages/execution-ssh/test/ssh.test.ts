@@ -24,6 +24,7 @@ executionWorldConformance("ssh (ssh2 fixture server)", async () => {
   return {
     provider: sshExecutionWorld(base(fixture)),
     root,
+    coarseVersion: true,
     commands: {
       echo: (m) => ({ argv: ["printf", "%s", m], cwd: root }),
       fail: (m, code) => ({ argv: ["sh", "-c", `printf %s ${JSON.stringify(m)} 1>&2; exit ${code}`], cwd: root }),

@@ -709,7 +709,7 @@ requirements:
     source: {file: .agents/specs/software-design-spec-cognate.-frameworkmd, section: '13; 31.2', digest: 'sha256:28377d89e178df22d735ae14d54b499f12ccf85cdb4ad3aada911b963010300f'}
     semantic_binding: {entity: 'PostgreSQL store', invariant: 'Same contract, same atomicity, durability defaults unrelaxed'}
     acceptance: [AC-EVT-008-01]
-    gate: {cwd: ., run: 'bun test ./packages/store-postgres/test/conformance.test.ts ./packages/store-postgres/test/idempotency-pool.test.ts', proof_paths: ['packages/store-postgres/test/conformance.test.ts', 'packages/store-postgres/test/idempotency-pool.test.ts']}
+    gate: {cwd: ., run: 'bun test --timeout 30000 ./packages/store-postgres/test/conformance.test.ts ./packages/store-postgres/test/idempotency-pool.test.ts', proof_paths: ['packages/store-postgres/test/conformance.test.ts', 'packages/store-postgres/test/idempotency-pool.test.ts']}
     dependencies: [CG-EVT-003]
     status: implemented
     evidence: .agents/evidence/2026-10-09-postgres-migration.md

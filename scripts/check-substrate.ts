@@ -63,6 +63,7 @@ for (const entry of ledger.requirements) {
   if (!["candidate", "implemented", "blocked"].includes(entry.status)) errors.push(`${entry.id}: unknown status ${entry.status}`);
   if (entry.status === "implemented" && (!entry.evidence || !existsSync(entry.evidence))) errors.push(`${entry.id}: implemented without an existing evidence record`);
   if (entry.status === "blocked" && (!entry.debt || !debtIds.has(entry.debt))) errors.push(`${entry.id}: blocked without a DEBT.md entry`);
+  if (entry.debt !== undefined && !debtIds.has(entry.debt)) errors.push(`${entry.id}: debt ${entry.debt} has no "## ${entry.debt} —" heading in ${debtPath}`);
   if (!entry.acceptance.length) errors.push(`${entry.id}: missing acceptance`);
   if (!entry.gate?.run || !entry.gate.proof_paths?.length) errors.push(`${entry.id}: missing gate`);
   if (entry.status === "implemented") {

@@ -21,8 +21,7 @@ const REF_CLONE = join(RECON_ROOT, "..", "..", "..", ".tmp", "ref", "deepseek-ha
 
 // Playwright's test workers run under plain Node even when the CLI itself was
 // invoked via `bun x playwright test`, so anything that uses Bun-only globals
-// (`Bun.serve`, `Bun.spawn`) - the mock-model server and the workspace fixture
-// script - must run as an actual `bun <file>` child process, not an in-process
+// (`Bun.serve`, `Bun.spawn`) - the workspace fixture script - must run as an actual `bun <file>` child process, not an in-process
 // import, from here.
 function runBunScript(scriptPath: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -43,9 +42,10 @@ interface MockModelHandle {
   stop(): void;
 }
 
+// The deterministic model endpoint is aimock (`llmock`, see fixtures/README.md).
 function startMockModel(port: number): Promise<MockModelHandle> {
   return new Promise((resolve, reject) => {
-    const proc: ChildProcess = spawn("bun", [join(RECON_ROOT, "fixtures", "mock-model", "server.ts"), `--port=${port}`], {
+    const proc: ChildProcess = spawn(join(RECON_ROOT, "cognate", "node_modules", ".bin", "llmock"), ["-f", join(RECON_ROOT, "fixtures", "aimock", "fixtures.json"), "-p", String(port), "--validate-on-load"], {
       stdio: ["ignore", "pipe", "pipe"],
       detached: true, // see ReferenceDriver.launch's doc comment on detached process groups
     });
@@ -98,7 +98,7 @@ export function makeDriver(system: SystemName): Driver {
 // Orphaned processes from an ABORTED run (e.g. a `bash timeout` that killed
 // this process without giving child processes a chance to exit - Node does
 // not forward SIGTERM to grandchildren) must instead be cleaned up by hand
-// (`pkill -f 'dsh web'`, `pkill -f mock-model/server.ts`) rather than dodged
+// (`pkill -f 'dsh web'`, `pkill -f llmock`) rather than dodged
 // by moving to a different port range.
 let nextPort = 41000 + (process.pid % 500) * 4;
 export function allocatePorts(count: number): number[] {
