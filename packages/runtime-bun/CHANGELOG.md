@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.8.0...cognate-runtime-bun-v0.8.1) (2026-10-30)
+
+
+### Miscellaneous Chores
+
+* **cognate-runtime-bun:** Synchronize cognate SDK packages versions
+
 ## [0.8.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.7.1...cognate-runtime-bun-v0.8.0) (2026-10-26)
 
 
