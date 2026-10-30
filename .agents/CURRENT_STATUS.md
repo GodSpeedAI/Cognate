@@ -1,26 +1,36 @@
 # Current status
 
-**Status revision:** 73
+**Status revision:** 74
 
-**Summary:** 0.8.0 is published and verified end to end. Release Please cut the linked-version release from main, the workflow published all packages, and a clean-room bunx @godspeedai/cognate-cli@0.8.0 create my-app --profile copilot generated an app that installed from npm and passed its own test with no checkout. Documentation now matches: README, getting-started, troubleshooting, the checkout tutorial, the substrate and verification references, and the building-with-cognate skill describe registry mode as current and keep --source as the way to try unreleased local changes. DEBT-016 records the 0.8.0 evidence, and examples/refund-desk is bumped to 0.8.0 with 7/7 passing.
+**Summary:** The egm-bootstrap skill was run over the repository with target_filename=EGM.md, leaving every existing README untouched because the npm README gate (docs/package-readme-standard.md, scripts/check-readmes.mjs) owns those files. The pruned BFS map produced 172 code-bearing or blueprint directories; with the repository-root blueprint that is 173 EGM.md contracts, one per directory, each citing real source locations for its Interface, Invariants, and Side Effects. A drift report at .agents/reports/egm-drift-2026-10-30.md audited 12 of them claim-by-claim against source and found 7 issues; 6 were corrected in the contracts, 1 was withdrawn as an error in the report itself, and a repo-wide link sweep additionally fixed 13 blueprints that had left an existing child contract unlinked. bun run check, bun scripts/check-readmes.mjs, and bun run typecheck all pass.
 
-0.8.0 is the release the reframe was waiting for. Release Please cut the linked version
-from `main`; the workflow published every `@godspeedai/cognate-*` package and created
-`v0.8.0`. A clean-room run outside the repository then exercised the promise the README
-makes: `bunx @godspeedai/cognate-cli@0.8.0 create my-app --profile copilot` generated an
-app whose dependencies resolved from npm, and the generated app's own test passed with no
-source checkout.
+The EGM bootstrap added one contract file per directory rather than replacing the existing
+pages. `target_filename` was set to `EGM.md`, so `README.md` was never a target. That
+mattered: `scripts/check-readmes.mjs` enforces a mechanical standard over the 45 published
+package READMEs, and the bootstrap has no business rewriting a landing page whose audience
+is a developer arriving from npmjs.com. The 173 new files sit beside the READMEs and
+describe code boundaries instead of install instructions.
 
-`--source` did not disappear; it changed meaning. It is now the way to vendor a local
-checkout when you want to try unreleased changes. The README, `getting-started`,
-`troubleshooting`, the checkout tutorial, the substrate and verification references, and
-the `building-with-cognate` skill all say that, and DEBT-016 carries the 0.8.0 evidence
-that closed it.
+The scope came from the skill's own pruning rules, not from a hand-picked list. Breadth-
+first discovery skipped `.git`, `node_modules`, build output, and test-only directories;
+what remained was 107 directories holding their own source plus 65 intermediate blueprint
+directories, and the repository-root blueprint made 173 files. Every contract grounds its
+`Interface`, `Invariants`, and `Side Effects` in cited source locations rather than in
+directory names, which is the only property that makes the tree worth keeping.
 
-The Refund Desk example runs on 0.8.0 and passes 7/7. The rest of the merged main still
-holds: 81/81 substrate gates, 81 requirements implemented with none blocked, docs 5/5,
-examples 16/16, package READMEs 45/45, landing 49 unit and 36 e2e tests, source
-verification 19 excerpts and 16 edges, and shots PASS at every width.
+Two defects are worth reading if you touch this tree later. First, contracts written
+concurrently cannot see each other, so any "child contract does not exist" sentence is only
+true at the instant it is written; a post-pass sweep now reports zero children whose
+`EGM.md` their parent blueprint fails to link. Second, the drift audit is what caught the
+rest. It read 12 contracts claim by claim against source and found 7 issues, of which 6 were
+real and are fixed; the seventh was an arithmetic error in the audit itself, recorded as
+withdrawn rather than silently dropped.
 
-Next: run `just verify` on `main`, then choose the next requirement from the ledger. Ledger
-freeze remains an operator decision.
+What this does not claim: only 12 of 173 contracts were audited at claim level, no
+`## Verification` command was executed, and nothing yet ranges over these files mechanically.
+Until `just verify` covers them, `EGM.md` and the code can drift apart again without a gate
+noticing.
+
+Next: decide whether the contracts join `just verify`, and either audit the remaining 161 at
+claim level or delete the ones the team will not maintain. Ledger freeze remains an operator
+decision.
