@@ -267,4 +267,23 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Requirement(s):** CG-EVT-008
 **Observed (2026-10-21):** In the baseline `just verify`, `store-postgres: outbox > concurrent fenced claimers receive disjoint items` exceeded Bun's default 5 s test timeout (6955 ms), failing CG-EVT-008 (80/81 gates). `bun test packages/store-postgres` alone passed 45/45 twice.
 **Consequence:** `just verify` can fail spuriously on a loaded host; a real regression in fenced claiming could be dismissed as this flake.
-**Exit criterion:** The test sets an explicit timeout sized to its concurrency (or the claim path is shown to be slow for a fixable reason), and `just verify` passes CG-EVT-008 three runs in a row.
+---
+
+## DEBT-030 — EGM contracts have no gate, so they can drift silently
+
+**Status:** Open 2026-10-30 — introduced by the EGM bootstrap (status revision 75).
+**Requirement(s):** None.
+**Observed (2026-10-30):** The bootstrap added 166 `EGM.md` contracts across the tree. `just verify` runs the substrate check, typecheck, the README gate, two named test files, and `bun scripts/gate.ts --implemented`; nothing in it reads, parses, or validates an `EGM.md`. The only verification the contracts received was a one-off structural and link sweep run by hand, plus a claim-level drift audit of 12 of the 166.
+**Consequence:** A `EGM.md` can describe a symbol that has been renamed, deleted, or moved and every gate stays green. The contracts therefore claim authority over code boundaries without any mechanism holding them to it — the failure mode EGM exists to prevent. 154 contracts have never been checked against source at all.
+**Exit criterion:** Either a gate ranges over the contracts (structural check plus resolution of every `[path:symbol]` citation, wired into `just verify`), or the tree is reduced to the contracts the team will maintain and those are audited at claim level. Note `.agents/reports/egm-drift-2026-10-30.md` records the audit method that can be repeated.
+
+---
+
+## DEBT-031 — "Protect Main" ruleset required a scan the repository did not run
+
+**Status:** Partially closed 2026-10-30 — the workflow now exists; the configuration risk remains.
+**Requirement(s):** None.
+**Observed (2026-10-30):** A ruleset named `Protect Main` (id 26216009, created 2026-10-30T11:20:52-04:00) was active on `refs/heads/main` with a `code_scanning` rule requiring CodeQL results at the `high_or_higher` security threshold with `errors` alert threshold, plus a `code_quality` rule. The repository had no CodeQL workflow and `GET /repos/.../code-scanning/alerts` returned `no analysis found`, so the rule was unsatisfiable and every push and merge to `main` was rejected — including changes unrelated to scanning. `.github/workflows/codeql.yml` was added in PR #71, after which the analysis ran (0 results, 87 rules) and the merge succeeded.
+**Consequence:** The ruleset can block all work on `main` again if the scan job is ever renamed, its `category` changes, or a scheduled run is skipped past the ruleset's freshness window — and the failure appears as a generic "repository rule violations" rejection with no indication that the scan, rather than the diff, is the problem.
+**Exit criterion:** Confirm the newly added scan job actually gates `main` (one merged pull request after #71), and record in `CONTRIBUTING.md` that a CodeQL analysis must exist for `main` before a merge, so a future scanning outage is diagnosed from the ruleset rather than rediscovered.
+
