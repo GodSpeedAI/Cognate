@@ -15,6 +15,7 @@ This package turns the canonical `proto/cognate/v1/*.proto` sources into TypeScr
 - Subdirectories: [scripts](./scripts/EGM.md) — the codegen driver
 - `src/`, `src/gen/` and `test/` — barrel plus generated bindings and the codegen proof
 - `node_modules/` — installed buf/protoc-gen-es binaries invoked by the script
+- Repo-level `proto/cognate/v1/` — the canonical `.proto` sources this package compiles: `artifact`, `capability`, `cognitive`, `component`, `continuation`, `event`, `execution`, `identity`, `runtime`, `trace`. Every file is `proto3` in `package cognate.v1`; `runtime.proto` declares `service RuntimeService` with unary and server-streaming RPCs only, and caller identity comes from transport authentication rather than a message field `[proto/cognate/v1/runtime.proto:RuntimeService]`. No contract file is written under `proto/` or under `src/gen/`: the codegen proof at `packages/proto/test/codegen.test.ts:36` compares a digest of the entire regenerated tree against `src/gen`, so any non-generated file placed in either location fails CG-WIR-001
 
 ## Invariants
 
