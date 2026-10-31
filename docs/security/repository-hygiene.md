@@ -78,7 +78,7 @@ No credential rotation is warranted on the basis of this audit.
 Adversarial suite (isolated throwaway repository, synthetic values only) — **15/15 pass**:
 clean commits pass; high-entropy synthetic credential blocks; private home path blocks with redacted output; portable paths and safe placeholders pass; missing gitleaks fails closed with an install message; simulated scanner crash (exit 70) blocks; secret present only in the staged index is detected; clean staged version commits despite an unstaged leak; other hook types still execute; `--range` mode (CI path) detects a leak between refs with redaction; repeated setup is idempotent; filenames with spaces are guarded; Windows-escaped and `file://`-URI private paths block. Hook latency on a small staged set: 0.38–0.68 s.
 
-CI: `security.yml` parses (YAML-validated; actionlint unavailable locally). Actual enforcement must be observed on the first CI run after merge — recorded as a limitation, not assumed.
+CI: `security.yml` is live-enforced on PR #74 — all three modes executed and passed on GitHub-hosted runners: the diff-scoped secret scan (18–21 s), the private-path guard (9–12 s), and the manual `workflow_dispatch` full-history audit (25 s, with the ProtocolsIO detector excluded per the false-positive classification above). An initial run failure (`--no-update` duplicated by the action, then an invalid `--only-verified=false` flag) was caught by the first live run and fixed — the fix loop itself demonstrates the fail-closed behavior.
 
 Regression: `just verify` exit 0 (81/81 ledger gates); `just typecheck` exit 0; `just check` substrate check 81/81; copilot protocol gate 12/12; modified JSON/JSONL files parse; modified shell script passes `bash -n`.
 
@@ -88,14 +88,14 @@ Regression: `just verify` exit 0 (81/81 ledger gates); `just typecheck` exit 0; 
 - Gitleaks' git mode reports a commit count lower than `git rev-list --all --count` (dedup/ref-coverage difference); TruffleHog's all-refs scan was used as the cross-check.
 - TruffleHog ran **without** network verification (`--no-update` offline posture in CI and locally); no candidate was confirmed live against a provider. Given all findings were synthetic or false positives, this does not change the verdict.
 - The private-path guard is pattern-based; novel encodings (double-encoding, exotic quoting) may evade it. It complements, and is complemented by, the secret scanners.
-- CI enforcement is configured but not yet observed in a live run.
+- Local hooks can be bypassed; the CI checks and branch protection are the authoritative control, and both security checks are observed enforcing on pull requests.
 
 ## Outstanding actions
 
 1. **Commit the remediation and prevention changes** (operator intent required by repository policy; no commit was made).
 2. **Approve or decline the history rewrite.** The rehearsed procedure, affected-ref inventory, migration steps (re-clone or rebase, PR rebases, worktree refresh), and rollback plan are held outside the repository in the audit workspace; on approval the rewrite is applied from that workspace, re-verified, and force-pushed with coordination for any open PRs. Rewriting history is not a substitute for rotation — no rotation is currently indicated.
 3. ~~Enable GitHub-native secret scanning and push protection~~ — **done 2026-10-31**: both are now `enabled` (verified via the repository API). Still available, deliberately untouched: secret-scanning non-provider patterns, validity checks, and Dependabot security updates (each needs a separate operator decision).
-4. After the first PR, confirm the `security` workflow runs and enforces.
+4. ~~Confirm the `security` workflow runs and enforces~~ — **done**: all three jobs observed passing on PR #74 and on a manual dispatch.
 5. Optional: delete the 49 local-only Cline checkpoint refs once the rewrite lands (they hold pre-rewrite snapshots).
 
 *Acceptance criteria:* no unresolved secrets or actionable private-path exposures in current tracked content (met); historical exposure remediated in a validated isolated rewrite pending application (documented); pre-commit protection and private-path detection operational and adversarially validated (met); CI protection configured, enforcement to be observed (documented); no unrelated functionality broken (typecheck, substrate check, and touched gates pass).
