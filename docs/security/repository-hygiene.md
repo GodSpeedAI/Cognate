@@ -94,7 +94,7 @@ Regression: `just verify` exit 0 (81/81 ledger gates); `just typecheck` exit 0; 
 
 1. **Commit the remediation and prevention changes** (operator intent required by repository policy; no commit was made).
 2. **Approve or decline the history rewrite.** The rehearsed procedure, affected-ref inventory, migration steps (re-clone or rebase, PR rebases, worktree refresh), and rollback plan are held outside the repository in the audit workspace; on approval the rewrite is applied from that workspace, re-verified, and force-pushed with coordination for any open PRs. Rewriting history is not a substitute for rotation — no rotation is currently indicated.
-3. **Enable GitHub-native secret scanning and push protection** (currently disabled on a public repository) — requires repository-admin authorization; assessed as a valuable additional layer behind the local controls.
+3. ~~Enable GitHub-native secret scanning and push protection~~ — **done 2026-10-31**: both are now `enabled` (verified via the repository API). Still available, deliberately untouched: secret-scanning non-provider patterns, validity checks, and Dependabot security updates (each needs a separate operator decision).
 4. After the first PR, confirm the `security` workflow runs and enforces.
 5. Optional: delete the 49 local-only Cline checkpoint refs once the rewrite lands (they hold pre-rewrite snapshots).
 
