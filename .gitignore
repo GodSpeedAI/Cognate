@@ -19,3 +19,6 @@ playwright-report/
 
 # Copilot reconstruction capture server runtime data
 validation/reconstructions/copilot/capture/.data/
+
+# Per-developer identity rules for the private-path guard (never committed)
+.githooks/local-identity-rules

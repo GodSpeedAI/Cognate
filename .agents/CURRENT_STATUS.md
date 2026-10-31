@@ -1,47 +1,16 @@
 # Current status
 
-**Status revision:** 75
+**Status revision:** 76
 
-**Summary:** The first push of the EGM bootstrap failed two of the repository's own gates, and both failures were real: the bootstrap had placed contract files where repo tooling assumes generated output or a package directory. packages/proto/test/codegen.test.ts:36 digests the entire regenerated tree against src/gen, so contracts under proto/, proto/cognate/, and packages/proto/src/gen/** failed CG-WIR-001; tests/architecture/docs.test.ts:37 and .github/workflows/package.yml:72 both iterate every entry of packages/ and profiles/ expecting a directory with README.md and AGENTS.md, so packages/EGM.md and profiles/EGM.md failed CG-DOC-001 and the pack job with ENOTDIR. The workspace and profile blueprints moved into the root EGM.md, the proto surface moved into packages/proto/EGM.md, and the generated-boundary contracts were removed, leaving 166 contracts. just verify now passes all 81 gates, and the two CG-SEC-001 and CG-EVT-008 failures seen in the first local run were a stopped local PostgreSQL instance, not the change.
+**Summary:** A full security and privacy audit (secrets, private paths, history, CI, hooks) found no confirmed secrets in tracked content or any reachable history: TruffleHog 3.96.0's only findings were false positives on 64-char sha256 digests in requirements/ledger.yaml, and Gitleaks 8.30.1's 17 historical findings are synthetic test fixture literals (a narrow documented allowlist entry covers one of them). The real exposure was machine identity: 277 /home/<user>/ occurrences across 49 tracked files and 370 of 408 commits, plus 49 local-only cline checkpoint refs. Remediation replaced hardcoded repo paths with script-location resolution in functional scripts, <repo-root>/repository-relative values in manifests, and ~/-relative notation in evidence records; just verify passes 81/81 gates after the change. Prevention: .githooks/pre-commit (core.hooksPath, activate with just hooks-install) runs a dependency-free private-path guard (scripts/check-private-paths.sh, --staged for hook and --range for CI) plus Gitleaks over the staged index, fail-closed, offline, ~0.5s; .github/workflows/security.yml scans introduced commits with TruffleHog plus the same guard on PRs and main pushes, with a manual full-history audit job. An adversarial suite in an isolated repository passes 15/15 including staged-only secret detection, missing-scanner and scanner-crash fail-closed, redaction, and idempotency. History: git-filter-repo 2.47.0 --replace-text was rehearsed on an isolated mirror clone; 407/408 commits rewrote clean with zero residual private paths (one local-only checkpoint commit pruned as it became empty); applying it to origin and force-pushing is NOT done and requires explicit operator approval (procedure held in the audit workspace). The sanitized report is docs/security/repository-hygiene.md.
 
-The EGM bootstrap added one contract file per directory rather than replacing the existing
-pages. `target_filename` was set to `EGM.md`, so `README.md` was never a target. That
-mattered: `scripts/check-readmes.mjs` enforces a mechanical standard over the 45 published
-package READMEs, and the bootstrap has no business rewriting a landing page whose audience
-is a developer arriving from npmjs.com. The 173 new files sit beside the READMEs and
-describe code boundaries instead of install instructions.
 
-The scope came from the skill's own pruning rules, not from a hand-picked list. Breadth-
-first discovery skipped `.git`, `node_modules`, build output, and test-only directories;
-what remained was 107 directories holding their own source plus 70 intermediate blueprint
-directories. Every contract grounds its `Interface`, `Invariants`, and `Side Effects` in
-cited source locations rather than in directory names, which is the only property that
-makes the tree worth keeping.
+The real exposure was machine identity, not credentials. Tracked content contained 277 `/home/<user>/` occurrences across 49 files (developer home layout, toolchain binary locations, references to unrelated private local projects), 14 bare developer-username mentions in 11 files (npm session records, machine temp-dir names, now a neutral `<operator>` placeholder), 370 of 408 commits carried such paths across 52 files, and 49 local-only `refs/cline/checkpoints/*` refs hold pre-remediation snapshots. Remediation made the affected files portable without changing behavior: functional scripts (capture/compare drivers, the mock runner, the Bun-discovery list, the DomainForge adapter check, the fidelity-QA script) now resolve paths from their own location or existing env overrides; the reference manifests use `<repo-root>`/repository-relative values; evidence records and logs use `~/` notation. `just verify` passes 81/81 gates with these changes, `just typecheck` exits 0, and the touched reconstruction gates pass standalone.
 
-The first version of this work failed two of the repository's own gates, and both failures
-were instructive. `packages/proto/test/codegen.test.ts:36` digests the entire regenerated
-tree and compares it against `src/gen`, so a contract file placed anywhere under `proto/`
-or `packages/proto/src/gen/` makes CG-WIR-001 fail. And both
-`tests/architecture/docs.test.ts:37` and `.github/workflows/package.yml:72` iterate every
-entry of `packages/` and `profiles/` expecting a package directory, so a file dropped
-directly in either one fails CG-DOC-001 and breaks packing with `ENOTDIR`. Six contract
-files moved or disappeared to respect those boundaries: the workspace and profile blueprints
-folded into the root `EGM.md`, the proto surface folded into `packages/proto/EGM.md`, and the
-generated-tree contracts were deleted rather than left where no tool expects them.
+Prevention is operational and was validated adversarially. `.githooks/pre-commit` — activated per clone with `just hooks-install` (sets `core.hooksPath`) — runs a dependency-free private-path guard (`scripts/check-private-paths.sh`, `--staged` mode) and Gitleaks over a temp export of the staged index, so partially staged files are scanned exactly as committed and unstaged edits cannot mask findings. It fails closed on a missing gitleaks, scanner errors, and any finding including unverified ones; it is offline and takes ~0.5 s on a small staged set. `.github/workflows/security.yml` scans the commits a PR or main push introduces (TruffleHog, pinned action SHA) plus the same private-path guard in `--range` mode, with a separate manual full-history audit job and least-privilege permissions. An isolated-repository adversarial suite passes 15/15, including staged-only secret detection, missing-scanner and scanner-crash fail-closed behavior, redacted output, space-containing filenames, Windows-escaped and `file://`-URI paths, and idempotent re-setup.
 
-A drift audit of 12 contracts against source found 7 issues. Six were real and are fixed:
-the root blueprint misdescribed `examples/`, `actualize/`, and what `check-substrate.ts`
-enforces about the human status view; the workspace blueprint called 18 packages unlinked
-when all 18 have contracts; `packages/events/EGM.md` denied a child contract that exists;
-and `packages/ui-astryx/EGM.md` claimed `src/` had no contract. The seventh was an arithmetic
-error in the audit itself and is recorded as withdrawn. A repo-wide sweep additionally
-linked 13 blueprints that had left an existing child unlinked. Both sweeps now report zero.
+History: `git-filter-repo 2.47.0 --replace-text` (two literal rules, `/home/<user>/projects/<repo>` → `~/projects/<repo>` and the remaining `/home/<user>` → `~`) was rehearsed on an isolated mirror clone covering every ref. 407/408 commits rewrote with zero residual private paths and zero residual username occurrences by `git grep` over all rewritten commits, and independent TruffleHog and Gitleaks re-scans return only the known synthetic/false-positive findings; the one pruned commit was a local-only checkpoint commit whose entire change became redundant under the rewrite. **Applying the rewrite to origin and force-pushing was not done and requires explicit operator approval**; the procedure, consequences (every commit hash changes, open PRs, the second local worktree, 700+ tags) and rollback are recorded in the audit workspace outside the repository. The sanitized report is `docs/security/repository-hygiene.md`.
 
-What this does not claim: only 12 of 166 contracts were audited at claim level, no
-`## Verification` command inside a contract was executed, and nothing yet ranges over these
-files mechanically. Until `just verify` covers them, `EGM.md` and the code can drift apart
-again without a gate noticing.
+What this does not claim: origin still contains private paths in its history until the rewrite is approved and applied; GitHub secret scanning and push protection remain disabled on this public repository and were not changed (remote settings need authorization); CI enforcement is YAML-valid but unobserved until the first PR runs it; TruffleHog ran without network credential verification, and GitHub-hosted artifacts not fetched locally (cached PR refs, releases, forks) were not scanned. TruffleHog's auto-updater fails in this environment and aborts scans silently, so all tooling passes `--no-update` — a stale local binary is a standing limitation.
 
-Next: decide whether the contracts join `just verify`, and either audit the remaining 154 at
-claim level or delete the ones the team will not maintain. Ledger freeze remains an operator
-decision.
+Next: commit the remediation and prevention changes (the working tree holds all of it; nothing was committed, per repository git policy); approve or decline the history rewrite; authorize enabling GitHub-native secret scanning and push protection; observe the `security` workflow enforcing on the first PR; optionally delete the 49 local-only cline checkpoint refs once the rewrite lands.

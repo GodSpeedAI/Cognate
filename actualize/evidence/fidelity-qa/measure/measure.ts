@@ -1,12 +1,12 @@
 // Fidelity QA measurement for the Cognate landing site (read-only against landing/).
-// Run: bun ~/projects/cognate/actualize/evidence/fidelity-qa/measure/measure.ts
+// Run: bun actualize/evidence/fidelity-qa/measure/measure.ts (from the repository root)
 // Requires the static server on 127.0.0.1:4455 serving landing/dist.
-import { chromium } from '~/projects/cognate/landing/node_modules/playwright/index.mjs';
+import { chromium } from '../../../../landing/node_modules/playwright/index.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
 const BASE = 'http://127.0.0.1:4455';
-const OUT = '~/projects/cognate/actualize/evidence/fidelity-qa/measure';
-const DIST = '~/projects/cognate/landing/dist';
+const OUT = new URL('.', import.meta.url).pathname;
+const DIST = new URL('../../../../landing/dist', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
 // Token values from actualize/artifacts/direction/creative-direction.md, with the accepted light

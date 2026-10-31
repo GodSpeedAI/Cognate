@@ -68,7 +68,7 @@ const PORTS = { ui: 3000, agent: 8123, mock: 4012, injector: 13361 };
 // immediately with "Bun is not defined", leaving the UI pointed at a dead injector).
 const BUN = (() => {
   if (process.env.COGNATE_BUN) return process.env.COGNATE_BUN;
-  for (const c of ["~/.local/bin/bun", "/usr/local/bin/bun", "/usr/bin/bun"]) {
+  for (const c of ["/usr/local/bin/bun", "/usr/bin/bun"]) {
     try {
       if (fs.existsSync(c)) return c;
     } catch {}

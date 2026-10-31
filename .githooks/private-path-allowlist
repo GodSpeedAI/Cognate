@@ -1,0 +1,12 @@
+# Private-path guard allowlist — narrow, auditable exceptions.
+#
+# Each non-comment line is an extended regex; a staged line matching BOTH the
+# private-path signature AND one of these regexes is not reported.
+#
+# Rules for entries here:
+# - Keep each entry as narrow as possible (anchor it to a specific literal or
+#   path), never a broad path family.
+# - Document why the entry exists in the comment above it.
+# - Never place real developer usernames or real private paths here.
+#
+# (No exceptions are currently needed.)

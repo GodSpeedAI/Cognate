@@ -1,7 +1,8 @@
-import { loadSemanticProjection } from "~/projects/cognate/packages/domainforge/src/index.ts";
+import { loadSemanticProjection } from "../../../../../../../packages/domainforge/src/index.ts";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const path = "~/projects/cognate/validation/reconstructions/deepseek-harness/cognate/.sea/interaction/interaction-model.sea";
+const path = fileURLToPath(new URL("../interaction-model.sea", import.meta.url));
 const source = readFileSync(path, "utf8");
 const { projection, errors } = loadSemanticProjection(source, { uri: `file://${path}` });
 

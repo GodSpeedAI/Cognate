@@ -29,5 +29,5 @@ Blueprint directory for `@godspeedai/cognate-cli`, which implements `cognate cre
 
 ## Verification
 
-- This package has no `test/` directory; the workspace gate is `cd ~/projects/cognate && bun run check` `[package.json:scripts]`
+- This package has no `test/` directory; the workspace gate is `cd <repo-root> && bun run check` `[package.json:scripts]`
 - End-to-end coverage for `create`/`dev` lives in `tests/integration/cli-create.test.ts`, outside this package.
