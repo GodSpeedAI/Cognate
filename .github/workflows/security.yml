@@ -53,7 +53,12 @@ jobs:
           fetch-depth: 0
       - uses: trufflesecurity/trufflehog@31ce31ee1abbcc7dc8eee5764c17121c3044c8b2
         with:
-          extra_args: --only-verified=false
+          # ProtocolsIO is excluded: its detector false-positives on the 64-char
+          # sha256 content digests in requirements/ledger.yaml (classified in
+          # docs/security/repository-hygiene.md). Gitleaks and the private-path
+          # guard still cover that file. Default verification behavior is kept:
+          # unverified findings are reported, never silently accepted.
+          extra_args: --exclude-detectors=ProtocolsIO
 
   private-paths:
     name: private-path guard
