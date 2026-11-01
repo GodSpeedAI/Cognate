@@ -1,0 +1,17 @@
+# Gitleaks configuration for the Cognate repository.
+#
+# Extends gitleaks' default rule set. The only local entries below are narrow
+# allowlists for SYNTHETIC, non-secret fixture literals used by tests: the
+# obviously-fake "sk-test-cognate-…" provider-test key, and the "dummy-key-N"
+# literal the reconstruction capture scripts pass to the LOCAL mock model
+# server (127.0.0.1). Neither is ever a credential. Do not add broader
+# exemptions; document anything you add.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic test fixture literals (not credentials)"
+regexes = [
+    '''sk-test-cognate-[0-9a-f]{6}''',
+    '''dummy-key-[0-9]+''',
+]

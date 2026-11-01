@@ -1,6 +1,6 @@
 {
   "repository": "deepseek-ai/deepseek-harness",
-  "clonePath": "~/projects/cognate/.tmp/ref/deepseek-harness",
+  "clonePath": "<repo-root>/.tmp/ref/deepseek-harness",
   "commit": "477b4f420553e8a52c2fbccc464d7561b239c443",
   "packageName": "@deepseek-ai/dsh-root",
   "packageVersion": "0.1.7-rc.2",
@@ -34,7 +34,7 @@
   "dataDirIsolation": {
     "envVar": "DSH_HOME",
     "verifiedIsolated": true,
-    "isolatedPath": "~/projects/cognate/.tmp/ref/dsh-home",
+    "isolatedPath": "<repo-root>/.tmp/ref/dsh-home",
     "writtenContents": [
       ".anonymous-user-id",
       ".credentials.yaml",
@@ -50,7 +50,7 @@
     "tool": "Playwright",
     "packageVersionInRepo": "playwright@1.61.1 and playwright@1.63.0-alpha (both present only inside the pnpm virtual store, not hoisted to root node_modules)",
     "chromiumUsed": "chromium-1243 (host cache at ~/.cache/ms-playwright/chromium-1243), launched via explicit executablePath because playwright@1.61.1's own expected revision (chromium_headless_shell-1228) was not present on the host",
-    "screenshot": "~/projects/cognate/validation/reconstructions/deepseek-harness/reference/screenshots/00-smoke.png"
+    "screenshot": "validation/reconstructions/deepseek-harness/reference/screenshots/00-smoke.png"
   },
   "os": {
     "platform": "linux",

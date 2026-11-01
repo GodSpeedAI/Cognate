@@ -4,7 +4,7 @@
   "commit": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
   "commitTimestamp": "2026-09-28T10:26:02Z",
   "captureTimestamp": "2026-09-28T08:55:35-04:00",
-  "clonePath": "~/projects/cognate/.tmp/ref/copilotkit",
+  "clonePath": "<repo-root>/.tmp/ref/copilotkit",
   "checkout": {
     "archiveCommit": "6e452e5342db53e9ab23d8b3c0a4592ec25ff554",
     "format": "GitHub commit tarball",

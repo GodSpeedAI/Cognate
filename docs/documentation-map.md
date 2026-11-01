@@ -106,6 +106,7 @@ adding, renaming, or removing a page means editing this list.
 | [ui.md](ui.md) | Reference: client, React, Astryx | the client surface, the hook list, the Astryx contract, the E2E note | presentation |
 | [protocols.md](protocols.md) | Reference: each protocol | protobuf, Connect, AG-UI, MCP, A2A — surface by surface | wire-and-protocols |
 | [security.md](security.md) | Reference: the trust boundaries | default deny, invocation-time authorization, tenant isolation, retrieval authorization, secrets, erasure, protocol limits, known gaps | concepts, kernel |
+| [security/repository-hygiene.md](security/repository-hygiene.md) | Reference: repository security posture | secret/private-path audit findings, remediation state, the pre-commit and CI leak-prevention controls, history-rewrite status | security |
 | [extensions.md](extensions.md) | How-to: the whole extension surface | capabilities, model providers, the adapter table, `defineProfile`, the copilot and harness contracts | concepts |
 
 ## Architecture decisions

@@ -1,0 +1,87 @@
+# Security scanning: secret detection and private-path protection.
+#
+# - Pull requests and pushes to main scan ONLY the commits they introduce
+#   (base..head), so routine commits never trigger a redundant full-history
+#   scan. The full-history audit runs on demand via workflow_dispatch.
+# - Fail closed: scanner errors and unverified high-confidence findings both
+#   fail the job. Local pre-commit hooks (core.hooksPath=.githooks) apply the
+#   same policies earlier in the loop; CI is the authoritative control because
+#   local hooks can be bypassed.
+# - Output is redacted (gitleaks --redact; TruffleHog reports locations, not
+#   values, in its action summary).
+name: security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: secret scan (introduced commits)
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # Pinned: actions/checkout v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      # Pinned: trufflesecurity/trufflehog v3.99.7. The action already passes
+      # --no-update internally; do not repeat it in extra_args.
+      - uses: trufflesecurity/trufflehog@31ce31ee1abbcc7dc8eee5764c17121c3044c8b2
+        with:
+          base: ${{ github.event.pull_request.base.sha || github.event.before }}
+          head: ${{ github.head_ref || github.sha }}
+
+  secrets-full-history:
+    name: secret scan (full-history audit, manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - uses: trufflesecurity/trufflehog@31ce31ee1abbcc7dc8eee5764c17121c3044c8b2
+        with:
+          # ProtocolsIO is excluded: its detector false-positives on the 64-char
+          # sha256 content digests in requirements/ledger.yaml (classified in
+          # docs/security/repository-hygiene.md). Gitleaks and the private-path
+          # guard still cover that file. Default verification behavior is kept:
+          # unverified findings are reported, never silently accepted.
+          extra_args: --exclude-detectors=ProtocolsIO
+
+  private-paths:
+    name: private-path guard
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Scan files changed by this PR/push for private paths
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          # A zero "before" SHA (new branch / first push) falls back to the root commit.
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ] || [ -z "$BASE" ]; then
+            BASE=$(git rev-list --max-parents=0 HEAD)
+          fi
+          git cat-file -e "$BASE^{commit}" 2>/dev/null || {
+            echo "base commit $BASE not reachable; falling back to root commit"
+            BASE=$(git rev-list --max-parents=0 HEAD)
+          }
+          bash scripts/check-private-paths.sh --range "$BASE" "$GITHUB_SHA"

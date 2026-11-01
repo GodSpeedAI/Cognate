@@ -3,7 +3,7 @@
 // Gate command (green standalone from a cold start; no Playwright, no fixed ports, no external
 // service — the reconstruction server is started here on an ephemeral port with a throwaway home):
 //
-//   cd ~/projects/cognate/validation/reconstructions/copilot && bun test tests/protocol/
+//   cd validation/reconstructions/copilot && bun test tests/protocol/
 //
 // What is proven, against the REAL reconstruction endpoint (cognate/src/server.ts wiring
 // @godspeedai/cognate-ag-ui's createAgUiHandler, with every canonical journey agent registered):

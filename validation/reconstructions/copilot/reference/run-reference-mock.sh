@@ -9,7 +9,8 @@
 # Usage:  ./run-reference-mock.sh [cold-install|start|probe]
 set -uo pipefail
 
-REF=~/projects/cognate/.tmp/ref/copilotkit
+REPO_ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
+REF=$REPO_ROOT/.tmp/ref/copilotkit
 STARTER=$REF/examples/integrations/langgraph-js
 MOCK_BIN=$REF/showcase/scripts/node_modules/.bin
 MOCK_FIXTURES=$REF/showcase/aimock

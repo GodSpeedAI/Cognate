@@ -14,7 +14,7 @@ import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 
-const ROOT = "~/projects/cognate/validation/reconstructions/deepseek-harness";
+const ROOT = new URL("../../", import.meta.url).pathname;
 const VIEWPORTS = ["desktop", "laptop"] as const;
 
 interface Row {

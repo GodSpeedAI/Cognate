@@ -122,6 +122,10 @@ sea-forge-live:
     [ "$status" -eq 0 ] || fail "tests failed"
     if echo "$out" | grep -Eq '^ *[1-9][0-9]* skip'; then fail "tests were skipped; a skip is not a pass"; fi
 
+# Activate the committed pre-commit hooks for this clone (idempotent; run once after clone)
+hooks-install:
+    bash scripts/install-security-hooks.sh
+
 # Launch the DeepSeek reconstruction harness (mock model on :4010, workspace, and Cognate Console on :3180)
 harness-up *args:
     bun scripts/harness.ts up {{args}}

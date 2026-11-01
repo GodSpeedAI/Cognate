@@ -25,7 +25,7 @@ const width = Number(widthStr);
 const height = Number(heightStr);
 const port = Number(portStr);
 
-const ROOT = "~/projects/cognate/validation/reconstructions/deepseek-harness";
+const ROOT = new URL("../../", import.meta.url).pathname;
 const SHOT_DIR = `${ROOT}/reference/screenshots/${viewportName}`;
 const ARIA_DIR = `${ROOT}/reference/observations/aria`;
 mkdirSync(SHOT_DIR, { recursive: true });

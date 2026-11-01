@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Cognate pre-commit: staged-content secret scan + private-path guard.
+#
+# - Operates on the staged index (what will actually be committed), not the
+#   working tree, and never scans full repository history.
+# - Fails closed: a missing gitleaks, a scanner error, or any finding (verified
+#   or unverified) blocks the commit. Offline by design: gitleaks is purely
+#   static and never contacts a network.
+# - Output is redacted; raw secret values and private-path usernames are
+#   never printed.
+#
+# Activate: bash scripts/install-security-hooks.sh (sets core.hooksPath=.githooks).
+set -uo pipefail
+
+TOP="$(git rev-parse --show-toplevel)" || exit 1
+BLOCKED=0
+
+# --- 1) Private-path / machine-identity guard (staged content) -------------
+if ! bash "$TOP/scripts/check-private-paths.sh" --staged; then
+    BLOCKED=1
+fi
+
+# --- 2) Secret scan (gitleaks over a temp export of the staged index) ------
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "pre-commit: gitleaks is required but not installed; commit blocked (fail closed)." >&2
+    echo "  Install gitleaks 8.x (https://github.com/gitleaks/gitleaks#installing), then retry." >&2
+    exit 1
+fi
+
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+while IFS= read -r -d '' f; do
+    case "$f" in
+        */node_modules/* | node_modules/* | .tmp/*) continue ;;
+        *.png | *.jpg | *.jpeg | *.gif | *.ico | *.webp | *.woff | *.woff2 | \
+            *.ttf | *.otf | *.pdf | *.zip | *.tgz | *.gz | *.xz | *.node | \
+            *.sqlite | *.db | *.sea) continue ;;
+    esac
+    dir="$TMP/$(dirname "$f")"
+    mkdir -p "$dir"
+    # Export the INDEX version, so partially staged files are scanned exactly
+    # as they will be committed and unstaged edits cannot mask findings.
+    if ! git show ":$f" > "$TMP/$f" 2>/dev/null; then
+        echo "pre-commit: failed to read staged content of $f; commit blocked (fail closed)." >&2
+        exit 1
+    fi
+done < <(git diff --cached --name-only -z --diff-filter=ACMR)
+
+GITLEAKS_OUT="$TMP/gitleaks.out"
+set +e
+gitleaks dir "$TMP" --no-banner --redact \
+    --config "$TOP/.gitleaks.toml" > "$GITLEAKS_OUT" 2>&1
+rc=$?
+set -e 2>/dev/null || true
+if [ "$rc" != 0 ]; then
+    BLOCKED=1
+    if [ "$rc" = 1 ] && [ -s "$GITLEAKS_OUT" ]; then
+        echo "pre-commit: potential secret(s) detected in staged content (redacted):" >&2
+        head -40 "$GITLEAKS_OUT" >&2
+    else
+        echo "pre-commit: gitleaks failed unexpectedly (exit $rc); commit blocked (fail closed)." >&2
+        head -10 "$GITLEAKS_OUT" >&2
+    fi
+fi
+
+if [ "$BLOCKED" = 1 ]; then
+    echo "pre-commit: commit blocked. Fix the issues above, or (for genuine, narrow" >&2
+    echo "  exceptions) update .githooks/private-path-allowlist / .gitleaks.toml with a documented rule." >&2
+    exit 1
+fi
+
+exit 0
