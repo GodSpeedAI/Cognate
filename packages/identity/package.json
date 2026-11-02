@@ -1,0 +1,28 @@
+{
+  "name": "@godspeed/identity",
+  "version": "0.1.0",
+  "description": "Shared operator identity contract: pairing, WebAuthn passkey verification, durable operator identity, sessions, devices and execution posture.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodSpeedAI/Cognate.git",
+    "directory": "packages/identity"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@godspeedai/cognate-events": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*"
+  },
+  "devDependencies": {
+    "@godspeedai/cognate-store-memory": "workspace:*"
+  }
+}
