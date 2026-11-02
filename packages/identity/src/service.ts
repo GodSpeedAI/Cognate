@@ -15,9 +15,9 @@ import type { DurableStore, Json, RecordWrite, StoredRecord } from "@godspeedai/
 import type { Caller } from "@godspeedai/cognate-runtime-api";
 import { assertRelyingParty, verifyAssertion, type RelyingParty, type VerifiedRegistration } from "./webauthn.ts";
 
-export const OPERATORS = "identity.operators";
-export const SESSIONS = "identity.sessions";
-export const DEVICES = "identity.devices";
+export const OPERATORS = "identity-operators";
+export const SESSIONS = "identity-sessions";
+export const DEVICES = "identity-devices";
 export const SESSION_TOKEN_PREFIX = "idt1.";
 export const DEFAULT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const MIN_TTL_MS = 60_000;
