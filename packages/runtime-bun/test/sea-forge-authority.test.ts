@@ -367,9 +367,9 @@ describe("typed SEA-Forge mediation calls", () => {
     });
 
     test("parses the cognate copy of the golden fixture into two rows, none excluded", async () => {
-      // copy record: source pending sea-rs rename-apart PR; sha256 5a263f8b98a14aecd57c62eded65c0d6a4d273f56f40aa2c06c9bf7303bf6f06
+      // copy record: byte copy of sea-rs contracts/fixtures/approval-standing.json at 5d1338c7; sha256 a11a1733811272b50bc4c9d78afd7ddebc95f1f70bcf56e9c4d359fbe997f48d
       const bytes = readFileSync(join(import.meta.dir, "fixtures", "approval-standing.json"));
-      expect(createHash("sha256").update(bytes).digest("hex")).toBe("5a263f8b98a14aecd57c62eded65c0d6a4d273f56f40aa2c06c9bf7303bf6f06");
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe("a11a1733811272b50bc4c9d78afd7ddebc95f1f70bcf56e9c4d359fbe997f48d");
       const fixture = JSON.parse(bytes.toString("utf8")) as Obj[];
       expect(fixture.length).toBe(2);
       for (const r of fixture) expect(Object.keys(r).length).toBe(11);

@@ -1,28 +1,28 @@
 [
   {
     "approval_id": "apr-cep:op-0001",
-    "state": "pending",
-    "requester": "cognate-service",
-    "world_ref": "world:horizon@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expires_at": "2026-11-05T12:00:00+00:00",
     "operation_kind": "action",
     "operation_name": "run.start",
-    "resource_id": "agent.echo",
-    "subject_actor_ref": "actor:tenant-a/alice",
     "request_ref": "env-authority_request-op-0001",
-    "expires_at": "2026-11-05T12:00:00+00:00",
-    "resolved_by": null
+    "requester": "cognate-service",
+    "resolved_by": null,
+    "resource_id": "agent.echo",
+    "state": "pending",
+    "subject_actor_ref": "actor:tenant-a/alice",
+    "world_ref": "world:horizon@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
   {
     "approval_id": "apr-cep:op-0002",
-    "state": "approved",
-    "requester": "cognate-service",
-    "world_ref": "world:horizon@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expires_at": "2026-11-05T13:30:00+00:00",
     "operation_kind": "action",
     "operation_name": "run.start",
-    "resource_id": "agent.echo",
-    "subject_actor_ref": "actor:tenant-a/alice",
     "request_ref": "env-authority_request-op-0002",
-    "expires_at": "2026-11-05T13:30:00+00:00",
-    "resolved_by": "actor:operator"
+    "requester": "cognate-service",
+    "resolved_by": "actor:operator",
+    "resource_id": "agent.echo",
+    "state": "approved",
+    "subject_actor_ref": "actor:tenant-a/alice",
+    "world_ref": "world:horizon@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   }
 ]
