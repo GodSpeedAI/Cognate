@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-react-v0.8.0...cognate-react-v0.9.0) (2026-11-05)
+
+
+### Miscellaneous Chores
+
+* **cognate-react:** Synchronize cognate SDK packages versions
+
 ## [0.8.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-react-v0.7.1...cognate-react-v0.8.0) (2026-10-26)
 
 
