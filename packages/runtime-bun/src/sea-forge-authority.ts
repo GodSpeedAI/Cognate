@@ -430,10 +430,15 @@ export class SeaForgeAuthority implements GovernanceAuthority {
   }
 
   async decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference, carry?: CarriedWork, delegation?: SeaForgeDelegation): Promise<GovernanceDecision> {
+    if (delegation) {
+      const who = delegation.onBehalfOf as unknown;
+      if (!isActor(who)) return unknown("delegation refused: onBehalfOf must carry a non-empty actor_id and role");
+      if (who.actor_id === this.actor.actor_id) return unknown("delegation refused: on_behalf_of cannot name the service identity");
+    }
     const sent = buildAuthorityRequest(operation, worldRef, new Date(), approval, carry);
     let response: unknown;
     try {
-      response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor, ...(delegation ? { on_behalf_of: { ...delegation.onBehalfOf } } : {}) }, this.timeoutMs, this.maxBytes);
+      response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor, ...(delegation ? { on_behalf_of: { actor_id: delegation.onBehalfOf.actor_id, role: delegation.onBehalfOf.role } } : {}) }, this.timeoutMs, this.maxBytes);
     } catch (error) {
       return unknown(`sea-forge unreachable: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -530,6 +535,7 @@ export class SeaForgeAuthority implements GovernanceAuthority {
    * counted in `excluded`. The response may be up to `LIST_RESPONSE_LIMIT`; beyond it the call fails closed.
    */
   async listApprovals(options: { readonly timeoutMs?: number } = {}): Promise<ApprovalListResult> {
+    if (!validTimeout(options.timeoutMs)) return invalid("timeoutMs must be a finite number > 0");
     const sent = await this.call({ verb: "authority_approvals", ...(this.explicitActor ? { actor: this.explicitActor } : {}) }, options.timeoutMs, LIST_RESPONSE_LIMIT);
     if (!sent.ok) return sent;
     const rows = sent.body.approvals;
@@ -547,10 +553,12 @@ export class SeaForgeAuthority implements GovernanceAuthority {
     if (typeof input?.approvalId !== "string" || !APPROVAL_ID.test(input.approvalId)) return invalid("approvalId must match ^[A-Za-z0-9_.:-]{1,200}$");
     if (input.resolution !== "approved" && input.resolution !== "rejected") return invalid("resolution must be approved or rejected");
     if (!isActor(input.onBehalfOf)) return invalid("onBehalfOf must carry a non-empty actor_id and role");
+    if (input.onBehalfOf.actor_id === this.actor.actor_id) return invalid("on_behalf_of cannot name the service identity");
+    if (!validTimeout(input.timeoutMs)) return invalid("timeoutMs must be a finite number > 0");
     const prefix = this.options.requestIdPrefix;
     if (!prefix) return notConfigured("resolveApproval");
     const sent = await this.call(
-      { verb: "authority_approval", approval_id: input.approvalId, resolution: input.resolution, request_id: `${prefix}:${input.approvalId}:${input.resolution}`, actor: this.actor, on_behalf_of: { ...input.onBehalfOf } },
+      { verb: "authority_approval", approval_id: input.approvalId, resolution: input.resolution, request_id: `${prefix}:${input.approvalId}:${input.resolution}`, actor: this.actor, on_behalf_of: { actor_id: input.onBehalfOf.actor_id, role: input.onBehalfOf.role } },
       input.timeoutMs,
       this.maxBytes,
     );
@@ -562,10 +570,11 @@ export class SeaForgeAuthority implements GovernanceAuthority {
     if (!str(input?.operationId)) return invalid("operationId must be a non-empty string");
     if (!str(input.discriminationObservationId)) return invalid("discriminationObservationId must be a non-empty string");
     if (!strings(input.verificationObservationIds)) return invalid("verificationObservationIds must be an array of non-empty strings");
+    if (!validTimeout(input.timeoutMs)) return invalid("timeoutMs must be a finite number > 0");
     const prefix = this.options.requestIdPrefix;
     if (!prefix) return notConfigured("authorityClosure");
     const sent = await this.call(
-      { verb: "authority_closure", operation_id: input.operationId, discrimination_observation_id: input.discriminationObservationId, verification_observation_ids: input.verificationObservationIds, request_id: `${prefix}:closure:${input.operationId}`, actor: this.actor },
+      { verb: "authority_closure", operation_id: input.operationId, discrimination_observation_id: input.discriminationObservationId, verification_observation_ids: [...input.verificationObservationIds], request_id: `${prefix}:closure:${input.operationId}`, actor: this.actor },
       input.timeoutMs,
       this.maxBytes,
     );
@@ -591,6 +600,7 @@ export class SeaForgeAuthority implements GovernanceAuthority {
   }
 }
 
+const validTimeout = (value: unknown): boolean => value === undefined || (typeof value === "number" && Number.isFinite(value) && value > 0);
 const invalid = (error: string): AuthorityFailure => ({ ok: false, errorClass: "invalid_input", error });
 const notConfigured = (method: string): AuthorityFailure => ({ ok: false, errorClass: "not_configured", error: `${method} needs a requestIdPrefix` });
 const isActor = (value: unknown): value is SeaForgeActor => isObj(value) && !!str(value.actor_id) && !!str(value.role);

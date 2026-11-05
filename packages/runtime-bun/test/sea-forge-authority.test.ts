@@ -661,6 +661,64 @@ describe("typed SEA-Forge mediation calls", () => {
     });
   });
 
+  describe("review round 1", () => {
+    const ARGS = { approvalId: "apr-1", resolution: "approved" as const };
+    test("resolveApproval refuses the service identity as on_behalf_of before sending", async () => {
+      const sf = scripted(() => ok());
+      expect(await new SeaForgeAuthority({ socketPath: sf.path, requestIdPrefix: "t" }).resolveApproval({ ...ARGS, onBehalfOf: { actor_id: "cognate-service", role: "operator" } })).toMatchObject({ ok: false, errorClass: "invalid_input" });
+      const custom = { actor_id: "svc-y", role: "service" };
+      expect(await new SeaForgeAuthority({ socketPath: sf.path, requestIdPrefix: "t", actor: custom }).resolveApproval({ ...ARGS, onBehalfOf: { actor_id: "svc-y", role: "operator" } })).toMatchObject({ ok: false, errorClass: "invalid_input" });
+      expect(sf.connections).toBe(0);
+    });
+
+    test("delegated decide validates onBehalfOf and refuses the service identity with zero bytes sent", async () => {
+      const sf = scripted((request) => JSON.stringify(decisionFor(request, "allow")));
+      const client = new SeaForgeAuthority({ socketPath: sf.path });
+      for (const bad of [undefined, null, "op", {}, { actor_id: "", role: "operator" }, { actor_id: "a", role: "" }, { actor_id: 1, role: "operator" }, { actor_id: "cognate-service", role: "operator" }]) {
+        expect((await client.decide(action, WORLD, undefined, undefined, { onBehalfOf: bad as never })).disposition, JSON.stringify(bad)).toBe("unknown");
+      }
+      expect(sf.connections).toBe(0);
+    });
+
+    test("on_behalf_of is built explicitly: extra caller keys never reach the wire", async () => {
+      const sf = scripted((request) => (request.verb === "authority_request" ? JSON.stringify(decisionFor(request, "allow")) : ok()));
+      const client = new SeaForgeAuthority({ socketPath: sf.path, requestIdPrefix: "t" });
+      const dirty = { actor_id: "actor:operator", role: "operator", secret: "x" };
+      await client.resolveApproval({ ...ARGS, onBehalfOf: dirty });
+      await client.decide(action, WORLD, undefined, undefined, { onBehalfOf: dirty });
+      expect(sf.lines[0]).toContain('"on_behalf_of":{"actor_id":"actor:operator","role":"operator"}');
+      expect(sf.lines[1]).toContain('"on_behalf_of":{"actor_id":"actor:operator","role":"operator"}}');
+      expect(sf.lines.some((l) => l.includes("secret"))).toBe(false);
+    });
+
+    test("a per-call timeoutMs that is not a finite number > 0 is invalid_input before sending", async () => {
+      const sf = scripted(() => ok({ approvals: [], b: 1, c: 1, committed_at: "t", on_time: true }));
+      const client = new SeaForgeAuthority({ socketPath: sf.path, requestIdPrefix: "t" });
+      for (const timeoutMs of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, "5" as never]) {
+        expect(await client.listApprovals({ timeoutMs })).toMatchObject({ ok: false, errorClass: "invalid_input" });
+        expect(await client.resolveApproval({ ...ARGS, onBehalfOf: OPERATOR, timeoutMs })).toMatchObject({ ok: false, errorClass: "invalid_input" });
+        expect(await client.authorityClosure({ operationId: "o", discriminationObservationId: "d", verificationObservationIds: [], timeoutMs })).toMatchObject({ ok: false, errorClass: "invalid_input" });
+      }
+      expect(sf.connections).toBe(0);
+    });
+
+    test("closure sends a copy of verificationObservationIds", async () => {
+      const sf = scripted(() => ok({ b: 1, c: 1, committed_at: "t", on_time: true }));
+      const ids = ["v1"];
+      await new SeaForgeAuthority({ socketPath: sf.path, requestIdPrefix: "t" }).authorityClosure({ operationId: "o", discriminationObservationId: "d", verificationObservationIds: ids });
+      expect(sf.seen[0]!.verification_observation_ids).toEqual(["v1"]);
+    });
+
+    test("response_too_large and malformed_response are attempted exactly once", async () => {
+      const big = scripted(() => ok({ pad: "x".repeat(2_000) }));
+      expect(await new SeaForgeAuthority({ socketPath: big.path, requestIdPrefix: "t", maxResponseBytes: 100 }).resolveApproval({ ...ARGS, onBehalfOf: OPERATOR })).toMatchObject({ errorClass: "response_too_large" });
+      expect(big.lines.length).toBe(1);
+      const bad = scripted(() => "not json");
+      expect(await new SeaForgeAuthority({ socketPath: bad.path }).listApprovals()).toMatchObject({ errorClass: "malformed_response" });
+      expect(bad.lines.length).toBe(1);
+    });
+  });
+
   test("existing behaviour is unchanged: an oversized or non-JSON reply still makes decide `unknown`, and a failed approvalState is unknown", async () => {
     expect((await new SeaForgeAuthority({ socketPath: scripted(() => JSON.stringify({ pad: "x".repeat(2000) })).path, maxResponseBytes: 100 }).decide(action, WORLD)).disposition).toBe("unknown");
     expect((await new SeaForgeAuthority({ socketPath: scripted(() => "nope").path }).decide(action, WORLD)).disposition).toBe("unknown");
