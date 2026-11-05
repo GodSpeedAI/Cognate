@@ -12,7 +12,7 @@ export interface SeaForgeAuthorityOptions {
   /** The identity Cognate claims; the server verifies it against the socket peer's uid. */
   readonly actor?: { readonly actor_id: string; readonly role: string };
   readonly timeoutMs?: number;
-  /** Largest response line accepted. */
+  /** Largest response line accepted by single-record calls. `listApprovals` and `approvalState` use `LIST_RESPONSE_LIMIT` instead. */
   readonly maxResponseBytes?: number;
   /**
    * Namespaces the deterministic request ids of `resolveApproval` and `authorityClosure`
@@ -535,6 +535,7 @@ export class SeaForgeAuthority implements GovernanceAuthority {
    * counted in `excluded`. The response may be up to `LIST_RESPONSE_LIMIT`; beyond it the call fails closed.
    */
   async listApprovals(options: { readonly timeoutMs?: number } = {}): Promise<ApprovalListResult> {
+    if (typeof options !== "object" || options === null) return invalid("options must be an object");
     if (!validTimeout(options.timeoutMs)) return invalid("timeoutMs must be a finite number > 0");
     const sent = await this.call({ verb: "authority_approvals", ...(this.explicitActor ? { actor: this.explicitActor } : {}) }, options.timeoutMs, LIST_RESPONSE_LIMIT);
     if (!sent.ok) return sent;

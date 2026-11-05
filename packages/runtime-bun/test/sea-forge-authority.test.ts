@@ -359,6 +359,13 @@ describe("typed SEA-Forge mediation calls", () => {
       expect("request_id" in sf.seen[0]!).toBe(false);
     });
 
+    test("returns invalid_input for a null options argument and sends nothing", async () => {
+      const sf = scripted(() => ok({ approvals: [] }));
+      const r = await new SeaForgeAuthority({ socketPath: sf.path }).listApprovals(null as never);
+      expect(r).toMatchObject({ ok: false, errorClass: "invalid_input" });
+      expect(sf.lines).toEqual([]);
+    });
+
     test("sends the actor when one was explicitly given", async () => {
       const actor = { actor_id: "workbench-service", role: "service" };
       const sf = scripted(() => ok({ approvals: [] }));
