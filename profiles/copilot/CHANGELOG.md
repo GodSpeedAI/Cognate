@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-profile-copilot-v0.8.0...cognate-profile-copilot-v0.9.0) (2026-11-05)
+
+
+### Miscellaneous Chores
+
+* **cognate-profile-copilot:** Synchronize cognate SDK packages versions
+
 ## [0.8.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-profile-copilot-v0.7.1...cognate-profile-copilot-v0.8.0) (2026-10-26)
 
 

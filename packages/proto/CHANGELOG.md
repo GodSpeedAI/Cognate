@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-proto-v0.8.0...cognate-proto-v0.9.0) (2026-11-05)
+
+
+### Bug Fixes
+
+* **egm:** move contracts off the gates they broke ([92161ba](https://github.com/GodSpeedAI/Cognate/commit/92161ba44061b977464615efbda59d2d7ac0617d))
+
 ## [0.8.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-proto-v0.7.1...cognate-proto-v0.8.0) (2026-10-26)
 
 

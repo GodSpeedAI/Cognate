@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.8.0...cognate-runtime-bun-v0.9.0) (2026-11-05)
+
+
+### Features
+
+* **runtime-bun:** typed SEA-Forge approval, closure and delegated-decide calls ([#75](https://github.com/GodSpeedAI/Cognate/issues/75)) ([bb692b3](https://github.com/GodSpeedAI/Cognate/commit/bb692b3b54b68f2c057f48b063cd9f3971df3b3b))
+
 ## [0.8.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.7.1...cognate-runtime-bun-v0.8.0) (2026-10-26)
 
 
