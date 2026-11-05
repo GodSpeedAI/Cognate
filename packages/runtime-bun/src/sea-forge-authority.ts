@@ -14,7 +14,96 @@ export interface SeaForgeAuthorityOptions {
   readonly timeoutMs?: number;
   /** Largest response line accepted. */
   readonly maxResponseBytes?: number;
+  /**
+   * Namespaces the deterministic request ids of `resolveApproval` and `authorityClosure`
+   * (`<prefix>:<approvalId>:<resolution>`, `<prefix>:closure:<operationId>`). Without it those two calls return `not_configured`.
+   */
+  readonly requestIdPrefix?: string;
 }
+
+/** The identity claim SEA-Forge verifies against the socket peer (and the shape of `on_behalf_of`). */
+export interface SeaForgeActor {
+  readonly actor_id: string;
+  readonly role: string;
+}
+
+/** Delegation of one governed decision to a human operator; sent as `on_behalf_of`. */
+export interface SeaForgeDelegation {
+  readonly onBehalfOf: SeaForgeActor;
+}
+
+/** Largest `authority_approvals` response accepted, in UTF-16 code units of the decoded response (bytes for ASCII JSON). */
+export const LIST_RESPONSE_LIMIT = 8 * 1024 * 1024;
+
+export const APPROVAL_STATES = ["pending", "approved", "rejected", "expired", "used"] as const;
+export type ApprovalStandingState = (typeof APPROVAL_STATES)[number];
+
+/** One escalation standing as `ApprovalStanding::to_json` reports it (wire names, snake_case). */
+export interface ApprovalStanding {
+  readonly approval_id: string;
+  readonly state: ApprovalStandingState;
+  readonly requester: string;
+  readonly world_ref: string;
+  readonly operation_kind: string;
+  readonly operation_name: string;
+  readonly resource_id: string;
+  readonly subject_actor_ref: string;
+  readonly request_ref: string;
+  readonly expires_at: string;
+  readonly resolved_by: string | null;
+}
+
+const APPROVAL_ID = /^[A-Za-z0-9_.:-]{1,200}$/;
+
+function text(row: Record<string, unknown>, key: string): string | null {
+  const value = row[key];
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+/** Validate one listing row. Returns null for any row that does not match the SEA-Forge shape (port of Horizon's `parseApproval`). */
+export function parseApprovalStanding(row: unknown): ApprovalStanding | null {
+  if (typeof row !== "object" || row === null || Array.isArray(row)) return null;
+  const r = row as Record<string, unknown>;
+  const approvalId = text(r, "approval_id");
+  const state = text(r, "state");
+  const requester = text(r, "requester");
+  const worldRef = text(r, "world_ref");
+  const kind = text(r, "operation_kind");
+  const name = text(r, "operation_name");
+  const resource = text(r, "resource_id");
+  const subject = text(r, "subject_actor_ref");
+  const requestRef = text(r, "request_ref");
+  const expires = text(r, "expires_at");
+  if ([approvalId, state, requester, worldRef, kind, name, resource, subject, requestRef, expires].some((v) => v === null)) return null;
+  if (!APPROVAL_ID.test(approvalId!)) return null;
+  if (!(APPROVAL_STATES as readonly string[]).includes(state!)) return null;
+  if (Number.isNaN(Date.parse(expires!))) return null;
+  const resolvedRaw = r.resolved_by;
+  if (resolvedRaw !== null && (typeof resolvedRaw !== "string" || resolvedRaw === "")) return null;
+  return {
+    approval_id: approvalId!,
+    state: state as ApprovalStandingState,
+    requester: requester!,
+    world_ref: worldRef!,
+    operation_kind: kind!,
+    operation_name: name!,
+    resource_id: resource!,
+    subject_actor_ref: subject!,
+    request_ref: requestRef!,
+    expires_at: expires!,
+    resolved_by: resolvedRaw,
+  };
+}
+
+/** A failed call. Never thrown: `errorClass` is a client class (below) or SEA-Forge's own `error_class`, passed through. */
+export interface AuthorityFailure {
+  readonly ok: false;
+  readonly errorClass: "invalid_input" | "not_configured" | "unreachable" | "response_too_large" | "malformed_response" | (string & {});
+  readonly error: string;
+}
+export type ApprovalListResult = { readonly ok: true; readonly approvals: ApprovalStanding[]; readonly excluded: number } | AuthorityFailure;
+export type ApprovalResolution = { readonly ok: true; readonly response: Record<string, unknown> } | AuthorityFailure;
+export type ClosureResult = { readonly ok: true; readonly b: number; readonly c: number; readonly committed_at: string; readonly on_time: boolean } | AuthorityFailure;
 
 const REQUEST_PROFILE = "godspeed.authority_request";
 const DECISION_PROFILE = "godspeed.authority_decision";
@@ -229,6 +318,22 @@ export async function exchange(socketPath: string, request: unknown, timeoutMs: 
   }
 }
 
+/** Thrown by `exchangeOnce` when the response exceeds the size limit. Internal: lets typed calls say `response_too_large`. */
+export class ResponseTooLargeError extends Error {
+  constructor() {
+    super("response exceeds size limit");
+    this.name = "ResponseTooLargeError";
+  }
+}
+
+/** Thrown by `exchangeOnce` when the response line is not valid JSON. Internal, like `ResponseTooLargeError`. */
+export class MalformedResponseError extends Error {
+  constructor() {
+    super("response is not valid JSON");
+    this.name = "MalformedResponseError";
+  }
+}
+
 /** One NDJSON request/response exchange over a Unix socket. Rejects on timeout, close, or oversize. */
 export function exchangeOnce(socketPath: string, request: unknown, timeoutMs: number, maxBytes: number): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -254,13 +359,13 @@ export function exchangeOnce(socketPath: string, request: unknown, timeoutMs: nu
         },
         data(_s, chunk) {
           buffered += chunk.toString("utf8");
-          if (buffered.length > maxBytes) return finish(new Error("response exceeds size limit"));
+          if (buffered.length > maxBytes) return finish(new ResponseTooLargeError());
           const newline = buffered.indexOf("\n");
           if (newline < 0) return;
           try {
             finish(null, JSON.parse(buffered.slice(0, newline)));
           } catch {
-            finish(new Error("response is not valid JSON"));
+            finish(new MalformedResponseError());
           }
         },
         close() {
@@ -312,20 +417,23 @@ export function interpretSettlement(response: unknown, operationId: string, worl
 
 export class SeaForgeAuthority implements GovernanceAuthority {
   private readonly actor: { actor_id: string; role: string };
+  /** The actor exactly as given, if any; the listing sends it only when present. */
+  private readonly explicitActor: { actor_id: string; role: string } | undefined;
   private readonly timeoutMs: number;
   private readonly maxBytes: number;
 
   constructor(private readonly options: SeaForgeAuthorityOptions) {
+    this.explicitActor = options.actor ? { ...options.actor } : undefined;
     this.actor = { ...(options.actor ?? { actor_id: "cognate-service", role: "service" }) };
     this.timeoutMs = options.timeoutMs ?? 5_000;
     this.maxBytes = options.maxResponseBytes ?? 256 * 1024;
   }
 
-  async decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference, carry?: CarriedWork): Promise<GovernanceDecision> {
+  async decide(operation: GovernedOperation, worldRef: string, approval?: ApprovalReference, carry?: CarriedWork, delegation?: SeaForgeDelegation): Promise<GovernanceDecision> {
     const sent = buildAuthorityRequest(operation, worldRef, new Date(), approval, carry);
     let response: unknown;
     try {
-      response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor }, this.timeoutMs, this.maxBytes);
+      response = await exchange(this.options.socketPath, { verb: "authority_request", envelope: sent.envelope, request_id: sent.operationId, actor: this.actor, ...(delegation ? { on_behalf_of: { ...delegation.onBehalfOf } } : {}) }, this.timeoutMs, this.maxBytes);
     } catch (error) {
       return unknown(`sea-forge unreachable: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -412,14 +520,77 @@ export class SeaForgeAuthority implements GovernanceAuthority {
 
   /** Where an escalation stands. Only used to decide when to try again; an `approved` here never allows anything. */
   async approvalState(approvalId: string): Promise<ApprovalState> {
-    try {
-      const response = await exchange(this.options.socketPath, { verb: "authority_approvals" }, this.timeoutMs, this.maxBytes);
-      const approvals = isObj(response) && Array.isArray(response.approvals) ? response.approvals : [];
-      const found = approvals.find((a) => isObj(a) && a.approval_id === approvalId);
-      const state = isObj(found) ? str(found.state) : undefined;
-      return state === "pending" || state === "approved" || state === "rejected" || state === "expired" || state === "used" ? state : "unknown";
-    } catch {
-      return "unknown";
+    const listed = await this.listApprovals();
+    if (!listed.ok) return "unknown";
+    return listed.approvals.find((a) => a.approval_id === approvalId)?.state ?? "unknown";
+  }
+
+  /**
+   * Every escalation standing SEA-Forge lists (read-only; no request id). Rows that fail the parse rules are omitted and
+   * counted in `excluded`. The response may be up to `LIST_RESPONSE_LIMIT`; beyond it the call fails closed.
+   */
+  async listApprovals(options: { readonly timeoutMs?: number } = {}): Promise<ApprovalListResult> {
+    const sent = await this.call({ verb: "authority_approvals", ...(this.explicitActor ? { actor: this.explicitActor } : {}) }, options.timeoutMs, LIST_RESPONSE_LIMIT);
+    if (!sent.ok) return sent;
+    const rows = sent.body.approvals;
+    if (!Array.isArray(rows)) return { ok: false, errorClass: "malformed_response", error: "response carries no approvals array" };
+    const approvals: ApprovalStanding[] = [];
+    for (const row of rows) {
+      const parsed = parseApprovalStanding(row);
+      if (parsed) approvals.push(parsed);
     }
+    return { ok: true, approvals, excluded: rows.length - approvals.length };
+  }
+
+  /** Record a human's resolution of one escalation, on their behalf. The request id is deterministic per (approval, resolution). */
+  async resolveApproval(input: { readonly approvalId: string; readonly resolution: "approved" | "rejected"; readonly onBehalfOf: SeaForgeActor; readonly timeoutMs?: number }): Promise<ApprovalResolution> {
+    if (typeof input?.approvalId !== "string" || !APPROVAL_ID.test(input.approvalId)) return invalid("approvalId must match ^[A-Za-z0-9_.:-]{1,200}$");
+    if (input.resolution !== "approved" && input.resolution !== "rejected") return invalid("resolution must be approved or rejected");
+    if (!isActor(input.onBehalfOf)) return invalid("onBehalfOf must carry a non-empty actor_id and role");
+    const prefix = this.options.requestIdPrefix;
+    if (!prefix) return notConfigured("resolveApproval");
+    const sent = await this.call(
+      { verb: "authority_approval", approval_id: input.approvalId, resolution: input.resolution, request_id: `${prefix}:${input.approvalId}:${input.resolution}`, actor: this.actor, on_behalf_of: { ...input.onBehalfOf } },
+      input.timeoutMs,
+      this.maxBytes,
+    );
+    return sent.ok ? { ok: true, response: sent.body } : sent;
+  }
+
+  /** Record the closure of an obligation window. The request id is deterministic per operation. */
+  async authorityClosure(input: { readonly operationId: string; readonly discriminationObservationId: string; readonly verificationObservationIds: readonly string[]; readonly timeoutMs?: number }): Promise<ClosureResult> {
+    if (!str(input?.operationId)) return invalid("operationId must be a non-empty string");
+    if (!str(input.discriminationObservationId)) return invalid("discriminationObservationId must be a non-empty string");
+    if (!strings(input.verificationObservationIds)) return invalid("verificationObservationIds must be an array of non-empty strings");
+    const prefix = this.options.requestIdPrefix;
+    if (!prefix) return notConfigured("authorityClosure");
+    const sent = await this.call(
+      { verb: "authority_closure", operation_id: input.operationId, discrimination_observation_id: input.discriminationObservationId, verification_observation_ids: input.verificationObservationIds, request_id: `${prefix}:closure:${input.operationId}`, actor: this.actor },
+      input.timeoutMs,
+      this.maxBytes,
+    );
+    if (!sent.ok) return sent;
+    const { b, c, committed_at, on_time } = sent.body;
+    if (typeof b !== "number" || typeof c !== "number" || !str(committed_at) || typeof on_time !== "boolean") return { ok: false, errorClass: "malformed_response", error: "closure response lacks b, c, committed_at or on_time" };
+    return { ok: true, b, c, committed_at: committed_at as string, on_time };
+  }
+
+  /** One exchange, classified. Never throws. */
+  private async call(request: Obj, timeoutMs: number | undefined, maxBytes: number): Promise<{ ok: true; body: Obj } | AuthorityFailure> {
+    let response: unknown;
+    try {
+      response = await exchange(this.options.socketPath, request, timeoutMs ?? this.timeoutMs, maxBytes);
+    } catch (error) {
+      if (error instanceof ResponseTooLargeError) return { ok: false, errorClass: "response_too_large", error: error.message };
+      if (error instanceof MalformedResponseError) return { ok: false, errorClass: "malformed_response", error: error.message };
+      return { ok: false, errorClass: "unreachable", error: error instanceof Error ? error.message : String(error) };
+    }
+    if (!isObj(response)) return { ok: false, errorClass: "malformed_response", error: "response is not an object" };
+    if (response.ok !== true) return { ok: false, errorClass: str(response.error_class) ?? "error", error: str(response.error) ?? "no detail" };
+    return { ok: true, body: response };
   }
 }
+
+const invalid = (error: string): AuthorityFailure => ({ ok: false, errorClass: "invalid_input", error });
+const notConfigured = (method: string): AuthorityFailure => ({ ok: false, errorClass: "not_configured", error: `${method} needs a requestIdPrefix` });
+const isActor = (value: unknown): value is SeaForgeActor => isObj(value) && !!str(value.actor_id) && !!str(value.role);
