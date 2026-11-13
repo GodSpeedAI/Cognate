@@ -48,6 +48,6 @@ Use `identity.semantic_closure_hash` to distinguish meaning-preserving source ed
 
 ## Native dependency and proof gate
 
-Requires the published DomainForge 0.21.1 binding, including `Graph.parseSourceMap(entryLogicalPath, sourcesJson)`. A missing native factory is an explicit error and never falls back to a partial graph. Before deploying a composed world, run `bun test packages/domainforge/test/world.test.ts` and verify a valid pinned `world_ref` is accepted by the target SEA-Forge registry.
+Requires the published DomainForge 0.21.2 binding, including `Graph.parseSourceMap(entryLogicalPath, sourcesJson)`. A missing native factory is an explicit error and never falls back to a partial graph. Before deploying a composed world, run `bun test packages/domainforge/test/world.test.ts` and verify a valid pinned `world_ref` is accepted by the target SEA-Forge registry.
 
 A `world_ref` establishes the semantic model being used, not the current operational state, not authority to act, and not evidence of developmental settlement. Governed operations still require SEA-Forge authorization, and operational events remain Cognate and RealityTrace responsibilities.
