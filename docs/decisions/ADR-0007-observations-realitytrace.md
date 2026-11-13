@@ -130,3 +130,7 @@ correlation ids go in the committed record's CEP `extensions.cognate`, and
 `readCorrelation(targetRef)` reads them back. Reconciliation still uses
 `ledger_position`/`already_committed`, never `observation_id`. AK-006 is
 implemented and DEBT-009 is closed.
+
+## Addendum (2026-11-13): pinned to RealityTrace 0.4.0
+
+`just setup-realitytrace` now installs RealityTrace 0.4.0, the first release whose DomainForge pin is 0.21.2, matching the stack-wide DomainForge lockstep. The adapter contract is unchanged.

@@ -14,6 +14,8 @@ part of the idempotency key, so a duplicate keeps the first record's value;
 non-objects and the reserved `domainforge` key are rejected. See
 `.agents/evidence/phase0-realitytrace.md` for transcripts.
 
+Pinned 0.4.0 since 2026-11-13 (carries DomainForge 0.21.2; accepts `--stdin-format json`). 0.4.0 no longer accepts `--stdin-format text`; the probe streams `cargo test` output as `libtest` instead.
+
 ## Prerequisite command order (docs/tutorials/quickstart.md; executed live)
 
 ```
