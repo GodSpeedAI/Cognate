@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.9.0...cognate-domainforge-v0.9.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **domainforge:** move the binding to 0.21.2 (stack lockstep) ([7356512](https://github.com/GodSpeedAI/Cognate/commit/7356512d2abf2a4095375c847de2d2a7ee98b33f))
+
 ## [0.9.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.8.0...cognate-domainforge-v0.9.0) (2026-11-05)
 
 
