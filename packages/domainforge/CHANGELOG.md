@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.9.1...cognate-domainforge-v0.9.2) (2026-11-13)
+
+
+### Bug Fixes
+
+* **realitytrace:** pin the RealityTrace CLI to 0.4.0 (DomainForge 0.21.2 lockstep) ([#80](https://github.com/GodSpeedAI/Cognate/issues/80)) ([8c87a1c](https://github.com/GodSpeedAI/Cognate/commit/8c87a1c7a35579b8905b66db5aa0559bf114a438))
+
 ## [0.9.1](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.9.0...cognate-domainforge-v0.9.1) (2026-11-13)
 
 
