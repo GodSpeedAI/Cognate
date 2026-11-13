@@ -2,7 +2,7 @@
 
 ## Overview
 
-This package is the only Cognate importer of `@godspeedai/domainforge@0.21.1`, enforcing a version-pinned adapter boundary `[index.ts:1]`. It turns a parsed DomainForge `Graph` into a read-only `SemanticProjection` of `SemanticObject` / `SemanticRelation` values plus an explicit `unmapped` list `[index.ts:projectGraph]`. `mappingTable` documents every DomainForge kind including unsupported ones with a source-backed reason `[index.ts:mappingTable]`. The adapter never grants capabilities or authority `[index.ts:projectGraph]`.
+This package is the only Cognate importer of `@godspeedai/domainforge@0.21.2`, enforcing a version-pinned adapter boundary `[index.ts:1]`. It turns a parsed DomainForge `Graph` into a read-only `SemanticProjection` of `SemanticObject` / `SemanticRelation` values plus an explicit `unmapped` list `[index.ts:projectGraph]`. `mappingTable` documents every DomainForge kind including unsupported ones with a source-backed reason `[index.ts:mappingTable]`. The adapter never grants capabilities or authority `[index.ts:projectGraph]`.
 
 ## Interface
 
@@ -13,7 +13,7 @@ This package is the only Cognate importer of `@godspeedai/domainforge@0.21.1`, e
 - `serializeProjection` — deterministic JSON with stable sort order for archiving and golden fixtures `[index.ts:serializeProjection]`
 - `SemanticRegistry` — archive of projections by source digest with `register`, `resolve`, `alias`, `aliasesOf` `[index.ts:SemanticRegistry]`
 - `bindCapabilities` — binds explicitly named semantic ids to capability contracts `[index.ts:bindCapabilities]`
-- `PROJECTION_SCHEMA` = `cognate.semantic.v1` and `BINDING` = `@godspeedai/domainforge@0.21.1` `[types.ts:PROJECTION_SCHEMA]`
+- `PROJECTION_SCHEMA` = `cognate.semantic.v1` and `BINDING` = `@godspeedai/domainforge@0.21.2` `[types.ts:PROJECTION_SCHEMA]`
 
 ## Invariants
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This package owns the only Cognate import of the `@godspeedai/domainforge` native binding, pinned to `0.21.1` in `dependencies` and mirrored by the adapter's own `BINDING` constant `[package.json:dependencies]`. Its single export entry point resolves to the adapter implementation, so every consumed symbol arrives through `src/index.ts` re-exporting `src/types.ts` `[package.json:exports]`. The declared scope is turning DomainForge Graph output into `SemanticRefs` and read-only semantic projections, not executable capabilities `[package.json:description]`.
+This package owns the only Cognate import of the `@godspeedai/domainforge` native binding, pinned to `0.21.2` in `dependencies` and mirrored by the adapter's own `BINDING` constant `[package.json:dependencies]`. Its single export entry point resolves to the adapter implementation, so every consumed symbol arrives through `src/index.ts` re-exporting `src/types.ts` `[package.json:exports]`. The declared scope is turning DomainForge Graph output into `SemanticRefs` and read-only semantic projections, not executable capabilities `[package.json:description]`.
 
 ## Subdirectories & Boundaries
 
@@ -11,7 +11,7 @@ This package owns the only Cognate import of the `@godspeedai/domainforge` nativ
 
 ## Global Invariants
 
-- `BINDING` is the literal `@godspeedai/domainforge@0.21.1`, which must stay equal to the declared dependency range `[src/types.ts:BINDING]`
+- `BINDING` is the literal `@godspeedai/domainforge@0.21.2`, which must stay equal to the declared dependency range `[src/types.ts:BINDING]`
 - `PROJECTION_SCHEMA` is the schema marker `cognate.semantic.v1` that every emitted projection carries `[src/types.ts:PROJECTION_SCHEMA]`
 - The substrate check re-reads `BINDING` from source and fails when the installed `node_modules` copy disagrees `[scripts/check-substrate.ts:82]`
 - A `BINDING` line that does not parse as `BINDING = "name@version"` is itself a substrate error `[scripts/check-substrate.ts:86]`
