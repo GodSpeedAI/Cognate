@@ -12,6 +12,8 @@ export interface SxrCliOptions {
   readonly repoDir: string;
   /** Extra environment (e.g. SXR home) for isolation. */
   readonly env?: Record<string, string>;
+  /** Semantic entry file (relative to the repo) configured as the rulebook before the snapshot is created. */
+  readonly semanticEntry?: string;
 }
 
 /** Identifiers produced by the SXR prerequisite workflow (enroll → question → threshold → run). */
@@ -21,6 +23,8 @@ export interface SxrWorkflow {
   readonly thresholdId: string;
   readonly runId: string;
   readonly target: string;
+  /** The snapshot the run began on: `rulebook` when created from a configured semantic entry, `none` for the genesis fallback. */
+  readonly snapshot: { readonly id: string; readonly source: "rulebook" | "none" };
 }
 
 /** The `--target` used for the declared question, threshold's plans, and every per-observation `plan create`. */
@@ -96,6 +100,21 @@ export function createSxrCliPort(
       const enroll = requireOk(await sxr(["repo", "enroll", options.repoDir, "--json"]), "repo enroll");
       const repoId: string = enroll.repo_id;
 
+      let snapshot: SxrWorkflow["snapshot"];
+      if (options.semanticEntry !== undefined) {
+        requireOk(await sxr(["semantic", "configure", "--repo", repoId, "--entry", options.semanticEntry, "--json"]), "semantic configure");
+        const created = requireOk(await sxr(["snapshot", "create", "--repo", repoId, "--json"]), "snapshot create");
+        snapshot = { id: created.snapshot_id, source: "rulebook" };
+      } else {
+        // No rulebook configured: RealityTrace refuses snapshot create (exit 3). Begin on the documented genesis snapshot instead.
+        const created = await sxr(["snapshot", "create", "--repo", repoId, "--json"]);
+        if (created.exitCode === 3 && /no semantic configuration/i.test(created.stderr)) {
+          snapshot = { id: "snapshot:genesis", source: "none" };
+        } else {
+          snapshot = { id: requireOk(created, "snapshot create").snapshot_id, source: "rulebook" };
+        }
+      }
+
       const scratch = mkdtempSync(join(tmpdir(), "cognate-sxr-prereq-"));
       try {
         const questionFile = join(scratch, "question.json");
@@ -108,10 +127,10 @@ export function createSxrCliPort(
         const declaredThreshold = requireOk(await sxr(["threshold", "declare", "--repo", repoId, "--question", questionId, "--file", thresholdFile, "--json"]), "threshold declare");
         const thresholdId: string = declaredThreshold.threshold_id;
 
-        const run = requireOk(await sxr(["run", "begin", "--repo", repoId, "--snapshot", "snapshot:genesis", "--question", questionId, "--threshold", thresholdId, "--json"]), "run begin");
+        const run = requireOk(await sxr(["run", "begin", "--repo", repoId, "--snapshot", snapshot.id, "--question", questionId, "--threshold", thresholdId, "--json"]), "run begin");
         const runId: string = run.run_id;
 
-        workflow = { repoId, questionId, thresholdId, runId, target: TARGET };
+        workflow = { repoId, questionId, thresholdId, runId, target: TARGET, snapshot };
         return workflow;
       } finally {
         rmSync(scratch, { recursive: true, force: true });
