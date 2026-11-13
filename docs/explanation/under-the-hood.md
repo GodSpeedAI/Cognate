@@ -104,7 +104,7 @@ Imported cognition is tracked with lineage and can remain detached until its rel
 
 ## RealityTrace Observations and Evidence
 
-Cognate provides a version-pinned adapter for RealityTrace (v0.3.0) without changing RealityTrace.
+Cognate provides a version-pinned adapter for RealityTrace (v0.4.0) without changing RealityTrace.
 
 The adapter records observations through RealityTrace's supported CLI and CEP workflow. RealityTrace currently requires repository enrollment, a snapshot, a declared question and threshold, a run, and a committed plan before the relevant observation can be recorded. An observation receipt alone is neither qualifying evidence nor a settled result.
 

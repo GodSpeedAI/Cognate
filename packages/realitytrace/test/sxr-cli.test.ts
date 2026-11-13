@@ -1,4 +1,4 @@
-// CG-RT-002 (spec §20, Phase 5): the SXR CLI adapter against the real, pinned binary (RealityTrace v0.3.0).
+// CG-RT-002 (spec §20, Phase 5): the SXR CLI adapter against the real, pinned binary (RealityTrace v0.4.0).
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

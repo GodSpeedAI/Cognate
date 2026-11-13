@@ -25,7 +25,7 @@ import { join } from "node:path";
 // Binary discovery — never invented, always the real local build output.
 // ---------------------------------------------------------------------------
 
-// Pinned released CLI installed by `just setup-realitytrace` (RealityTrace v0.3.0).
+// Pinned released CLI installed by `just setup-realitytrace` (RealityTrace v0.4.0).
 const DEFAULT_SXR_BIN = join(
   import.meta.dir,
   "..", "..", "..", ".tmp", "realitytrace", "bin", "realitytrace",
@@ -259,7 +259,7 @@ describe("observation ingestion + correlation-id schema validity", () => {
     const { runId } = await bootstrapRun(home, repo);
 
     const stream = new TextEncoder().encode("test result: ok. 1 passed; 0 failed; 0 ignored\n");
-    const ingest = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "text", "--json"], stream);
+    const ingest = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "libtest", "--json"], stream);
 
     expect(ingest.exitCode).toBe(0);
     expect(ingest.json.durability).toBe("committed");
@@ -442,11 +442,11 @@ describe("duplicate delivery reconciliation", () => {
     const { runId } = await bootstrapRun(home, repo);
     const stream = new TextEncoder().encode("test result: ok. 1 passed; 0 failed; 0 ignored\n");
 
-    const first = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "text", "--json"], stream);
+    const first = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "libtest", "--json"], stream);
     expect(first.exitCode).toBe(0);
     expect(first.json.already_committed).toBe(false);
 
-    const second = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "text", "--json"], stream);
+    const second = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "libtest", "--json"], stream);
     expect(second.exitCode).toBe(0);
     expect(second.json.idempotency_key).toBe(first.json.idempotency_key);
     expect(second.json.already_committed).toBe(true);
@@ -461,8 +461,8 @@ describe("duplicate delivery reconciliation", () => {
     const { runId } = await bootstrapRun(home, repo);
     const stream = new TextEncoder().encode("test result: ok. 1 passed; 0 failed; 0 ignored\n");
 
-    const first = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "text", "--json"], stream);
-    const second = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "text", "--json"], stream);
+    const first = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "libtest", "--json"], stream);
+    const second = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "libtest", "--json"], stream);
 
     // sxr mints a fresh ULID for `observation_id` on every call to
     // build_ingest_envelope, before checking the idempotency key. The ledger
@@ -491,7 +491,7 @@ describe("receipt vs evidence vs settlement are distinct operations", () => {
     const { runId, questionId, thresholdId } = await bootstrapRun(home, repo);
     const stream = new TextEncoder().encode("test result: ok. 1 passed; 0 failed; 0 ignored\n");
 
-    const ingest = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "text", "--json"], stream);
+    const ingest = await runSxr(home, ["ingest", "--run", runId, "--verifier", "cargo-test", "--stdin-format", "libtest", "--json"], stream);
     expect(ingest.exitCode).toBe(0);
     const observationId: string = ingest.json.observation_id;
 
