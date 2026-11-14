@@ -229,7 +229,7 @@
       "version": "0.6.1",
       "dependencies": {
         "@godspeedai/cognate-kernel-api": "workspace:*",
-        "@godspeedai/domainforge": "0.21.2",
+        "@godspeedai/domainforge": "0.22.0",
       },
     },
     "packages/events": {
@@ -834,7 +834,7 @@
 
     "@godspeedai/cognate-ui-astryx": ["@godspeedai/cognate-ui-astryx@workspace:packages/ui-astryx"],
 
-    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.21.2", "", {}, "sha512-fQOWWuJk/71M5weLIc6MFzYtYjC99QBr85mrcBzOF0pNUE677Fu15f9Jx4c4oA671gDqYY3spl8qdANHv7JB8Q=="],
+    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.22.0", "", {}, "sha512-YBbMQYcD4/MNi2yVc2Ma/g4Oi/Woq+amNdWwo1XUUCN5PE2GvIsAS+bCsjllt+MuNuL9q/e/MbnjEpMbZ2B+gw=="],
 
     "@godspeedai/e2e": ["@godspeedai/e2e@workspace:tests/e2e"],
 
