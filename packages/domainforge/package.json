@@ -23,6 +23,6 @@
   },
   "dependencies": {
     "@godspeedai/cognate-kernel-api": "workspace:*",
-    "@godspeedai/domainforge": "0.21.2"
+    "@godspeedai/domainforge": "0.22.0"
   }
 }

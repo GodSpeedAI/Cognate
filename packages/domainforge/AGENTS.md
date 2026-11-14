@@ -21,3 +21,4 @@ follow-up recorded in the table. Record each approved bump here.
 |---|---|---|---|---|
 | 2026-11-13 | 0.21.1 | 0.21.2 | owner | #77 (RealityTrace main and the DomainForge head were already on 0.21.2; readiness gate C01). Follow-up done in the row below |
 | 2026-11-13 | RealityTrace CLI 0.3.0 | 0.4.0 | owner | this PR: closes the follow-up owed in #77; RealityTrace 0.4.0 carries DomainForge 0.21.2 |
+| 2026-11-14 | 0.21.2 | 0.22.0 | owner (lockstep bump task) | this PR. RealityTrace CLI stays at 0.4.0 (carries DomainForge 0.21.2) until a RealityTrace release pinning 0.22.0 exists; follow-up owed |
