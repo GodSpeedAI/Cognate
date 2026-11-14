@@ -9,7 +9,12 @@
 //  - the patch is applied in memory first and written only if every hunk of every file applies exactly
 //    (no fuzz, no offset); a failed write restores the files already written, so there is no partial application;
 //  - the command is an argv array handed to the world's process port: no shell, no interpolation, no env override;
-//  - every path (patch targets, working directory) resolves under the declared workspace root.
+//  - every path (patch targets, working directory) resolves under the declared workspace root, lexically and, on a
+//    world that offers `realPath`, really: the real path must equal the real workspace root plus the same relative
+//    path, so a symlink anywhere along a path is refused (one that points outside, and also one that stays inside:
+//    refusing is the simple rule and removes aliasing). The check runs again immediately before each write and before
+//    the command. Residual: a link swapped in between that last check and the write by a concurrent process on the
+//    same host is not excluded (Node offers no portable no-follow write through this port).
 // v1 patches modify existing text files only; create, delete, rename and binary patches are refused.
 import { createHash } from "node:crypto";
 import type { CapabilityContract, Component, SemanticRef } from "@godspeedai/cognate-kernel-api";
@@ -227,6 +232,21 @@ export function programExecutorComponent(registry: ExecutionWorldRegistry, optio
           }
         };
         const cwd = resolveIn(input.cwd ?? ".");
+        const rootAbs = fs.resolve(input.workspace, ".");
+        /** Refuse unless the real path is the real root plus the same relative path (no symlink anywhere along it). */
+        const assertReal = async (absolute: string, label: string, mustExist: boolean): Promise<void> => {
+          if (!fs.realPath) return;
+          const realRoot = await fs.realPath(rootAbs);
+          const real = await fs.realPath(absolute);
+          if (real === undefined) {
+            if (mustExist || (await fs.exists(absolute))) throw new ProgramRefusedError("path_escape", `${label}: cannot resolve real path`);
+            return;
+          }
+          if (realRoot === undefined) throw new ProgramRefusedError("path_escape", "workspace root cannot be resolved");
+          const expected = absolute === rootAbs ? realRoot : realRoot.replace(/\/$/, "") + absolute.slice(rootAbs.length);
+          if (real !== expected) throw new ProgramRefusedError("path_escape", `${label}: a symlink along the path is not allowed`);
+        };
+        await assertReal(cwd, "cwd", false);
 
         // Plan: read and apply everything in memory before touching the workspace.
         const planned: { readonly path: string; readonly absolute: string; readonly before: string; readonly after: string }[] = [];
@@ -235,20 +255,35 @@ export function programExecutorComponent(registry: ExecutionWorldRegistry, optio
           if (seen.has(file.path)) throw new ProgramRefusedError("patch_malformed", `${file.path} appears twice`);
           seen.add(file.path);
           const absolute = resolveIn(file.path);
+          await assertReal(absolute, file.path, false);
           if (!(await fs.exists(absolute))) throw new ProgramRefusedError("patch_not_applicable", `${file.path} does not exist`);
           const before = await fs.readText(absolute);
           planned.push({ path: file.path, absolute, before, after: applyHunks(file.path, before, file.hunks) });
         }
 
-        // Commit: write all; on any failure put back what was written, then rethrow.
-        const written: typeof planned[number][] = [];
+        // Commit: write all; on any failure put back every file touched (including the one whose write failed, which
+        // may be partly written), then rethrow. Guarantee: if every restore write succeeds the tree equals its original;
+        // a restore that itself fails is reported in the error, never swallowed. Each target is re-verified immediately
+        // before its write.
+        const touched: typeof planned[number][] = [];
         try {
           for (const file of planned) {
+            await assertReal(file.absolute, file.path, true);
+            touched.push(file);
             await fs.writeText(file.absolute, file.after);
-            written.push(file);
           }
+          await assertReal(cwd, "cwd", false);
         } catch (error) {
-          for (const file of written.reverse()) await fs.writeText(file.absolute, file.before).catch(() => {});
+          const unrestored: string[] = [];
+          for (const file of touched.reverse()) {
+            try {
+              await assertReal(file.absolute, file.path, true);
+              await fs.writeText(file.absolute, file.before);
+            } catch {
+              unrestored.push(file.path);
+            }
+          }
+          if (unrestored.length > 0) throw new Error(`program.run write failed and could not restore: ${unrestored.join(", ")} (${error instanceof Error ? error.message : String(error)})`);
           throw error;
         }
 

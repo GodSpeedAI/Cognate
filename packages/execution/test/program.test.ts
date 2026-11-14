@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { allowCapabilities, isUnavailable } from "@godspeedai/cognate-kernel-api";
@@ -32,8 +32,8 @@ beforeEach(async () => {
 });
 afterEach(() => rm(root, { recursive: true, force: true }));
 
-async function kernel(allow: readonly string[] = [PROGRAM_CAPABILITY]) {
-  const registry = createExecutionWorldRegistry([localExecutionWorld({ worldId: "w" })]);
+async function kernel(allow: readonly string[] = [PROGRAM_CAPABILITY], world = localExecutionWorld({ worldId: "w" })) {
+  const registry = createExecutionWorldRegistry([world]);
   const k = await createCordisKernel({ tenant: "test", principal: { id: "system", kind: "system" }, policy: allowCapabilities("program-test", allow) });
   await (await k.mount(programExecutorComponent(registry))).waitFor("ACTIVE", 5_000);
   return k;
@@ -137,5 +137,174 @@ describe("program.run", () => {
     const r = await run(await kernel(), { ...base(), patch, patchSha256: sha256Hex(patch), argv: ["true"] });
     expect(r.ok).toBe(true);
     expect(await read("src/n.txt")).toBe("a\nc");
+  });
+  describe("symlinks", () => {
+    let outside: string;
+    beforeEach(async () => {
+      outside = await mkdtemp(join(process.env.TMPDIR ?? tmpdir(), "cognate-program-out-"));
+      await writeFile(join(outside, "secret.txt"), "one\ntwo\nthree\n");
+    });
+    afterEach(() => rm(outside, { recursive: true, force: true }));
+    const untouched = async () => expect(await readFile(join(outside, "secret.txt"), "utf8")).toBe("one\ntwo\nthree\n");
+    const patchFor = (path: string) => ["--- a/" + path, "+++ b/" + path, "@@ -1,3 +1,3 @@", " one", "-two", "+TWO", " three", ""].join("\n");
+    const runPatch = (path: string, extra: Record<string, unknown> = {}) => {
+      const patch = patchFor(path);
+      return kernel().then((k) => run(k, { ...base(), patch, patchSha256: sha256Hex(patch), argv: ["touch", "ran.marker"], ...extra }));
+    };
+
+    test("a target that is a symlink to a file outside the workspace is refused and the outside file is untouched", async () => {
+      await symlink(join(outside, "secret.txt"), join(root, "src/link.txt"));
+      const r = await runPatch("src/link.txt");
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      await untouched();
+      expect(await Bun.file(join(root, "ran.marker")).exists()).toBe(false);
+    });
+
+    test("a symlinked directory component pointing outside is refused", async () => {
+      await symlink(outside, join(root, "linkdir"));
+      const r = await runPatch("linkdir/secret.txt");
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      await untouched();
+    });
+
+    test("a symlinked cwd (outside the workspace) is refused and nothing is written", async () => {
+      await symlink(outside, join(root, "cwdlink"));
+      const r = await run(await kernel(), { ...base(), cwd: "cwdlink", argv: ["touch", "ran.marker"] });
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      expect(await read("src/a.txt")).toBe("one\ntwo\nthree\n");
+      expect(await Bun.file(join(outside, "ran.marker")).exists()).toBe(false);
+    });
+
+    test("a symlink that stays inside the workspace is also refused (documented rule: no symlink along any path)", async () => {
+      await symlink(join(root, "src/a.txt"), join(root, "src/alias.txt"));
+      const r = await runPatch("src/alias.txt");
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      await mkdir(join(root, "real"));
+      await symlink(join(root, "src"), join(root, "innerdir"));
+      const r2 = await runPatch("innerdir/a.txt");
+      expect(r2.failure?.error?.reason).toBe("path_escape");
+      expect(await read("src/a.txt")).toBe("one\ntwo\nthree\n");
+    });
+
+    // A world whose file system counts writes and lets a test swap paths at chosen moments (the race the re-checks exist for).
+    const hooked = (hooks: { afterRead?: (path: string) => Promise<void>; afterWrite?: (path: string) => Promise<void> }) => {
+      const w = localExecutionWorld({ worldId: "w" });
+      const writes: string[] = [];
+      return {
+        writes,
+        world: {
+          ...w,
+          fileSystem: {
+            ...w.fileSystem,
+            async readText(path: string) {
+              const t = await w.fileSystem.readText(path);
+              await hooks.afterRead?.(path);
+              return t;
+            },
+            async writeText(path: string, content: string) {
+              writes.push(path);
+              await w.fileSystem.writeText(path, content);
+              await hooks.afterWrite?.(path);
+            },
+          },
+        },
+      };
+    };
+
+    test("the plan-time check refuses before any write (a good first file is not even written when a later target is a symlink)", async () => {
+      await symlink(join(outside, "secret.txt"), join(root, "src/link.txt"));
+      const patch = PATCH + patchFor("src/link.txt");
+      const h = hooked({});
+      const r = await run(await kernel([PROGRAM_CAPABILITY], h.world), { ...base(), patch, patchSha256: sha256Hex(patch), argv: ["true"] });
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      expect(h.writes).toEqual([]);
+      await untouched();
+    });
+
+    test("a symlinked cwd is refused before any write", async () => {
+      await symlink(outside, join(root, "cwdlink"));
+      const h = hooked({});
+      const r = await run(await kernel([PROGRAM_CAPABILITY], h.world), { ...base(), cwd: "cwdlink", argv: ["true"] });
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      expect(h.writes).toEqual([]);
+    });
+
+    test("a target swapped for a symlink after planning is caught immediately before the write; the outside file is untouched", async () => {
+      const h = hooked({
+        afterRead: async (path) => {
+          if (!path.endsWith("src/a.txt")) return;
+          await rm(path);
+          await symlink(join(outside, "secret.txt"), path);
+        },
+      });
+      const r = await run(await kernel([PROGRAM_CAPABILITY], h.world), { ...base(), argv: ["touch", "ran.marker"] });
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      expect(h.writes).toEqual([]);
+      await untouched();
+      expect(await Bun.file(join(root, "ran.marker")).exists()).toBe(false);
+    });
+
+    test("a cwd swapped for a symlink after the writes is caught before the command runs and the patch is rolled back", async () => {
+      await mkdir(join(root, "work"));
+      const h = hooked({
+        afterWrite: async (path) => {
+          if (!path.endsWith("src/a.txt")) return;
+          await rm(join(root, "work"), { recursive: true });
+          await symlink(outside, join(root, "work"));
+        },
+      });
+      const r = await run(await kernel([PROGRAM_CAPABILITY], h.world), { ...base(), cwd: "work", argv: ["touch", "ran.marker"] });
+      expect(r.failure?.error?.reason).toBe("path_escape");
+      expect(await Bun.file(join(outside, "ran.marker")).exists()).toBe(false);
+      expect(await read("src/a.txt")).toBe("one\ntwo\nthree\n");
+    });
+
+    test("a workspace root that is itself reached through a symlink still works", async () => {
+      const via = join(outside, "ws-link");
+      await symlink(root, via);
+      const r = await run(await kernel(), { ...base(), workspace: via });
+      expect(r.ok).toBe(true);
+      expect(await read("src/a.txt")).toBe("one\nTWO\nthree\n");
+    });
+  });
+
+  describe("write-failure rollback", () => {
+    const twoFiles = ["--- a/src/a.txt", "+++ b/src/a.txt", "@@ -1,3 +1,3 @@", " one", "-two", "+TWO", " three", "--- a/src/b.txt", "+++ b/src/b.txt", "@@ -1,1 +1,1 @@", "-real", "+changed", ""].join("\n");
+    const failing = (failOn: string, restoreFails = false) => {
+      const w = localExecutionWorld({ worldId: "w" });
+      let hits = 0;
+      return {
+        ...w,
+        fileSystem: {
+          ...w.fileSystem,
+          async writeText(path: string, content: string) {
+            if (path.endsWith(failOn)) {
+              hits += 1;
+              if (hits === 1 || restoreFails) {
+                await w.fileSystem.writeText(path, "PARTIAL"); // a torn write, then the fault
+                throw new Error("disk full");
+              }
+            }
+            return w.fileSystem.writeText(path, content);
+          },
+        },
+      };
+    };
+
+    test("a write that fails on the second file restores the first and the failed one (even if partly written)", async () => {
+      const r = await run(await kernel([PROGRAM_CAPABILITY], failing("src/b.txt")), { ...base(), patch: twoFiles, patchSha256: sha256Hex(twoFiles), argv: ["touch", "ran.marker"] });
+      expect(r.ok).toBe(false);
+      expect(String(r.failure?.error?.message)).toContain("disk full");
+      expect(await read("src/a.txt")).toBe("one\ntwo\nthree\n");
+      expect(await read("src/b.txt")).toBe("real\n");
+      expect(await Bun.file(join(root, "ran.marker")).exists()).toBe(false);
+    });
+
+    test("a restore that itself fails is reported, not swallowed", async () => {
+      const r = await run(await kernel([PROGRAM_CAPABILITY], failing("src/b.txt", true)), { ...base(), patch: twoFiles, patchSha256: sha256Hex(twoFiles), argv: ["true"] });
+      expect(r.ok).toBe(false);
+      expect(String(r.failure?.error?.message)).toContain("could not restore: src/b.txt");
+      expect(await read("src/a.txt")).toBe("one\ntwo\nthree\n");
+    });
   });
 });

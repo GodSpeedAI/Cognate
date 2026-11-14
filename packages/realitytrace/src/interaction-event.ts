@@ -25,8 +25,8 @@ export function uuidV5(name: string, namespace = CONCEPT_NAMESPACE): string {
 /** `concept:<uuidv5 of namespace::name>`; the receiver recomputes it and never trusts this. */
 export const declarationKey = (semanticRef: string): string => `concept:${uuidV5(semanticRef)}`;
 
-/** Event types that are consequential interactions (the executor commits these through the outbox hook). */
-export const INTERACTION_EVENT_TYPES: ReadonlySet<string> = new Set(["run.invocation", "run.completed", "run.failed"]);
+/** Event types that are consequential interactions (the executor and the service commit these through the outbox hook). */
+export const INTERACTION_EVENT_TYPES: ReadonlySet<string> = new Set(["run.started", "run.invocation", "run.completed", "run.failed", "run.cancelled"]);
 
 /** The committed (or about-to-commit) event fields this module reads. */
 export interface InteractionSource {
@@ -68,7 +68,7 @@ export function interactionEventFor(event: InteractionSource): Obj | undefined {
 
   let status: string;
   if (invocation) status = meta.ok === true ? "succeeded" : meta.failureKind === "denied" ? "denied" : "failed";
-  else status = event.eventType === "run.completed" ? "succeeded" : "failed";
+  else status = event.eventType === "run.completed" || event.eventType === "run.started" ? "succeeded" : event.eventType === "run.cancelled" ? "interrupted" : "failed";
 
   const kind = str("kind")!;
   const episodeRef = str("episodeRef");

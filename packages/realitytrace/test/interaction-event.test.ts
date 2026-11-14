@@ -13,7 +13,7 @@ import type { Component } from "@godspeedai/cognate-kernel-api";
 import type { AgentDefinition, CaseContext, Caller } from "@godspeedai/cognate-runtime-api";
 import { createRuntime, type Runtime } from "@godspeedai/cognate-runtime-bun";
 import { createMemoryStore } from "@godspeedai/cognate-store-memory";
-import { declarationKey, interactionEventFor, interactionOutboxFor, ObservationDelivery, OBSERVATION_TOPIC, uuidV5, type DeliveryReceipt, type Observation, type ObservationPort } from "../src/index.ts";
+import { declarationKey, INTERACTION_EVENT_TYPES, interactionEventFor, interactionOutboxFor, ObservationDelivery, OBSERVATION_TOPIC, uuidV5, type DeliveryReceipt, type Observation, type ObservationPort } from "../src/index.ts";
 
 const SCHEMA_PATH = join(import.meta.dir, "..", "schemas", "godspeed.interaction_event.v1.json");
 // Vendored from the CEP integration worktree (schemas/extensions/godspeed.interaction_event.v1.json). A change must be a deliberate re-vendor.
@@ -46,6 +46,7 @@ const ping: Component = { id: "ping", provides: [pingContract], activate: (f) =>
 const agents: AgentDefinition[] = [
   { id: "agent.ping", version: "1", run: async (_i, ctx) => { await ctx.invoke("tool.ping", {}); return { done: true }; } },
   { id: "agent.program", version: "1", run: async (_i, ctx) => ctx.invoke("program.run", { worldId: "w", workspace: dir, patch: PATCH, patchSha256: sha256Hex(PATCH), argv: ["cat", "f.txt"] }) },
+  { id: "agent.slow", version: "1", run: async (_i, ctx) => { await new Promise((r) => setTimeout(r, 300)); await ctx.invoke("tool.ping", {}); return { done: true }; } },
   { id: "agent.fails", version: "1", run: async () => { throw new Error("boom"); } },
 ];
 
@@ -90,7 +91,7 @@ describe("case runs emit the extension on every consequential event", () => {
     await run("agent.program", "k2");
     await run("agent.fails", "k3");
     const rows = await observations(store);
-    expect(rows.length).toBeGreaterThanOrEqual(5); // 2 invocations + 3 terminal events
+    expect(rows.length).toBeGreaterThanOrEqual(5); // 3 run.started + 2 invocations + 3 terminal events
     const events = await runtime!.service.events(alice, {});
     const ids = new Set<string>();
     for await (const e of events as AsyncIterable<StoredEvent>) ids.add(e.eventId);
@@ -121,7 +122,7 @@ describe("case runs emit the extension on every consequential event", () => {
     const { store, run } = await start(exploratory);
     await run("agent.ping", "k1");
     const rows = await observations(store);
-    expect(rows.length).toBe(2);
+    expect(rows.length).toBe(3);
     for (const { observation } of rows) {
       expect(check(observation.interactionEvent)).toEqual([]);
       expect((observation.interactionEvent as any).context.episode_ref).toBeUndefined();
@@ -142,6 +143,52 @@ describe("case runs emit the extension on every consequential event", () => {
   test("an invalid case context is refused at start", async () => {
     const { run } = await start({ ...evaluated, episodeRef: undefined } as CaseContext);
     await expect(run("agent.ping", "k1")).rejects.toThrow(/episodeRef/);
+  });
+});
+
+// Event types a case run produces that are NOT consequential interactions. Anything not listed here and not in
+// INTERACTION_EVENT_TYPES fails the test below, so a new event type cannot slip through unclassified.
+const NON_CONSEQUENTIAL: ReadonlySet<string> = new Set<string>(["state.changed", "run.step.completed", "run.invocation.progress", "run.recall", "run.remote_offers", "run.artifact", "run.waiting", "run.resumed", "run.wait.closed", "run.governance.escalated", "run.invocation.ambiguous", "observation.recorded"]);
+
+describe("AT-05: 100 % of consequential events of a case run carry the extension", () => {
+  test("every event type a case run produces (incl. run.started and run.cancelled) is either an interaction with a valid extension anchored to its own event id, or explicitly classified non-consequential", async () => {
+    const { store, run } = await start(evaluated);
+    await run("agent.ping", "k1");
+    await run("agent.program", "k2");
+    await run("agent.fails", "k3");
+    const slow = await runtime!.service.startRun(alice, { agent: "agent.slow", input: {}, idempotencyKey: "k4", caseContext: evaluated });
+    await runtime!.service.cancelRun(alice, { runId: slow.runId, idempotencyKey: "c4", reason: "stop" });
+    await runtime!.service.cancelRun(alice, { runId: slow.runId, idempotencyKey: "c4", reason: "stop" }); // redelivery
+    const rows = await observations(store);
+    const byRecord = new Map<string, number>();
+    for (const { observation } of rows) byRecord.set(observation.eventId, (byRecord.get(observation.eventId) ?? 0) + 1);
+    const events: StoredEvent[] = [];
+    for await (const e of runtime!.service.events(alice, {})) events.push(e);
+    const types = new Set(events.map((e) => e.eventType));
+    for (const t of ["run.started", "run.invocation", "run.completed", "run.failed", "run.cancelled"]) expect(types.has(t)).toBe(true);
+    const unclassified = [...types].filter((t) => !INTERACTION_EVENT_TYPES.has(t) && !NON_CONSEQUENTIAL.has(t));
+    expect(unclassified).toEqual([]);
+    for (const e of events.filter((e) => INTERACTION_EVENT_TYPES.has(e.eventType))) {
+      expect(byRecord.get(e.eventId), `${e.eventType} ${e.eventId} lacks the extension`).toBe(1); // present, and once (idempotent)
+      const ext = rows.find((r) => r.observation.eventId === e.eventId)!.observation.interactionEvent as Record<string, any>;
+      expect(check(ext)).toEqual([]);
+      for (const key of REQUIRED) expect(ext[key]).toBeDefined();
+      expect(ext.source.record_id).toBe(e.eventId);
+      expect(ext.correlation.run_id).toBe(e.runId);
+      expect(ext.actor.principal).toBe("alice");
+    }
+    const cancelled = events.filter((e) => e.eventType === "run.cancelled");
+    expect(cancelled).toHaveLength(1);
+    expect((rows.find((r) => r.observation.eventId === cancelled[0]!.eventId)!.observation.interactionEvent as any).outcome.status).toBe("interrupted");
+    // Nothing extra: every observation row belongs to an interaction event of this store.
+    expect(rows.length).toBe(events.filter((e) => INTERACTION_EVENT_TYPES.has(e.eventType)).length);
+  });
+
+  test("a non-case run emits nothing for run.started or run.cancelled", async () => {
+    const { store } = await start(undefined);
+    const slow = await runtime!.service.startRun(alice, { agent: "agent.slow", input: {}, idempotencyKey: "k5" });
+    await runtime!.service.cancelRun(alice, { runId: slow.runId, idempotencyKey: "c5", reason: "stop" });
+    expect(await observations(store)).toEqual([]);
   });
 });
 

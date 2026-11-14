@@ -42,6 +42,21 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       const runId = randomUUID();
       const correlationId = request.correlationId ?? randomUUID();
       const occurredAt = new Date().toISOString();
+      const startedMetadata = { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind, ...(request.caseContext ? { caseContext: { ...request.caseContext, principal: caller.actor.id } as unknown as Json } : {}) };
+      // Pre-assign the id so the outbox hook can derive intents that commit atomically with the event (same path as executor events).
+      const startedEvent = {
+        eventType: "run.started",
+        schemaVersion: 1,
+        occurredAt,
+        tenant: caller.tenant,
+        correlationId,
+        causationId: null,
+        runId,
+        scopeId: core.scopeId,
+        payload: { input: request.input },
+        metadata: startedMetadata,
+      };
+      const startedId = randomUUID();
       try {
         const outcome = await store.commit({
           idempotency: {
@@ -54,20 +69,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
             {
               streamId: runStream(runId),
               expectedVersion: 0,
-              events: [
-                {
-                  eventType: "run.started",
-                  schemaVersion: 1,
-                  occurredAt,
-                  tenant: caller.tenant,
-                  correlationId,
-                  causationId: null,
-                  runId,
-                  scopeId: core.scopeId,
-                  payload: { input: request.input },
-                  metadata: { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind, ...(request.caseContext ? { caseContext: { ...request.caseContext, principal: caller.actor.id } as unknown as Json } : {}) },
-                },
-              ],
+              events: [{ ...startedEvent, eventId: startedId }],
             },
             // Caller-seeded state, committed atomically with `run.started` on the state stream so the
             // agent's first `ctx.state()` read (even before suspending) always sees it (spec §29.1).
@@ -95,7 +97,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
               : []),
           ],
           records: [{ collection: RUNS, id: runId, expectedVersion: 0, value: { tenant: caller.tenant, agent: agent.id, correlationId, startedBy: caller.actor.id, scopeId: core.scopeId } }],
-          outbox: [{ id: `${RUN_EXECUTE_TOPIC}:${runId}`, topic: RUN_EXECUTE_TOPIC, payload: { runId } }],
+          outbox: [{ id: `${RUN_EXECUTE_TOPIC}:${runId}`, topic: RUN_EXECUTE_TOPIC, payload: { runId } }, ...core.outboxFor({ ...startedEvent, eventId: startedId, streamId: runStream(runId), recordedAt: occurredAt, streamSequence: 1 })],
           result: { runId },
         });
         core.kick();
@@ -115,6 +117,20 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       for (let attempt = 0; attempt < 5; attempt++) {
         const { view, events } = await readRun(caller, request.runId);
         if (isTerminal(view)) return view;
+        const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
+        const cancelledId = randomUUID();
+        const cancelledEvent = {
+          eventType: "run.cancelled",
+          schemaVersion: 1,
+          occurredAt: new Date().toISOString(),
+          tenant: view.tenant,
+          correlationId: view.correlationId,
+          causationId: events.at(-1)!.eventId,
+          runId: request.runId,
+          scopeId: events[0]!.scopeId,
+          payload: { reason: request.reason },
+          metadata: { cancelledBy: caller.actor.id, ...(caseContext ? { caseContext } : {}) },
+        };
         try {
           await store.commit({
             idempotency: { scope: `${caller.tenant}:${caller.actor.id}:run.cancel`, key: request.idempotencyKey, fingerprint: fingerprint({ runId: request.runId, reason: request.reason }) },
@@ -122,22 +138,10 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
               {
                 streamId: runStream(request.runId),
                 expectedVersion: events.length,
-                events: [
-                  {
-                    eventType: "run.cancelled",
-                    schemaVersion: 1,
-                    occurredAt: new Date().toISOString(),
-                    tenant: view.tenant,
-                    correlationId: view.correlationId,
-                    causationId: events.at(-1)!.eventId,
-                    runId: request.runId,
-                    scopeId: events[0]!.scopeId,
-                    payload: { reason: request.reason },
-                    metadata: { cancelledBy: caller.actor.id },
-                  },
-                ],
+                events: [{ ...cancelledEvent, eventId: cancelledId }],
               },
             ],
+            outbox: core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + 1 }),
             result: { runId: request.runId },
           });
         } catch (error) {
