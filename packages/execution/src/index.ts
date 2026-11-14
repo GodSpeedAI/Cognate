@@ -54,3 +54,6 @@ export type { MemoryExecutionWorldOptions } from "./memory.ts";
 export { commandFileSystem, nanoseconds } from "./command.ts";
 export type { RunScript, ScriptResult } from "./command.ts";
 export { createRootGuard, execScript, resolvePosix, shellQuote, supervisedExecScript } from "./posix.ts";
+
+export { PROGRAM_CAPABILITY, PROGRAM_CAPABILITY_VERSION, ProgramCommandFailedError, ProgramRefusedError, applyHunks, parsePatch, programExecutorComponent, sha256Hex } from "./program.ts";
+export type { ProgramExecutorOptions, ProgramRefusal, ProgramRunInput, ProgramRunResult } from "./program.ts";

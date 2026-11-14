@@ -146,7 +146,7 @@ export function createSxrCliPort(
         throw new Error(`realitytrace: sxr plan create failed (exit ${plan.exitCode}): ${plan.stderr || plan.stdout}`);
       }
 
-      const extensions = JSON.stringify({ cognate: correlationOf(observation) });
+      const extensions = JSON.stringify({ cognate: correlationOf(observation), ...(observation.interactionEvent !== undefined ? { "godspeed.interaction_event": observation.interactionEvent } : {}) });
       // A governed operation hands RealityTrace its CEP execution_trace to record; otherwise the bare observation.
       const content = observation.trace ?? stripTrace(observation);
       const ingest = await sxr(["ingest", "--run", workflow.runId, "--verifier", verifier, "--stdin-format", "json", "--extensions", extensions, "--json"], JSON.stringify(content));
@@ -194,7 +194,7 @@ export function createSxrCliPort(
 
 /** The observation without its trace (the trace is delivered as the content instead, never alongside it). */
 function stripTrace(observation: Observation): Observation {
-  const { trace: _trace, ...rest } = observation;
+  const { trace: _trace, interactionEvent: _interaction, ...rest } = observation;
   return rest;
 }
 

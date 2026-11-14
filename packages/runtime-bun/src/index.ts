@@ -29,7 +29,7 @@ export interface CognitionOptions {
 }
 
 /** A run event about to be committed. */
-export type PendingEvent = NewEvent & { readonly eventId: string; readonly streamId: string; readonly recordedAt: string };
+export type PendingEvent = NewEvent & { readonly eventId: string; readonly streamId: string; readonly recordedAt: string; /** The stream sequence this event will take on commit. */ readonly streamSequence: number };
 
 /** Outbox topic whose items represent RealityTrace observations; `inspect` reports their observation ids. */
 export const OBSERVATION_OUTBOX_TOPIC = "observation.deliver";

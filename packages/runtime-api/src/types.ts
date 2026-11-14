@@ -3,6 +3,33 @@ import type { Json, ProjectionCheckpoint, StoredEvent } from "@godspeedai/cognat
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import type { StateUpdate } from "./state.ts";
 
+// ── Case context (FDE semantic exhaust, WP-15) ─────────────────────────────────
+
+/**
+ * Optional case anchor for a run. When present, every consequential run event carries it into its
+ * `godspeed.interaction_event` observation; when absent the run behaves exactly as before. Recorded once, on
+ * `run.started`, so it is frozen for the run's life.
+ */
+export interface CaseContext {
+  /** Pinned semantic-world revision: `world:<name>@sha256:<64 hex>`. */
+  readonly worldRef: string;
+  /** Declared element the run addresses, `namespace::name`; an invocation's own semantic ref wins when it has one. */
+  readonly semanticRef: string;
+  readonly caseId: string;
+  readonly planItemId: string;
+  /** SOP role of the run's principal. */
+  readonly role: string;
+  readonly kind: "evaluated" | "exploratory";
+  /** `episode:<case>:<item>:<n>@sha256:<64 hex>`; required when `kind` is `evaluated`. */
+  readonly episodeRef?: string;
+  /** `assign:<caseId>:<stepId>:<n>:<k>`; present when the work was delegated. */
+  readonly assignmentId?: string;
+  /** RealityTrace `question:`/`threshold:` ids; evaluated events carry them (may be empty). */
+  readonly expectationRefs?: readonly string[];
+  /** RD-02 provenance flag. Default `live`; `program.run` invocations are always `program`. */
+  readonly executorProvenance?: "program" | "live" | "injected_fault";
+}
+
 // ── Agent authoring ────────────────────────────────────────────────────────────
 
 export interface WaitSpec {
@@ -228,7 +255,7 @@ export interface ObservationView {
 
 export interface RuntimeService {
   /** `state` seeds the run's shared state (a caller-sourced `state.changed` snapshot committed with `run.started`). */
-  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json }): Promise<RunView>;
+  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json; readonly caseContext?: CaseContext }): Promise<RunView>;
   getRun(caller: Caller, request: { readonly runId: string }): Promise<RunView>;
   cancelRun(caller: Caller, request: { readonly runId: string; readonly reason: string; readonly idempotencyKey: string }): Promise<RunView>;
   /**

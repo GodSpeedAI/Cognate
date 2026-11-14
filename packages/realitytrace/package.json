@@ -1,7 +1,7 @@
 {
   "name": "@godspeedai/cognate-realitytrace",
   "version": "0.9.1",
-  "description": "Observation port, committed-outbox delivery, receipts, strict gating, and the SXR CLI adapter (spec §20). RealityTrace stays unchanged.",
+  "description": "Observation port, committed-outbox delivery, receipts, strict gating, and the SXR CLI adapter (spec \u00a720). RealityTrace stays unchanged.",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
@@ -16,7 +16,8 @@
     "access": "public"
   },
   "files": [
-    "src"
+    "src",
+    "schemas"
   ],
   "exports": {
     ".": "./src/index.ts"
@@ -26,7 +27,11 @@
     "@godspeedai/cognate-kernel-api": "workspace:*"
   },
   "devDependencies": {
+    "@godspeedai/cognate-execution": "workspace:*",
+    "@godspeedai/cognate-runtime-api": "workspace:*",
+    "@godspeedai/cognate-runtime-bun": "workspace:*",
     "@godspeedai/cognate-store-memory": "workspace:*",
-    "@godspeedai/cognate-store-sqlite": "workspace:*"
+    "@godspeedai/cognate-store-sqlite": "workspace:*",
+    "ajv": "^8.17.1"
   }
 }

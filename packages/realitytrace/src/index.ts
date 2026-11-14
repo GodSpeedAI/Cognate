@@ -1,5 +1,6 @@
 export type * from "./types.ts";
 export * from "./godspeed.ts";
+export * from "./interaction-event.ts";
 import type { DurableStore, Json, OutboxIntent, StoredEvent } from "@godspeedai/cognate-events";
 import { OutboxDispatcher } from "@godspeedai/cognate-events";
 import type { Observation, ObservationPort, ObservationStatus } from "./types.ts";
@@ -11,7 +12,7 @@ const OBSERVATIONS_COLLECTION = "observations";
 /** Build the observation for a committed event and the outbox intent to include in the SAME decision (spec §13.1). */
 export function observationIntent(
   event: Pick<StoredEvent, "eventId" | "tenant" | "correlationId" | "causationId" | "runId" | "scopeId" | "componentId" | "fiberId" | "semanticRef" | "recordedAt">,
-  extra: Pick<Observation, "classification"> & Partial<Pick<Observation, "capabilityId" | "continuationId" | "inputRef" | "outputRef" | "trace">>,
+  extra: Pick<Observation, "classification"> & Partial<Pick<Observation, "capabilityId" | "continuationId" | "inputRef" | "outputRef" | "trace" | "interactionEvent">>,
 ): OutboxIntent {
   const observation: Observation = {
     observationId: `obs-${event.eventId}`,
@@ -30,6 +31,7 @@ export function observationIntent(
     ...(extra.inputRef !== undefined ? { inputRef: extra.inputRef } : {}),
     ...(extra.outputRef !== undefined ? { outputRef: extra.outputRef } : {}),
     ...(extra.trace !== undefined ? { trace: extra.trace } : {}),
+    ...(extra.interactionEvent !== undefined ? { interactionEvent: extra.interactionEvent } : {}),
     timestamp: event.recordedAt,
   };
   return {

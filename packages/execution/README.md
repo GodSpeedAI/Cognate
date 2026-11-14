@@ -64,6 +64,15 @@ const runtime = await createRuntime({
 
 Published capability ids: `filesystem.resolve`, `filesystem.stat`, `filesystem.readText`, `filesystem.writeText`, `filesystem.list`, `filesystem.version`, `process.exec`. Removing a provider makes its capabilities resolve unavailable — a clean failure, never a silent local fallback.
 
+### `program.run`
+
+`programExecutorComponent(registry)` publishes `program.run`, a separate capability that applies a hash-pinned unified diff inside a declared workspace and then runs one declared command. It is invoked through the kernel like any capability, so your policy and governance decide whether it runs (it is deliberately not in `EXECUTION_CAPABILITY_IDS`).
+
+- Input: `{ worldId, workspace, patch, patchSha256, argv, cwd?, timeoutMs? }`. `patchSha256` is the sha256 of the patch's UTF-8 bytes; a mismatch is refused (`ProgramRefusedError`, reason `patch_hash_mismatch`) before anything runs.
+- The patch is applied in memory first and written only if every hunk applies exactly; otherwise the workspace is untouched. v1 edits existing text files only (no create, delete, rename or binary).
+- `argv` is an array handed to the world's process port, never a shell; patch targets and `cwd` must resolve under `workspace`.
+- Result: `{ patchSha256, filesPatched, command, exitCode, timedOut, outputDigest, stdout, stderr }`. A non-zero exit throws `ProgramCommandFailedError`, so the failed invocation record keeps the exit code, patch hash, command and digest.
+
 Also exported: `commandFileSystem(runScript)` — a `FileSystemPort` built from a single "run this POSIX script" primitive (used by the WSL provider; handy for containers); the POSIX helpers `shellQuote`, `execScript`, `supervisedExecScript`, `resolvePosix`, `createRootGuard`; and the `./conformance` subpath.
 
 ## Writing a provider

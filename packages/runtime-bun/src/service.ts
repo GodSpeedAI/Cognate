@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, type Json, type StoredEvent } from "@godspeedai/cognate-events";
-import { applyStateUpdate, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
+import { applyStateUpdate, caseContextIssues, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -35,6 +35,10 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       await authorize(caller, "run.start", request.agent);
       const agent = core.agents.get(request.agent);
       if (!agent) throw new ServiceError("not_found", `agent ${request.agent} not found`);
+      if (request.caseContext) {
+        const issues = caseContextIssues(request.caseContext);
+        if (issues.length) throw new ServiceError("invalid_argument", `invalid caseContext: ${issues.join("; ")}`);
+      }
       const runId = randomUUID();
       const correlationId = request.correlationId ?? randomUUID();
       const occurredAt = new Date().toISOString();
@@ -44,7 +48,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
             scope: `${caller.tenant}:${caller.actor.id}:run.start`,
             key: request.idempotencyKey,
             // `state` is part of the fingerprint: reusing a key with a different seed is a different request.
-            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null }),
+            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null, ...(request.caseContext ? { caseContext: request.caseContext as unknown as Json } : {}) }),
           },
           appends: [
             {
@@ -61,7 +65,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
                   runId,
                   scopeId: core.scopeId,
                   payload: { input: request.input },
-                  metadata: { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind },
+                  metadata: { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind, ...(request.caseContext ? { caseContext: { ...request.caseContext, principal: caller.actor.id } as unknown as Json } : {}) },
                 },
               ],
             },

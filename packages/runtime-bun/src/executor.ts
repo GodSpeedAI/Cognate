@@ -69,6 +69,8 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
     if (controller.signal.aborted) halt(false);
   };
 
+  const caseContext = field<Json>(meta(started), "caseContext") ?? undefined;
+
   // Appends are serialized so concurrent RunContext calls cannot race on the stream version.
   let writes: Promise<unknown> = Promise.resolve();
   const append = (event: { eventType: string; payload: Json; metadata: { [key: string]: Json }; semanticRef?: SemanticRef | null; componentId?: string | null; fiberId?: string | null }): Promise<StoredEvent> => {
@@ -84,14 +86,15 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
         runId,
         scopeId: started.scopeId,
         payload: event.payload,
-        metadata: event.metadata,
+        // A case run's context (frozen on run.started) rides every event so its observation can be built from the event alone.
+        metadata: caseContext ? { ...event.metadata, caseContext } : event.metadata,
         ...(event.semanticRef ? { semanticRef: event.semanticRef } : {}),
         ...(event.componentId ? { componentId: event.componentId } : {}),
         ...(event.fiberId ? { fiberId: event.fiberId } : {}),
       };
       try {
         // Pre-assign the id so hooks can derive intents that commit atomically with the event (spec §13.1).
-        const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt };
+        const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt, streamSequence: version + 1 };
         const outcome = await core.store.commit({
           appends: [{
             streamId,
