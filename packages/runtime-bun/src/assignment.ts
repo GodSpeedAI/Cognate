@@ -18,10 +18,18 @@ export const ASSIGNMENT_SPEND_EVENT = "assignment.spend";
 const TEXT_MAX = 4096;
 const clamp = (text: string): string => (text.length === 0 ? "none" : text.length > TEXT_MAX ? text.slice(0, TEXT_MAX) : text);
 
-/** The assignment frozen on `run.started`, if the run was opened from one. */
+/** What a view shows for the brief once the `run.started` payload holding it has been erased. */
+export const ERASED_BRIEF = { instruction: "[erased]", adoptable_problem: "[erased]", domain_meaning: "[erased]", context_refs: [] } as const;
+
+/**
+ * The assignment frozen on `run.started`, if the run was opened from one. The binding fields are metadata; the brief is
+ * content, so it lives in the erasable payload (`assignmentBrief`) and reads as `ERASED_BRIEF` after erasure.
+ */
 export function assignmentOf(started: StoredEvent | undefined): Assignment | undefined {
   const value = started ? field<Json>(meta(started), "assignment") : null;
-  return value && typeof value === "object" ? (value as unknown as Assignment) : undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const brief = started ? field<Json>(started.payload, "assignmentBrief") : null;
+  return { ...(value as object), brief: brief && typeof brief === "object" ? brief : ERASED_BRIEF } as unknown as Assignment;
 }
 
 /** The assignment state folded from a run stream; `undefined` when the run has no assignment. */
@@ -35,14 +43,24 @@ export function foldAssignment(runId: string, events: readonly StoredEvent[]): A
   let exceeded: readonly BudgetBreach[] | undefined;
   for (const event of events) {
     if (!event.eventType.startsWith(ASSIGNMENT_EVENT_PREFIX)) continue;
-    const payload = event.payload as unknown as Record<string, unknown>;
+    // An erased event keeps its envelope; the state it carries (event name, spend totals, breaches) is also in its
+    // metadata, which is not content, so the fold survives erasure. Only the free-text `reason` is lost.
+    const payload = event.payload as unknown as Record<string, unknown> | null;
+    const md = meta(event);
     if (event.eventType === ASSIGNMENT_SPEND_EVENT) {
-      spend = payload.spend as SpendEntry[];
-      if (Array.isArray(payload.exceeded) && payload.exceeded.length) exceeded = payload.exceeded as BudgetBreach[];
+      const total = payload ? payload.spend : field<Json>(md, "spend");
+      if (Array.isArray(total)) spend = total as unknown as SpendEntry[];
+      const breaches = payload ? payload.exceeded : field<Json>(md, "breaches");
+      if (Array.isArray(breaches) && breaches.length) exceeded = breaches as unknown as BudgetBreach[];
       else acceptedSpend = spend;
-    } else {
+    } else if (payload) {
       sequence.push(payload as unknown as AssignmentEvent);
       acceptedSpend = (payload as unknown as AssignmentEvent).spend;
+    } else {
+      const name = field<string>(md, "assignmentEvent");
+      if (typeof name !== "string") continue;
+      // Every lifecycle event carries the accepted spend at the time it was recorded, which is the running total here.
+      sequence.push({ assignment_id: assignment.assignment_id, episode_ref: assignment.episode_ref, event: name as AssignmentEventName, at: event.occurredAt, spend: acceptedSpend });
     }
   }
   const linkExpiresAt = field<string>(meta(started), "linkExpiresAt");
@@ -161,7 +179,8 @@ export function createAssignmentService(core: Core): AssignmentService {
         acceptLifecycleEvent(current, current.assignment, event, current.linkExpiresAt);
         return [{ ...envelope(events, 0, "assignment.interrupted", event as unknown as Json, assignmentMetadata("interrupted", { by: caller.actor.id }), at) }];
       });
-      stopExecution(request.runId, "assignment interrupted");
+      // Stop only while the durable state still says interrupted: a replayed interrupt after a resume must not abort.
+      if (view.status === "interrupted") stopExecution(request.runId, "assignment interrupted");
       return view;
     },
 
@@ -185,7 +204,6 @@ export function createAssignmentService(core: Core): AssignmentService {
       if (!CURRENCIES.includes(request.currency)) throw new ServiceError("invalid_argument", `unknown currency ${String(request.currency)}`);
       const amount = request.amount;
       if (amount !== "unknown" && !(typeof amount === "number" && Number.isFinite(amount) && amount >= 0)) throw new ServiceError("invalid_argument", 'amount must be a number >= 0 or "unknown"');
-      let stopped = false;
       const view = await append(caller, "assignment.spend", request.idempotencyKey, { runId: request.runId, currency: request.currency, amount }, request.runId, (events, current, ids) => {
         if (current.status !== "started" && current.status !== "resumed") {
           throw new AssignmentRefusedError("ASSIGNMENT_TRANSITION_INVALID", `spend cannot be recorded while the assignment is ${current.status}`);
@@ -194,24 +212,29 @@ export function createAssignmentService(core: Core): AssignmentService {
         const spend = addSpend(current.spend, request.currency as Currency, amount);
         const breaches = budgetBreaches(current.assignment.budget, spend);
         const detail = { assignment_id: current.assignment.assignment_id, episode_ref: current.assignment.episode_ref, at, currency: request.currency, amount, spend };
-        if (breaches.length === 0) return [{ ...envelope(events, 0, ASSIGNMENT_SPEND_EVENT, detail as unknown as Json, assignmentMetadata("spend", { exceeded: false }), at) }];
+        if (breaches.length === 0) return [{ ...envelope(events, 0, ASSIGNMENT_SPEND_EVENT, detail as unknown as Json, assignmentMetadata("spend", { exceeded: false, spend: spend as unknown as Json }), at) }];
         // The overrun is recorded, then the run is stopped. The lifecycle `failed` carries the last in-budget spend, so
         // every lifecycle event stays acceptable to the contract (a spend above a limit is refused there).
-        stopped = true;
         const code = "ASSIGNMENT_BUDGET_EXCEEDED";
         const why = breaches.map((b) => `${b.currency} ${b.spent} > ${b.limit}`).join(", ");
         const failed = lifecycleEvent(current.assignment, "failed", at, current.acceptedSpend, `${code}: ${why}`);
         acceptLifecycleEvent(current, current.assignment, failed, current.linkExpiresAt);
         return [
-          { ...envelope(events, 0, ASSIGNMENT_SPEND_EVENT, { ...detail, exceeded: breaches, code } as unknown as Json, assignmentMetadata("spend", { exceeded: true }), at) },
+          { ...envelope(events, 0, ASSIGNMENT_SPEND_EVENT, { ...detail, exceeded: breaches, code } as unknown as Json, assignmentMetadata("spend", { exceeded: true, spend: spend as unknown as Json, breaches: breaches as unknown as Json }), at) },
           { ...envelope(events, 1, "assignment.failed", failed as unknown as Json, assignmentMetadata("failed"), at), causationId: ids[0]! },
           { ...envelope(events, 2, "run.failed", { error: `${code}: ${why}` }, { agent: field<string>(meta(events[0]!), "agent") ?? "" }, at), causationId: ids[1]! },
         ];
       });
-      if (stopped) {
+      // Derived from the committed state on every call (a retry, or a call after a failed cleanup, finishes it).
+      if (view.status === "failed" && view.budgetExceeded) {
         stopExecution(request.runId, "assignment budget exceeded");
         for (const c of await core.continuations.list({ runId: request.runId, status: "OPEN" })) {
-          await core.continuations.cancel(c.id, { actor: caller.actor, idempotencyKey: `assignment.budget:${request.idempotencyKey}:${c.id}`, reason: "ASSIGNMENT_BUDGET_EXCEEDED" });
+          try {
+            await core.continuations.cancel(c.id, { actor: caller.actor, idempotencyKey: `assignment.budget:${request.runId}:${c.id}`, reason: "ASSIGNMENT_BUDGET_EXCEEDED" });
+          } catch (error) {
+            // Another call may have cancelled it first; only a continuation that is still open is a failure.
+            if ((await core.continuations.list({ runId: request.runId, status: "OPEN" })).some((o) => o.id === c.id)) throw error;
+          }
         }
       }
       return view;

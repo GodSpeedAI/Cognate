@@ -157,7 +157,7 @@ function checkBrief(value: unknown, pointer: string, issues: AssignmentIssue[]):
   checkKeys(value, pointer, BRIEF_REQUIRED, BRIEF_REQUIRED, issues);
   for (const key of ["instruction", "adoptable_problem", "domain_meaning"]) if (key in value) checkText(value[key], `${pointer}/${key}`, issues);
   const refs = value.context_refs;
-  if (refs === undefined) return;
+  if (!("context_refs" in value)) return; // reported missing by checkKeys
   if (!Array.isArray(refs) || refs.length > defs.Brief.properties.context_refs.maxItems) return void issues.push({ pointer: `${pointer}/context_refs`, message: "must be an array of at most 256 entries" });
   refs.forEach((entry, index) => {
     const at = `${pointer}/context_refs/${index}`;

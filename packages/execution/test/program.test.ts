@@ -22,15 +22,17 @@ const PATCH = [
 // A second file whose hunk cannot apply: the first file must stay untouched too (no partial application).
 const BAD_SECOND = PATCH + ["--- a/src/b.txt", "+++ b/src/b.txt", "@@ -1,1 +1,1 @@", "-nope", "+never", ""].join("\n");
 
+let parent: string; // test-owned, so `..` fixtures never touch a shared directory
 let root: string;
 const read = (p: string) => readFile(join(root, p), "utf8");
 
 beforeEach(async () => {
-  root = await mkdtemp(join(process.env.TMPDIR ?? tmpdir(), "cognate-program-"));
+  parent = await mkdtemp(join(process.env.TMPDIR ?? tmpdir(), "cognate-program-"));
+  root = join(parent, "ws");
   await Bun.write(join(root, "src/a.txt"), "one\ntwo\nthree\n");
   await Bun.write(join(root, "src/b.txt"), "real\n");
 });
-afterEach(() => rm(root, { recursive: true, force: true }));
+afterEach(() => rm(parent, { recursive: true, force: true }));
 
 async function kernel(allow: readonly string[] = [PROGRAM_CAPABILITY], world = localExecutionWorld({ worldId: "w" })) {
   const registry = createExecutionWorldRegistry([world]);
@@ -101,7 +103,6 @@ describe("program.run", () => {
     const a = await run(await kernel(), { ...base(), patch: esc, patchSha256: sha256Hex(esc) });
     expect(a.failure?.error?.reason).toBe("path_escape");
     expect(await readFile(join(root, "..", "outside.txt"), "utf8")).toBe("x\n");
-    await rm(join(root, "..", "outside.txt"));
     const b = await run(await kernel(), { ...base(), cwd: ".." });
     expect(b.failure?.error?.reason).toBe("path_escape");
     const c = await run(await kernel(), { ...base(), cwd: "/etc" });
@@ -137,6 +138,41 @@ describe("program.run", () => {
     const r = await run(await kernel(), { ...base(), patch, patchSha256: sha256Hex(patch), argv: ["true"] });
     expect(r.ok).toBe(true);
     expect(await read("src/n.txt")).toBe("a\nc");
+  });
+
+  test("inserting unterminated text into an existing empty file adds no phantom newline", async () => {
+    await Bun.write(join(root, "src/e.txt"), "");
+    const patch = ["--- a/src/e.txt", "+++ b/src/e.txt", "@@ -0,0 +1,1 @@", "+x", "\\ No newline at end of file", ""].join("\n");
+    const r = await run(await kernel(), { ...base(), patch, patchSha256: sha256Hex(patch), argv: ["true"] });
+    expect(r.ok).toBe(true);
+    expect(await read("src/e.txt")).toBe("x");
+  });
+
+  test("two patch paths that resolve to the same file are refused before anything is written", async () => {
+    const patch = PATCH + PATCH.replaceAll("src/a.txt", "src/./a.txt");
+    const r = await run(await kernel(), { ...base(), patch, patchSha256: sha256Hex(patch), argv: ["true"] });
+    expect(r.failure?.error?.reason).toBe("patch_malformed");
+    expect(await read("src/a.txt")).toBe("one\ntwo\nthree\n");
+  });
+
+  test("a file saved by someone else after planning is refused, not overwritten", async () => {
+    const w = localExecutionWorld({ worldId: "w" });
+    let reads = 0;
+    const world = {
+      ...w,
+      fileSystem: {
+        ...w.fileSystem,
+        async readText(path: string) {
+          const t = await w.fileSystem.readText(path);
+          if (path.endsWith("src/a.txt") && ++reads === 1) await writeFile(path, "someone else\n");
+          return t;
+        },
+      },
+    };
+    const r = await run(await kernel([PROGRAM_CAPABILITY], world), { ...base(), argv: ["touch", "ran.marker"] });
+    expect(r.failure?.error?.reason).toBe("patch_not_applicable");
+    expect(await read("src/a.txt")).toBe("someone else\n");
+    expect(await Bun.file(join(root, "ran.marker")).exists()).toBe(false);
   });
   describe("symlinks", () => {
     let outside: string;

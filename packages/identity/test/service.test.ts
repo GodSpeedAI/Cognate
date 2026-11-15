@@ -140,6 +140,20 @@ describe("devices", () => {
     expect(await service.resolveSession(first.session.token)).toBeUndefined();
   });
 
+  test("two concurrent enrolments of one credential for different operators: exactly one device record", async () => {
+    const { service } = setup();
+    await service.registerOperator({ tenant, operatorId });
+    await service.registerOperator({ tenant, operatorId: "operator-two" });
+    const reg = await registration(new SoftPasskey(7));
+    const results = await Promise.allSettled([
+      service.enrolDevice({ tenant, operatorId, label: "a", registration: reg }),
+      service.enrolDevice({ tenant, operatorId: "operator-two", label: "b", registration: reg }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const all = [...(await service.listDevices(tenant, operatorId)), ...(await service.listDevices(tenant, "operator-two"))];
+    expect(all.filter((d) => d.credentialId === reg.credentialId)).toHaveLength(1);
+  });
+
   test("re-authentication advances the sign count, rotates the session, and refuses replay", async () => {
     const { service, store } = setup();
     await service.registerOperator({ tenant, operatorId });

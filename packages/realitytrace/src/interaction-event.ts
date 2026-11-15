@@ -81,7 +81,9 @@ export function interactionEventFor(event: InteractionSource): Obj | undefined {
     world_ref: str("worldRef")!,
     semantic_ref: semanticRef,
     declaration_key: declarationKey(semanticRef),
-    actor: { principal: str("principal") ?? "unknown", role: str("role")! },
+    // An operator action (cancel, interrupt, resume) is attributed to the operator who performed it; agent execution
+    // keeps the principal frozen at start.
+    actor: { principal: (typeof meta.cancelledBy === "string" ? meta.cancelledBy : typeof meta.by === "string" ? meta.by : undefined) ?? str("principal") ?? "unknown", role: str("role")! },
     operation: invocation ? capability : event.eventType,
     resource: invocation ? `capability:${capability}` : `run:${event.runId}`,
     context: { case_id: str("caseId")!, plan_item_id: str("planItemId")!, ...(episodeRef ? { episode_ref: episodeRef } : {}), ...(assignmentId ? { assignment_id: assignmentId } : {}) },

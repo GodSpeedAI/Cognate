@@ -18,6 +18,8 @@ import { assertRelyingParty, verifyAssertion, type RelyingParty, type VerifiedRe
 export const OPERATORS = "identity-operators";
 export const SESSIONS = "identity-sessions";
 export const DEVICES = "identity-devices";
+/** One claim per credential id across all operators, so two concurrent enrolments cannot share a credential. */
+export const CREDENTIALS = "identity-credentials";
 export const SESSION_TOKEN_PREFIX = "idt1.";
 export const DEFAULT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const MIN_TTL_MS = 60_000;
@@ -368,6 +370,7 @@ export function createIdentityService(store: DurableStore, options: IdentityServ
         ...existing.map((old) => revokedDeviceWrite(old, "device replaced", now)),
         ...(await revokeSessionWrites(existing.map((old) => (old.value as unknown as DeviceRecord).sid), "device replaced", now)),
         { collection: DEVICES, id, expectedVersion: 0, value: asValue(device) },
+        { collection: CREDENTIALS, id: createHash("sha256").update(`${input.registration.credentialId}`).digest("hex"), expectedVersion: 0, value: asValue({ deviceId: id }) },
         sessionWrite(record),
       ];
       await store.commit({ appends: [], records });

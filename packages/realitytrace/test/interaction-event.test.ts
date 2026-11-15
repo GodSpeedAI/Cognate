@@ -267,3 +267,13 @@ describe("authority and redelivery", () => {
     for (const r of after) expect(r.id).toBe(`observation:${(r.observation.interactionEvent as any).source.record_id}`);
   });
 });
+
+describe("attribution of operator actions", () => {
+  const source = (eventType: string, metadata: Record<string, unknown>) => ({ eventId: "e1", eventType, runId: "r1", causationId: null, occurredAt: "2026-11-15T00:00:00.000Z", recordedAt: "2026-11-15T00:00:00.000Z", streamSequence: 3, metadata: { caseContext: { ...evaluated, principal: "alice" }, ...metadata } });
+  test("a cancel, interrupt or resume by another operator is attributed to that operator; agent execution keeps the starter", () => {
+    expect((interactionEventFor(source("run.cancelled", { cancelledBy: "bob" })) as any).actor.principal).toBe("bob");
+    expect((interactionEventFor(source("assignment.interrupted", { by: "bob" })) as any).actor.principal).toBe("bob");
+    expect((interactionEventFor(source("assignment.resumed", { by: "carol" })) as any).actor.principal).toBe("carol");
+    expect((interactionEventFor(source("run.completed", {})) as any).actor.principal).toBe("alice");
+  });
+});

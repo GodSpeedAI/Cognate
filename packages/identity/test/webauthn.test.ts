@@ -42,6 +42,15 @@ describe("assertion", () => {
     expect(result.signCount).toBe(1);
   });
 
+  test("rejects a cross-origin (embedded) ceremony and any topOrigin", async () => {
+    const { passkey, registration } = enrolled();
+    const challenge = newChallenge();
+    const expected = { challenge, ...party, publicKey: registration.publicKey, signCount: 0 };
+    expect(await code(() => verifyAssertion(passkey.assert({ challenge, ...party, signCount: 1, clientData: { crossOrigin: true } }), expected))).toBe("origin");
+    expect(await code(() => verifyAssertion(passkey.assert({ challenge, ...party, signCount: 1, clientData: { crossOrigin: false, topOrigin: "https://evil.example.test" } }), expected))).toBe("origin");
+    expect(await code(() => verifyAssertion(passkey.assert({ challenge, ...party, signCount: 1, clientData: { crossOrigin: false } }), expected))).toBe("accepted");
+  });
+
   test("rejects wrong origin and wrong RP ID", async () => {
     const { passkey, registration } = enrolled();
     const challenge = newChallenge();

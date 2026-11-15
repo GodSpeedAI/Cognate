@@ -167,7 +167,8 @@ export function parsePatch(patch: string): FilePatch[] {
 /** Apply every hunk of one file exactly; throws `patch_not_applicable` on any mismatch. Pure. */
 export function applyHunks(path: string, original: string, hunks: readonly Hunk[]): string {
   const trailing = original.endsWith("\n");
-  const src = original.split("\n");
+  // An empty file has zero source lines, not one empty line.
+  const src = original === "" ? [] : original.split("\n");
   if (trailing) src.pop();
   const out: string[] = [];
   let cursor = 0;
@@ -233,16 +234,18 @@ export function programExecutorComponent(registry: ExecutionWorldRegistry, optio
         };
         const cwd = resolveIn(input.cwd ?? ".");
         const rootAbs = fs.resolve(input.workspace, ".");
+        // The workspace's canonical identity is fixed once; a root that later resolves elsewhere is refused, never adopted.
+        const realRoot = fs.realPath ? await fs.realPath(rootAbs) : undefined;
+        if (fs.realPath && realRoot === undefined) throw new ProgramRefusedError("path_escape", "workspace root cannot be resolved");
         /** Refuse unless the real path is the real root plus the same relative path (no symlink anywhere along it). */
         const assertReal = async (absolute: string, label: string, mustExist: boolean): Promise<void> => {
-          if (!fs.realPath) return;
-          const realRoot = await fs.realPath(rootAbs);
+          if (!fs.realPath || realRoot === undefined) return;
+          if ((await fs.realPath(rootAbs)) !== realRoot) throw new ProgramRefusedError("path_escape", "the workspace root changed during the run");
           const real = await fs.realPath(absolute);
           if (real === undefined) {
             if (mustExist || (await fs.exists(absolute))) throw new ProgramRefusedError("path_escape", `${label}: cannot resolve real path`);
             return;
           }
-          if (realRoot === undefined) throw new ProgramRefusedError("path_escape", "workspace root cannot be resolved");
           const expected = absolute === rootAbs ? realRoot : realRoot.replace(/\/$/, "") + absolute.slice(rootAbs.length);
           if (real !== expected) throw new ProgramRefusedError("path_escape", `${label}: a symlink along the path is not allowed`);
         };
@@ -252,9 +255,10 @@ export function programExecutorComponent(registry: ExecutionWorldRegistry, optio
         const planned: { readonly path: string; readonly absolute: string; readonly before: string; readonly after: string }[] = [];
         const seen = new Set<string>();
         for (const file of parsePatch(input.patch)) {
-          if (seen.has(file.path)) throw new ProgramRefusedError("patch_malformed", `${file.path} appears twice`);
-          seen.add(file.path);
           const absolute = resolveIn(file.path);
+          // Deduplicate resolved targets: `a.txt` and `./a.txt` are the same file.
+          if (seen.has(absolute)) throw new ProgramRefusedError("patch_malformed", `${file.path} appears twice`);
+          seen.add(absolute);
           await assertReal(absolute, file.path, false);
           if (!(await fs.exists(absolute))) throw new ProgramRefusedError("patch_not_applicable", `${file.path} does not exist`);
           const before = await fs.readText(absolute);
@@ -264,13 +268,18 @@ export function programExecutorComponent(registry: ExecutionWorldRegistry, optio
         // Commit: write all; on any failure put back every file touched (including the one whose write failed, which
         // may be partly written), then rethrow. Guarantee: if every restore write succeeds the tree equals its original;
         // a restore that itself fails is reported in the error, never swallowed. Each target is re-verified immediately
-        // before its write.
+        // before its write, and its content must still be what planning read: an intervening save is refused, not
+        // overwritten. Rollback restores only files that still hold this invocation's write.
         const touched: typeof planned[number][] = [];
+        let tearing: typeof planned[number] | undefined; // the file whose write threw may hold a torn write; it is ours
         try {
           for (const file of planned) {
             await assertReal(file.absolute, file.path, true);
+            if ((await fs.readText(file.absolute)) !== file.before) throw new ProgramRefusedError("patch_not_applicable", `${file.path} changed after planning`);
             touched.push(file);
+            tearing = file;
             await fs.writeText(file.absolute, file.after);
+            tearing = undefined;
           }
           await assertReal(cwd, "cwd", false);
         } catch (error) {
@@ -278,6 +287,9 @@ export function programExecutorComponent(registry: ExecutionWorldRegistry, optio
           for (const file of touched.reverse()) {
             try {
               await assertReal(file.absolute, file.path, true);
+              const current = await fs.readText(file.absolute);
+              if (current === file.before) continue;
+              if (current !== file.after && file !== tearing) throw new Error("changed by another writer");
               await fs.writeText(file.absolute, file.before);
             } catch {
               unrestored.push(file.path);

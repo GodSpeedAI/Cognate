@@ -101,7 +101,7 @@ export function assertionOptions(input: { readonly challenge: Uint8Array; readon
 
 function clientDataHash(raw: unknown, type: string, challenge: Uint8Array, origin: string): Uint8Array {
   const bytes = fromB64url(raw);
-  let data: { type?: unknown; challenge?: unknown; origin?: unknown };
+  let data: { type?: unknown; challenge?: unknown; origin?: unknown; crossOrigin?: unknown; topOrigin?: unknown };
   try {
     data = JSON.parse(new TextDecoder().decode(bytes)) as typeof data;
   } catch {
@@ -110,6 +110,8 @@ function clientDataHash(raw: unknown, type: string, challenge: Uint8Array, origi
   if (data.type !== type) throw new WebAuthnError("type", `clientDataJSON type is not ${type}`);
   if (data.challenge !== b64url(challenge)) throw new WebAuthnError("challenge", "the challenge does not match this request");
   if (data.origin !== origin) throw new WebAuthnError("origin", "the origin does not match this relying party");
+  // Policy: no embedded (cross-origin) ceremonies. A ceremony run inside another site's frame is refused.
+  if (data.crossOrigin === true || data.topOrigin !== undefined) throw new WebAuthnError("origin", "cross-origin ceremonies are not accepted");
   return sha256(bytes);
 }
 

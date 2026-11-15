@@ -107,7 +107,11 @@ describe("opening a run from an assignment", () => {
     const started = events[0]!;
     expect(started.eventType).toBe("run.started");
     const meta = started.metadata as Record<string, any>;
-    expect(meta.assignment).toEqual(a as never); // brief, budget, episode, id frozen as issued
+    const { brief, ...binding } = a;
+    expect(meta.assignment).toEqual(binding as never); // budget, episode, id frozen as issued; the brief is content
+    expect((started.payload as any).assignmentBrief).toEqual(brief as never); // ...so it lives in the erasable payload
+    expect(events[1]!.causationId).toBe(started.eventId); // run.started -> assignment.issued -> assignment.started
+    expect(events[2]!.causationId).toBe(events[1]!.eventId);
     expect(meta.caseContext).toMatchObject({ caseId: "case-0001", planItemId: "item-03", assignmentId: a.assignment_id, episodeRef: a.episode_ref, principal: "alice" });
     await until(async () => (await status(rt, run.runId)) === "completed");
     const view = await rt.assignments.getAssignment(alice, { runId: run.runId });
@@ -224,6 +228,37 @@ describe("interruption and resume", () => {
     await runtime.close();
     runtime = undefined;
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("a replayed interrupt after a resume does not abort the resumed execution", async () => {
+    const { rt } = await open();
+    const run = await start(rt, "agent.gated", assignmentFor(1), "g12", { input: { gate: "g12" } });
+    await until(async () => (await eventsOf(rt, run.runId)).some((e) => e.eventType === "run.step.completed"));
+    const req = { runId: run.runId, reason: "x", idempotencyKey: "i1" };
+    await rt.assignments.interruptAssignment(alice, req);
+    await rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" });
+    expect((await rt.assignments.interruptAssignment(alice, req)).status).toBe("resumed"); // the replay records nothing...
+    gate("g12").open();
+    await until(async () => (await status(rt, run.runId)) === "completed"); // ...and stops nothing
+    expect(effects).toEqual(["second"]);
+  });
+
+  test("erasing assignment payloads keeps the assignment readable: state survives, content is gone", async () => {
+    const { rt } = await open();
+    const run = await start(rt, "agent.gated", assignmentFor(1), "g13", { input: { gate: "g13" } });
+    await until(async () => (await eventsOf(rt, run.runId)).some((e) => e.eventType === "run.step.completed"));
+    await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: 1, idempotencyKey: "s1" });
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "private reason", idempotencyKey: "i1" });
+    const before = await rt.assignments.getAssignment(alice, { runId: run.runId });
+    for (const e of await eventsOf(rt, run.runId)) if (e.eventType === "run.started" || e.eventType.startsWith("assignment.")) await rt.erase(e.eventId, "gdpr", alice.actor);
+    const after = await rt.assignments.getAssignment(alice, { runId: run.runId });
+    expect(after.status).toBe("interrupted");
+    expect(lifecycle(after)).toEqual(lifecycle(before));
+    expect(after.spend).toEqual(before.spend);
+    expect(after.acceptedSpend).toEqual(before.acceptedSpend);
+    expect(after.assignment.brief.instruction).toBe("[erased]");
+    expect(after.events.at(-1)!.reason).toBeUndefined();
+    expect(JSON.stringify(await eventsOf(rt, run.runId))).not.toContain("private reason");
   });
 
   test("transitions the contract forbids are refused and record nothing", async () => {

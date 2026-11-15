@@ -63,7 +63,8 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       const startedMetadata = {
         agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind,
         ...(caseContext ? { caseContext: { ...caseContext, principal: caller.actor.id } as unknown as Json } : {}),
-        ...(assignment ? { assignment: assignment as unknown as Json, ...(request.linkExpiresAt !== undefined ? { linkExpiresAt: request.linkExpiresAt } : {}) } : {}),
+        // The brief is content: it goes in the erasable `run.started` payload, never metadata (see assignmentOf).
+        ...(assignment ? { assignment: (({ brief: _brief, ...binding }) => binding)(assignment) as unknown as Json, ...(request.linkExpiresAt !== undefined ? { linkExpiresAt: request.linkExpiresAt } : {}) } : {}),
       };
       // Pre-assign the id so the outbox hook can derive intents that commit atomically with the event (same path as executor events).
       const startedEvent = {
@@ -75,7 +76,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         causationId: null,
         runId,
         scopeId: core.scopeId,
-        payload: { input: request.input },
+        payload: { input: request.input, ...(assignment ? { assignmentBrief: assignment.brief as unknown as Json } : {}) },
         metadata: startedMetadata,
       };
       const startedId = randomUUID();
@@ -86,12 +87,13 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
             const began = lifecycleEvent(assignment, "started", occurredAt, spendOf(0));
             const afterIssued = acceptLifecycleEvent(undefined, assignment, issued);
             acceptLifecycleEvent({ runId, assignment, status: afterIssued.status!, spend: spendOf(0), acceptedSpend: spendOf(0), events: [issued] }, assignment, began);
+            const ids = [randomUUID(), randomUUID()];
             return [issued, began].map((payload, i) => ({
               ...startedEvent,
-              eventId: randomUUID(),
+              eventId: ids[i]!,
               eventType: `assignment.${payload.event}`,
               occurredAt: payload.at,
-              causationId: i === 0 ? startedId : null,
+              causationId: i === 0 ? startedId : ids[0]!,
               payload: payload as unknown as Json,
               metadata: { ...(caseContext ? { caseContext: startedMetadata.caseContext } : {}), ...assignmentMetadata(payload.event) },
             }));

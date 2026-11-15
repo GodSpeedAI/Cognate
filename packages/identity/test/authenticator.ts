@@ -54,8 +54,8 @@ export class SoftPasskey {
     return (up ? 0x01 : 0) | (uv ? 0x04 : 0) | extra;
   }
 
-  private clientData(type: string, challenge: Uint8Array, origin: string): Uint8Array {
-    return new TextEncoder().encode(JSON.stringify({ type, challenge: b64url(challenge), origin }));
+  private clientData(type: string, challenge: Uint8Array, origin: string, extra: Record<string, unknown> = {}): Uint8Array {
+    return new TextEncoder().encode(JSON.stringify({ type, challenge: b64url(challenge), origin, ...extra }));
   }
 
   register(input: { challenge: Uint8Array; origin: string; rpId: string; flags?: Flags; signCount?: number }) {
@@ -71,9 +71,9 @@ export class SoftPasskey {
     };
   }
 
-  assert(input: { challenge: Uint8Array; origin: string; rpId: string; signCount: number; flags?: Flags }) {
+  assert(input: { challenge: Uint8Array; origin: string; rpId: string; signCount: number; flags?: Flags; clientData?: Record<string, unknown> }) {
     const authData = concat(sha256(new TextEncoder().encode(input.rpId)), Uint8Array.from([this.flags(input.flags ?? {})]), u32(input.signCount));
-    const clientData = this.clientData("webauthn.get", input.challenge, input.origin);
+    const clientData = this.clientData("webauthn.get", input.challenge, input.origin, input.clientData);
     const signature = sign("sha256", concat(authData, sha256(clientData)), this.privateKey);
     return { response: { clientDataJSON: b64url(clientData), authenticatorData: b64url(authData), signature: b64url(signature) } };
   }

@@ -12,16 +12,18 @@ const EXPECTATION = /^(question|threshold):.+$/;
 export function caseContextIssues(context: CaseContext): string[] {
   const issues: string[] = [];
   const text = (v: unknown) => typeof v === "string" && v.length > 0;
-  if (!WORLD.test(String(context.worldRef))) issues.push("worldRef must be world:<name>@sha256:<64 hex>");
-  if (!SEMANTIC.test(String(context.semanticRef))) issues.push("semanticRef must be namespace::name");
+  // Type first: RegExp.test coerces, so ["world:..."] would otherwise match.
+  const matches = (re: RegExp, v: unknown) => typeof v === "string" && re.test(v);
+  if (!matches(WORLD, context.worldRef)) issues.push("worldRef must be world:<name>@sha256:<64 hex>");
+  if (!matches(SEMANTIC, context.semanticRef)) issues.push("semanticRef must be namespace::name");
   for (const key of ["caseId", "planItemId", "role"] as const) if (!text(context[key])) issues.push(`${key} is required`);
   if (context.kind !== "evaluated" && context.kind !== "exploratory") issues.push("kind must be evaluated or exploratory");
-  if (context.episodeRef !== undefined && !EPISODE.test(context.episodeRef)) issues.push("episodeRef is malformed");
+  if (context.episodeRef !== undefined && !matches(EPISODE, context.episodeRef)) issues.push("episodeRef is malformed");
   if (context.kind === "evaluated" && context.episodeRef === undefined) issues.push("an evaluated run needs episodeRef");
-  if (context.assignmentId !== undefined && !ASSIGNMENT.test(context.assignmentId)) issues.push("assignmentId is malformed");
+  if (context.assignmentId !== undefined && !matches(ASSIGNMENT, context.assignmentId)) issues.push("assignmentId is malformed");
   if (context.expectationRefs !== undefined) {
     const refs = context.expectationRefs;
-    if (!Array.isArray(refs) || !refs.every((r) => EXPECTATION.test(r))) issues.push("expectationRefs must be question:/threshold: ids");
+    if (!Array.isArray(refs) || !refs.every((r) => matches(EXPECTATION, r))) issues.push("expectationRefs must be question:/threshold: ids");
     else if (new Set(refs).size !== refs.length) issues.push("expectationRefs must be unique");
   }
   if (context.executorProvenance !== undefined && !["program", "live", "injected_fault"].includes(context.executorProvenance)) issues.push("executorProvenance is invalid");

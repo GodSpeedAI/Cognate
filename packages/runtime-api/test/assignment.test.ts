@@ -7,7 +7,7 @@ import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import {
   addSpend, ASSIGNMENT_CODES, budgetBreaches, formatAssignmentId, nextAssignmentEvents, parseAssignmentId, runAssignmentLifecycle, spendOf, stepAssignment,
-  validateAssignment, validateAssignmentError, validateAssignmentEvent, type AssignmentCode, type AssignmentEvent,
+  caseContextIssues, validateAssignment, validateAssignmentError, validateAssignmentEvent, type AssignmentCode, type AssignmentEvent,
 } from "../src/index.ts";
 
 const SCHEMAS = join(import.meta.dir, "..", "schemas");
@@ -101,6 +101,17 @@ describe("contract fixtures", () => {
   });
   test("every code of the contract's Error def is known", () => {
     expect([...ASSIGNMENT_CODES].sort()).toEqual(["ASSIGNMENT_BUDGET_EXCEEDED", "ASSIGNMENT_BUDGET_INVALID", "ASSIGNMENT_EPISODE_CHANGED", "ASSIGNMENT_ID_INVALID", "ASSIGNMENT_LINK_EXPIRED", "ASSIGNMENT_TRANSITION_INVALID"]);
+  });
+  test("brief.context_refs present but undefined is refused", () => {
+    const a = read("valid", "assignment-first-delegation.json");
+    expect(validateAssignment({ ...a, brief: { ...a.brief, context_refs: undefined } }).ok).toBe(false);
+  });
+  test("case-context references must be strings, not values that coerce to a matching string", () => {
+    const ctx = { worldRef: `world:fde-sop@sha256:${"a".repeat(64)}`, semanticRef: "fde-sop.work::Task", caseId: "c", planItemId: "p", role: "executor", kind: "exploratory" } as const;
+    expect(caseContextIssues(ctx as never)).toEqual([]);
+    expect(caseContextIssues({ ...ctx, worldRef: [ctx.worldRef] } as never)).not.toEqual([]);
+    expect(caseContextIssues({ ...ctx, semanticRef: [ctx.semanticRef] } as never)).not.toEqual([]);
+    expect(caseContextIssues({ ...ctx, expectationRefs: [["question:q1"]] } as never)).not.toEqual([]);
   });
   test("an unknown limit is accepted and money takes an ISO 4217 unit", () => {
     const a = read("valid", "assignment-first-delegation.json");
