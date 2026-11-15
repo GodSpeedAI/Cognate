@@ -1,0 +1,124 @@
+{
+  "id": "lifecycle-resume-changes-episode-ref",
+  "rule": "lifecycle",
+  "note": "a resume cannot rebind the assignment to another episode",
+  "events": [
+    {
+      "assignment_id": "assign:case-0001:item-03:1:1",
+      "episode_ref": "episode:case-0001:item-03:1@sha256:1f1e2e28b65a8957374e40e7e85c67309c07a6577ad8f997b12b4ce9ce866879",
+      "event": "issued",
+      "at": "2026-11-15T09:00:00Z",
+      "spend": [
+        {
+          "currency": "time",
+          "spent": 0
+        },
+        {
+          "currency": "attention",
+          "spent": 0
+        },
+        {
+          "currency": "money",
+          "spent": 0
+        },
+        {
+          "currency": "risk",
+          "spent": 0
+        },
+        {
+          "currency": "recovery",
+          "spent": 0
+        }
+      ]
+    },
+    {
+      "assignment_id": "assign:case-0001:item-03:1:1",
+      "episode_ref": "episode:case-0001:item-03:1@sha256:1f1e2e28b65a8957374e40e7e85c67309c07a6577ad8f997b12b4ce9ce866879",
+      "event": "started",
+      "at": "2026-11-15T09:01:00Z",
+      "spend": [
+        {
+          "currency": "time",
+          "spent": 0
+        },
+        {
+          "currency": "attention",
+          "spent": 0
+        },
+        {
+          "currency": "money",
+          "spent": 0
+        },
+        {
+          "currency": "risk",
+          "spent": 0
+        },
+        {
+          "currency": "recovery",
+          "spent": 0
+        }
+      ]
+    },
+    {
+      "assignment_id": "assign:case-0001:item-03:1:1",
+      "episode_ref": "episode:case-0001:item-03:1@sha256:1f1e2e28b65a8957374e40e7e85c67309c07a6577ad8f997b12b4ce9ce866879",
+      "event": "interrupted",
+      "at": "2026-11-15T09:10:00Z",
+      "spend": [
+        {
+          "currency": "time",
+          "spent": 3
+        },
+        {
+          "currency": "attention",
+          "spent": "unknown"
+        },
+        {
+          "currency": "money",
+          "spent": 3
+        },
+        {
+          "currency": "risk",
+          "spent": "unknown"
+        },
+        {
+          "currency": "recovery",
+          "spent": 3
+        }
+      ],
+      "reason": "x"
+    },
+    {
+      "assignment_id": "assign:case-0001:item-03:1:1",
+      "episode_ref": "episode:case-0001:item-03:2@sha256:abababababababababababababababababababababababababababababababab",
+      "event": "resumed",
+      "at": "2026-11-15T09:20:00Z",
+      "spend": [
+        {
+          "currency": "time",
+          "spent": 3
+        },
+        {
+          "currency": "attention",
+          "spent": "unknown"
+        },
+        {
+          "currency": "money",
+          "spent": 3
+        },
+        {
+          "currency": "risk",
+          "spent": "unknown"
+        },
+        {
+          "currency": "recovery",
+          "spent": 3
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "outcome": "refused",
+    "code": "ASSIGNMENT_EPISODE_CHANGED"
+  }
+}

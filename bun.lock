@@ -476,6 +476,9 @@
         "@godspeedai/cognate-events": "workspace:*",
         "@godspeedai/cognate-kernel-api": "workspace:*",
       },
+      "devDependencies": {
+        "ajv": "^8.17.1",
+      },
     },
     "packages/runtime-bun": {
       "name": "@godspeedai/cognate-runtime-bun",

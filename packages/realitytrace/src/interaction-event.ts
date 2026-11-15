@@ -26,7 +26,7 @@ export function uuidV5(name: string, namespace = CONCEPT_NAMESPACE): string {
 export const declarationKey = (semanticRef: string): string => `concept:${uuidV5(semanticRef)}`;
 
 /** Event types that are consequential interactions (the executor and the service commit these through the outbox hook). */
-export const INTERACTION_EVENT_TYPES: ReadonlySet<string> = new Set(["run.started", "run.invocation", "run.completed", "run.failed", "run.cancelled"]);
+export const INTERACTION_EVENT_TYPES: ReadonlySet<string> = new Set(["run.started", "run.invocation", "run.completed", "run.failed", "run.cancelled", "assignment.interrupted", "assignment.resumed", "assignment.spend"]);
 
 /** The committed (or about-to-commit) event fields this module reads. */
 export interface InteractionSource {
@@ -68,6 +68,8 @@ export function interactionEventFor(event: InteractionSource): Obj | undefined {
 
   let status: string;
   if (invocation) status = meta.ok === true ? "succeeded" : meta.failureKind === "denied" ? "denied" : "failed";
+  // Assignment events: an interruption is `interrupted`; a spend that exceeded a limit is `failed`; a resume or an in-budget spend succeeded.
+  else if (event.eventType.startsWith("assignment.")) status = event.eventType === "assignment.interrupted" ? "interrupted" : meta.exceeded === true ? "failed" : "succeeded";
   else status = event.eventType === "run.completed" || event.eventType === "run.started" ? "succeeded" : event.eventType === "run.cancelled" ? "interrupted" : "failed";
 
   const kind = str("kind")!;

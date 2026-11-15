@@ -1,0 +1,47 @@
+{
+  "assignment_id": "assign:case:0001:item-03:1:1",
+  "case_id": "case-0001",
+  "step_id": "item-03",
+  "n": 1,
+  "k": 1,
+  "episode_ref": "episode:case-0001:item-03:1@sha256:1f1e2e28b65a8957374e40e7e85c67309c07a6577ad8f997b12b4ce9ce866879",
+  "brief": {
+    "instruction": "Record the verifier's observation for gate G3.",
+    "adoptable_problem": "Why the evidence record is missing after the run.",
+    "domain_meaning": "An evidence record names an independent source.",
+    "context_refs": [
+      {
+        "ref": "doc:handoff-note-1",
+        "trust": "untrusted_reference"
+      }
+    ]
+  },
+  "budget": [
+    {
+      "currency": "time",
+      "limit": 14400,
+      "unit": "seconds"
+    },
+    {
+      "currency": "attention",
+      "limit": "unknown",
+      "unit": "operator_minutes"
+    },
+    {
+      "currency": "money",
+      "limit": 5,
+      "unit": "USD"
+    },
+    {
+      "currency": "risk",
+      "limit": "unknown",
+      "unit": "class"
+    },
+    {
+      "currency": "recovery",
+      "limit": 1,
+      "unit": "revert_steps"
+    }
+  ],
+  "issued_at": "2026-11-15T09:00:00Z"
+}

@@ -1,0 +1,230 @@
+{
+  "schema": "urn:sea-forge:fde:assignment:v1",
+  "valid": [
+    {
+      "file": "assignment-first-delegation.json",
+      "def": "Assignment"
+    },
+    {
+      "file": "assignment-second-instance.json",
+      "def": "Assignment"
+    },
+    {
+      "file": "assignment-episode-two.json",
+      "def": "Assignment"
+    },
+    {
+      "file": "event-issued.json",
+      "def": "Event"
+    },
+    {
+      "file": "event-interrupted.json",
+      "def": "Event"
+    },
+    {
+      "file": "event-completed-unknown-spend.json",
+      "def": "Event"
+    },
+    {
+      "file": "error-assignment-id-invalid.json",
+      "def": "Error"
+    }
+  ],
+  "invalid": [
+    {
+      "file": "id-four-part-old-form.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "id-k-zero.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "id-n-zero.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "id-colon-in-case-id.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "id-wrong-prefix.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "id-trailing-text.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "k-zero.json",
+      "def": "Assignment",
+      "pointer": "/k",
+      "contains": "is less than the minimum"
+    },
+    {
+      "file": "budget-four-currencies.json",
+      "def": "Assignment",
+      "pointer": "/budget",
+      "contains": "has less than"
+    },
+    {
+      "file": "budget-currency-not-in-the-five.json",
+      "def": "Assignment",
+      "pointer": "/budget/0/currency",
+      "contains": "is not one of"
+    },
+    {
+      "file": "budget-limit-negative.json",
+      "def": "Assignment",
+      "pointer": "/budget/2/limit",
+      "contains": "is not valid under any of the schemas"
+    },
+    {
+      "file": "budget-limit-string-not-unknown.json",
+      "def": "Assignment",
+      "pointer": "/budget/2/limit",
+      "contains": "is not valid under any of the schemas"
+    },
+    {
+      "file": "budget-limit-null.json",
+      "def": "Assignment",
+      "pointer": "/budget/1/limit",
+      "contains": "is not valid under any of the schemas"
+    },
+    {
+      "file": "budget-unit-not-a-unit-of-the-currency.json",
+      "def": "Assignment",
+      "pointer": "/budget/0/unit",
+      "contains": "is not one of"
+    },
+    {
+      "file": "budget-money-unit-not-iso.json",
+      "def": "Assignment",
+      "pointer": "/budget/2/unit",
+      "contains": "does not match"
+    },
+    {
+      "file": "id-longer-than-bound.json",
+      "def": "Assignment",
+      "pointer": "/assignment_id",
+      "contains": "does not match"
+    },
+    {
+      "file": "brief-without-adoptable-problem.json",
+      "def": "Assignment",
+      "pointer": "/brief",
+      "contains": "\"adoptable_problem\" is a required property"
+    },
+    {
+      "file": "brief-context-trusted.json",
+      "def": "Assignment",
+      "pointer": "/brief/context_refs/0/trust",
+      "contains": "was expected"
+    },
+    {
+      "file": "episode-ref-missing.json",
+      "def": "Assignment",
+      "pointer": "",
+      "contains": "\"episode_ref\" is a required property"
+    },
+    {
+      "file": "episode-ref-not-an-episode-ref.json",
+      "def": "Assignment",
+      "pointer": "/episode_ref",
+      "contains": "does not match"
+    },
+    {
+      "file": "extra-field.json",
+      "def": "Assignment",
+      "pointer": "",
+      "contains": "Additional properties"
+    },
+    {
+      "file": "event-unknown-name.json",
+      "def": "Event",
+      "pointer": "/event",
+      "contains": "is not one of"
+    },
+    {
+      "file": "event-interrupted-without-reason.json",
+      "def": "Event",
+      "pointer": "",
+      "contains": "\"reason\" is a required property"
+    },
+    {
+      "file": "event-spend-four-currencies.json",
+      "def": "Event",
+      "pointer": "/spend",
+      "contains": "has less than"
+    },
+    {
+      "file": "event-spend-negative.json",
+      "def": "Event",
+      "pointer": "/spend/0/spent",
+      "contains": "is not valid under any of the schemas"
+    },
+    {
+      "file": "event-timestamp-not-utc.json",
+      "def": "Event",
+      "pointer": "/at",
+      "contains": "does not match"
+    },
+    {
+      "file": "error-code-not-in-enum.json",
+      "def": "Error",
+      "pointer": "/code",
+      "contains": "is not one of"
+    }
+  ],
+  "semantic_invalid": [
+    {
+      "file": "id-n-differs-from-episode-ref.json",
+      "def": "Assignment",
+      "code": "ASSIGNMENT_ID_INVALID"
+    },
+    {
+      "file": "id-step-differs-from-episode-ref.json",
+      "def": "Assignment",
+      "code": "ASSIGNMENT_ID_INVALID"
+    },
+    {
+      "file": "fields-differ-from-id.json",
+      "def": "Assignment",
+      "code": "ASSIGNMENT_ID_INVALID"
+    },
+    {
+      "file": "budget-currency-repeated.json",
+      "def": "Assignment",
+      "code": "ASSIGNMENT_BUDGET_INVALID"
+    },
+    {
+      "file": "event-spend-currency-repeated.json",
+      "def": "Event",
+      "code": "ASSIGNMENT_BUDGET_INVALID"
+    }
+  ],
+  "scenarios": [
+    "lifecycle-delegate-interrupt-resume-complete.json",
+    "lifecycle-resume-changes-episode-ref.json",
+    "lifecycle-resume-changes-id.json",
+    "lifecycle-complete-before-start.json",
+    "lifecycle-event-after-terminal.json",
+    "lifecycle-resume-without-interrupt.json",
+    "lifecycle-cancel-while-interrupted.json",
+    "lifecycle-resume-after-link-expiry.json",
+    "lifecycle-spend-exceeds-budget.json",
+    "lifecycle-unknown-spend-never-exceeds.json"
+  ]
+}

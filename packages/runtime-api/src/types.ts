@@ -1,6 +1,7 @@
 // Transport-independent runtime service and agent authoring contract (spec §8, §10, §12, §22, §32; ADR-0011).
 import type { Json, ProjectionCheckpoint, StoredEvent } from "@godspeedai/cognate-events";
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
+import type { Assignment, AssignmentEvent, AssignmentEventName, BudgetBreach, Currency, SpendEntry } from "./assignment.ts";
 import type { StateUpdate } from "./state.ts";
 
 // ── Case context (FDE semantic exhaust, WP-15) ─────────────────────────────────
@@ -254,8 +255,13 @@ export interface ObservationView {
 }
 
 export interface RuntimeService {
-  /** `state` seeds the run's shared state (a caller-sourced `state.changed` snapshot committed with `run.started`). */
-  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json; readonly caseContext?: CaseContext }): Promise<RunView>;
+  /**
+   * `state` seeds the run's shared state (a caller-sourced `state.changed` snapshot committed with `run.started`).
+   * `assignment` (WP-23) binds the run to an `assignment.v1` payload: it requires `caseContext`, which it must agree
+   * with (case, step, episode, id), and it fills the context's `episodeRef` and `assignmentId`. `linkExpiresAt` is the
+   * `expires_at` of the delegation link; a later resume is refused after it. Refusals carry an `ASSIGNMENT_*` code.
+   */
+  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json; readonly caseContext?: CaseContext; readonly assignment?: Assignment; readonly linkExpiresAt?: string }): Promise<RunView>;
   getRun(caller: Caller, request: { readonly runId: string }): Promise<RunView>;
   cancelRun(caller: Caller, request: { readonly runId: string; readonly reason: string; readonly idempotencyKey: string }): Promise<RunView>;
   /**
@@ -313,4 +319,40 @@ export interface RuntimeService {
   listRemoteOffers(caller: Caller, request: { readonly agent: string }): Promise<readonly RemoteCapabilityOffer[]>;
   /** Revoke one of the caller's offers. Committed continuations remain durable. */
   revokeRemoteOffer(caller: Caller, request: { readonly offerId: string }): Promise<void>;
+}
+
+// ── Assignment binding (WP-23) ─────────────────────────────────────────────────
+
+/** The assignment a run is bound to, folded from the run stream. */
+export interface AssignmentView {
+  readonly runId: string;
+  readonly assignment: Assignment;
+  /** The last lifecycle event of the sequence. */
+  readonly status: AssignmentEventName;
+  /** Cumulative spend per currency, including an overrun that stopped the run. */
+  readonly spend: readonly SpendEntry[];
+  /** Spend carried by the last lifecycle event: the last cumulative spend that was within budget. */
+  readonly acceptedSpend: readonly SpendEntry[];
+  /** Set when a spend above a numeric limit stopped the run: what was exceeded. */
+  readonly budgetExceeded?: readonly BudgetBreach[];
+  readonly linkExpiresAt?: string;
+  /** The contract's lifecycle events, in order. */
+  readonly events: readonly AssignmentEvent[];
+}
+
+/** Lifecycle of the assignment a run was opened from. Refusals throw `AssignmentRefusedError` (an `ASSIGNMENT_*` code). */
+export interface AssignmentService {
+  getAssignment(caller: Caller, request: { readonly runId: string }): Promise<AssignmentView>;
+  /** Pause the run: records `interrupted`, stops the current execution pass, and keeps the assignment id. */
+  interruptAssignment(caller: Caller, request: { readonly runId: string; readonly reason: string; readonly idempotencyKey: string }): Promise<AssignmentView>;
+  /**
+   * Continue an interrupted run under the SAME assignment id. Refused with ASSIGNMENT_LINK_EXPIRED after the delegation
+   * link's `expires_at` (given at start): a new link means a new delegation, so a new `k` and a new run.
+   */
+  resumeAssignment(caller: Caller, request: { readonly runId: string; readonly idempotencyKey: string }): Promise<AssignmentView>;
+  /**
+   * Record spend in one currency (`amount` is added; `"unknown"` makes the currency unknown). A cumulative numeric
+   * spend above a numeric limit stops the run with ASSIGNMENT_BUDGET_EXCEEDED: the overrun is recorded, never dropped.
+   */
+  recordSpend(caller: Caller, request: { readonly runId: string; readonly currency: Currency; readonly amount: number | "unknown"; readonly idempotencyKey: string }): Promise<AssignmentView>;
 }

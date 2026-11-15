@@ -1,8 +1,9 @@
 // In-process RuntimeService (ADR-0011): authorization, tenancy, and typed errors over the durable core.
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, type Json, type StoredEvent } from "@godspeedai/cognate-events";
-import { applyStateUpdate, caseContextIssues, type Caller, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
+import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
+import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
+import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -35,14 +36,35 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
       await authorize(caller, "run.start", request.agent);
       const agent = core.agents.get(request.agent);
       if (!agent) throw new ServiceError("not_found", `agent ${request.agent} not found`);
-      if (request.caseContext) {
-        const issues = caseContextIssues(request.caseContext);
+      // WP-23: an assignment implies the case context (it fills episodeRef and assignmentId) and must agree with it.
+      let caseContext = request.caseContext;
+      const assignment = request.assignment;
+      if (assignment) {
+        const checked = validateAssignment(assignment);
+        if (!checked.ok) {
+          const detail = checked.issues.map((i) => `${i.pointer || "/"} ${i.message}`).join("; ");
+          if (checked.code) throw new AssignmentRefusedError(checked.code, detail);
+          throw new ServiceError("invalid_argument", `invalid assignment: ${detail}`);
+        }
+        if (!caseContext) throw new ServiceError("invalid_argument", "an assignment needs caseContext: worldRef, semanticRef, role and kind are not part of the assignment");
+        if (caseContext.caseId !== assignment.case_id || caseContext.planItemId !== assignment.step_id) throw new AssignmentRefusedError("ASSIGNMENT_ID_INVALID", `caseContext ${caseContext.caseId}/${caseContext.planItemId} disagrees with the assignment ${assignment.case_id}/${assignment.step_id}`);
+        if (caseContext.episodeRef !== undefined && caseContext.episodeRef !== assignment.episode_ref) throw new AssignmentRefusedError("ASSIGNMENT_EPISODE_CHANGED", `caseContext names ${caseContext.episodeRef}, the assignment is bound to ${assignment.episode_ref}`);
+        if (caseContext.assignmentId !== undefined && caseContext.assignmentId !== assignment.assignment_id) throw new AssignmentRefusedError("ASSIGNMENT_ID_INVALID", `caseContext carries ${caseContext.assignmentId}, the assignment is ${assignment.assignment_id}`);
+        if (request.linkExpiresAt !== undefined && Number.isNaN(Date.parse(request.linkExpiresAt))) throw new ServiceError("invalid_argument", "linkExpiresAt must be a UTC timestamp");
+        caseContext = { ...caseContext, episodeRef: assignment.episode_ref, assignmentId: assignment.assignment_id };
+      } else if (request.linkExpiresAt !== undefined) throw new ServiceError("invalid_argument", "linkExpiresAt needs an assignment");
+      if (caseContext) {
+        const issues = caseContextIssues(caseContext);
         if (issues.length) throw new ServiceError("invalid_argument", `invalid caseContext: ${issues.join("; ")}`);
       }
       const runId = randomUUID();
       const correlationId = request.correlationId ?? randomUUID();
       const occurredAt = new Date().toISOString();
-      const startedMetadata = { agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind, ...(request.caseContext ? { caseContext: { ...request.caseContext, principal: caller.actor.id } as unknown as Json } : {}) };
+      const startedMetadata = {
+        agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind,
+        ...(caseContext ? { caseContext: { ...caseContext, principal: caller.actor.id } as unknown as Json } : {}),
+        ...(assignment ? { assignment: assignment as unknown as Json, ...(request.linkExpiresAt !== undefined ? { linkExpiresAt: request.linkExpiresAt } : {}) } : {}),
+      };
       // Pre-assign the id so the outbox hook can derive intents that commit atomically with the event (same path as executor events).
       const startedEvent = {
         eventType: "run.started",
@@ -57,19 +79,37 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         metadata: startedMetadata,
       };
       const startedId = randomUUID();
+      // The assignment's own sequence starts with the run: `issued` (as received) then `started`, spend all 0.
+      const lifecycle = assignment
+        ? (() => {
+            const issued = lifecycleEvent(assignment, "issued", assignment.issued_at, spendOf(0));
+            const began = lifecycleEvent(assignment, "started", occurredAt, spendOf(0));
+            const afterIssued = acceptLifecycleEvent(undefined, assignment, issued);
+            acceptLifecycleEvent({ runId, assignment, status: afterIssued.status!, spend: spendOf(0), acceptedSpend: spendOf(0), events: [issued] }, assignment, began);
+            return [issued, began].map((payload, i) => ({
+              ...startedEvent,
+              eventId: randomUUID(),
+              eventType: `assignment.${payload.event}`,
+              occurredAt: payload.at,
+              causationId: i === 0 ? startedId : null,
+              payload: payload as unknown as Json,
+              metadata: { ...(caseContext ? { caseContext: startedMetadata.caseContext } : {}), ...assignmentMetadata(payload.event) },
+            }));
+          })()
+        : [];
       try {
         const outcome = await store.commit({
           idempotency: {
             scope: `${caller.tenant}:${caller.actor.id}:run.start`,
             key: request.idempotencyKey,
             // `state` is part of the fingerprint: reusing a key with a different seed is a different request.
-            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null, ...(request.caseContext ? { caseContext: request.caseContext as unknown as Json } : {}) }),
+            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null, ...(request.caseContext ? { caseContext: request.caseContext as unknown as Json } : {}), ...(assignment ? { assignment: assignment as unknown as Json, linkExpiresAt: request.linkExpiresAt ?? null } : {}) }),
           },
           appends: [
             {
               streamId: runStream(runId),
               expectedVersion: 0,
-              events: [{ ...startedEvent, eventId: startedId }],
+              events: [{ ...startedEvent, eventId: startedId }, ...lifecycle],
             },
             // Caller-seeded state, committed atomically with `run.started` on the state stream so the
             // agent's first `ctx.state()` read (even before suspending) always sees it (spec §29.1).
@@ -96,14 +136,24 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
                 ]
               : []),
           ],
-          records: [{ collection: RUNS, id: runId, expectedVersion: 0, value: { tenant: caller.tenant, agent: agent.id, correlationId, startedBy: caller.actor.id, scopeId: core.scopeId } }],
-          outbox: [{ id: `${RUN_EXECUTE_TOPIC}:${runId}`, topic: RUN_EXECUTE_TOPIC, payload: { runId } }, ...core.outboxFor({ ...startedEvent, eventId: startedId, streamId: runStream(runId), recordedAt: occurredAt, streamSequence: 1 })],
+          records: [
+            { collection: RUNS, id: runId, expectedVersion: 0, value: { tenant: caller.tenant, agent: agent.id, correlationId, startedBy: caller.actor.id, scopeId: core.scopeId } },
+            // One run per assignment id (README section 11: a k already issued is ASSIGNMENT_ID_INVALID); a resume
+            // uses resumeAssignment on the run, it does not start another one.
+            ...(assignment ? [{ collection: ASSIGNMENTS, id: `${encodeURIComponent(caller.tenant)}/${assignment.assignment_id}`, expectedVersion: 0, value: { runId } }] : []),
+          ],
+          outbox: [
+            { id: `${RUN_EXECUTE_TOPIC}:${runId}`, topic: RUN_EXECUTE_TOPIC, payload: { runId } },
+            ...core.outboxFor({ ...startedEvent, eventId: startedId, streamId: runStream(runId), recordedAt: occurredAt, streamSequence: 1 }),
+            ...lifecycle.flatMap((event, i) => core.outboxFor({ ...event, streamId: runStream(runId), recordedAt: event.occurredAt, streamSequence: i + 2 })),
+          ],
           result: { runId },
         });
         core.kick();
         return (await readRun(caller, (outcome.result as { runId: string }).runId)).view;
       } catch (error) {
         if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
+        if (assignment && error instanceof RecordConflictError) throw new AssignmentRefusedError("ASSIGNMENT_ID_INVALID", `${assignment.assignment_id} was already issued to a run; resume it, or take a new k`);
         throw error;
       }
     },
@@ -119,13 +169,21 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         if (isTerminal(view)) return view;
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();
+        const assignmentView = foldAssignment(request.runId, events);
+        const cancelledAssignment = assignmentView && !["completed", "failed", "cancelled"].includes(assignmentView.status)
+          ? (() => {
+              const payload = lifecycleEvent(assignmentView.assignment, "cancelled", new Date().toISOString(), assignmentView.acceptedSpend, request.reason);
+              acceptLifecycleEvent(assignmentView, assignmentView.assignment, payload, assignmentView.linkExpiresAt);
+              return { eventType: "assignment.cancelled", schemaVersion: 1, occurredAt: payload.at, tenant: view.tenant, correlationId: view.correlationId, causationId: events.at(-1)!.eventId, runId: request.runId, scopeId: events[0]!.scopeId, payload: payload as unknown as Json, metadata: { ...(caseContext ? { caseContext } : {}), ...assignmentMetadata("cancelled", { by: caller.actor.id }) }, eventId: randomUUID() };
+            })()
+          : undefined;
         const cancelledEvent = {
           eventType: "run.cancelled",
           schemaVersion: 1,
           occurredAt: new Date().toISOString(),
           tenant: view.tenant,
           correlationId: view.correlationId,
-          causationId: events.at(-1)!.eventId,
+          causationId: cancelledAssignment?.eventId ?? events.at(-1)!.eventId,
           runId: request.runId,
           scopeId: events[0]!.scopeId,
           payload: { reason: request.reason },
@@ -138,10 +196,13 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
               {
                 streamId: runStream(request.runId),
                 expectedVersion: events.length,
-                events: [{ ...cancelledEvent, eventId: cancelledId }],
+                events: [...(cancelledAssignment ? [cancelledAssignment] : []), { ...cancelledEvent, eventId: cancelledId }],
               },
             ],
-            outbox: core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + 1 }),
+            outbox: [
+              ...(cancelledAssignment ? core.outboxFor({ ...cancelledAssignment, streamId: runStream(request.runId), recordedAt: cancelledAssignment.occurredAt, streamSequence: events.length + 1 }) : []),
+              ...core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + (cancelledAssignment ? 2 : 1) }),
+            ],
             result: { runId: request.runId },
           });
         } catch (error) {

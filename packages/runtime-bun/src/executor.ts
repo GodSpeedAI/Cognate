@@ -4,6 +4,7 @@
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, StaleRunOwnerError, type StoredEvent } from "@godspeedai/cognate-events";
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@godspeedai/cognate-runtime-api";
+import { acceptLifecycleEvent, assignmentMetadata, foldAssignment, lifecycleEvent } from "./assignment.ts";
 import type { Core, RecallResultJson } from "./core.ts";
 import { assertAuthorityClaims } from "./governed-operation.ts";
 import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -49,6 +50,8 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
   if (!view || isTerminal(view)) return "done";
   const agent = core.agents.get(view.agent);
   const started = events[0]!;
+  // An interrupted assignment is paused: nothing runs until `resumeAssignment` records the resume (WP-23).
+  if (foldAssignment(runId, events)?.status === "interrupted") return "done";
 
   let version = events.length;
   let lastEventId = events.at(-1)!.eventId;
@@ -489,8 +492,22 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
     await writes;
     // A sentinel the agent swallowed still wins: the execution is suspended/cancelled, not finished.
     if (halted || controller.signal.aborted) return halted?.retry ? "retry" : "done";
-    if (outcome.ok) await append({ eventType: "run.completed", payload: { output: outcome.value }, metadata: { agent: view.agent } });
-    else await append({ eventType: "run.failed", payload: { error: messageOf(outcome.error) }, metadata: { agent: view.agent } });
+    // An assignment run records its terminal lifecycle event (carrying the cumulative spend) before the run's own.
+    // On a retry after a crash in between, the assignment is already terminal and only the run event is appended.
+    const closeAssignment = async (name: "completed" | "failed", reason?: string) => {
+      const assignmentView = foldAssignment(runId, await core.store.readStream(streamId));
+      if (!assignmentView || !["started", "resumed"].includes(assignmentView.status)) return;
+      const payload = lifecycleEvent(assignmentView.assignment, name, new Date().toISOString(), assignmentView.acceptedSpend, reason);
+      acceptLifecycleEvent(assignmentView, assignmentView.assignment, payload, assignmentView.linkExpiresAt);
+      await append({ eventType: `assignment.${name}`, payload: payload as unknown as Json, metadata: assignmentMetadata(name) });
+    };
+    if (outcome.ok) {
+      await closeAssignment("completed");
+      await append({ eventType: "run.completed", payload: { output: outcome.value }, metadata: { agent: view.agent } });
+    } else {
+      await closeAssignment("failed", messageOf(outcome.error));
+      await append({ eventType: "run.failed", payload: { error: messageOf(outcome.error) }, metadata: { agent: view.agent } });
+    }
     return "done";
   } catch (error) {
     if (error instanceof Halt) return error.retry ? "retry" : "done";
