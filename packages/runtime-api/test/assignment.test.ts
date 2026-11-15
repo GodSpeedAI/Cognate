@@ -85,6 +85,20 @@ describe("contract fixtures", () => {
       expect(r.ok ? undefined : r.code).toBe("ASSIGNMENT_ID_INVALID");
     }
   });
+  test("the id must agree with the episode reference even when the repeated fields agree with the id (own cases, no contract fixture isolates this)", () => {
+    const a = read("valid", "assignment-first-delegation.json");
+    for (const bad of [
+      { ...a, assignment_id: "assign:case-0001:item-03:2:1", n: 2 }, // n of id and field differ from the episode's
+      { ...a, assignment_id: "assign:case-0001:item-99:1:1", step_id: "item-99" },
+      { ...a, assignment_id: "assign:case-9999:item-03:1:1", case_id: "case-9999" },
+    ]) {
+      const r = validateAssignment(bad);
+      expect(r.ok ? undefined : r.code).toBe("ASSIGNMENT_ID_INVALID");
+    }
+    const e = read("valid", "event-interrupted.json");
+    const r = validateAssignmentEvent({ ...e, assignment_id: "assign:case-0001:item-03:2:1" }); // an Event has no repeated fields: only the episode can disagree
+    expect(r.ok ? undefined : r.code).toBe("ASSIGNMENT_ID_INVALID");
+  });
   test("every code of the contract's Error def is known", () => {
     expect([...ASSIGNMENT_CODES].sort()).toEqual(["ASSIGNMENT_BUDGET_EXCEEDED", "ASSIGNMENT_BUDGET_INVALID", "ASSIGNMENT_EPISODE_CHANGED", "ASSIGNMENT_ID_INVALID", "ASSIGNMENT_LINK_EXPIRED", "ASSIGNMENT_TRANSITION_INVALID"]);
   });

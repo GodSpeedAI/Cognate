@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { StoredEvent } from "@godspeedai/cognate-events";
 import { type AgentDefinition, type Assignment, type AssignmentCode, AssignmentRefusedError, type AssignmentView, type CaseContext, type Caller, formatAssignmentId, runAssignmentLifecycle, ServiceError, validateAssignmentEvent } from "@godspeedai/cognate-runtime-api";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { type ActionPolicy, createRuntime, type Runtime } from "../src/index.ts";
 
 const FIXTURES = join(import.meta.dir, "..", "..", "runtime-api", "test", "fixtures", "assignment");
@@ -21,6 +23,8 @@ const contextFor = (a: Assignment, over: Partial<CaseContext> = {}): CaseContext
   worldRef: `world:fde-sop@sha256:${"a".repeat(64)}`, semanticRef: "fde-sop.work::Task", caseId: a.case_id, planItemId: a.step_id, role: "executor", kind: "evaluated", ...over,
 });
 
+/** Side effects an agent performs outside a durable step; an interrupted pass must not perform them. */
+const effects: string[] = [];
 const gates = new Map<string, { promise: Promise<void>; open: () => void }>();
 const gate = (name: string) => {
   if (!gates.has(name)) {
@@ -39,7 +43,7 @@ const agents: AgentDefinition[] = [
     run: async (input, ctx) => {
       await ctx.step("first", () => 1);
       await gate((input as { gate: string }).gate).promise;
-      await ctx.step("second", () => 2);
+      await ctx.step("second", () => (effects.push("second"), 2));
       return { done: true };
     },
   },
@@ -47,6 +51,7 @@ const agents: AgentDefinition[] = [
 
 let runtime: Runtime | undefined;
 afterEach(async () => {
+  effects.length = 0;
   for (const g of gates.values()) g.open();
   gates.clear();
   await runtime?.close();
@@ -187,6 +192,7 @@ describe("interruption and resume", () => {
     await Bun.sleep(150);
     expect(await status(rt, run.runId)).toBe("running");
     expect((await eventsOf(rt, run.runId)).some((e) => e.eventType === "run.completed")).toBe(false);
+    expect(effects).toEqual([]); // the interrupted pass stopped before the next step ran
 
     const resumed = await rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" });
     expect(resumed.status).toBe("resumed");
@@ -196,6 +202,28 @@ describe("interruption and resume", () => {
     expect(new Set(view.events.map((e) => e.assignment_id))).toEqual(new Set([a.assignment_id])); // one id for the whole sequence
     expect(new Set(view.events.map((e) => e.episode_ref))).toEqual(new Set([a.episode_ref]));
     expect(runAssignmentLifecycle(view.events, { budget: a.budget }).ok).toBe(true);
+  });
+
+  test("a restart while interrupted does not run the assignment; resume after the restart continues it", async () => {
+    const dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), "cognate-asg-"));
+    const boot = () => createRuntime({ store: join(dir, "app.sqlite"), agents, policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) } });
+    const first = await boot();
+    const a = assignmentFor(1);
+    const run = await start(first, "agent.gated", a, "g11", { input: { gate: "g11" } });
+    await until(async () => (await eventsOf(first, run.runId)).some((e) => e.eventType === "run.step.completed"));
+    await first.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" });
+    gate("g11").open(); // the interrupted pass halts at its next step; anything that executed the run again would now finish it
+    await first.close();
+    runtime = await boot();
+    await Bun.sleep(400); // the new runtime reconciles non-terminal runs on start
+    expect(await status(runtime, run.runId)).toBe("running");
+    expect((await eventsOf(runtime, run.runId)).some((e) => e.eventType === "run.completed")).toBe(false);
+    await runtime.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" });
+    await until(async () => (await status(runtime!, run.runId)) === "completed");
+    expect(lifecycle(await runtime.assignments.getAssignment(alice, { runId: run.runId }))).toEqual(["issued", "started", "interrupted", "resumed", "completed"]);
+    await runtime.close();
+    runtime = undefined;
+    rmSync(dir, { recursive: true, force: true });
   });
 
   test("transitions the contract forbids are refused and record nothing", async () => {
@@ -324,6 +352,19 @@ describe("spend and budget", () => {
     expect((await eventsOf(rt, run.runId)).some((e) => e.eventType === "run.completed")).toBe(false);
     // later spend is refused visibly, not dropped silently
     expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: 1, idempotencyKey: "s3" }))).toBe("ASSIGNMENT_TRANSITION_INVALID");
+  });
+
+  test("spend is refused (visibly) while the assignment is interrupted or after it ended", async () => {
+    const { rt } = await open();
+    const run = await start(rt, "agent.gated", assignmentFor(1), "g12", { input: { gate: "g12" } });
+    await until(async () => (await eventsOf(rt, run.runId)).some((e) => e.eventType === "run.step.completed"));
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" });
+    expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: 1, idempotencyKey: "s1" }))).toBe("ASSIGNMENT_TRANSITION_INVALID");
+    await rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" });
+    gate("g12").open();
+    await until(async () => (await status(rt, run.runId)) === "completed");
+    expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: 1, idempotencyKey: "s2" }))).toBe("ASSIGNMENT_TRANSITION_INVALID");
+    expect((await eventsOf(rt, run.runId)).filter((e) => e.eventType === "assignment.spend").length).toBe(0);
   });
 
   test("a numeric overrun in a currency whose total was unknown does not trip; an invalid amount is refused", async () => {
