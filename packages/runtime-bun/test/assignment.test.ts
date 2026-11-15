@@ -78,7 +78,7 @@ const until = async (cond: () => Promise<boolean>, ms = 4000) => {
   throw new Error("condition not reached");
 };
 const status = async (rt: Runtime, runId: string) => (await rt.service.getRun(alice, { runId })).status;
-async function start(rt: Runtime, agent: string, a: Assignment, key = `k-${a.assignment_id}`, extra: { linkExpiresAt?: string; caseContext?: CaseContext; input?: Record<string, unknown> } = {}) {
+async function start(rt: Runtime, agent: string, a: Assignment, key = `k-${a.assignment_id}`, extra: { linkExpiresAt?: string; caseContext?: CaseContext; input?: { readonly gate: string } } = {}) {
   return rt.service.startRun(alice, { agent, input: extra.input ?? {}, idempotencyKey: key, caseContext: extra.caseContext ?? contextFor(a), assignment: a, ...(extra.linkExpiresAt ? { linkExpiresAt: extra.linkExpiresAt } : {}) });
 }
 const refused = async (p: Promise<unknown>): Promise<AssignmentCode | string> => {
