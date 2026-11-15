@@ -25,6 +25,11 @@ export interface Observation {
    * what RealityTrace is handed to record (content-addressed), instead of the bare observation.
    */
   readonly trace?: Json;
+  /**
+   * The `godspeed.interaction_event` v1 extension object for this observation, present only for a run with case
+   * context. Unsigned in S1. When a `trace` exists the same object is also at `trace.extensions`.
+   */
+  readonly interactionEvent?: Json;
 }
 
 /**

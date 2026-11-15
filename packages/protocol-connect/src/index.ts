@@ -560,6 +560,10 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
 
   return {
     async startRun(caller, request) {
+      // The wire request has no assignment field yet (WP-23): refuse instead of silently dropping the binding.
+      if (request.assignment !== undefined || request.caseContext !== undefined || request.linkExpiresAt !== undefined) {
+        throw new ServiceError("failed_precondition", "an assignment, caseContext or linkExpiresAt cannot be carried over the Connect wire yet; open the run in-process");
+      }
       try {
         const run = await client.startRun(
           {

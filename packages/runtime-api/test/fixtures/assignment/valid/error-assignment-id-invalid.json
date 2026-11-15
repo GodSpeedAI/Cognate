@@ -1,0 +1,5 @@
+{
+  "outcome": "refused",
+  "code": "ASSIGNMENT_ID_INVALID",
+  "message": "k must be the next delegation instance of episode 1"
+}

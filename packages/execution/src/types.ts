@@ -52,6 +52,11 @@ export interface FileSystemPort {
   readText(path: string): Promise<string>;
   list(path: string): Promise<readonly DirEntry[]>;
   writeText(path: string, content: string): Promise<void>;
+  /**
+   * Optional: the fully symlink-resolved path of `path`, or `undefined` when it does not exist (or is a dangling link).
+   * Providers whose paths can traverse symlinks implement it so callers that must not follow links (`program.run`) can verify.
+   */
+  realPath?(path: string): Promise<string | undefined>;
   /** Staleness token for `path`, or `undefined` when it does not exist. */
   version(path: string): Promise<string | undefined>;
 }

@@ -16,7 +16,8 @@
     "access": "public"
   },
   "files": [
-    "src"
+    "src",
+    "schemas"
   ],
   "exports": {
     ".": "./src/index.ts",
@@ -25,5 +26,8 @@
   "dependencies": {
     "@godspeedai/cognate-events": "workspace:*",
     "@godspeedai/cognate-kernel-api": "workspace:*"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1"
   }
 }

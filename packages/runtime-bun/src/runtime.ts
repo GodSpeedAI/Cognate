@@ -18,6 +18,7 @@ import type { Runtime, RuntimeOptions } from "./index.ts";
 import { inspectCorrelation } from "./inspect.ts";
 import { Governor } from "./governed-operation.ts";
 import { Invoker } from "./invoker.ts";
+import { createAssignmentService } from "./assignment.ts";
 import { createService } from "./service.ts";
 import { RemoteOfferRegistry } from "./remote-offers.ts";
 
@@ -577,6 +578,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   }
 
   return {
+    assignments: createAssignmentService(core),
     service: createService(core, new Set((options.projections ?? []).filter((p) => p.public).map((p) => p.projection.name))),
     kernel,
     store,

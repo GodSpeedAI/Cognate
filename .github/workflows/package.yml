@@ -70,6 +70,8 @@ jobs:
           set -euo pipefail
           mkdir -p .tmp/pack
           for d in packages/* profiles/*; do
+            # Private packages are not published (same rule as check-unified-release-config.mjs).
+            if node -e 'process.exit(require(process.argv[1]).private === true ? 0 : 1)' "$PWD/$d/package.json"; then continue; fi
             node scripts/prepare-npm-package.mjs "$d"
             (cd "$d" && npm pack --pack-destination "$GITHUB_WORKSPACE/.tmp/pack")
             git checkout -- "$d/package.json"

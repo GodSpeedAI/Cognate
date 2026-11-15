@@ -27,6 +27,9 @@ Defines the transport-independent `RuntimeService` port, the agent authoring sur
 - A projection read's checkpoint is never ahead of its rows `[types.ts:ProjectionRead]`
 - `invokeFrontend` resolves through a continuation typed `frontend:<capability>` with condition kind `frontend_capability` `[frontend.ts:invokeFrontend]`
 - A frontend result that is absent or not `ok: true` raises `FrontendCapabilityError` `[frontend.ts:invokeFrontend]`
+- `assignment.ts` is pure and reads its rules from the vendored `schemas/assignment.v1.json` (pinned sha256 in `test/assignment.test.ts`); the id is `assign:<caseId>:<stepId>:<n>:<k>` and refusals carry the contract's `ASSIGNMENT_*` code exactly `[assignment.ts:parseAssignmentId]` `[assignment.ts:stepAssignment]`
+- Lifecycle: issued, started, interrupted and resumed in turns, then one of completed, failed, cancelled; id and episode never change within a sequence `[assignment.ts:stepAssignment]`
+- Spend above a numeric limit is `ASSIGNMENT_BUDGET_EXCEEDED`; an unknown limit or unknown spend never trips it `[assignment.ts:budgetBreaches]`
 
 ## Side Effects
 

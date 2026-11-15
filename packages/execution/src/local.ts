@@ -1,7 +1,7 @@
 // The local machine as an execution world. This is the behaviour every tool already had before the
 // execution-world abstraction existed: `node:fs` for files, `Bun.spawn` for processes, containment
 // enforced by resolving against the workspace root.
-import { readFile, writeFile, stat as statFile, readdir } from "node:fs/promises";
+import { readFile, writeFile, realpath, stat as statFile, readdir } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { PathEscapeError } from "./types.ts";
 import type { DirEntry, ExecResult, ExecSpec, FileStat, ExecutionWorldProvider, FileSystemPort, ProcessPort } from "./types.ts";
@@ -55,6 +55,9 @@ function createLocalFileSystem(): FileSystemPort {
     },
     async writeText(path, content) {
       await writeFile(path, content, "utf8");
+    },
+    async realPath(path) {
+      return realpath(path).catch(() => undefined);
     },
     async version(path) {
       const stats = await statBigint(path);

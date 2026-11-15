@@ -1,0 +1,403 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sea-forge:fde:assignment:v1",
+  "title": "Assignment v1",
+  "description": "The assignment payload (E sections 2, 3, 13): the assignment id assign:<caseId>:<stepId>:<n>:<k>, the frozen episode it is bound to, the brief and the budget per payment currency, plus the lifecycle events (interruption and resume). <caseId> and <stepId> are the case_id and plan_item_id of the episode; n is the episode counter; k is the delegation instance within episode n: Horizon proposes it at Hand off from the case keeper's counters and SEA-Forge validates it. A resume keeps the id; a new delegation of the same episode takes k+1. Currencies are the five of SOP 5.1 (checked against the model by scripts/check-fde-field-case-schema.sh).",
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "episode_ref": {
+      "$ref": "urn:sea-forge:fde:frozen-reference:v1#/$defs/episode_ref"
+    },
+    "assignment_id": {
+      "type": "string",
+      "pattern": "^assign:([^:@\\s]+):([^:@\\s]+):([1-9][0-9]*):([1-9][0-9]*)$",
+      "maxLength": 320
+    },
+    "Brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instruction",
+        "adoptable_problem",
+        "domain_meaning",
+        "context_refs"
+      ],
+      "properties": {
+        "instruction": {
+          "$ref": "#/$defs/text"
+        },
+        "adoptable_problem": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "description": "SOP 7.4: the problem the agent may adopt."
+        },
+        "domain_meaning": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "description": "SOP 7.4: the domain meaning required."
+        },
+        "context_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "trust"
+            ],
+            "properties": {
+              "ref": {
+                "$ref": "#/$defs/text"
+              },
+              "trust": {
+                "const": "untrusted_reference",
+                "description": "Retrieved context is labelled untrusted reference (AT-17)."
+              }
+            }
+          },
+          "maxItems": 256
+        }
+      }
+    },
+    "Budget": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "description": "Exactly one entry per currency of SOP 5.1 (README: currencies are unique, checked semantically). An unmeasured currency is 'unknown', never 0 (SOP 5.3).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "limit",
+          "unit"
+        ],
+        "properties": {
+          "currency": {
+            "enum": [
+              "time",
+              "attention",
+              "money",
+              "risk",
+              "recovery"
+            ]
+          },
+          "limit": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "const": "unknown"
+              }
+            ]
+          },
+          "unit": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "currency": {
+                  "const": "time"
+                }
+              },
+              "required": [
+                "currency"
+              ]
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "seconds"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "currency": {
+                  "const": "attention"
+                }
+              },
+              "required": [
+                "currency"
+              ]
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "operator_minutes"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "currency": {
+                  "const": "money"
+                }
+              },
+              "required": [
+                "currency"
+              ]
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$",
+                  "description": "ISO 4217 code",
+                  "maxLength": 4096
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "currency": {
+                  "const": "risk"
+                }
+              },
+              "required": [
+                "currency"
+              ]
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "class"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "currency": {
+                  "const": "recovery"
+                }
+              },
+              "required": [
+                "currency"
+              ]
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "revert_steps"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "Spend": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "spent"
+        ],
+        "properties": {
+          "currency": {
+            "enum": [
+              "time",
+              "attention",
+              "money",
+              "risk",
+              "recovery"
+            ]
+          },
+          "spent": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "const": "unknown"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "Assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "case_id",
+        "step_id",
+        "n",
+        "k",
+        "episode_ref",
+        "brief",
+        "budget",
+        "issued_at"
+      ],
+      "properties": {
+        "assignment_id": {
+          "$ref": "#/$defs/assignment_id"
+        },
+        "case_id": {
+          "$ref": "#/$defs/tok"
+        },
+        "step_id": {
+          "$ref": "#/$defs/tok"
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "episode_ref": {
+          "$ref": "#/$defs/episode_ref"
+        },
+        "brief": {
+          "$ref": "#/$defs/Brief"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "issued_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+          "maxLength": 4096
+        }
+      }
+    },
+    "tok": {
+      "type": "string",
+      "pattern": "^[^\\s:@]{1,128}$",
+      "maxLength": 4096
+    },
+    "Event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "episode_ref",
+        "event",
+        "at",
+        "spend"
+      ],
+      "properties": {
+        "assignment_id": {
+          "$ref": "#/$defs/assignment_id"
+        },
+        "episode_ref": {
+          "$ref": "#/$defs/episode_ref"
+        },
+        "event": {
+          "enum": [
+            "issued",
+            "started",
+            "interrupted",
+            "resumed",
+            "completed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$",
+          "maxLength": 4096
+        },
+        "spend": {
+          "$ref": "#/$defs/Spend"
+        },
+        "reason": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "if": {
+        "properties": {
+          "event": {
+            "enum": [
+              "interrupted",
+              "failed",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "event"
+        ]
+      },
+      "then": {
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "outcome": {
+          "const": "refused"
+        },
+        "code": {
+          "enum": [
+            "ASSIGNMENT_ID_INVALID",
+            "ASSIGNMENT_EPISODE_CHANGED",
+            "ASSIGNMENT_TRANSITION_INVALID",
+            "ASSIGNMENT_BUDGET_INVALID",
+            "ASSIGNMENT_BUDGET_EXCEEDED",
+            "ASSIGNMENT_LINK_EXPIRED"
+          ]
+        },
+        "message": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Assignment"
+    },
+    {
+      "$ref": "#/$defs/Event"
+    },
+    {
+      "$ref": "#/$defs/Error"
+    }
+  ]
+}

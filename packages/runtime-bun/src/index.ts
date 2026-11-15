@@ -2,7 +2,7 @@ import type { CognitiveIndex, Embedder, IndexDocument } from "@godspeedai/cognat
 import type { DurableStore, Json, NewEvent, OutboxIntent, StoredEvent } from "@godspeedai/cognate-events";
 import type { Component, Kernel, Policy, Principal } from "@godspeedai/cognate-kernel-api";
 import type { Projection } from "@godspeedai/cognate-projections";
-import type { AgentDefinition, Caller, RuntimeService, RunView } from "@godspeedai/cognate-runtime-api";
+import type { AgentDefinition, AssignmentService, Caller, RuntimeService, RunView } from "@godspeedai/cognate-runtime-api";
 import type { GovernanceOptions } from "./governed-operation.ts";
 import { startRuntime } from "./runtime.ts";
 
@@ -13,7 +13,7 @@ export type { ApprovalReference, AuthorityClaims, AuthorityReference, ApprovalSt
 
 export interface ActionPolicy {
   /** Authorize run and continuation actions (start, cancel, resume, read artifacts). Default: deny (spec §32). */
-  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "thread.state.read" | "thread.state.update" | "observation.record" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke" | "remote.offer.invoke"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
+  authorize(request: { readonly caller: Caller; readonly action: "run.start" | "run.cancel" | "continuation.resume" | "continuation.cancel" | "run.state.update" | "thread.state.read" | "thread.state.update" | "observation.record" | "remote.offer.publish" | "remote.offer.list" | "remote.offer.revoke" | "remote.offer.invoke" | "assignment.interrupt" | "assignment.resume" | "assignment.spend"; readonly resource: string }): { readonly allow: boolean; readonly reason: string };
 }
 
 export interface CognitionOptions {
@@ -29,7 +29,7 @@ export interface CognitionOptions {
 }
 
 /** A run event about to be committed. */
-export type PendingEvent = NewEvent & { readonly eventId: string; readonly streamId: string; readonly recordedAt: string };
+export type PendingEvent = NewEvent & { readonly eventId: string; readonly streamId: string; readonly recordedAt: string; /** The stream sequence this event will take on commit. */ readonly streamSequence: number };
 
 /** Outbox topic whose items represent RealityTrace observations; `inspect` reports their observation ids. */
 export const OBSERVATION_OUTBOX_TOPIC = "observation.deliver";
@@ -109,6 +109,8 @@ export interface CausalChain {
 
 export interface Runtime {
   readonly service: RuntimeService;
+  /** Lifecycle of the assignment a run was opened from (WP-23): interrupt, resume, spend. */
+  readonly assignments: AssignmentService;
   readonly kernel: Kernel;
   readonly store: DurableStore;
   /** Reconstruct machine-readable causal identity for a correlation id (spec §33, §40.M). */

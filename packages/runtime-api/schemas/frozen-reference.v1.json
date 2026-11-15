@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sea-forge:fde:frozen-reference:v1",
+  "title": "FrozenReference v1",
+  "description": "The reference an episode is judged against, frozen before any execution. The episode_ref digest is SHA-256 (CEP-0008 section 16.5, RFC 8785) over `body` alone; episode_ref is not part of the digest input (RD-23). Everything that could change the verdict is in `body`, so nothing outside the digest can be edited after the freeze.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "episode_ref",
+    "body"
+  ],
+  "properties": {
+    "episode_ref": {
+      "description": "episode:<case_id>:<plan_item_id>:<n>@sha256:<digest of body>. Its case_id, plan_item_id and n equal body's.",
+      "$ref": "#/$defs/episode_ref"
+    },
+    "body": {
+      "$ref": "#/$defs/body"
+    }
+  },
+  "$defs": {
+    "episode_ref": {
+      "type": "string",
+      "pattern": "^episode:[^:@\\s]+:[^:@\\s]+:[1-9][0-9]*@sha256:[0-9a-f]{64}$"
+    },
+    "world_ref": {
+      "type": "string",
+      "pattern": "^world:[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*@sha256:[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "texts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/text"
+      }
+    },
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal",
+        "role"
+      ],
+      "properties": {
+        "principal": {
+          "$ref": "#/$defs/text"
+        },
+        "role": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "body": {
+      "description": "The digest input. No result, observation or outcome field may appear here (NT-17).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "plan_item_id",
+        "n",
+        "world_ref",
+        "kind",
+        "executor_provenance",
+        "criteria",
+        "comparison_profile",
+        "decision_maker",
+        "evidence_sources",
+        "coverage_manifest"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^[^:@\\s]+$"
+        },
+        "plan_item_id": {
+          "type": "string",
+          "pattern": "^[^:@\\s]+$"
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Episode counter per (case_id, plan_item_id); allocated by the case keeper at freeze (I-3)."
+        },
+        "world_ref": {
+          "$ref": "#/$defs/world_ref"
+        },
+        "kind": {
+          "enum": [
+            "evaluated",
+            "exploratory"
+          ]
+        },
+        "executor_provenance": {
+          "enum": [
+            "program",
+            "live",
+            "injected_fault"
+          ]
+        },
+        "criteria": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intention",
+            "expected_change",
+            "invariants",
+            "predicted_irrelevancies",
+            "success_region",
+            "failure_region",
+            "falsifiers"
+          ],
+          "properties": {
+            "intention": {
+              "$ref": "#/$defs/text"
+            },
+            "expected_change": {
+              "$ref": "#/$defs/text"
+            },
+            "invariants": {
+              "$ref": "#/$defs/texts"
+            },
+            "predicted_irrelevancies": {
+              "$ref": "#/$defs/texts"
+            },
+            "success_region": {
+              "$ref": "#/$defs/text"
+            },
+            "failure_region": {
+              "$ref": "#/$defs/text"
+            },
+            "falsifiers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/text"
+              },
+              "description": "Required and non-empty when kind is evaluated; present and possibly empty when kind is exploratory."
+            }
+          }
+        },
+        "decision_maker": {
+          "$ref": "#/$defs/principal"
+        },
+        "evidence_sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "system",
+              "purpose"
+            ],
+            "properties": {
+              "source_id": {
+                "$ref": "#/$defs/text"
+              },
+              "system": {
+                "$ref": "#/$defs/text"
+              },
+              "purpose": {
+                "$ref": "#/$defs/text",
+                "description": "What this evidence is for. The episode result depends on it (RD-03)."
+              }
+            }
+          }
+        },
+        "coverage_manifest": {
+          "description": "Which emitters must report which event kinds. Frozen with the episode, never self-reported (RD-12).",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "emitter",
+              "event_kinds"
+            ],
+            "properties": {
+              "emitter": {
+                "$ref": "#/$defs/text"
+              },
+              "event_kinds": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            }
+          }
+        },
+        "comparison_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "sha256"
+          ],
+          "description": "The comparison profile frozen with the episode (RD-08): its id and the SHA-256 (CEP-0008 section 16.5) of the profile document `observed compare --profile` will use.",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^profile:[^\\s]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "evaluated"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "criteria": {
+                "properties": {
+                  "falsifiers": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
