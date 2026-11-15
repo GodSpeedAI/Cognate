@@ -8,7 +8,7 @@
 // Exits non-zero and prints one line per problem.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -33,7 +33,10 @@ for (const tgz of tarballs) {
     if (!pkg.repository?.url?.includes("github.com/GodSpeedAI/Cognate")) problems.push("repository.url not the Cognate repo");
     // Most packages ship only src/; the CLI also ships the starter templates that `cognate create` copies.
     const shipsTemplates = pkg.files?.join(",") === "src,templates";
-    if (!pkg.files || (pkg.files.join(",") !== "src" && !shipsTemplates)) problems.push(`files field is ${JSON.stringify(pkg.files)}, expected ["src"] or ["src","templates"]`);
+    // Packages that validate against vendored contract schemas (runtime-api, realitytrace) also ship schemas/.
+    const shipsSchemas = pkg.files?.join(",") === "src,schemas";
+    if (!pkg.files || (pkg.files.join(",") !== "src" && !shipsTemplates && !shipsSchemas)) problems.push(`files field is ${JSON.stringify(pkg.files)}, expected ["src"], ["src","templates"] or ["src","schemas"]`);
+    if (shipsSchemas && !readdirSync(join(tmp, "package", "schemas")).some((f) => f.endsWith(".json"))) problems.push("schemas/ not shipped");
     if (shipsTemplates && !existsSync(join(tmp, "package", "templates", "starter", "common", "_gitignore"))) problems.push("templates/starter not shipped");
     if (!existsSync(join(tmp, "package", "LICENSE"))) problems.push("LICENSE not shipped");
     if (!existsSync(join(tmp, "package", "README.md"))) problems.push("README not shipped");
