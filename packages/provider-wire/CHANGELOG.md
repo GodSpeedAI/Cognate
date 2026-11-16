@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-wire-v0.10.0...cognate-provider-wire-v0.3.0) (2026-11-16)
+
+
+### Features
+
+* provider protocols, typed judgment, and governed agent hook interoperability ([#32](https://github.com/GodSpeedAI/Cognate/issues/32)) ([391905c](https://github.com/GodSpeedAI/Cognate/commit/391905c6edaec8335cc259f9b72ad220bfe2ade0))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+
+
+### Bug Fixes
+
+* **release:** publish missing SDK modules and use one vX.Y.Z GitHub release ([#34](https://github.com/GodSpeedAI/Cognate/issues/34)) ([eeb0bee](https://github.com/GodSpeedAI/Cognate/commit/eeb0bee993452337092bf21f4fcfdabc081a46de))
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-wire-v0.9.2...cognate-provider-wire-v0.10.0) (2026-11-16)
 
 

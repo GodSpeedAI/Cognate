@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cli-v0.10.0...cognate-cli-v0.3.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename every SDK package to @godspeedai/cognate-<module> ([#14](https://github.com/GodSpeedAI/Cognate/issues/14))
+
+### Features
+
+* **cli:** cognate create/dev with starter templates for both profiles ([bb4f709](https://github.com/GodSpeedAI/Cognate/commit/bb4f709f8c56c7719e41d0b934a65e2cd6ad0e35))
+* **cli:** create without --source; templates ship in the CLI package ([b6523bc](https://github.com/GodSpeedAI/Cognate/commit/b6523bc909bf35dd9369bf2f1a86a66a37eed342))
+* close AK-006 and AK-008 — RealityTrace correlation round-trip, UCB1 ranker ([6902159](https://github.com/GodSpeedAI/Cognate/commit/69021597c464f1b3ffc578aa99df7efef2c03b29))
+* move the SDK to the [@godspeedai](https://github.com/godspeedai) npm scope ([#12](https://github.com/GodSpeedAI/Cognate/issues/12)) ([f83943a](https://github.com/GodSpeedAI/Cognate/commit/f83943a9d91cbcce2c3ace8ef225b4c1eb46a8c3))
+* prepare [@cognate](https://github.com/cognate) SDK for npm publication + Release Please automation ([#5](https://github.com/GodSpeedAI/Cognate/issues/5)) ([eebec4d](https://github.com/GodSpeedAI/Cognate/commit/eebec4d6d030af92b58e86acc3cd1d2c89619053))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+* rename every SDK package to @godspeedai/cognate-&lt;module&gt; ([#14](https://github.com/GodSpeedAI/Cognate/issues/14)) ([3b9ec18](https://github.com/GodSpeedAI/Cognate/commit/3b9ec18f8b382875fb04e46033be4fbe12f41d29))
+
+
+### Bug Fixes
+
+* burn down debt register for production readiness ([f290780](https://github.com/GodSpeedAI/Cognate/commit/f290780911005349e2d82e02827fcbfef39ddb47))
+* **cli:** resolve configured organizational worlds as one canonical source-map closure ([37b9511](https://github.com/GodSpeedAI/Cognate/commit/37b9511ec521af0f53b3f0c0ea81bf1c4922be60))
+* document the ambient type packages SDK consumers need ([#18](https://github.com/GodSpeedAI/Cognate/issues/18)) ([6292dcb](https://github.com/GodSpeedAI/Cognate/commit/6292dcbd76cfda3c9ec487382ab9f0c3ee35b287))
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+
+
+### Documentation
+
+* consumer READMEs for all 36 packages + 0.1.2 documentation release prep ([#29](https://github.com/GodSpeedAI/Cognate/issues/29)) ([a4d3378](https://github.com/GodSpeedAI/Cognate/commit/a4d3378c860f8bc9c7f4c99763ee4270b589d345))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cli-v0.9.2...cognate-cli-v0.10.0) (2026-11-16)
 
 

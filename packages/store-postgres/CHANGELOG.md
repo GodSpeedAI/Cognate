@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-postgres-v0.10.0...cognate-store-postgres-v0.3.0) (2026-11-16)
+
+
+### Features
+
+* fence native dispatch and admit bounded independent runs ([9f2590f](https://github.com/GodSpeedAI/Cognate/commit/9f2590f70bca50abf292f3bb88564dce5506c160))
+* native fenced dispatch, bounded runs and Linux execution world ([36b05fb](https://github.com/GodSpeedAI/Cognate/commit/36b05fb4194eecda4edbc59ae3e48e6b607a8f48))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+* **runtime:** executor run-ownership lifecycle with fenced writes and ambiguous-effect reconciliation ([997ac03](https://github.com/GodSpeedAI/Cognate/commit/997ac03385512df2aa2cfe6d363e64b5de3a2b23))
+* **runtime:** run-write ownership with fenced appends and ambiguous-effect reconciliation ([7622b66](https://github.com/GodSpeedAI/Cognate/commit/7622b663c1fdb7ac88d5913b548c91fca4c23cb2))
+* **store:** authoritative run-write ownership with fenced run-scoped appends ([f37e7ff](https://github.com/GodSpeedAI/Cognate/commit/f37e7ff793ae43f18ca8136a072c77ef5bd0f3c5))
+
+
+### Bug Fixes
+
+* **postgres:** release uncommitted duplicate position reservations ([f7694cc](https://github.com/GodSpeedAI/Cognate/commit/f7694cca786536bdcdffe8383cf60fac0464bd93))
+* **release:** publish missing SDK modules and use one vX.Y.Z GitHub release ([#34](https://github.com/GodSpeedAI/Cognate/issues/34)) ([eeb0bee](https://github.com/GodSpeedAI/Cognate/commit/eeb0bee993452337092bf21f4fcfdabc081a46de))
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+* **store:** refuse a store whose schema version is newer than this build ([#67](https://github.com/GodSpeedAI/Cognate/issues/67)) ([b3e666a](https://github.com/GodSpeedAI/Cognate/commit/b3e666a7903e8b0e8678f938d546d068a8255fa2))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-store-postgres-v0.9.2...cognate-store-postgres-v0.10.0) (2026-11-16)
 
 

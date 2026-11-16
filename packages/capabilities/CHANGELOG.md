@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-capabilities-v0.10.0...cognate-capabilities-v0.3.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename every SDK package to @godspeedai/cognate-<module> ([#14](https://github.com/GodSpeedAI/Cognate/issues/14))
+
+### Features
+
+* **capabilities,artifacts:** contained two-phase selection, outcome ranker, durable artifacts ([1d82195](https://github.com/GodSpeedAI/Cognate/commit/1d821951c1f2f4a80a867359c05a09d3cc3d8ec0))
+* close AK-006 and AK-008 — RealityTrace correlation round-trip, UCB1 ranker ([6902159](https://github.com/GodSpeedAI/Cognate/commit/69021597c464f1b3ffc578aa99df7efef2c03b29))
+* **domainforge:** DomainForge adapter; RED contracts for RealityTrace, providers, profiles ([6ef49f1](https://github.com/GodSpeedAI/Cognate/commit/6ef49f14b1d1f5f2887e182cbae8d72678a39ee5))
+* **model:** project streamed tool arguments through durable progress ([7d2ec3c](https://github.com/GodSpeedAI/Cognate/commit/7d2ec3cd5cd1e17c6d0b2283596e50ac64be2561))
+* move the SDK to the [@godspeedai](https://github.com/godspeedai) npm scope ([#12](https://github.com/GodSpeedAI/Cognate/issues/12)) ([f83943a](https://github.com/GodSpeedAI/Cognate/commit/f83943a9d91cbcce2c3ace8ef225b4c1eb46a8c3))
+* prepare [@cognate](https://github.com/cognate) SDK for npm publication + Release Please automation ([#5](https://github.com/GodSpeedAI/Cognate/issues/5)) ([eebec4d](https://github.com/GodSpeedAI/Cognate/commit/eebec4d6d030af92b58e86acc3cd1d2c89619053))
+* provider protocols, typed judgment, and governed agent hook interoperability ([#32](https://github.com/GodSpeedAI/Cognate/issues/32)) ([391905c](https://github.com/GodSpeedAI/Cognate/commit/391905c6edaec8335cc259f9b72ad220bfe2ade0))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+* rename every SDK package to @godspeedai/cognate-&lt;module&gt; ([#14](https://github.com/GodSpeedAI/Cognate/issues/14)) ([3b9ec18](https://github.com/GodSpeedAI/Cognate/commit/3b9ec18f8b382875fb04e46033be4fbe12f41d29))
+
+
+### Bug Fixes
+
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+
+
+### Documentation
+
+* consumer READMEs for all 36 packages + 0.1.2 documentation release prep ([#29](https://github.com/GodSpeedAI/Cognate/issues/29)) ([a4d3378](https://github.com/GodSpeedAI/Cognate/commit/a4d3378c860f8bc9c7f4c99763ee4270b589d345))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-capabilities-v0.9.2...cognate-capabilities-v0.10.0) (2026-11-16)
 
 

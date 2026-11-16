@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-proto-v0.10.0...cognate-proto-v0.3.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename every SDK package to @godspeedai/cognate-<module> ([#14](https://github.com/GodSpeedAI/Cognate/issues/14))
+
+### Features
+
+* move the SDK to the [@godspeedai](https://github.com/godspeedai) npm scope ([#12](https://github.com/GodSpeedAI/Cognate/issues/12)) ([f83943a](https://github.com/GodSpeedAI/Cognate/commit/f83943a9d91cbcce2c3ace8ef225b4c1eb46a8c3))
+* prepare [@cognate](https://github.com/cognate) SDK for npm publication + Release Please automation ([#5](https://github.com/GodSpeedAI/Cognate/issues/5)) ([eebec4d](https://github.com/GodSpeedAI/Cognate/commit/eebec4d6d030af92b58e86acc3cd1d2c89619053))
+* **proto,domainforge:** canonical proto sources and RED contracts for wire and semantic adapters ([71dd90b](https://github.com/GodSpeedAI/Cognate/commit/71dd90bb3fdc4f5186d2b42618e4cf777a2f8018))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+* rename every SDK package to @godspeedai/cognate-&lt;module&gt; ([#14](https://github.com/GodSpeedAI/Cognate/issues/14)) ([3b9ec18](https://github.com/GodSpeedAI/Cognate/commit/3b9ec18f8b382875fb04e46033be4fbe12f41d29))
+* **runtime:** add durable thread-scoped shared state ([f7069b8](https://github.com/GodSpeedAI/Cognate/commit/f7069b87fc15d3bfabb7a50dd2db210c2de82de4))
+* **runtime:** add scoped remote capability offers ([18d7916](https://github.com/GodSpeedAI/Cognate/commit/18d79166c4a526292766e833e364251c8f33cd5a))
+* **runtime:** bidirectional shared state and indexed listRuns (CG-STA-001, DEBT-019) ([28ea301](https://github.com/GodSpeedAI/Cognate/commit/28ea30132256dea759517f03ec96ade83351a077))
+* **wire,client,react,mcp:** Connect wire plane, headless client, React bindings, MCP adapter ([4563833](https://github.com/GodSpeedAI/Cognate/commit/4563833e6b0b99eb775c887664423844d45885cb))
+
+
+### Bug Fixes
+
+* **egm:** move contracts off the gates they broke ([92161ba](https://github.com/GodSpeedAI/Cognate/commit/92161ba44061b977464615efbda59d2d7ac0617d))
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+
+
+### Documentation
+
+* consumer READMEs for all 36 packages + 0.1.2 documentation release prep ([#29](https://github.com/GodSpeedAI/Cognate/issues/29)) ([a4d3378](https://github.com/GodSpeedAI/Cognate/commit/a4d3378c860f8bc9c7f4c99763ee4270b589d345))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-proto-v0.9.2...cognate-proto-v0.10.0) (2026-11-16)
 
 

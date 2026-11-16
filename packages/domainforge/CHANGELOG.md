@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.10.0...cognate-domainforge-v0.3.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename every SDK package to @godspeedai/cognate-<module> ([#14](https://github.com/GodSpeedAI/Cognate/issues/14))
+
+### Features
+
+* add support for additional semantic kinds and graph accessors in domainforge ([aea980c](https://github.com/GodSpeedAI/Cognate/commit/aea980ce74cadc3e637a07f6da1a7288b54a92ab))
+* **domainforge:** DomainForge adapter; RED contracts for RealityTrace, providers, profiles ([6ef49f1](https://github.com/GodSpeedAI/Cognate/commit/6ef49f14b1d1f5f2887e182cbae8d72678a39ee5))
+* **domainforge:** project complete canonical source-map worlds through native resolver ([059078b](https://github.com/GodSpeedAI/Cognate/commit/059078b6630deb7492e3ad40e74f6e5d15edab67))
+* move the SDK to the [@godspeedai](https://github.com/godspeedai) npm scope ([#12](https://github.com/GodSpeedAI/Cognate/issues/12)) ([f83943a](https://github.com/GodSpeedAI/Cognate/commit/f83943a9d91cbcce2c3ace8ef225b4c1eb46a8c3))
+* prepare [@cognate](https://github.com/cognate) SDK for npm publication + Release Please automation ([#5](https://github.com/GodSpeedAI/Cognate/issues/5)) ([eebec4d](https://github.com/GodSpeedAI/Cognate/commit/eebec4d6d030af92b58e86acc3cd1d2c89619053))
+* **proto,domainforge:** canonical proto sources and RED contracts for wire and semantic adapters ([71dd90b](https://github.com/GodSpeedAI/Cognate/commit/71dd90bb3fdc4f5186d2b42618e4cf777a2f8018))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+* rename every SDK package to @godspeedai/cognate-&lt;module&gt; ([#14](https://github.com/GodSpeedAI/Cognate/issues/14)) ([3b9ec18](https://github.com/GodSpeedAI/Cognate/commit/3b9ec18f8b382875fb04e46033be4fbe12f41d29))
+
+
+### Bug Fixes
+
+* burn down debt register for production readiness ([f290780](https://github.com/GodSpeedAI/Cognate/commit/f290780911005349e2d82e02827fcbfef39ddb47))
+* **domainforge:** complete canonical composed-world integration ([d6b142d](https://github.com/GodSpeedAI/Cognate/commit/d6b142d23f9a67d275f1fabc869514e77e0bc491))
+* **domainforge:** move the binding to 0.21.2 (stack lockstep) ([7356512](https://github.com/GodSpeedAI/Cognate/commit/7356512d2abf2a4095375c847de2d2a7ee98b33f))
+* **realitytrace:** pin the RealityTrace CLI to 0.4.0 (DomainForge 0.21.2 lockstep) ([#80](https://github.com/GodSpeedAI/Cognate/issues/80)) ([8c87a1c](https://github.com/GodSpeedAI/Cognate/commit/8c87a1c7a35579b8905b66db5aa0559bf114a438))
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+
+
+### Documentation
+
+* consumer READMEs for all 36 packages + 0.1.2 documentation release prep ([#29](https://github.com/GodSpeedAI/Cognate/issues/29)) ([a4d3378](https://github.com/GodSpeedAI/Cognate/commit/a4d3378c860f8bc9c7f4c99763ee4270b589d345))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-domainforge-v0.9.2...cognate-domainforge-v0.10.0) (2026-11-16)
 
 

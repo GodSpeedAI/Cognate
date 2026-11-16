@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.3.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-events-v0.10.0...cognate-events-v0.3.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename every SDK package to @godspeedai/cognate-<module> ([#14](https://github.com/GodSpeedAI/Cognate/issues/14))
+
+### Features
+
+* fence native dispatch and admit bounded independent runs ([9f2590f](https://github.com/GodSpeedAI/Cognate/commit/9f2590f70bca50abf292f3bb88564dce5506c160))
+* move the SDK to the [@godspeedai](https://github.com/godspeedai) npm scope ([#12](https://github.com/GodSpeedAI/Cognate/issues/12)) ([f83943a](https://github.com/GodSpeedAI/Cognate/commit/f83943a9d91cbcce2c3ace8ef225b4c1eb46a8c3))
+* native fenced dispatch, bounded runs and Linux execution world ([36b05fb](https://github.com/GodSpeedAI/Cognate/commit/36b05fb4194eecda4edbc59ae3e48e6b607a8f48))
+* Phase 0 characterization fixtures and durable-store contract ([fa86c1d](https://github.com/GodSpeedAI/Cognate/commit/fa86c1dcc5374612e4156e26094a853e4037a9de))
+* prepare [@cognate](https://github.com/cognate) SDK for npm publication + Release Please automation ([#5](https://github.com/GodSpeedAI/Cognate/issues/5)) ([eebec4d](https://github.com/GodSpeedAI/Cognate/commit/eebec4d6d030af92b58e86acc3cd1d2c89619053))
+* **release:** 0.8.0 - registry create, README reframe, explainers, landing page ([ab326ec](https://github.com/GodSpeedAI/Cognate/commit/ab326ec5f95e6e9c6c3a39e04e7e5a5812c9ae11))
+* rename every SDK package to @godspeedai/cognate-&lt;module&gt; ([#14](https://github.com/GodSpeedAI/Cognate/issues/14)) ([3b9ec18](https://github.com/GodSpeedAI/Cognate/commit/3b9ec18f8b382875fb04e46033be4fbe12f41d29))
+* **runtime:** run-write ownership with fenced appends and ambiguous-effect reconciliation ([7622b66](https://github.com/GodSpeedAI/Cognate/commit/7622b663c1fdb7ac88d5913b548c91fca4c23cb2))
+* **store-memory:** in-memory DurableStore passing the store conformance kit ([37e017a](https://github.com/GodSpeedAI/Cognate/commit/37e017aeabd74fe089ca59092a15be84b4eb5d6d))
+* **store-sqlite,projections:** authoritative SQLite store, projection runner, rebuild and replay proofs ([d061213](https://github.com/GodSpeedAI/Cognate/commit/d061213fe2a14c1164f824f29c9790ea2a293c04))
+* **store:** authoritative run-write ownership with fenced run-scoped appends ([f37e7ff](https://github.com/GodSpeedAI/Cognate/commit/f37e7ff793ae43f18ca8136a072c77ef5bd0f3c5))
+
+
+### Bug Fixes
+
+* **release:** re-include the umbrella SDK in linked version bumps and rewind the unpublished 0.3.0 ([#36](https://github.com/GodSpeedAI/Cognate/issues/36)) ([36f7b93](https://github.com/GodSpeedAI/Cognate/commit/36f7b93d8e6896ffb3d590ef97d2639265003c55))
+* **runtime:** share admission across run and continuation dispatch ([b86cd63](https://github.com/GodSpeedAI/Cognate/commit/b86cd636e0415dbcf5eb6d3964fdf869b0ef50c4))
+
+
+### Documentation
+
+* consumer READMEs for all 36 packages + 0.1.2 documentation release prep ([#29](https://github.com/GodSpeedAI/Cognate/issues/29)) ([a4d3378](https://github.com/GodSpeedAI/Cognate/commit/a4d3378c860f8bc9c7f4c99763ee4270b589d345))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-events-v0.9.2...cognate-events-v0.10.0) (2026-11-16)
 
 
