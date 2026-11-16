@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-projections-v0.9.2...cognate-projections-v0.10.0) (2026-11-16)
+
+
+### Miscellaneous Chores
+
+* **cognate-projections:** Synchronize cognate SDK packages versions
+
 ## [0.9.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-projections-v0.9.1...cognate-projections-v0.9.2) (2026-11-14)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-v0.9.2...cognate-execution-v0.10.0) (2026-11-16)
+
+
+### Features
+
+* **runtime:** Field Case interaction events, program.run and assignment binding ([f5a6954](https://github.com/GodSpeedAI/Cognate/commit/f5a6954fff334ee5dc53b091e97b04885b372006))
+
+
+### Bug Fixes
+
+* **runtime:** address PR [#83](https://github.com/GodSpeedAI/Cognate/issues/83) review (program.run, identity, assignment) ([210fa97](https://github.com/GodSpeedAI/Cognate/commit/210fa9794909119bdfce0f41e6272d63134c371d))
+
 ## [0.9.2](https://github.com/GodSpeedAI/Cognate/compare/cognate-execution-v0.9.1...cognate-execution-v0.9.2) (2026-11-14)
 
 
