@@ -5,11 +5,21 @@
     "": {
       "name": "cognate-phase0-domainforge",
       "dependencies": {
-        "@godspeedai/domainforge": "0.22.0",
+        "@godspeedai/domainforge": "0.22.2",
       },
     },
   },
   "packages": {
-    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.22.0", "", {}, "sha512-YBbMQYcD4/MNi2yVc2Ma/g4Oi/Woq+amNdWwo1XUUCN5PE2GvIsAS+bCsjllt+MuNuL9q/e/MbnjEpMbZ2B+gw=="],
+    "@godspeedai/domainforge": ["@godspeedai/domainforge@0.22.2", "", { "optionalDependencies": { "@godspeedai/domainforge-darwin-arm64": "0.22.2", "@godspeedai/domainforge-darwin-x64": "0.22.2", "@godspeedai/domainforge-linux-arm64-gnu": "0.22.2", "@godspeedai/domainforge-linux-x64-gnu": "0.22.2", "@godspeedai/domainforge-win32-x64-msvc": "0.22.2" } }, "sha512-btUAD8KUIevCHBHPZmJQC44do+5LXNXctH/fjFFdtxhChiV+gBcoBA6IbNLaWbg2ZBlX/0l44M644xXR+XonDw=="],
+
+    "@godspeedai/domainforge-darwin-arm64": ["@godspeedai/domainforge-darwin-arm64@0.22.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-f5a5mYoB46F1r5gZp31jMhFVJITqlh47cIk14gO4EJpRjlO74+l8qKJG2Jr/rQiNzZuZt2bj7tk5n6yuDwEhxg=="],
+
+    "@godspeedai/domainforge-darwin-x64": ["@godspeedai/domainforge-darwin-x64@0.22.2", "", { "os": "darwin", "cpu": "x64" }, "sha512-TFLOrAPv1REY8Dwk9baPItfaK0rmYal8aQiwRA2V/rVWDUec98xXZGc1VKtjToCrI1MeOFiIHuaN7Gqm6F7T3A=="],
+
+    "@godspeedai/domainforge-linux-arm64-gnu": ["@godspeedai/domainforge-linux-arm64-gnu@0.22.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-bJqFgUhDfVezfdjqL9/SmryoA+4plvbjx4NrXlUiQFszcJ5IQEsuyvIzTKieG0WDT1ecto/oLjY1z7EE59WeBg=="],
+
+    "@godspeedai/domainforge-linux-x64-gnu": ["@godspeedai/domainforge-linux-x64-gnu@0.22.2", "", { "os": "linux", "cpu": "x64" }, "sha512-jdAY4dX21ewh3ET4rRmvNOsSZNtMqeFTagFuYR7wP6yQ11tLj/SyQ1kcElP0agi1ofVl60gJgO65cbtKV07xkg=="],
+
+    "@godspeedai/domainforge-win32-x64-msvc": ["@godspeedai/domainforge-win32-x64-msvc@0.22.2", "", { "os": "win32", "cpu": "x64" }, "sha512-bqfTZWCaniEWBgDSpBHpZ8DK0cFGPw18RbekXt0asUlIdS6auarIUi5B9oAx6EcYVfjxZH2O53QcFKCi51qgdw=="],
   }
 }
