@@ -44,6 +44,13 @@ if(!/release-please-action[\s\S]*skip-github-pull-request:\s*true\b/.test(rel)) 
 if(!/release-please-action[\s\S]*skip-github-release:\s*true\b/.test(pr)) errors.push("release.yml: a release-pr job must build the release PR only (skip-github-release: true)");
 if(!/^\s*needs:.*\btag-components\b/m.test(pr)) errors.push("release.yml: release-pr must need tag-components so the PR is built after the component tags exist");
 if(!/run:\s*node scripts\/require-component-tags\.mjs[\s\S]*release-please-action/.test(pr)) errors.push("release.yml: release-pr must run scripts/require-component-tags.mjs before release-please builds the PR");
+{
+  // The guard step must always execute and always block: no step-level if, no continue-on-error.
+  const step=pr.match(/- name: Require every component tag[\s\S]*?(?=\n\s*- (?:name|uses):)/)?.[0]||"";
+  if(!step) errors.push("release.yml: release-pr has no 'Require every component tag' step");
+  if(/^\s*if:/m.test(step)||/continue-on-error/.test(step)) errors.push("release.yml: the component-tag guard step must not have an if: condition or continue-on-error");
+  if(/continue-on-error/.test(pr.split("- name: Require every component tag")[0])) errors.push("release.yml: release-pr must not use continue-on-error");
+}
 if(!/ref:\s*\$\{\{\s*github\.event\.repository\.default_branch\s*\}\}/.test(pr)) errors.push("release.yml: release-pr must check out the live default branch (the manifest release-please reads)");
 if(!/^\s*if:.*needs\.tag-components\.result == 'skipped'/m.test(pr)||!/^\s*if:.*always\(\)/m.test(pr)) errors.push("release.yml: release-pr must run when tag-components is skipped (ordinary pushes) via if: always() && ... == 'skipped'");
 // The guard must actually work: in a throwaway repository with the same release plan it
