@@ -29,12 +29,50 @@ for(const p of paths){
   const component=pkg.name.replace(/^@godspeedai\//,"");
   if(!group?.components?.includes(component)) errors.push(`Component missing from linked-versions: ${component}`);
 }
-// The release-pr phase must be skipped on release-merge pushes: component tags are minted by
-// the tag-components job after the release-please job, so running release-pr there races the
-// minting, every component resolves its latest release from a not-yet-existing tag and a
-// spurious changelog-only PR opens (observed as #38).
-const workflow=readFileSync(".github/workflows/release.yml","utf8");
-if(!/skip-github-pull-request:\s*["']?\$\{\{\s*startsWith\(github\.event\.head_commit\.message,\s*'chore\(main\): release'\)/.test(workflow))
-  errors.push("release.yml must skip the release-pr phase on release-merge pushes (skip-github-pull-request gated on the head commit message) or every release opens a spurious changelog-only PR");
+// The release PR must be built only after the component tags exist. The release-please job
+// runs releases only (skip-github-pull-request: true); a separate release-pr job that needs
+// tag-components builds the PR (skip-github-release: true). Building the PR in the same job
+// as the release raced the tag minting and opened spurious PRs (#38, and #86 proposing
+// 0.3.0 over the published 0.10.0) whatever the merge method or commit message.
+// YAML comments are stripped first so commented-out protection does not satisfy the checks.
+const workflow=readFileSync(".github/workflows/release.yml","utf8").replace(/(^|\s)#.*$/gm,"$1");
+// Split the workflow into its top-level jobs (two-space indented keys under "jobs:").
+const jobs={};
+for(const m of workflow.split(/^jobs:\s*$/m)[1]?.matchAll(/^  ([A-Za-z0-9_-]+):\s*\n([\s\S]*?)(?=^  [A-Za-z0-9_-]+:\s*$|(?![\s\S]))/gm)||[]) jobs[m[1]]=m[2];
+const rel=jobs["release-please"]||"", pr=jobs["release-pr"]||"";
+if(!/release-please-action[\s\S]*skip-github-pull-request:\s*true\b/.test(rel)) errors.push("release.yml: the release-please job must run releases only (skip-github-pull-request: true)");
+if(!/release-please-action[\s\S]*skip-github-release:\s*true\b/.test(pr)) errors.push("release.yml: a release-pr job must build the release PR only (skip-github-release: true)");
+if(!/^\s*needs:.*\btag-components\b/m.test(pr)) errors.push("release.yml: release-pr must need tag-components so the PR is built after the component tags exist");
+if(!/run:\s*node scripts\/require-component-tags\.mjs[\s\S]*release-please-action/.test(pr)) errors.push("release.yml: release-pr must run scripts/require-component-tags.mjs before release-please builds the PR");
+{
+  // The guard step must always execute and always block: no step-level if, no continue-on-error.
+  const step=pr.match(/- name: Require every component tag[\s\S]*?(?=\n\s*- (?:name|uses):)/)?.[0]||"";
+  if(!step) errors.push("release.yml: release-pr has no 'Require every component tag' step");
+  if(/^\s*if:/m.test(step)||/continue-on-error/.test(step)) errors.push("release.yml: the component-tag guard step must not have an if: condition or continue-on-error");
+  if(/continue-on-error/.test(pr.split("- name: Require every component tag")[0])) errors.push("release.yml: release-pr must not use continue-on-error");
+}
+if(!/ref:\s*\$\{\{\s*github\.event\.repository\.default_branch\s*\}\}/.test(pr)) errors.push("release.yml: release-pr must check out the live default branch (the manifest release-please reads)");
+if(!/^\s*if:.*needs\.tag-components\.result == 'skipped'/m.test(pr)||!/^\s*if:.*always\(\)/m.test(pr)) errors.push("release.yml: release-pr must run when tag-components is skipped (ordinary pushes) via if: always() && ... == 'skipped'");
+// The guard must actually work: in a throwaway repository with the same release plan it
+// must refuse (naming the missing tags) without tags, and pass once every planned tag exists.
+{
+  const {mkdtempSync,mkdirSync,cpSync,rmSync,writeFileSync}=await import("node:fs"); const {tmpdir}=await import("node:os"); const {spawnSync,execFileSync}=await import("node:child_process");
+  const d=mkdtempSync(join(tmpdir(),"rct-"));
+  const git=(...a)=>execFileSync("git",["-c","user.name=check","-c","user.email=check@invalid",...a],{cwd:d,stdio:"ignore"});
+  const run=()=>spawnSync(process.execPath,["scripts/require-component-tags.mjs"],{cwd:d,encoding:"utf8"});
+  try{
+    for(const f of ["scripts","release-please-config.json",".release-please-manifest.json"]) cpSync(f,join(d,f),{recursive:true});
+    for(const path of Object.keys(config.packages)){ mkdirSync(join(d,path),{recursive:true}); cpSync(join(path,"package.json"),join(d,path,"package.json")); }
+    git("init","-q"); git("add","-A"); git("commit","-q","-m","fixture");
+    const none=run();
+    if(none.status===0||!/are missing/.test(none.stderr)) errors.push("scripts/require-component-tags.mjs did not refuse a repository without component tags");
+    const plan=JSON.parse(execFileSync(process.execPath,["scripts/plan-sdk-release.mjs"],{cwd:d,encoding:"utf8"}));
+    for(const t of plan.tags.slice(1)) git("tag",t);
+    const one=run();
+    if(one.status===0) errors.push("scripts/require-component-tags.mjs accepted a repository missing one component tag");
+    git("tag",plan.tags[0]);
+    if(run().status!==0) errors.push("scripts/require-component-tags.mjs refused a repository with every component tag");
+  } finally { rmSync(d,{recursive:true,force:true}); }
+}
 if(errors.length){console.error(errors.join("\n"));process.exit(1)}
 console.log(`Unified release config OK: ${paths.length} SDK packages, one public GitHub Release, individual component tags`);

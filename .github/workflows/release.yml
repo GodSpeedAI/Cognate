@@ -65,14 +65,44 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # On a release-merge push, the github-release phase cuts the umbrella release and the
-          # tag-components job mints the component tags only afterwards. Running the release-pr
-          # phase in that same job races the tag minting: every component resolves its latest
-          # release from the manifest version's tag, which does not exist yet, so all components
-          # look never-released and release-please opens a spurious changelog-only PR (observed
-          # as #38). Skip the release-pr phase there; regular pushes build release PRs normally.
-          skip-github-pull-request: "${{ startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+          # Releases only. The release PR is built by the release-pr job below, after
+          # tag-components has minted the component tags. Building it here raced the tag
+          # minting on every release merge: components resolved their latest release from a
+          # tag that did not exist yet, looked never-released, and release-please opened a
+          # spurious PR (#38; #86 proposed 0.3.0 over published 0.10.0). Ordering the jobs
+          # removes the race for every merge method and commit message.
+          skip-github-pull-request: true
 
+
+  release-pr:
+    name: release-please (release PR, after component tags exist)
+    runs-on: ubuntu-latest
+    needs: [release-please, tag-components]
+    if: always() && github.event_name == 'push' && needs.release-please.result == 'success' && (needs.tag-components.result == 'success' || needs.tag-components.result == 'skipped')
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    # One release-pr at a time; a newer push supersedes a pending older one.
+    concurrency:
+      group: release-pr
+      cancel-in-progress: true
+    steps:
+      # Check out the live default branch, not the event commit: release-please-action reads
+      # the manifest from the live branch, so the tag check must judge the same version.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      # Job ordering protects this run only. A concurrent run, or a push after a failed
+      # tag-components, could reach here before the current version's component tags exist.
+      - name: Require every component tag of the current SDK version
+        run: node scripts/require-component-tags.mjs
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-release: true
   tag-components:
     name: Tag SDK packages and finalize one public release
     needs: release-please
