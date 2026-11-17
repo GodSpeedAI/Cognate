@@ -43,6 +43,29 @@ const rel=jobs["release-please"]||"", pr=jobs["release-pr"]||"";
 if(!/release-please-action[\s\S]*skip-github-pull-request:\s*true\b/.test(rel)) errors.push("release.yml: the release-please job must run releases only (skip-github-pull-request: true)");
 if(!/release-please-action[\s\S]*skip-github-release:\s*true\b/.test(pr)) errors.push("release.yml: a release-pr job must build the release PR only (skip-github-release: true)");
 if(!/^\s*needs:.*\btag-components\b/m.test(pr)) errors.push("release.yml: release-pr must need tag-components so the PR is built after the component tags exist");
-if(!/plan-sdk-release\.mjs[\s\S]*rev-parse[\s\S]*exit 1[\s\S]*release-please-action/.test(pr)) errors.push("release.yml: release-pr must refuse to build the PR while any component tag of the current version is missing");
+if(!/run:\s*node scripts\/require-component-tags\.mjs[\s\S]*release-please-action/.test(pr)) errors.push("release.yml: release-pr must run scripts/require-component-tags.mjs before release-please builds the PR");
+if(!/ref:\s*\$\{\{\s*github\.event\.repository\.default_branch\s*\}\}/.test(pr)) errors.push("release.yml: release-pr must check out the live default branch (the manifest release-please reads)");
+if(!/^\s*if:.*needs\.tag-components\.result == 'skipped'/m.test(pr)||!/^\s*if:.*always\(\)/m.test(pr)) errors.push("release.yml: release-pr must run when tag-components is skipped (ordinary pushes) via if: always() && ... == 'skipped'");
+// The guard must actually work: in a throwaway repository with the same release plan it
+// must refuse (naming the missing tags) without tags, and pass once every planned tag exists.
+{
+  const {mkdtempSync,mkdirSync,cpSync,rmSync,writeFileSync}=await import("node:fs"); const {tmpdir}=await import("node:os"); const {spawnSync,execFileSync}=await import("node:child_process");
+  const d=mkdtempSync(join(tmpdir(),"rct-"));
+  const git=(...a)=>execFileSync("git",["-c","user.name=check","-c","user.email=check@invalid",...a],{cwd:d,stdio:"ignore"});
+  const run=()=>spawnSync(process.execPath,["scripts/require-component-tags.mjs"],{cwd:d,encoding:"utf8"});
+  try{
+    for(const f of ["scripts","release-please-config.json",".release-please-manifest.json"]) cpSync(f,join(d,f),{recursive:true});
+    for(const path of Object.keys(config.packages)){ mkdirSync(join(d,path),{recursive:true}); cpSync(join(path,"package.json"),join(d,path,"package.json")); }
+    git("init","-q"); git("add","-A"); git("commit","-q","-m","fixture");
+    const none=run();
+    if(none.status===0||!/are missing/.test(none.stderr)) errors.push("scripts/require-component-tags.mjs did not refuse a repository without component tags");
+    const plan=JSON.parse(execFileSync(process.execPath,["scripts/plan-sdk-release.mjs"],{cwd:d,encoding:"utf8"}));
+    for(const t of plan.tags.slice(1)) git("tag",t);
+    const one=run();
+    if(one.status===0) errors.push("scripts/require-component-tags.mjs accepted a repository missing one component tag");
+    git("tag",plan.tags[0]);
+    if(run().status!==0) errors.push("scripts/require-component-tags.mjs refused a repository with every component tag");
+  } finally { rmSync(d,{recursive:true,force:true}); }
+}
 if(errors.length){console.error(errors.join("\n"));process.exit(1)}
 console.log(`Unified release config OK: ${paths.length} SDK packages, one public GitHub Release, individual component tags`);
