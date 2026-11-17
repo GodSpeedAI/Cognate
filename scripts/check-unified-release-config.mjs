@@ -29,12 +29,18 @@ for(const p of paths){
   const component=pkg.name.replace(/^@godspeedai\//,"");
   if(!group?.components?.includes(component)) errors.push(`Component missing from linked-versions: ${component}`);
 }
-// The release-pr phase must be skipped on release-merge pushes: component tags are minted by
-// the tag-components job after the release-please job, so running release-pr there races the
-// minting, every component resolves its latest release from a not-yet-existing tag and a
-// spurious changelog-only PR opens (observed as #38).
+// The release PR must be built only after the component tags exist. The release-please job
+// runs releases only (skip-github-pull-request: true); a separate release-pr job that needs
+// tag-components builds the PR (skip-github-release: true). Building the PR in the same job
+// as the release raced the tag minting and opened spurious PRs (#38, and #86 proposing
+// 0.3.0 over the published 0.10.0) whatever the merge method or commit message.
 const workflow=readFileSync(".github/workflows/release.yml","utf8");
-if(!/skip-github-pull-request:\s*["']?\$\{\{\s*startsWith\(github\.event\.head_commit\.message,\s*'chore\(main\): release'\)/.test(workflow))
-  errors.push("release.yml must skip the release-pr phase on release-merge pushes (skip-github-pull-request gated on the head commit message) or every release opens a spurious changelog-only PR");
+// Split the workflow into its top-level jobs (two-space indented keys under "jobs:").
+const jobs={};
+for(const m of workflow.split(/^jobs:\s*$/m)[1]?.matchAll(/^  ([A-Za-z0-9_-]+):\s*\n([\s\S]*?)(?=^  [A-Za-z0-9_-]+:\s*$|(?![\s\S]))/gm)||[]) jobs[m[1]]=m[2];
+const rel=jobs["release-please"]||"", pr=jobs["release-pr"]||"";
+if(!/release-please-action[\s\S]*skip-github-pull-request:\s*true\b/.test(rel)) errors.push("release.yml: the release-please job must run releases only (skip-github-pull-request: true)");
+if(!/release-please-action[\s\S]*skip-github-release:\s*true\b/.test(pr)) errors.push("release.yml: a release-pr job must build the release PR only (skip-github-release: true)");
+if(!/^\s*needs:.*\btag-components\b/m.test(pr)) errors.push("release.yml: release-pr must need tag-components so the PR is built after the component tags exist");
 if(errors.length){console.error(errors.join("\n"));process.exit(1)}
 console.log(`Unified release config OK: ${paths.length} SDK packages, one public GitHub Release, individual component tags`);
