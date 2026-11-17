@@ -70,8 +70,11 @@ jobs:
           # phase in that same job races the tag minting: every component resolves its latest
           # release from the manifest version's tag, which does not exist yet, so all components
           # look never-released and release-please opens a spurious changelog-only PR (observed
-          # as #38). Skip the release-pr phase there; regular pushes build release PRs normally.
-          skip-github-pull-request: "${{ startsWith(github.event.head_commit.message, 'chore(main): release') }}"
+          # as #38, and again as #86 after release PR #84 was merged with a merge commit whose
+          # message starts "Merge pull request ... release-please--branches--main", which the
+          # squash-style prefix test alone missed). Skip the release-pr phase there; regular
+          # pushes build release PRs normally.
+          skip-github-pull-request: "${{ startsWith(github.event.head_commit.message, 'chore(main): release') || contains(github.event.head_commit.message, 'release-please--branches--main') }}"
 
   tag-components:
     name: Tag SDK packages and finalize one public release
