@@ -84,6 +84,23 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # The job ordering covers this run only. A concurrent run, or a run after a failed
+      # tag-components, could still reach here before the current version's component tags
+      # exist; building the PR then reproduces the spurious "never released" PR. Refuse instead:
+      # the next push after the tags exist builds the PR.
+      - name: Require every component tag of the current SDK version
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/plan-sdk-release.mjs > .sdk-release-plan.json
+          missing=$(node -e 'const {execSync}=require("child_process"); const p=require("./.sdk-release-plan.json"); console.log(p.tags.filter((t)=>{try{execSync(`git rev-parse -q --verify refs/tags/${t}`,{stdio:"ignore"});return false}catch{return true}}).join(" "))')
+          if [ -n "$missing" ]; then
+            echo "::error::component tags missing for the current SDK version; not building the release PR: $missing"
+            exit 1
+          fi
       - uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
