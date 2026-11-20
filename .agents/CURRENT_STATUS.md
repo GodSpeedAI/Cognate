@@ -1,8 +1,8 @@
 # Current status
 
-**Status revision:** 79
+**Status revision:** 80
 
-**Summary:** Add an assigned-start RPC that verifies the authenticated delegate and exact SEA link before durable Cognate admission.
+**Summary:** Record the serialized expiry and authority reservation required to enable assigned starts.
 
 **Verified:**
 
@@ -16,6 +16,7 @@
 
 **Limits:**
 
+- The runtime checks expiry before calling the store. Production admission must also enforce expiry when the store serializes and commits the run.
 - The local full gate requires separately installed Phase 0 package trees and the pinned RealityTrace 0.4.0 CLI. The assigned-start path has no production authority provider.
 - The assigned-start expiry check excludes the exact expiration instant. The existing resume contract permits equality.
 - Downstream clones and the second local worktree still hold pre-rewrite history and must re-clone or fetch+reset
@@ -23,4 +24,4 @@
 - The pre-rewrite objects remain recoverable locally (original store un-gc'd; audit workspace clones); purging them is an operator decision
 - The Protect Main bypass window existed for under a minute and the restore was diff-verified, but the window itself is recorded here rather than hidden
 
-**Next:** Run the hosted full gate. Configure production admission only after trusted assignment issuance and a SEA reservation connect the current link decision to durable run admission.
+**Next:** Run the hosted full gate. Configure production admission after authoritative issuance, a SEA reservation, and expiry at the serialized store commit are available.
