@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-rvf-v0.10.0...cognate-cognitive-rvf-v0.11.0) (2026-11-20)
+
+
+### Miscellaneous Chores
+
+* **cognate-cognitive-rvf:** Synchronize cognate SDK packages versions
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-rvf-v0.9.2...cognate-cognitive-rvf-v0.10.0) (2026-11-16)
 
 

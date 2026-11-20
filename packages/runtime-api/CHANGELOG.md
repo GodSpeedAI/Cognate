@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-api-v0.10.0...cognate-runtime-api-v0.11.0) (2026-11-20)
+
+
+### Features
+
+* **runtime:** provider-independent rlm contract, component and test provider ([#112](https://github.com/GodSpeedAI/Cognate/issues/112)) ([#89](https://github.com/GodSpeedAI/Cognate/issues/89)) ([97603d3](https://github.com/GodSpeedAI/Cognate/commit/97603d31c8e475eaf7f46df11a1e8a0f0ac21910))
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-api-v0.9.2...cognate-runtime-api-v0.10.0) (2026-11-16)
 
 
