@@ -34,6 +34,14 @@ export class IdempotencyMismatchError extends Error {
   }
 }
 
+export class CommitDeadlineError extends Error {
+  override readonly name = "CommitDeadlineError";
+
+  constructor() {
+    super("The store admission deadline has expired");
+  }
+}
+
 export class EnvelopeValidationError extends Error {
   override readonly name = "EnvelopeValidationError";
   constructor(readonly issues: readonly string[]) {

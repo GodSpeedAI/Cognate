@@ -1,5 +1,11 @@
-import { EnvelopeValidationError } from "./errors.ts";
+import { CommitDeadlineError, EnvelopeValidationError } from "./errors.ts";
 import type { Json, NewEvent } from "./types.ts";
+
+export function assertCommitBefore(expiresAtMs: number | undefined): void {
+  if (expiresAtMs !== undefined && (!Number.isFinite(expiresAtMs) || Date.now() >= expiresAtMs)) {
+    throw new CommitDeadlineError();
+  }
+}
 
 export const MAX_PAYLOAD_BYTES = 1_048_576;
 const EVENT_TYPE = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/;

@@ -3,7 +3,7 @@ import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { ConcurrencyError, RecordConflictError, IdempotencyMismatchError, CheckpointConflictError, NotFoundError, validateNewEvent } from "@godspeedai/cognate-events";
+import { ConcurrencyError, RecordConflictError, IdempotencyMismatchError, CheckpointConflictError, NotFoundError, assertCommitBefore, validateNewEvent } from "@godspeedai/cognate-events";
 import type {
   DurableStore,
   NewEvent,
@@ -202,7 +202,7 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
     return { collection: write.collection, id: write.id, version, value: write.value };
   }
 
-  const commitTxn = db.transaction((request: CommitRequest): CommitOutcome => {
+  const commitTxn = db.transaction((request: CommitRequest, expiresAtMs?: number): CommitOutcome => {
     // Phase A — validate every envelope before anything is written (spec §10).
     for (const append of request.appends) for (const event of append.events) validateNewEvent(event);
 
@@ -217,6 +217,7 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
         }
         const ids = JSON.parse(existing.event_ids) as string[];
         const events = ids.map((id) => mapEventRow(db.query(`${EVENT_SELECT} WHERE e.event_id = ?`).get(id) as Row));
+        assertCommitBefore(expiresAtMs);
         return { kind: "duplicate", events, result: JSON.parse(existing.result) as Json };
       }
     }
@@ -270,6 +271,7 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
       );
     }
 
+    assertCommitBefore(expiresAtMs);
     return { kind: "committed", events: storedEvents, records: storedRecords, result };
   });
 
@@ -384,15 +386,18 @@ export function openSqliteStore(options: SqliteStoreOptions): DurableStore {
     return tombstone;
   });
 
+  async function commit(request: CommitRequest, expiresAtMs?: number): Promise<CommitOutcome> {
+    assertOpen();
+    const outcome = commitTxn.immediate(request, expiresAtMs);
+    if (outcome.kind === "committed" && outcome.events.length > 0) {
+      for (const listener of listeners) listener(outcome.events);
+    }
+    return outcome;
+  }
+
   const store: DurableStore = {
-    async commit(request: CommitRequest): Promise<CommitOutcome> {
-      assertOpen();
-      const outcome = commitTxn.immediate(request);
-      if (outcome.kind === "committed" && outcome.events.length > 0) {
-        for (const listener of listeners) listener(outcome.events);
-      }
-      return outcome;
-    },
+    commit,
+    commitBefore: (request, expiresAtMs) => commit(request, expiresAtMs ?? NaN),
 
     async streamVersion(streamId: string): Promise<number> {
       assertOpen();

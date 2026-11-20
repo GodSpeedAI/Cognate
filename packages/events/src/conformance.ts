@@ -1,6 +1,6 @@
 // Durable store conformance kit. Every DurableStore implementation must pass it unchanged.
 import { afterEach, describe, expect, test } from "bun:test";
-import { CheckpointConflictError, ConcurrencyError, EnvelopeValidationError, IdempotencyMismatchError, RecordConflictError } from "./errors.ts";
+import { CheckpointConflictError, CommitDeadlineError, ConcurrencyError, EnvelopeValidationError, IdempotencyMismatchError, RecordConflictError } from "./errors.ts";
 import type { DurableStore, NewEvent, StoreFactory, StoreHandle, StoredEvent } from "./types.ts";
 
 export function event(eventType: string, payload: NewEvent["payload"] = {}, overrides: Partial<NewEvent> = {}): NewEvent {
@@ -23,6 +23,8 @@ export interface StoreKitOptions {
   readonly persistent: boolean;
   /** Assert that this store implements the optional fenced outbox lease extension. */
   readonly fencedOutbox?: boolean;
+  /** Assert support for deadline-bounded admission. */
+  readonly commitBefore?: boolean;
 }
 
 export function storeConformance(name: string, factory: StoreFactory, options: StoreKitOptions): void {
@@ -143,6 +145,31 @@ export function storeConformance(name: string, factory: StoreFactory, options: S
       expect(second.result).toEqual({ receipt: "r-1" });
       expect(second.events.map((e) => e.eventId)).toEqual(first.events.map((e) => e.eventId));
       expect(await store.streamVersion("pay")).toBe(1);
+    });
+
+    if (options.commitBefore) test("expired admission leaves no facts and a live retry preserves idempotency", async () => {
+      const store = await open();
+      expect(store.commitBefore).toBeFunction();
+      const request = {
+        idempotency: { scope: "admission", key: "run", fingerprint: "verified" },
+        appends: [{ streamId: "start", expectedVersion: 0, events: [event("run.started")] }],
+        records: [{ collection: "runs", id: "r", expectedVersion: 0, value: {} }],
+        outbox: [{ id: "execute-r", topic: "execute", payload: {} }],
+      };
+      await expect(store.commitBefore!(request, Date.now())).rejects.toBeInstanceOf(CommitDeadlineError);
+      await expect(store.commitBefore!(request, Number.NaN)).rejects.toBeInstanceOf(CommitDeadlineError);
+      expect(await store.readAll()).toHaveLength(0);
+      expect(await store.getRecord("runs", "r")).toBeUndefined();
+      expect(await store.listOutbox()).toHaveLength(0);
+
+      const deadline = Date.now() + 60_000;
+      const first = await store.commitBefore!(request, deadline);
+      expect(first.kind).toBe("committed");
+      expect(first.events[0]?.position).toBe(1);
+      expect(await store.commitBefore!(request, deadline)).toMatchObject({ kind: "duplicate", events: first.events });
+      await expect(store.commitBefore!(request, Date.now())).rejects.toBeInstanceOf(CommitDeadlineError);
+      expect(await store.readAll()).toHaveLength(1);
+      expect(await store.listOutbox()).toHaveLength(1);
     });
 
     test("reusing a key for a different request is rejected", async () => {

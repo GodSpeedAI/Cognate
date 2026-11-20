@@ -5,6 +5,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { StoredEvent } from "@godspeedai/cognate-events";
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { type AgentDefinition, type Assignment, type AssignmentCode, AssignmentRefusedError, type AssignmentView, type CaseContext, type Caller, formatAssignmentId, runAssignmentLifecycle, ServiceError, validateAssignmentEvent } from "@godspeedai/cognate-runtime-api";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -439,5 +440,29 @@ test("a verified link expiring during authorization cannot start", async () => {
     await expect(rt.service.startRun(alice, { agent: "agent.quick", input: {}, idempotencyKey: "expires-in-auth", caseContext: contextFor(assignment), assignment, assignmentLinkId: "link", linkExpiresAt: new Date(expiry).toISOString() })).rejects.toMatchObject({ code: "permission_denied" });
   } finally {
     clock.mockRestore();
+  }
+});
+
+test("a legacy store without deadline support can only start ordinary runs", async () => {
+  const { commitBefore: _deadline, ...store } = openSqliteStore({ path: ":memory:" });
+  const rt = await createRuntime({
+    store: { store },
+    agents,
+    policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) },
+    actions: { authorize: () => ({ allow: true, reason: "ok" }) },
+  });
+  try {
+    const assignment = assignmentFor(44);
+    const request = { agent: "agent.quick", input: {}, idempotencyKey: "no-guard" };
+    await expect(rt.service.startRun(alice, {
+      ...request, caseContext: contextFor(assignment), assignment,
+      assignmentLinkId: "link", linkExpiresAt: "2099-01-01T00:00:00Z",
+    })).rejects.toMatchObject({ code: "permission_denied" });
+    expect(await store.readAll()).toHaveLength(0);
+    expect(await store.listOutbox()).toHaveLength(0);
+    expect((await rt.service.startRun(alice, request)).runId).toBeTruthy();
+  } finally {
+    await rt.close();
+    await store.close();
   }
 });

@@ -1,7 +1,7 @@
 // In-process RuntimeService (ADR-0011): authorization, tenancy, and typed errors over the durable core.
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
-import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
+import { CommitDeadlineError, ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type CommitRequest, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
 import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent } from "./assignment.ts";
 import type { Core } from "./core.ts";
@@ -102,9 +102,12 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
           })()
         : [];
       try {
-        // A verified external link must still be live after authorization and immediately before commit.
-        if (request.assignmentLinkId !== undefined && (!request.linkExpiresAt || !Number.isFinite(Date.parse(request.linkExpiresAt)) || Date.parse(request.linkExpiresAt) <= Date.now())) throw new ServiceError("permission_denied", "assignment admission denied");
-        const outcome = await store.commit({
+        const expiresAtMs = request.assignmentLinkId === undefined ? undefined : Date.parse(request.linkExpiresAt ?? "");
+        const commitBefore = store.commitBefore;
+        if (expiresAtMs !== undefined && (!commitBefore || !Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now())) {
+          throw new ServiceError("permission_denied", "assignment admission denied");
+        }
+        const decision: CommitRequest = {
           idempotency: {
             scope: `${caller.tenant}:${caller.actor.id}:run.start`,
             key: request.idempotencyKey,
@@ -154,11 +157,15 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
             ...lifecycle.flatMap((event, i) => core.outboxFor({ ...event, streamId: runStream(runId), recordedAt: event.occurredAt, streamSequence: i + 2 })),
           ],
           result: { runId },
-        });
+        };
+        const outcome = expiresAtMs === undefined
+          ? await store.commit(decision)
+          : await commitBefore!.call(store, decision, expiresAtMs);
         core.kick();
         return (await readRun(caller, (outcome.result as { runId: string }).runId)).view;
       } catch (error) {
         if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
+        if (error instanceof CommitDeadlineError) throw new ServiceError("permission_denied", "assignment admission denied");
         if (assignment && error instanceof RecordConflictError) throw new AssignmentRefusedError("ASSIGNMENT_ID_INVALID", `${assignment.assignment_id} was already issued to a run; resume it, or take a new k`);
         throw error;
       }

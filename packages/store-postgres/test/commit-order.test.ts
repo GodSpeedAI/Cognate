@@ -3,10 +3,10 @@
 // commit. These tests prove the invariants that single-process conformance cannot: interleaved
 // multi-stream transactions, aborted allocations leaving no gaps, and idempotency races.
 // Needs the development database: `just db-up` (pg0), or set COGNATE_TEST_POSTGRES_URL.
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, spyOn, test } from "bun:test";
 import postgres from "postgres";
-import { ConcurrencyError, IdempotencyMismatchError, RecordConflictError } from "@godspeedai/cognate-events";
-import type { DurableStore, NewEvent } from "@godspeedai/cognate-events";
+import { CommitDeadlineError, ConcurrencyError, IdempotencyMismatchError, RecordConflictError } from "@godspeedai/cognate-events";
+import type { CommitOutcome, DurableStore, NewEvent } from "@godspeedai/cognate-events";
 import { openPostgresStore, type PostgresStoreHandle } from "../src/index.ts";
 
 const url = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres";
@@ -150,3 +150,54 @@ test("a hard connection drop mid-transaction rolls back cleanly and the store co
   const all = await store.readAll();
   expect(all.map((e) => [e.position, e.eventType])).toEqual([[1, "w.1"]]);
 });
+
+test("expiry while a record lock blocks publication rolls back the complete append", async () => {
+  const { store, schema } = await open();
+  await store.commit({ appends: [], records: [{ collection: "runs", id: "r", expectedVersion: 0, value: {} }] });
+  const sql = postgres(url, { max: 2 });
+  const locked = Promise.withResolvers<number>();
+  const release = Promise.withResolvers<void>();
+  const hold = sql.begin(async (tx) => {
+    await tx`SELECT version FROM ${tx(schema)}.records WHERE collection = 'runs' AND id = 'r' FOR UPDATE`;
+    const rows = await tx`SELECT pg_backend_pid() AS pid`;
+    locked.resolve(Number(rows[0]!.pid));
+    await release.promise;
+  });
+  const now = Date.now();
+  const deadline = now + 60_000;
+  const decision = {
+    idempotency: { scope: "assigned", key: "r", fingerprint: "link" },
+    appends: [{ streamId: "start", expectedVersion: 0, events: [event(1)] }],
+    records: [{ collection: "runs", id: "r", expectedVersion: 1, value: { admitted: true } }],
+    outbox: [{ id: "execute-r", topic: "execute", payload: {} }],
+  };
+  let pending: Promise<CommitOutcome | Error> | undefined;
+  const clock = spyOn(Date, "now").mockReturnValue(now);
+  try {
+    const pid = await Promise.race([locked.promise, hold.then(() => { throw new Error("record lock released early"); })]);
+    pending = store.commitBefore!(decision, deadline).catch((error: Error) => error);
+    const waitUntil = performance.now() + 5_000;
+    for (;;) {
+      const waiters = await sql`SELECT 1 FROM pg_stat_activity WHERE ${pid} = ANY(pg_blocking_pids(pid))`;
+      if (waiters.length) break;
+      if (performance.now() >= waitUntil) throw new Error("admission did not wait for the record lock");
+      await Bun.sleep(10);
+    }
+    clock.mockReturnValue(deadline);
+    release.resolve();
+    expect(await pending).toBeInstanceOf(CommitDeadlineError);
+    expect(await store.getRecord("runs", "r")).toMatchObject({ version: 1, value: {} });
+    expect(await store.readAll()).toHaveLength(0);
+    expect(await store.listOutbox()).toHaveLength(0);
+
+    const retry = await store.commitBefore!(decision, deadline + 60_000);
+    expect(retry.kind).toBe("committed");
+    expect(retry.events[0]?.position).toBe(1);
+  } finally {
+    clock.mockRestore();
+    release.resolve();
+    await hold.catch(() => {});
+    await pending;
+    await sql.end({ timeout: 1 });
+  }
+}, 15_000);

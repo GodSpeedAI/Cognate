@@ -86,9 +86,9 @@ Cognate run id; an open continuation surfaces as `TASK_STATE_INPUT_REQUIRED`; co
 
 `StartAssignedRun` accepts an exact SEA Forge case, episode, assignment, and delegation link reference plus an idempotency key. The remote client uses this method when an assigned start is requested. Older servers refuse the unknown method.
 
-The server authenticates the caller, loads assignment content and the execution target from a trusted tenant-scoped source, and verifies that SEA Forge identifies the caller as the delegate on the current, unexpired link. The runtime checks expiry after authorization and before requesting a store commit. The run record and its idempotency fingerprint carry the verified link ID. The runtime chooses a fresh correlation ID for the assigned run.
+The server authenticates the caller, loads assignment content and the execution target from a trusted tenant-scoped source, and verifies that SEA Forge identifies the caller as the delegate on the current, unexpired link. The runtime checks expiry after authorization and requires a store that enforces the deadline within its serialized write path. The run record and its idempotency fingerprint carry the verified link ID. The runtime chooses a fresh correlation ID for the assigned run.
 
-Assigned starts fail closed when the trusted providers are unavailable. Production enablement requires authoritative issuance, a SEA Forge reservation that preserves the link decision through admission, and an expiry check at the store’s serialized commit point.
+Assigned starts fail closed when the trusted providers are unavailable. Production enablement requires authoritative issuance, a SEA Forge reservation that preserves the link decision through admission, and a store that supports deadline-bounded admission.
 
 ## State
 

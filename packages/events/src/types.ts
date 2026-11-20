@@ -191,6 +191,10 @@ export interface ProjectionCommit {
 export interface DurableStore {
   /** Atomically apply one decision. Throws ConcurrencyError / RecordConflictError / IdempotencyMismatchError; fails closed. */
   commit(request: CommitRequest): Promise<CommitOutcome>;
+  /** Admit a decision or replay before the exclusive Unix millisecond deadline.
+   * Check within serialization, before publication. Expiry leaves no changes.
+   * A caller requiring this guarantee must refuse when the extension is absent. */
+  commitBefore?(request: CommitRequest, expiresAtMs: number): Promise<CommitOutcome>;
   streamVersion(streamId: string): Promise<number>;
   readStream(streamId: string, options?: { readonly afterSequence?: number; readonly limit?: number }): Promise<StoredEvent[]>;
   /** Events in store position order across all streams. */

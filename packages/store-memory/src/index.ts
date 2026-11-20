@@ -5,6 +5,7 @@ import {
   IdempotencyMismatchError,
   NotFoundError,
   RecordConflictError,
+  assertCommitBefore,
   validateNewEvent,
 } from "@godspeedai/cognate-events";
 import type {
@@ -157,7 +158,7 @@ export function createMemoryStore(): DurableStore {
     return appended;
   }
 
-  function doCommit(request: CommitRequest): CommitOutcome {
+  function doCommit(request: CommitRequest, expiresAtMs?: number): CommitOutcome {
     for (const append of request.appends) {
       for (const event of append.events) validateNewEvent(event);
     }
@@ -169,6 +170,7 @@ export function createMemoryStore(): DurableStore {
         if (existing.fingerprint !== request.idempotency.fingerprint) {
           throw new IdempotencyMismatchError(request.idempotency.scope, request.idempotency.key);
         }
+        assertCommitBefore(expiresAtMs);
         return { kind: "duplicate", events: clone(existing.events), result: clone(existing.result) };
       }
     }
@@ -196,6 +198,7 @@ export function createMemoryStore(): DurableStore {
       seenOutboxIds.add(intent.id);
     }
 
+    assertCommitBefore(expiresAtMs);
     const committedEvents: StoredEvent[] = [];
     for (const append of request.appends) committedEvents.push(...applyAppend(append.streamId, append.events));
 
@@ -242,6 +245,10 @@ export function createMemoryStore(): DurableStore {
   return {
     commit(request) {
       return withLock(() => doCommit(request));
+    },
+
+    commitBefore(request, expiresAtMs) {
+      return withLock(() => doCommit(request, expiresAtMs ?? NaN));
     },
 
     async streamVersion(streamId) {

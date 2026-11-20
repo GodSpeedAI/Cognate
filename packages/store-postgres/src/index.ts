@@ -21,6 +21,7 @@ import {
   RecordConflictError,
   RunOwnershipHeldError,
   StaleRunOwnerError,
+  assertCommitBefore,
   validateNewEvent,
 } from "@godspeedai/cognate-events";
 import type {
@@ -73,7 +74,6 @@ class DuplicateRaceError extends Error {
   constructor(
     readonly scope: string,
     readonly key: string,
-    readonly fingerprint: string,
   ) {
     super(`idempotency race on ${scope}:${key}`);
   }
@@ -286,7 +286,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
 
   // ── Commit ──────────────────────────────────────────────────────────────────────
 
-  async function commit(request: CommitRequest): Promise<CommitOutcome> {
+  async function commit(request: CommitRequest, expiresAtMs?: number): Promise<CommitOutcome> {
     const appends = request.appends ?? [];
     // Phase A (pre-transaction, mirrors the SQLite store): every envelope is validated before anything
     // is written, so a bad envelope cannot even open a transaction.
@@ -300,7 +300,10 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
     // idempotency inside BEGIN IMMEDIATE; this re-check preserves that order).
     if (request.idempotency) {
       const settled = await readIdempotencyRecord(sql, request.idempotency);
-      if (settled) return settled;
+      if (settled) {
+        assertCommitBefore(expiresAtMs);
+        return settled;
+      }
     }
 
     let outcome: CommitOutcome | undefined;
@@ -322,10 +325,13 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
           // its still-uncommitted reservation while retaining the lock, so replay cannot
           // consume event positions. No other allocator can observe or use this reservation.
           if(eventCount>0)await tx`UPDATE ${t.meta} SET next_position = next_position - ${eventCount} WHERE id = ${POSITION_COUNTER_ID}`;
+          assertCommitBefore(expiresAtMs);
           outcome = settled;
           return;
         }
       }
+
+      assertCommitBefore(expiresAtMs);
 
       // Phase C — CAS every stream's expected version before writing any event (empty appends included,
       // like the SQLite store). Appends are serialized by the counter lock, so read-modify-write here
@@ -450,7 +456,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
           RETURNING scope`;
         if (inserted.length === 0) {
           // A concurrent commit with the same key won: roll back and replay its recorded outcome.
-          throw new DuplicateRaceError(request.idempotency.scope, request.idempotency.key, request.idempotency.fingerprint);
+          throw new DuplicateRaceError(request.idempotency.scope, request.idempotency.key);
         }
       }
 
@@ -462,6 +468,7 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
         await tx`SELECT pg_notify(${channel}, ${JSON.stringify({ from, to, source: instanceId })})`;
       }
 
+      assertCommitBefore(expiresAtMs);
       outcome = { kind: "committed", events: storedEvents, records: storedRecords, result };
     });
 
@@ -499,22 +506,24 @@ export async function openPostgresStore(options: PostgresStoreOptions): Promise<
 
   // ── Store surface ───────────────────────────────────────────────────────────────
 
-  const store: DurableStore = {
-    async commit(request: CommitRequest): Promise<CommitOutcome> {
-      assertOpen();
-      try {
-        return await commit(request);
-      } catch (error) {
-        if (error instanceof DuplicateRaceError) {
-          const rows = await sql`SELECT fingerprint, result::text AS result, event_ids::text AS event_ids FROM ${t.idempotency} WHERE scope = ${error.scope} AND key = ${error.key}`;
-          const row = rows[0];
-          if (!row) throw new PostgresStoreError(`store-postgres: idempotency race winner vanished for ${error.scope}:${error.key}`);
-          if (row.fingerprint !== error.fingerprint) throw new IdempotencyMismatchError(error.scope, error.key);
-          return { kind: "duplicate", events: await eventsByIds(json<string[]>(row.event_ids)), result: json<Json>(row.result) };
-        }
-        throw error;
+  async function commitDecision(request: CommitRequest, expiresAtMs?: number): Promise<CommitOutcome> {
+    assertOpen();
+    try {
+      return await commit(request, expiresAtMs);
+    } catch (error) {
+      if (error instanceof DuplicateRaceError && request.idempotency) {
+        const settled = await readIdempotencyRecord(sql, request.idempotency);
+        if (!settled) throw new PostgresStoreError(`store-postgres: idempotency race winner vanished for ${error.scope}:${error.key}`);
+        assertCommitBefore(expiresAtMs);
+        return settled;
       }
-    },
+      throw error;
+    }
+  }
+
+  const store: DurableStore = {
+    commit: commitDecision,
+    commitBefore: (request, expiresAtMs) => commitDecision(request, expiresAtMs ?? NaN),
 
     async streamVersion(streamId: string): Promise<number> {
       assertOpen();

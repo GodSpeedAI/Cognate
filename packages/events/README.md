@@ -23,6 +23,8 @@ Requires [Bun](https://bun.sh) >= 1.4.0.
 
 `fingerprint` computes a stable, key-order-independent SHA-256 of a JSON request — what idempotency uses to tell a replay apart from a different request.
 
+Stores that support `commitBefore` check an exclusive admission deadline before publishing a serialized decision. They also check the deadline before returning a previously committed result. A refusal leaves the events, records, outbox, and idempotency key available for a later valid decision.
+
 ## Quick start
 
 ```ts
