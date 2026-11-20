@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-mcp-v0.10.0...cognate-mcp-v0.11.0) (2026-11-20)
+
+
+### Miscellaneous Chores
+
+* **cognate-mcp:** Synchronize cognate SDK packages versions
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-mcp-v0.9.2...cognate-mcp-v0.10.0) (2026-11-16)
 
 
