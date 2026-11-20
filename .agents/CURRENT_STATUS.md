@@ -1,5 +1,19 @@
 # Current status
 
+**Status revision:** 79
+
+**Stage:** Owner-approved GodSpeed vocabulary consolidation
+
+**Summary:** Reconciled the owning glossary against the review patch and authoritative sources. The owner approved the conceptual distinctions. Runtime, frozen specifications, and identifiers retain their existing contracts.
+
+- Cross-checked glossary targets, source links and the eleven semantic scenarios.
+
+## Active work carried forward
+
+history rewrite applied with operator approval: origin clean of private paths and the username across all refs; PR #74 mergeable on rewritten head
+
+The rehearsed git-filter-repo rewrite was applied to origin. Pre-push verification on the isolated apply clone: the PR branch's tree was byte-identical across the rewrite, zero residual /home/<user>/ paths and zero residual username occurrences across every ref, and main's subject history complete except one commit that became empty under the rewrite (its only change was a path substitution the rewrite supersedes). Because main is protected by the Protect Main ruleset with no bypass actors, the force-push temporarily added the operator's admin account as a bypass actor; the ruleset was restored to a verified-identical state immediately after the push. All 5 heads and 696 tags were force-pushed. Post-push verification from a fresh clone: zero residual private paths and zero residual username occurrences across all origin-reachable history; Gitleaks reports only the 12 known synthetic fixture findings; head and tag counts match pre-rewrite. PR #74 re-pointed at its rewritten head and remains OPEN and MERGEABLE; CI runs on rewritten main. The mechanical rewrite also surfaced a tracking gap: one symlink (the harness tests' node_modules link) carried an absolute home path in its TARGET, invisible to content scanners because rg does not read symlink targets; the rewrite mechanically turned it into an unresolvable ~ target, and a follow-up commit replaced it with the behavior-preserving relative target ../../../../node_modules. Local refs were reset to the rewritten history; the old objects remain in the local store (deliberately not gc'd) and in the audit workspace as the recovery path.
+
 **Status revision:** 78
 
 **Summary:** The rehearsed git-filter-repo rewrite was applied to origin. Pre-push verification on the isolated apply clone: the PR branch's tree was byte-identical across the rewrite, zero residual /home/<user>/ paths and zero residual username occurrences across every ref, and main's subject history complete except one commit that became empty under the rewrite (its only change was a path substitution the rewrite supersedes). Because main is protected by the Protect Main ruleset with no bypass actors, the force-push temporarily added the operator's admin account as a bypass actor; the ruleset was restored to a verified-identical state immediately after the push. All 5 heads and 696 tags were force-pushed. Post-push verification from a fresh clone: zero residual private paths and zero residual username occurrences across all origin-reachable history; Gitleaks reports only the 12 known synthetic fixture findings; head and tag counts match pre-rewrite. PR #74 re-pointed at its rewritten head and remains OPEN and MERGEABLE; CI runs on rewritten main. The mechanical rewrite also surfaced a tracking gap: one symlink (the harness tests' node_modules link) carried an absolute home path in its TARGET, invisible to content scanners because rg does not read symlink targets; the rewrite mechanically turned it into an unresolvable ~ target, and a follow-up commit replaced it with the behavior-preserving relative target ../../../../node_modules. Local refs were reset to the rewritten history; the old objects remain in the local store (deliberately not gc'd) and in the audit workspace as the recovery path.
