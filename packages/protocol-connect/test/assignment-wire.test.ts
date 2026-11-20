@@ -20,3 +20,12 @@ test("a remote startRun with caseContext or linkExpiresAt is refused too (the wi
   await expect(service.startRun(caller, { agent: "a", input: null, idempotencyKey: "k", linkExpiresAt: "2026-11-15T00:00:00Z" })).rejects.toMatchObject({ code: "failed_precondition" });
   expect(sent).toBe(false);
 });
+
+test("a remote caller cannot supply trusted assignment link metadata", async () => {
+  let sent = false;
+  const transport = { unary: () => ((sent = true), Promise.reject(new Error("must not be called"))), stream: () => Promise.reject(new Error("unused")) };
+  const service = createRemoteRuntimeService(transport as never, () => "token");
+  const caller = { actor: { id: "u", kind: "user" as const }, tenant: "t" };
+  await expect(service.startRun(caller, { agent: "a", input: null, idempotencyKey: "k", assignmentLinkId: "forged" })).rejects.toMatchObject({ code: "failed_precondition" });
+  expect(sent).toBe(false);
+});

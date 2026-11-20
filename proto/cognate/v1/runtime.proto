@@ -12,6 +12,7 @@ import "cognate/v1/execution.proto";
 // Only unary and server-streaming methods: client/bidi streaming are unsupported on the Bun transport (DEBT-004).
 service RuntimeService {
   rpc StartRun(StartRunRequest) returns (Run);
+  rpc StartAssignedRun(StartAssignedRunRequest) returns (Run);
   rpc GetRun(GetRunRequest) returns (Run);
   rpc CancelRun(CancelRunRequest) returns (Run);
   rpc StreamEvents(StreamEventsRequest) returns (stream Event);

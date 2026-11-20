@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cognate/v1/execution.proto.
  */
 export const file_cognate_v1_execution: GenFile = /*@__PURE__*/
-  fileDesc("Chpjb2duYXRlL3YxL2V4ZWN1dGlvbi5wcm90bxIKY29nbmF0ZS52MSKIAgoDUnVuEg4KBnJ1bl9pZBgBIAEoCRINCgVhZ2VudBgCIAEoCRIOCgZ0ZW5hbnQYAyABKAkSJQoGc3RhdHVzGAQgASgOMhUuY29nbmF0ZS52MS5SdW5TdGF0dXMSJQoFaW5wdXQYBSABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSJgoGb3V0cHV0GAYgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhIKBWVycm9yGAcgASgJSACIAQESFgoOY29ycmVsYXRpb25faWQYCCABKAkSEgoKc3RhcnRlZF9ieRgJIAEoCRISCgp3YWl0aW5nX29uGAogAygJQggKBl9lcnJvciLGAQoPU3RhcnRSdW5SZXF1ZXN0Eg0KBWFnZW50GAEgASgJEiUKBWlucHV0GAIgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhcKD2lkZW1wb3RlbmN5X2tleRgDIAEoCRIbCg5jb3JyZWxhdGlvbl9pZBgEIAEoCUgAiAEBEioKBXN0YXRlGAUgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlSAGIAQFCEQoPX2NvcnJlbGF0aW9uX2lkQggKBl9zdGF0ZSIfCg1HZXRSdW5SZXF1ZXN0Eg4KBnJ1bl9pZBgBIAEoCSJLChBDYW5jZWxSdW5SZXF1ZXN0Eg4KBnJ1bl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkSFwoPaWRlbXBvdGVuY3lfa2V5GAMgASgJIl8KD0xpc3RSdW5zUmVxdWVzdBIbCg5jb3JyZWxhdGlvbl9pZBgBIAEoCUgAiAEBEhIKBWFnZW50GAIgASgJSAGIAQFCEQoPX2NvcnJlbGF0aW9uX2lkQggKBl9hZ2VudCIxChBMaXN0UnVuc1Jlc3BvbnNlEh0KBHJ1bnMYASADKAsyDy5jb2duYXRlLnYxLlJ1biJqCgtKc29uUGF0Y2hPcBIKCgJvcBgBIAEoCRIMCgRwYXRoGAIgASgJEhEKBGZyb20YAyABKAlIAIgBARIlCgV2YWx1ZRgEIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZUIHCgVfZnJvbSI0CgxKc29uUGF0Y2hPcHMSJAoDb3BzGAEgAygLMhcuY29nbmF0ZS52MS5Kc29uUGF0Y2hPcCJsCgtTdGF0ZVVwZGF0ZRIqCghzbmFwc2hvdBgBIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZUgAEikKBXBhdGNoGAIgASgLMhguY29nbmF0ZS52MS5Kc29uUGF0Y2hPcHNIAEIGCgRraW5kIpoBChJVcGRhdGVTdGF0ZVJlcXVlc3QSDgoGcnVuX2lkGAEgASgJEicKBnVwZGF0ZRgCIAEoCzIXLmNvZ25hdGUudjEuU3RhdGVVcGRhdGUSFwoPaWRlbXBvdGVuY3lfa2V5GAMgASgJEh0KEGV4cGVjdGVkX3ZlcnNpb24YBCABKARIAIgBAUITChFfZXhwZWN0ZWRfdmVyc2lvbiJNChNVcGRhdGVTdGF0ZVJlc3BvbnNlEiUKBXN0YXRlGAEgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEg8KB3ZlcnNpb24YAiABKAQqogEKCVJ1blN0YXR1cxIaChZSVU5fU1RBVFVTX1VOU1BFQ0lGSUVEEAASFgoSUlVOX1NUQVRVU19SVU5OSU5HEAESFgoSUlVOX1NUQVRVU19XQUlUSU5HEAISGAoUUlVOX1NUQVRVU19DT01QTEVURUQQAxIVChFSVU5fU1RBVFVTX0ZBSUxFRBAEEhgKFFJVTl9TVEFUVVNfQ0FOQ0VMTEVEEAViBnByb3RvMw", [file_google_protobuf_struct]);
+  fileDesc("Chpjb2duYXRlL3YxL2V4ZWN1dGlvbi5wcm90bxIKY29nbmF0ZS52MSKIAgoDUnVuEg4KBnJ1bl9pZBgBIAEoCRINCgVhZ2VudBgCIAEoCRIOCgZ0ZW5hbnQYAyABKAkSJQoGc3RhdHVzGAQgASgOMhUuY29nbmF0ZS52MS5SdW5TdGF0dXMSJQoFaW5wdXQYBSABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSJgoGb3V0cHV0GAYgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhIKBWVycm9yGAcgASgJSACIAQESFgoOY29ycmVsYXRpb25faWQYCCABKAkSEgoKc3RhcnRlZF9ieRgJIAEoCRISCgp3YWl0aW5nX29uGAogAygJQggKBl9lcnJvciJgChBTZWFBc3NpZ25tZW50UmVmEg8KB2Nhc2VfaWQYASABKAkSFQoNYXNzaWdubWVudF9pZBgCIAEoCRITCgtlcGlzb2RlX3JlZhgDIAEoCRIPCgdsaW5rX2lkGAQgASgJIsYBCg9TdGFydFJ1blJlcXVlc3QSDQoFYWdlbnQYASABKAkSJQoFaW5wdXQYAiABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSFwoPaWRlbXBvdGVuY3lfa2V5GAMgASgJEhsKDmNvcnJlbGF0aW9uX2lkGAQgASgJSACIAQESKgoFc3RhdGUYBSABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWVIAYgBAUIRCg9fY29ycmVsYXRpb25faWRCCAoGX3N0YXRlIm4KF1N0YXJ0QXNzaWduZWRSdW5SZXF1ZXN0EjQKDmFzc2lnbm1lbnRfcmVmGAEgASgLMhwuY29nbmF0ZS52MS5TZWFBc3NpZ25tZW50UmVmEhcKD2lkZW1wb3RlbmN5X2tleRgCIAEoCUoECAMQBCIfCg1HZXRSdW5SZXF1ZXN0Eg4KBnJ1bl9pZBgBIAEoCSJLChBDYW5jZWxSdW5SZXF1ZXN0Eg4KBnJ1bl9pZBgBIAEoCRIOCgZyZWFzb24YAiABKAkSFwoPaWRlbXBvdGVuY3lfa2V5GAMgASgJIl8KD0xpc3RSdW5zUmVxdWVzdBIbCg5jb3JyZWxhdGlvbl9pZBgBIAEoCUgAiAEBEhIKBWFnZW50GAIgASgJSAGIAQFCEQoPX2NvcnJlbGF0aW9uX2lkQggKBl9hZ2VudCIxChBMaXN0UnVuc1Jlc3BvbnNlEh0KBHJ1bnMYASADKAsyDy5jb2duYXRlLnYxLlJ1biJqCgtKc29uUGF0Y2hPcBIKCgJvcBgBIAEoCRIMCgRwYXRoGAIgASgJEhEKBGZyb20YAyABKAlIAIgBARIlCgV2YWx1ZRgEIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZUIHCgVfZnJvbSI0CgxKc29uUGF0Y2hPcHMSJAoDb3BzGAEgAygLMhcuY29nbmF0ZS52MS5Kc29uUGF0Y2hPcCJsCgtTdGF0ZVVwZGF0ZRIqCghzbmFwc2hvdBgBIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZUgAEikKBXBhdGNoGAIgASgLMhguY29nbmF0ZS52MS5Kc29uUGF0Y2hPcHNIAEIGCgRraW5kIpoBChJVcGRhdGVTdGF0ZVJlcXVlc3QSDgoGcnVuX2lkGAEgASgJEicKBnVwZGF0ZRgCIAEoCzIXLmNvZ25hdGUudjEuU3RhdGVVcGRhdGUSFwoPaWRlbXBvdGVuY3lfa2V5GAMgASgJEh0KEGV4cGVjdGVkX3ZlcnNpb24YBCABKARIAIgBAUITChFfZXhwZWN0ZWRfdmVyc2lvbiJNChNVcGRhdGVTdGF0ZVJlc3BvbnNlEiUKBXN0YXRlGAEgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEg8KB3ZlcnNpb24YAiABKAQqogEKCVJ1blN0YXR1cxIaChZSVU5fU1RBVFVTX1VOU1BFQ0lGSUVEEAASFgoSUlVOX1NUQVRVU19SVU5OSU5HEAESFgoSUlVOX1NUQVRVU19XQUlUSU5HEAISGAoUUlVOX1NUQVRVU19DT01QTEVURUQQAxIVChFSVU5fU1RBVFVTX0ZBSUxFRBAEEhgKFFJVTl9TVEFUVVNfQ0FOQ0VMTEVEEAViBnByb3RvMw", [file_google_protobuf_struct]);
 
 /**
  * @generated from message cognate.v1.Run
@@ -77,6 +77,38 @@ export const RunSchema: GenMessage<Run> = /*@__PURE__*/
   messageDesc(file_cognate_v1_execution, 0);
 
 /**
+ * @generated from message cognate.v1.SeaAssignmentRef
+ */
+export type SeaAssignmentRef = Message<"cognate.v1.SeaAssignmentRef"> & {
+  /**
+   * @generated from field: string case_id = 1;
+   */
+  caseId: string;
+
+  /**
+   * @generated from field: string assignment_id = 2;
+   */
+  assignmentId: string;
+
+  /**
+   * @generated from field: string episode_ref = 3;
+   */
+  episodeRef: string;
+
+  /**
+   * @generated from field: string link_id = 4;
+   */
+  linkId: string;
+};
+
+/**
+ * Describes the message cognate.v1.SeaAssignmentRef.
+ * Use `create(SeaAssignmentRefSchema)` to create a new message.
+ */
+export const SeaAssignmentRefSchema: GenMessage<SeaAssignmentRef> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_execution, 1);
+
+/**
  * @generated from message cognate.v1.StartRunRequest
  */
 export type StartRunRequest = Message<"cognate.v1.StartRunRequest"> & {
@@ -113,7 +145,31 @@ export type StartRunRequest = Message<"cognate.v1.StartRunRequest"> & {
  * Use `create(StartRunRequestSchema)` to create a new message.
  */
 export const StartRunRequestSchema: GenMessage<StartRunRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 1);
+  messageDesc(file_cognate_v1_execution, 2);
+
+/**
+ * Separate RPC prevents older servers from silently dropping the assignment binding.
+ *
+ * @generated from message cognate.v1.StartAssignedRunRequest
+ */
+export type StartAssignedRunRequest = Message<"cognate.v1.StartAssignedRunRequest"> & {
+  /**
+   * @generated from field: cognate.v1.SeaAssignmentRef assignment_ref = 1;
+   */
+  assignmentRef?: SeaAssignmentRef | undefined;
+
+  /**
+   * @generated from field: string idempotency_key = 2;
+   */
+  idempotencyKey: string;
+};
+
+/**
+ * Describes the message cognate.v1.StartAssignedRunRequest.
+ * Use `create(StartAssignedRunRequestSchema)` to create a new message.
+ */
+export const StartAssignedRunRequestSchema: GenMessage<StartAssignedRunRequest> = /*@__PURE__*/
+  messageDesc(file_cognate_v1_execution, 3);
 
 /**
  * @generated from message cognate.v1.GetRunRequest
@@ -130,7 +186,7 @@ export type GetRunRequest = Message<"cognate.v1.GetRunRequest"> & {
  * Use `create(GetRunRequestSchema)` to create a new message.
  */
 export const GetRunRequestSchema: GenMessage<GetRunRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 2);
+  messageDesc(file_cognate_v1_execution, 4);
 
 /**
  * @generated from message cognate.v1.CancelRunRequest
@@ -157,7 +213,7 @@ export type CancelRunRequest = Message<"cognate.v1.CancelRunRequest"> & {
  * Use `create(CancelRunRequestSchema)` to create a new message.
  */
 export const CancelRunRequestSchema: GenMessage<CancelRunRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 3);
+  messageDesc(file_cognate_v1_execution, 5);
 
 /**
  * @generated from message cognate.v1.ListRunsRequest
@@ -179,7 +235,7 @@ export type ListRunsRequest = Message<"cognate.v1.ListRunsRequest"> & {
  * Use `create(ListRunsRequestSchema)` to create a new message.
  */
 export const ListRunsRequestSchema: GenMessage<ListRunsRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 4);
+  messageDesc(file_cognate_v1_execution, 6);
 
 /**
  * @generated from message cognate.v1.ListRunsResponse
@@ -196,7 +252,7 @@ export type ListRunsResponse = Message<"cognate.v1.ListRunsResponse"> & {
  * Use `create(ListRunsResponseSchema)` to create a new message.
  */
 export const ListRunsResponseSchema: GenMessage<ListRunsResponse> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 5);
+  messageDesc(file_cognate_v1_execution, 7);
 
 /**
  * One RFC 6902 JSON Patch operation (spec §29.1).
@@ -230,7 +286,7 @@ export type JsonPatchOp = Message<"cognate.v1.JsonPatchOp"> & {
  * Use `create(JsonPatchOpSchema)` to create a new message.
  */
 export const JsonPatchOpSchema: GenMessage<JsonPatchOp> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 6);
+  messageDesc(file_cognate_v1_execution, 8);
 
 /**
  * @generated from message cognate.v1.JsonPatchOps
@@ -247,7 +303,7 @@ export type JsonPatchOps = Message<"cognate.v1.JsonPatchOps"> & {
  * Use `create(JsonPatchOpsSchema)` to create a new message.
  */
 export const JsonPatchOpsSchema: GenMessage<JsonPatchOps> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 7);
+  messageDesc(file_cognate_v1_execution, 9);
 
 /**
  * A caller's state write: replace the whole state, or apply an RFC 6902 patch to it.
@@ -278,7 +334,7 @@ export type StateUpdate = Message<"cognate.v1.StateUpdate"> & {
  * Use `create(StateUpdateSchema)` to create a new message.
  */
 export const StateUpdateSchema: GenMessage<StateUpdate> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 8);
+  messageDesc(file_cognate_v1_execution, 10);
 
 /**
  * @generated from message cognate.v1.UpdateStateRequest
@@ -310,7 +366,7 @@ export type UpdateStateRequest = Message<"cognate.v1.UpdateStateRequest"> & {
  * Use `create(UpdateStateRequestSchema)` to create a new message.
  */
 export const UpdateStateRequestSchema: GenMessage<UpdateStateRequest> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 9);
+  messageDesc(file_cognate_v1_execution, 11);
 
 /**
  * @generated from message cognate.v1.UpdateStateResponse
@@ -332,7 +388,7 @@ export type UpdateStateResponse = Message<"cognate.v1.UpdateStateResponse"> & {
  * Use `create(UpdateStateResponseSchema)` to create a new message.
  */
 export const UpdateStateResponseSchema: GenMessage<UpdateStateResponse> = /*@__PURE__*/
-  messageDesc(file_cognate_v1_execution, 10);
+  messageDesc(file_cognate_v1_execution, 12);
 
 /**
  * Durable runs (ADR-0011).

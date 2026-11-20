@@ -4,6 +4,14 @@ import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import type { Assignment, AssignmentEvent, AssignmentEventName, BudgetBreach, Currency, SpendEntry } from "./assignment.ts";
 import type { StateUpdate } from "./state.ts";
 
+export interface SeaAssignmentRef {
+  /** Exact SEA delegation link; reissued links for an assignment are distinct. */
+  readonly linkId: string;
+  readonly caseId: string;
+  readonly assignmentId: string;
+  readonly episodeRef: string;
+}
+
 // ── Case context (FDE semantic exhaust, WP-15) ─────────────────────────────────
 
 /**
@@ -261,7 +269,7 @@ export interface RuntimeService {
    * with (case, step, episode, id), and it fills the context's `episodeRef` and `assignmentId`. `linkExpiresAt` is the
    * `expires_at` of the delegation link; a later resume is refused after it. Refusals carry an `ASSIGNMENT_*` code.
    */
-  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json; readonly caseContext?: CaseContext; readonly assignment?: Assignment; readonly linkExpiresAt?: string }): Promise<RunView>;
+  startRun(caller: Caller, request: { readonly agent: string; readonly input: Json; readonly idempotencyKey: string; readonly correlationId?: string; readonly state?: Json; readonly caseContext?: CaseContext; readonly assignment?: Assignment; readonly linkExpiresAt?: string; readonly assignmentLinkId?: string; readonly assignmentRef?: SeaAssignmentRef }): Promise<RunView>;
   getRun(caller: Caller, request: { readonly runId: string }): Promise<RunView>;
   cancelRun(caller: Caller, request: { readonly runId: string; readonly reason: string; readonly idempotencyKey: string }): Promise<RunView>;
   /**

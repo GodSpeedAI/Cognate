@@ -1,7 +1,7 @@
 // WP-23: a run opened from an assignment carries its id, episode, brief and budget; spend is tracked per currency;
 // interruption and resume are recorded under the same id; a spend above a numeric limit stops the run with
 // ASSIGNMENT_BUDGET_EXCEEDED; a run with no assignment behaves exactly as before.
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { StoredEvent } from "@godspeedai/cognate-events";
@@ -411,4 +411,33 @@ describe("spend and budget", () => {
     expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: -1, idempotencyKey: "s3" }))).toBe("invalid_argument");
     expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "gold" as never, amount: 1, idempotencyKey: "s4" }))).toBe("invalid_argument");
   });
+});
+
+test("verified link is recorded, bound into idempotency, and expired links cannot commit", async () => {
+  const { rt } = await open();
+  const assignment = assignmentFor(41);
+  const request = { agent: "agent.quick", input: {}, idempotencyKey: "link-proof", caseContext: contextFor(assignment), assignment, assignmentLinkId: "link-one", linkExpiresAt: "2099-01-01T00:00:00Z" };
+  const run = await rt.service.startRun(alice, request);
+  const events = await eventsOf(rt, run.runId);
+  expect(events[0]!.metadata).toMatchObject({ assignmentLinkId: "link-one" });
+  expect((await rt.service.startRun(alice, request)).runId).toBe(run.runId);
+  await expect(rt.service.startRun(alice, { ...request, assignmentLinkId: "link-two" })).rejects.toMatchObject({ code: "already_exists" });
+  await expect(rt.service.startRun(alice, { ...request, idempotencyKey: "expired", assignment: assignmentFor(42), caseContext: contextFor(assignmentFor(42)), linkExpiresAt: "2000-01-01T00:00:00Z" })).rejects.toMatchObject({ code: "permission_denied" });
+  await expect(rt.service.startRun(alice, { ...request, idempotencyKey: "missing", linkExpiresAt: undefined })).rejects.toMatchObject({ code: "permission_denied" });
+});
+
+test("a verified link expiring during authorization cannot start", async () => {
+  const now = Date.now();
+  const expiry = now + 50;
+  const clock = spyOn(Date, "now").mockReturnValue(now);
+  try {
+    const { rt } = await open({ authorize: () => {
+      clock.mockReturnValue(expiry);
+      return { allow: true, reason: "ok" };
+    } });
+    const assignment = assignmentFor(43);
+    await expect(rt.service.startRun(alice, { agent: "agent.quick", input: {}, idempotencyKey: "expires-in-auth", caseContext: contextFor(assignment), assignment, assignmentLinkId: "link", linkExpiresAt: new Date(expiry).toISOString() })).rejects.toMatchObject({ code: "permission_denied" });
+  } finally {
+    clock.mockRestore();
+  }
 });

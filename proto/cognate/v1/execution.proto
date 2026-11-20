@@ -26,6 +26,13 @@ message Run {
   repeated string waiting_on = 10;
 }
 
+message SeaAssignmentRef {
+  string case_id = 1;
+  string assignment_id = 2;
+  string episode_ref = 3;
+  string link_id = 4;
+}
+
 message StartRunRequest {
   string agent = 1;
   google.protobuf.Value input = 2;
@@ -33,6 +40,13 @@ message StartRunRequest {
   optional string correlation_id = 4;
   // Seeds the run's shared state (spec §29.1): a caller-sourced state.changed snapshot committed with run.started.
   optional google.protobuf.Value state = 5;
+}
+
+// Separate RPC prevents older servers from silently dropping the assignment binding.
+message StartAssignedRunRequest {
+  SeaAssignmentRef assignment_ref = 1;
+  string idempotency_key = 2;
+  reserved 3;
 }
 
 message GetRunRequest {

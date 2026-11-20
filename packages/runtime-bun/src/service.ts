@@ -33,6 +33,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
   return {
     async startRun(caller, request) {
+      if (request.assignmentRef !== undefined) throw new ServiceError("failed_precondition", "assignment references require a trusted external admission verifier");
       await authorize(caller, "run.start", request.agent);
       const agent = core.agents.get(request.agent);
       if (!agent) throw new ServiceError("not_found", `agent ${request.agent} not found`);
@@ -53,6 +54,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         if (request.linkExpiresAt !== undefined && Number.isNaN(Date.parse(request.linkExpiresAt))) throw new ServiceError("invalid_argument", "linkExpiresAt must be a UTC timestamp");
         caseContext = { ...caseContext, episodeRef: assignment.episode_ref, assignmentId: assignment.assignment_id };
       } else if (request.linkExpiresAt !== undefined) throw new ServiceError("invalid_argument", "linkExpiresAt needs an assignment");
+      if (request.assignmentLinkId !== undefined && (!assignment || !request.assignmentLinkId || !request.linkExpiresAt)) throw new ServiceError("permission_denied", "assignment admission denied");
       if (caseContext) {
         const issues = caseContextIssues(caseContext);
         if (issues.length) throw new ServiceError("invalid_argument", `invalid caseContext: ${issues.join("; ")}`);
@@ -64,7 +66,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind,
         ...(caseContext ? { caseContext: { ...caseContext, principal: caller.actor.id } as unknown as Json } : {}),
         // The brief is content: it goes in the erasable `run.started` payload, never metadata (see assignmentOf).
-        ...(assignment ? { assignment: (({ brief: _brief, ...binding }) => binding)(assignment) as unknown as Json, ...(request.linkExpiresAt !== undefined ? { linkExpiresAt: request.linkExpiresAt } : {}) } : {}),
+        ...(assignment ? { assignment: (({ brief: _brief, ...binding }) => binding)(assignment) as unknown as Json, ...(request.linkExpiresAt !== undefined ? { linkExpiresAt: request.linkExpiresAt } : {}), ...(request.assignmentLinkId !== undefined ? { assignmentLinkId: request.assignmentLinkId } : {}) } : {}),
       };
       // Pre-assign the id so the outbox hook can derive intents that commit atomically with the event (same path as executor events).
       const startedEvent = {
@@ -100,12 +102,14 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
           })()
         : [];
       try {
+        // A verified external link must still be live after authorization and immediately before commit.
+        if (request.assignmentLinkId !== undefined && (!request.linkExpiresAt || !Number.isFinite(Date.parse(request.linkExpiresAt)) || Date.parse(request.linkExpiresAt) <= Date.now())) throw new ServiceError("permission_denied", "assignment admission denied");
         const outcome = await store.commit({
           idempotency: {
             scope: `${caller.tenant}:${caller.actor.id}:run.start`,
             key: request.idempotencyKey,
             // `state` is part of the fingerprint: reusing a key with a different seed is a different request.
-            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null, ...(request.caseContext ? { caseContext: request.caseContext as unknown as Json } : {}), ...(assignment ? { assignment: assignment as unknown as Json, linkExpiresAt: request.linkExpiresAt ?? null } : {}) }),
+            fingerprint: fingerprint({ agent: request.agent, input: request.input, correlationId: request.correlationId ?? null, state: request.state ?? null, ...(request.caseContext ? { caseContext: request.caseContext as unknown as Json } : {}), ...(assignment ? { assignment: assignment as unknown as Json, linkExpiresAt: request.linkExpiresAt ?? null } : {}), ...(request.assignmentLinkId !== undefined ? { assignmentLinkId: request.assignmentLinkId } : {}) }),
           },
           appends: [
             {

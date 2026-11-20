@@ -82,6 +82,14 @@ A2A serves `/.well-known/agent-card.json` and JSON-RPC at `/a2a`. The A2A task i
 Cognate run id; an open continuation surfaces as `TASK_STATE_INPUT_REQUIRED`; completion returns
 `TASK_STATE_COMPLETED` with the run output in artifacts.
 
+## Assigned runs
+
+`StartAssignedRun` accepts an exact SEA Forge case, episode, assignment, and delegation link reference plus an idempotency key. The remote client uses this method when an assigned start is requested. Older servers refuse the unknown method.
+
+The server authenticates the caller, loads assignment content and the execution target from a trusted tenant-scoped source, and verifies that SEA Forge identifies the caller as the delegate on the current, unexpired link. The runtime checks expiry immediately before durable admission and records the verified link ID in the run and its idempotency fingerprint. The runtime chooses a fresh correlation ID for the assigned run.
+
+Assigned starts fail closed when the trusted providers are unavailable. Production enablement requires authoritative issuance and a SEA Forge reservation or commit protocol that preserves the link decision through durable Cognate admission.
+
 ## State
 
 None. The wire is stateless with respect to the framework: it reads and writes through

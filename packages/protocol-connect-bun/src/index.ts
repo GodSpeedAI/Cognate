@@ -5,11 +5,12 @@ import type { ConnectRouter, ConnectRouterOptions, Transport } from "@connectrpc
 import { createFetchHandler } from "@connectrpc/connect/protocol";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { registerRuntimeService } from "@godspeedai/cognate-protocol-connect";
-import type { Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
+import type { AssignmentAdmission, Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 
 export interface ServeOptions {
   readonly service: RuntimeService;
   readonly authenticate: (headers: Headers) => Caller | undefined | Promise<Caller | undefined>;
+  readonly assignmentAdmission?: AssignmentAdmission;
   readonly port?: number;
   readonly hostname?: string;
   readonly limits?: {
@@ -57,7 +58,7 @@ export function serveRuntime(options: ServeOptions): RuntimeServer {
 
   const connectFetch = createConnectFetchHandler({
     routes(router) {
-      registerRuntimeService(router, options.service, { authenticate: options.authenticate, maxJsonDepth });
+      registerRuntimeService(router, options.service, { authenticate: options.authenticate, maxJsonDepth, assignmentAdmission: options.assignmentAdmission });
     },
   });
 

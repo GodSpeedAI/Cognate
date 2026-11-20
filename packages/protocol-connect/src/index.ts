@@ -21,14 +21,15 @@ import {
 } from "@godspeedai/cognate-proto";
 import type { Json, StoredEvent } from "@godspeedai/cognate-events";
 import type { SemanticRef } from "@godspeedai/cognate-kernel-api";
-import type { Caller, ContinuationView, JsonPatchOp, RemoteCapabilityOffer, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@godspeedai/cognate-runtime-api";
-import { ServiceError } from "@godspeedai/cognate-runtime-api";
+import type { AssignmentAdmission, Caller, ContinuationView, JsonPatchOp, RemoteCapabilityOffer, RunView, RuntimeService, ServiceErrorCode, StateUpdate } from "@godspeedai/cognate-runtime-api";
+import { assignmentBindingMatches, validAssignmentRef, verifiedAssignmentMatches, ServiceError } from "@godspeedai/cognate-runtime-api";
 
 export interface HandlerOptions {
   /** Establish the caller from request headers (e.g. `authorization: Bearer …`); undefined → unauthenticated. */
   readonly authenticate: (headers: Headers) => Caller | undefined | Promise<Caller | undefined>;
   /** Maximum nesting depth of JSON values (google.protobuf.Value) accepted from clients. */
   readonly maxJsonDepth: number;
+  readonly assignmentAdmission?: AssignmentAdmission;
 }
 
 /** The ServiceError ↔ Connect code table (exported for tests and other transports). */
@@ -364,20 +365,42 @@ export function registerRuntimeService(router: ConnectRouter, service: RuntimeSe
     async startRun(req, context) {
       try {
         const caller = await requireCaller(options, context);
-        const run = await withDeadline(
-          context,
-          service.startRun(caller, {
-            agent: req.agent,
-            input: decodeValue(req.input, depth),
-            idempotencyKey: req.idempotencyKey,
-            correlationId: req.correlationId,
-            state: req.state !== undefined ? decodeValue(req.state, depth) : undefined,
-          }),
-        );
+        const run = await withDeadline(context, service.startRun(caller, {
+          agent: req.agent,
+          input: decodeValue(req.input, depth),
+          idempotencyKey: req.idempotencyKey,
+          correlationId: req.correlationId,
+          state: req.state !== undefined ? decodeValue(req.state, depth) : undefined,
+        }));
         return runInit(run);
-      } catch (e) {
-        throwConnectError(e);
-      }
+      } catch (e) { throwConnectError(e); }
+    },
+    async startAssignedRun(req, context) {
+      try {
+        const caller = await requireCaller(options, context);
+        const { caseId, assignmentId, episodeRef, linkId } = req.assignmentRef ?? { caseId: "", assignmentId: "", episodeRef: "", linkId: "" };
+        const ref = { caseId, assignmentId, episodeRef, linkId };
+        const admission = options.assignmentAdmission;
+        if (!validAssignmentRef(ref) || !admission) throw new ServiceError("permission_denied", "assignment admission denied");
+        const deny = () => new ServiceError("permission_denied", "assignment admission denied");
+        const trusted = async <T>(work: () => Promise<T>): Promise<T> => {
+          try { return await withDeadline(context, work()); }
+          catch (error) {
+            if (error instanceof ConnectError && error.code === Code.DeadlineExceeded) throw error;
+            throw deny();
+          }
+        };
+        const resolved = await trusted(() => admission.lookup(caller, ref));
+        if (!assignmentBindingMatches(ref, resolved)) throw deny();
+        const verified = await trusted(() => admission.verify(caller, ref));
+        if (!verifiedAssignmentMatches(ref, caller, verified, Date.now())) throw deny();
+        const binding = { assignment: resolved.assignment, caseContext: resolved.caseContext, linkExpiresAt: verified.expiresAt, assignmentLinkId: verified.linkId, agent: resolved.agent, input: resolved.input };
+        const run = await withDeadline(context, service.startRun(caller, {
+          ...binding,
+          idempotencyKey: req.idempotencyKey,
+        }));
+        return runInit(run);
+      } catch (e) { throwConnectError(e); }
     },
     async getRun(req, context) {
       try {
@@ -560,21 +583,23 @@ export function createRemoteRuntimeService(transport: Transport, tokenFor: (call
 
   return {
     async startRun(caller, request) {
-      // The wire request has no assignment field yet (WP-23): refuse instead of silently dropping the binding.
-      if (request.assignment !== undefined || request.caseContext !== undefined || request.linkExpiresAt !== undefined) {
+      // Full assignments and contexts are trusted in-process inputs and never cross this wire.
+      if (request.assignment !== undefined || request.caseContext !== undefined || request.linkExpiresAt !== undefined || request.assignmentLinkId !== undefined) {
         throw new ServiceError("failed_precondition", "an assignment, caseContext or linkExpiresAt cannot be carried over the Connect wire yet; open the run in-process");
       }
+      if (request.assignmentRef !== undefined && (request.state !== undefined || request.correlationId !== undefined)) {
+        throw new ServiceError("permission_denied", "assignment admission denied");
+      }
       try {
-        const run = await client.startRun(
-          {
-            agent: request.agent,
-            input: jsonToValue(request.input),
-            idempotencyKey: request.idempotencyKey,
-            correlationId: request.correlationId,
-            state: request.state !== undefined ? jsonToValue(request.state) : undefined,
-          },
-          { headers: headersFor(caller) },
-        );
+        const run = request.assignmentRef !== undefined
+          ? await client.startAssignedRun({ assignmentRef: request.assignmentRef, idempotencyKey: request.idempotencyKey }, { headers: headersFor(caller) })
+          : await client.startRun({
+              agent: request.agent,
+              input: jsonToValue(request.input),
+              idempotencyKey: request.idempotencyKey,
+              correlationId: request.correlationId,
+              state: request.state !== undefined ? jsonToValue(request.state) : undefined,
+            }, { headers: headersFor(caller) });
         return runFromWire(run);
       } catch (e) {
         throwServiceError(e);
