@@ -7,6 +7,9 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { registerRuntimeService } from "@godspeedai/cognate-protocol-connect";
 import type { AssignmentAdmission, Caller, RuntimeService } from "@godspeedai/cognate-runtime-api";
 
+export { seaAssignmentAdmission } from "./sea-admission.ts";
+export type { SeaAdmissionOptions } from "./sea-admission.ts";
+
 export interface ServeOptions {
   readonly service: RuntimeService;
   readonly authenticate: (headers: Headers) => Caller | undefined | Promise<Caller | undefined>;
