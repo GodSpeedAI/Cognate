@@ -3,10 +3,10 @@ import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, lifecycleEvent, readAssignment } from "./assignment.ts";
+import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
-import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
+import { assignmentControlStream, foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 const PAGE = 500;
 
@@ -167,11 +167,13 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
     async cancelRun(caller, request) {
       await authorize(caller, "run.cancel", request.runId);
       for (let attempt = 0; attempt < 5; attempt++) {
-        const { view, events } = await readRun(caller, request.runId);
+        await readRun(caller, request.runId);
+        const { events, control } = await readLifecycle(core, request.runId);
+        const view = foldRun(request.runId, events)!;
         if (isTerminal(view)) return view;
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();
-        const assignmentView = await readAssignment(core, request.runId, events);
+        const assignmentView = foldAssignment(request.runId, events, control);
         const cancelledAssignment = assignmentView && !["completed", "failed", "cancelled"].includes(assignmentView.status)
           ? (() => {
               const payload = lifecycleEvent(assignmentView.assignment, "cancelled", new Date().toISOString(), assignmentView.acceptedSpend, request.reason);
@@ -185,7 +187,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
           occurredAt: new Date().toISOString(),
           tenant: view.tenant,
           correlationId: view.correlationId,
-          causationId: cancelledAssignment?.eventId ?? events.at(-1)!.eventId,
+          causationId: events.at(-1)!.eventId,
           runId: request.runId,
           scopeId: events[0]!.scopeId,
           payload: { reason: request.reason },
@@ -194,16 +196,20 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         try {
           await store.commit({
             idempotency: { scope: `${caller.tenant}:${caller.actor.id}:run.cancel`, key: request.idempotencyKey, fingerprint: fingerprint({ runId: request.runId, reason: request.reason }) },
+            // The assignment's terminal event commits with the run's, guarded by the lifecycle revision: a control that
+            // won the race is seen on the next attempt, and a control can never land after this.
             appends: [
+              ...(cancelledAssignment ? [{ streamId: assignmentControlStream(request.runId), expectedVersion: control.length, events: [cancelledAssignment] }] : []),
               {
                 streamId: runStream(request.runId),
                 expectedVersion: events.length,
-                events: [...(cancelledAssignment ? [cancelledAssignment] : []), { ...cancelledEvent, eventId: cancelledId }],
+                events: [{ ...cancelledEvent, eventId: cancelledId }],
               },
             ],
             outbox: [
-              ...(cancelledAssignment ? core.outboxFor({ ...cancelledAssignment, streamId: runStream(request.runId), recordedAt: cancelledAssignment.occurredAt, streamSequence: events.length + 1 }) : []),
-              ...core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + (cancelledAssignment ? 2 : 1) }),
+              // Observation ordering coordinate: run-wide (both streams' events so far plus this commit's).
+              ...(cancelledAssignment ? core.outboxFor({ ...cancelledAssignment, streamId: assignmentControlStream(request.runId), recordedAt: cancelledAssignment.occurredAt, streamSequence: events.length + control.length + 1 }) : []),
+              ...core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + control.length + (cancelledAssignment ? 2 : 1) }),
             ],
             result: { runId: request.runId },
           });

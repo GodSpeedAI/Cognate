@@ -4,15 +4,18 @@
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, StaleRunOwnerError, type StoredEvent } from "@godspeedai/cognate-events";
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, assignmentMetadata, lifecycleEvent, readAssignment } from "./assignment.ts";
+import { acceptLifecycleEvent, assignmentMetadata, assignmentOf, finalizeStoppedRun, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core, RecallResultJson } from "./core.ts";
 import { assertAuthorityClaims } from "./governed-operation.ts";
-import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
+import { assignmentControlStream, field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 /** Internal control flow: the execution stops here (suspended, cancelled, or lost a write race). */
 class Halt {
   constructor(readonly retry: boolean) {}
 }
+
+/** The assignment lifecycle revision moved under a terminal commit: re-read the controls and decide again. */
+class LifecycleConflict extends Error {}
 
 export type ExecutionResult = "done" | "retry";
 
@@ -51,7 +54,17 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
   const agent = core.agents.get(view.agent);
   const started = events[0]!;
   // An interrupted assignment is paused: nothing runs until `resumeAssignment` records the resume (WP-23).
-  if ((await readAssignment(core, runId, events))?.status === "interrupted") return "done";
+  const bound = assignmentOf(started) !== undefined;
+  if (bound) {
+    const lifecycle = await readLifecycle(core, runId);
+    const assignmentView = foldAssignment(runId, lifecycle.events, lifecycle.control);
+    if (assignmentView?.status === "interrupted") return "done";
+    // A budget breach is durable before its run terminal is: finish it here (a restart, another worker's pass).
+    if (assignmentView?.status === "failed" && assignmentView.budgetExceeded) {
+      await finalizeStoppedRun(core, runId, { id: "assignment-budget", kind: "system" });
+      return "done";
+    }
+  }
 
   let version = events.length;
   let lastEventId = events.at(-1)!.eventId;
@@ -73,11 +86,29 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
   };
 
   const caseContext = field<Json>(meta(started), "caseContext") ?? undefined;
+  const lifecycleStream = assignmentControlStream(runId);
+  /** Events on the lifecycle stream as last read: the run-wide ordering coordinate of an observation adds this. */
+  let lifecycleLength = 0;
+  /**
+   * An interrupt or a stop committed by another call, possibly in another process, is observed here, at every
+   * execution boundary, from the durable lifecycle stream; the local abort signal alone cannot reach another worker.
+   */
+  const durableGuard = async (): Promise<void> => {
+    if (!bound) return;
+    const lifecycle = await core.store.readStream(lifecycleStream);
+    lifecycleLength = lifecycle.length;
+    const last = lifecycle.findLast((e) => e.eventType.startsWith("assignment.") && e.eventType !== "assignment.spend");
+    if (last && last.eventType !== "assignment.resumed") halt(false);
+  };
 
   // Appends are serialized so concurrent RunContext calls cannot race on the stream version.
   let writes: Promise<unknown> = Promise.resolve();
-  const append = (event: { eventType: string; payload: Json; metadata: { [key: string]: Json }; semanticRef?: SemanticRef | null; componentId?: string | null; fiberId?: string | null }): Promise<StoredEvent> => {
+  const append = (event: { eventType: string; payload: Json; metadata: { [key: string]: Json }; semanticRef?: SemanticRef | null; componentId?: string | null; fiberId?: string | null }, lifecycle?: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } }): Promise<StoredEvent> => {
     const run = writes.then(async () => {
+      guard();
+      // A terminal commit decides against the lifecycle revision it carries; every other write checks the durable state.
+      if (!lifecycle) await durableGuard();
+      else lifecycleLength = lifecycle.expectedVersion;
       guard();
       const envelope: NewEvent = {
         eventType: event.eventType,
@@ -97,22 +128,34 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       };
       try {
         // Pre-assign the id so hooks can derive intents that commit atomically with the event (spec §13.1).
-        const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt, streamSequence: version + 1 };
+        // streamSequence is the run-wide ordering coordinate (both streams' events so far), never restarting.
+        const lifecycleEnvelope: NewEvent | undefined = lifecycle && { ...envelope, eventType: lifecycle.eventType, payload: lifecycle.payload, metadata: caseContext ? { ...lifecycle.metadata, caseContext } : lifecycle.metadata };
+        const lcEvent = lifecycleEnvelope && { ...lifecycleEnvelope, eventId: crypto.randomUUID() };
+        const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt, streamSequence: version + lifecycleLength + (lcEvent ? 2 : 1) };
         const outcome = await core.store.commit({
-          appends: [{
-            streamId,
-            expectedVersion: version,
-            events: [{ ...envelope, eventId: pending.eventId }],
-            ...(ownership ? { runOwnership: { runId, ownerId: ownership.ownerId, generation: ownership.generation } } : {}),
-          }],
-          outbox: core.outboxFor(pending),
+          appends: [
+            ...(lcEvent && lifecycle ? [{ streamId: lifecycleStream, expectedVersion: lifecycle.expectedVersion, events: [lcEvent] }] : []),
+            {
+              streamId,
+              expectedVersion: version,
+              events: [{ ...envelope, eventId: pending.eventId }],
+              ...(ownership ? { runOwnership: { runId, ownerId: ownership.ownerId, generation: ownership.generation } } : {}),
+            },
+          ],
+          outbox: [
+            ...(lcEvent ? core.outboxFor({ ...lcEvent, streamId: lifecycleStream, recordedAt: lcEvent.occurredAt, streamSequence: version + lifecycleLength + 1 }) : []),
+            ...core.outboxFor(pending),
+          ],
         });
-        const stored = outcome.events[0]!;
+        const stored = outcome.events.find((e) => e.eventId === pending.eventId)!;
         version += 1;
         lastEventId = stored.eventId;
         return stored;
       } catch (error) {
-        if (error instanceof ConcurrencyError) halt(true);
+        if (error instanceof ConcurrencyError) {
+          if (error.streamId === lifecycleStream) throw new LifecycleConflict();
+          halt(true);
+        }
         // Ownership was reclaimed or released: this worker is stale and must never retry the pass.
         if (error instanceof StaleRunOwnerError) halt(false);
         throw error;
@@ -154,6 +197,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
         return field(done.payload, "result") as T;
       }
       const before = { ...counters };
+      await durableGuard();
       const result = toJson(await fn());
       const drift = { emit: counters.emit - before.emit, invoke: counters.invoke - before.invoke, artifact: counters.artifact - before.artifact };
       await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId, counters: drift } });
@@ -164,7 +208,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       guard();
       const stepId = `emit:${++counters.emit}`;
       if (find(stepId)) return;
-      if (eventType.startsWith("run.")) throw new Error(`emit: event type ${eventType} is reserved for the runtime`);
+      if (eventType.startsWith("run.") || eventType.startsWith("assignment.")) throw new Error(`emit: event type ${eventType} is reserved for the runtime`);
       if (eventType.startsWith("observation.")) throw new Error(`emit: event type ${eventType} is reserved for observation ingestion (RuntimeService.observe) — observations are never run emissions`);
       await append({ eventType, payload: toJson(payload), metadata: { stepId } });
     },
@@ -180,6 +224,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       if (!done) {
         // Refresh the ownership lease before any external effect: a lost lease must be discovered
         // before dispatch, not after (docs/contracts/run-write-ownership.md).
+        await durableGuard();
         if (ownership && !(await ownership.renew())) halt(false);
         const priorProgress = (recorded.get(stepId) ?? []).filter((e) => e.eventType === "run.invocation.progress");
         // A previous owner's generation started this invocation and never recorded its outcome.
@@ -492,26 +537,36 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
     await writes;
     // A sentinel the agent swallowed still wins: the execution is suspended/cancelled, not finished.
     if (halted || controller.signal.aborted) return halted?.retry ? "retry" : "done";
-    // An interrupt recorded on the control stream after the abort check above (before its abort signal landed) pauses
-    // the run: nothing terminal is recorded, and `resumeAssignment` re-runs the pass, which replays its steps.
-    if ((await readAssignment(core, runId, await core.store.readStream(streamId)))?.status === "interrupted") return "done";
-    // An assignment run records its terminal lifecycle event (carrying the cumulative spend) before the run's own.
-    // On a retry after a crash in between, the assignment is already terminal and only the run event is appended.
-    const closeAssignment = async (name: "completed" | "failed", reason?: string) => {
-      const assignmentView = await readAssignment(core, runId, await core.store.readStream(streamId));
-      if (!assignmentView || !["started", "resumed"].includes(assignmentView.status)) return;
-      const payload = lifecycleEvent(assignmentView.assignment, name, new Date().toISOString(), assignmentView.acceptedSpend, reason);
-      acceptLifecycleEvent(assignmentView, assignmentView.assignment, payload, assignmentView.linkExpiresAt);
-      await append({ eventType: `assignment.${name}`, payload: payload as unknown as Json, metadata: assignmentMetadata(name) });
-    };
-    if (outcome.ok) {
-      await closeAssignment("completed");
-      await append({ eventType: "run.completed", payload: { output: outcome.value }, metadata: { agent: view.agent } });
-    } else {
-      await closeAssignment("failed", messageOf(outcome.error));
-      await append({ eventType: "run.failed", payload: { error: messageOf(outcome.error) }, metadata: { agent: view.agent } });
+    // The terminal decision commits the run's event and the assignment's together under the lifecycle revision. A
+    // control that landed since the last read moves the revision: the commit conflicts, the controls are re-read and
+    // the decision is made again, so a late interrupt wins over completion and the terminal carries the final spend.
+    type Finish = { readonly name: "completed" | "failed"; readonly reason: string | undefined; readonly event: { eventType: string; payload: Json; metadata: { [key: string]: Json } } };
+    const finish: Finish = outcome.ok
+      ? { name: "completed", reason: undefined, event: { eventType: "run.completed", payload: { output: outcome.value }, metadata: { agent: view.agent } } }
+      : { name: "failed", reason: messageOf(outcome.error), event: { eventType: "run.failed", payload: { error: messageOf(outcome.error) }, metadata: { agent: view.agent } } };
+    for (;;) {
+      if ((halted as Halt | undefined) || controller.signal.aborted) return (halted as Halt | undefined)?.retry ? "retry" : "done";
+      const lifecycle = await readLifecycle(core, runId);
+      const assignmentView = bound ? foldAssignment(runId, lifecycle.events, lifecycle.control) : undefined;
+      if (assignmentView?.status === "interrupted") return "done"; // paused: resume re-runs the pass and replays its steps
+      if (assignmentView?.status === "failed" && assignmentView.budgetExceeded) {
+        await finalizeStoppedRun(core, runId, { id: "assignment-budget", kind: "system" });
+        return "done";
+      }
+      let terminal: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } } | undefined;
+      if (assignmentView && ["started", "resumed"].includes(assignmentView.status)) {
+        const payload = lifecycleEvent(assignmentView.assignment, finish.name, new Date().toISOString(), assignmentView.acceptedSpend, finish.reason);
+        acceptLifecycleEvent(assignmentView, assignmentView.assignment, payload, assignmentView.linkExpiresAt);
+        terminal = { expectedVersion: lifecycle.control.length, eventType: `assignment.${finish.name}`, payload: payload as unknown as Json, metadata: assignmentMetadata(finish.name) };
+      }
+      try {
+        await append(finish.event, terminal);
+        return "done";
+      } catch (error) {
+        if (error instanceof LifecycleConflict) continue;
+        throw error;
+      }
     }
-    return "done";
   } catch (error) {
     if (error instanceof Halt) return error.retry ? "retry" : "done";
     throw error;

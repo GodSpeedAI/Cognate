@@ -12,10 +12,11 @@ export const runStream = (runId: string) => `run-${runId}`;
  * stream would race the executor's own `expectedVersion` and cause spurious ConcurrencyError/halt churn. */
 export const runStateStream = (runId: string) => `run-state-${runId}`;
 /**
- * Operator control events of a bound assignment (interrupt, resume, in-budget spend). They never go on the run stream
- * (spec §29.1 rule above): the executor owns that stream's version and halts on a lost race. The assignment view is a
- * fold over the run stream plus this one, merged by store position. Terminal transitions (cancel, budget overrun) are
- * the exception and also write the run stream, in one commit that also advances this stream.
+ * The lifecycle stream of a bound assignment: operator interrupt, resume and spend, a budget breach and its stop, and
+ * the terminal `assignment.completed|failed|cancelled`. Its version is the lifecycle revision that guards every one of
+ * those writes (see assignment.ts). They never go on the run stream alone (spec §29.1 rule above): the executor owns
+ * that stream's version and halts on a lost race. The terminal commits (executor completion, `cancelRun`) write both
+ * streams atomically; everything else writes only this one.
  */
 export const assignmentControlStream = (runId: string) => `run-assignment-${runId}`;
 /** Tenant-qualified durable state shared by every run whose correlation id is this thread id. */
