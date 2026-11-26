@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent } from "./assignment.ts";
+import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, lifecycleEvent, readAssignment } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -171,7 +171,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         if (isTerminal(view)) return view;
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();
-        const assignmentView = foldAssignment(request.runId, events);
+        const assignmentView = await readAssignment(core, request.runId, events);
         const cancelledAssignment = assignmentView && !["completed", "failed", "cancelled"].includes(assignmentView.status)
           ? (() => {
               const payload = lifecycleEvent(assignmentView.assignment, "cancelled", new Date().toISOString(), assignmentView.acceptedSpend, request.reason);

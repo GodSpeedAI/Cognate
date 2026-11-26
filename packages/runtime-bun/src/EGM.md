@@ -24,7 +24,7 @@ The Bun reference runtime composes kernel, durable store, runs, continuations, c
 - Caller state writes land on `run-state-<id>`, never the run stream [src/fold.ts:runStateStream]
 - Observations are keyed by tenant, world, and resource so equal resource strings in different worlds are distinct streams [src/fold.ts:observationStream]
 - The runtime closes only a store it opened itself; an injected store belongs to its creator [src/runtime.ts:startRuntime]
-- A run opened from an assignment records `assignment.issued` and `assignment.started` with `run.started`; interrupt, resume, spend and the terminal event are further events on the run stream, never a stored copy `[assignment.ts:foldAssignment]` `[service.ts:startRun]`
+- A run opened from an assignment records `assignment.issued` and `assignment.started` with `run.started`; the terminal event is further event(s) on the run stream; operator interrupt, resume and in-budget spend are events on `run-assignment-<id>` (never a foreign append to the run stream, which races the executor), and the view folds both by store position, never a stored copy `[assignment.ts:foldAssignment]` `[fold.ts:assignmentControlStream]` `[service.ts:startRun]`
 - An assignment id is issued to one run; a resume uses `resumeAssignment` on that run and is refused after the delegation link expired `[assignment.ts:createAssignmentService]`
 - A spend above a numeric limit records the overrun, then fails the run with `ASSIGNMENT_BUDGET_EXCEEDED` `[assignment.ts:createAssignmentService]`
 
