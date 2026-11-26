@@ -8,6 +8,9 @@ import type { StoredEvent } from "@godspeedai/cognate-events";
 import { type AgentDefinition, type Assignment, type AssignmentCode, AssignmentRefusedError, type AssignmentView, type CaseContext, type Caller, formatAssignmentId, runAssignmentLifecycle, ServiceError, validateAssignmentEvent } from "@godspeedai/cognate-runtime-api";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { ConcurrencyError } from "@godspeedai/cognate-events";
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
+import { APPEND_MAX_ATTEMPTS, appendBackoffMs } from "../src/assignment.ts";
 import { type ActionPolicy, createRuntime, type Runtime } from "../src/index.ts";
 
 const FIXTURES = join(import.meta.dir, "..", "..", "runtime-api", "test", "fixtures", "assignment");
@@ -410,5 +413,61 @@ describe("spend and budget", () => {
     expect(view.status).toBe("started");
     expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: -1, idempotencyKey: "s3" }))).toBe("invalid_argument");
     expect(await refused(rt.assignments.recordSpend(alice, { runId: run.runId, currency: "gold" as never, amount: 1, idempotencyKey: "s4" }))).toBe("invalid_argument");
+  });
+});
+
+describe("control append under stream contention (DEBT-033)", () => {
+  /** A store whose first `n` commits lose the stream-version race; `fail` raises a different error instead. */
+  async function contended(n: number, fail?: Error) {
+    const inner = openSqliteStore({ path: ":memory:" });
+    let commits = 0;
+    const store = new Proxy(inner, {
+      get(target, prop) {
+        const value = Reflect.get(target, prop, target);
+        if (prop !== "commit") return typeof value === "function" ? value.bind(target) : value;
+        return async (...args: unknown[]) => {
+          if (armed && commits++ < n) throw fail ?? new ConcurrencyError("run", 0, 1);
+          return (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+        };
+      },
+    });
+    let armed = false;
+    runtime = await createRuntime({ store: { store }, agents, policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) } });
+    const run = await start(runtime, "agent.gated", assignmentFor(1), "k", { input: { gate: "contention" } });
+    await until(async () => (await eventsOf(runtime!, run.runId)).some((e) => e.eventType === "run.step.completed"));
+    armed = true;
+    return { rt: runtime, run, attempts: () => commits };
+  }
+  const interrupt = (rt: Runtime, runId: string) => rt.assignments.interruptAssignment(alice, { runId, reason: "operator", idempotencyKey: "i1" });
+  const interrupts = async (rt: Runtime, runId: string) => (await eventsOf(rt, runId)).filter((e) => e.eventType === "assignment.interrupted").length;
+
+  test("a control that loses fewer races than the bound succeeds and records exactly one event", async () => {
+    const { rt, run, attempts } = await contended(APPEND_MAX_ATTEMPTS - 1);
+    expect((await interrupt(rt, run.runId)).status).toBe("interrupted");
+    expect(attempts()).toBe(APPEND_MAX_ATTEMPTS);
+    expect(await interrupts(rt, run.runId)).toBe(1);
+  });
+
+  test("a control that loses every attempt is refused as unavailable and records nothing", async () => {
+    const { rt, run, attempts } = await contended(APPEND_MAX_ATTEMPTS);
+    const error = await interrupt(rt, run.runId).then(() => undefined, (e) => e);
+    expect(error).toBeInstanceOf(ServiceError);
+    expect(error.code).toBe("unavailable");
+    expect(error.message).toBe(`too much contention on run ${run.runId}`);
+    expect(attempts()).toBe(APPEND_MAX_ATTEMPTS);
+    expect(await interrupts(rt, run.runId)).toBe(0);
+  });
+
+  test("an error that is not a lost race fails at once without retrying", async () => {
+    const { rt, run, attempts } = await contended(APPEND_MAX_ATTEMPTS, new Error("disk gone"));
+    await expect(interrupt(rt, run.runId)).rejects.toThrow("disk gone");
+    expect(attempts()).toBe(1);
+    expect(await interrupts(rt, run.runId)).toBe(0);
+  });
+
+  test("the worst-case total pause stays well under one second", () => {
+    let total = 0;
+    for (let i = 0; i < APPEND_MAX_ATTEMPTS - 1; i++) total += appendBackoffMs(i, () => 1);
+    expect(total).toBeLessThan(500);
   });
 });

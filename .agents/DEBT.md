@@ -287,3 +287,13 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Consequence:** The ruleset can block all work on `main` again if the scan job is ever renamed, its `category` changes, or a scheduled run is skipped past the ruleset's freshness window — and the failure appears as a generic "repository rule violations" rejection with no indication that the scan, rather than the diff, is the problem.
 **Exit criterion:** Confirm the newly added scan job actually gates `main` (one merged pull request after #71), and record in `CONTRIBUTING.md` that a CodeQL analysis must exist for `main` before a merge, so a future scanning outage is diagnosed from the ruleset rather than rediscovered.
 
+
+---
+
+## DEBT-033 — Assignment control append gives up under stream contention
+
+**Status:** Resolved in source 2026-11-26 by this change (`AssignmentService.append` backs off between attempts). Cognate Workbench benefits only after a Cognate release and a dependency bump there.
+**Requirement(s):** None.
+**Observed (2026-11-26):** `AssignmentService.append` (`packages/runtime-bun/src/assignment.ts`) retried a lost stream-version race (`ConcurrencyError`) exactly five times with no pause, then refused with `ServiceError("unavailable", "too much contention on run <id>")`. Reproduced by Cognate Workbench tests `test/J-CASE-ASSIGNMENT-handoff.test.ts` and `test/E2E-case-assignment-handoff.test.ts` (branch `feat/wp23-assignment-binding`), which retry only this refusal.
+**Consequence:** An operator control (interrupt, resume, spend) landing while the bound run streams events could be refused; interrupting a streaming run is the control's main purpose.
+**Exit criterion:** Met in source: eight attempts with a jittered exponential pause (worst case about 195 ms), the same refusal when the bound is exhausted, non-race errors unretried, idempotency unchanged; proven by `control append under stream contention (DEBT-033)` in `packages/runtime-bun/test/assignment.test.ts`. Remaining: release Cognate and bump the dependency in Workbench, then drop the retry in its two tests.
