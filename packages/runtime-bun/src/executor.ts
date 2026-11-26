@@ -61,7 +61,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
     if (assignmentView?.status === "interrupted") return "done";
     // A budget breach is durable before its run terminal is: finish it here (a restart, another worker's pass).
     if (assignmentView?.status === "failed" && assignmentView.budgetExceeded) {
-      await finalizeStoppedRun(core, runId, { id: "assignment-budget", kind: "system" });
+      await finalizeStoppedRun(core, runId);
       return "done";
     }
   }
@@ -98,67 +98,95 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
     const lifecycle = await core.store.readStream(lifecycleStream);
     lifecycleLength = lifecycle.length;
     const last = lifecycle.findLast((e) => e.eventType.startsWith("assignment.") && e.eventType !== "assignment.spend");
+    // A budget stop is durable before the run's own terminal is: finish the run here rather than only stopping.
+    if (last?.eventType === "assignment.failed") await finalizeStoppedRun(core, runId);
     if (last && last.eventType !== "assignment.resumed") halt(false);
+  };
+  /**
+   * The guard as a fence, for an effect about to start (a step callback, an external dispatch): read the durable
+   * lifecycle, then commit a guard-only append on it at the version read. A control committed in between moves the
+   * version, so the fence conflicts and the guard is taken again. It cannot stop an external call that has already
+   * begun; that residual window is documented in EGM.md.
+   */
+  const fence = async (): Promise<void> => {
+    if (!bound) return;
+    for (;;) {
+      await durableGuard();
+      try {
+        await core.store.commit({ appends: [{ streamId: lifecycleStream, expectedVersion: lifecycleLength, events: [] }] });
+        return;
+      } catch (error) {
+        if (!(error instanceof ConcurrencyError)) throw error;
+      }
+    }
   };
 
   // Appends are serialized so concurrent RunContext calls cannot race on the stream version.
   let writes: Promise<unknown> = Promise.resolve();
   const append = (event: { eventType: string; payload: Json; metadata: { [key: string]: Json }; semanticRef?: SemanticRef | null; componentId?: string | null; fiberId?: string | null }, lifecycle?: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } }): Promise<StoredEvent> => {
     const run = writes.then(async () => {
-      guard();
-      // A terminal commit decides against the lifecycle revision it carries; every other write checks the durable state.
-      if (!lifecycle) await durableGuard();
-      else lifecycleLength = lifecycle.expectedVersion;
-      guard();
-      const envelope: NewEvent = {
-        eventType: event.eventType,
-        schemaVersion: 1,
-        occurredAt: new Date().toISOString(),
-        tenant: view.tenant,
-        correlationId: view.correlationId,
-        causationId: lastEventId,
-        runId,
-        scopeId: started.scopeId,
-        payload: event.payload,
-        // A case run's context (frozen on run.started) rides every event so its observation can be built from the event alone.
-        metadata: caseContext ? { ...event.metadata, caseContext } : event.metadata,
-        ...(event.semanticRef ? { semanticRef: event.semanticRef } : {}),
-        ...(event.componentId ? { componentId: event.componentId } : {}),
-        ...(event.fiberId ? { fiberId: event.fiberId } : {}),
-      };
-      try {
-        // Pre-assign the id so hooks can derive intents that commit atomically with the event (spec §13.1).
-        // streamSequence is the run-wide ordering coordinate (both streams' events so far), never restarting.
-        const lifecycleEnvelope: NewEvent | undefined = lifecycle && { ...envelope, eventType: lifecycle.eventType, payload: lifecycle.payload, metadata: caseContext ? { ...lifecycle.metadata, caseContext } : lifecycle.metadata };
-        const lcEvent = lifecycleEnvelope && { ...lifecycleEnvelope, eventId: crypto.randomUUID() };
-        const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt, streamSequence: version + lifecycleLength + (lcEvent ? 2 : 1) };
-        const outcome = await core.store.commit({
-          appends: [
-            ...(lcEvent && lifecycle ? [{ streamId: lifecycleStream, expectedVersion: lifecycle.expectedVersion, events: [lcEvent] }] : []),
-            {
-              streamId,
-              expectedVersion: version,
-              events: [{ ...envelope, eventId: pending.eventId }],
-              ...(ownership ? { runOwnership: { runId, ownerId: ownership.ownerId, generation: ownership.generation } } : {}),
-            },
-          ],
-          outbox: [
-            ...(lcEvent ? core.outboxFor({ ...lcEvent, streamId: lifecycleStream, recordedAt: lcEvent.occurredAt, streamSequence: version + lifecycleLength + 1 }) : []),
-            ...core.outboxFor(pending),
-          ],
-        });
-        const stored = outcome.events.find((e) => e.eventId === pending.eventId)!;
-        version += 1;
-        lastEventId = stored.eventId;
-        return stored;
-      } catch (error) {
-        if (error instanceof ConcurrencyError) {
-          if (error.streamId === lifecycleStream) throw new LifecycleConflict();
-          halt(true);
+      // A progress commit is fenced on the lifecycle revision it guarded at: a control that lands in between moves it, the
+      // commit conflicts and the guard is taken again.
+      for (;;) {
+        guard();
+        // A terminal commit decides against the lifecycle revision it carries; every other write checks the durable state.
+        if (!lifecycle) await durableGuard();
+        else lifecycleLength = lifecycle.expectedVersion;
+        guard();
+        const envelope: NewEvent = {
+          eventType: event.eventType,
+          schemaVersion: 1,
+          occurredAt: new Date().toISOString(),
+          tenant: view.tenant,
+          correlationId: view.correlationId,
+          causationId: lastEventId,
+          runId,
+          scopeId: started.scopeId,
+          payload: event.payload,
+          // A case run's context (frozen on run.started) rides every event so its observation can be built from the event alone.
+          metadata: caseContext ? { ...event.metadata, caseContext } : event.metadata,
+          ...(event.semanticRef ? { semanticRef: event.semanticRef } : {}),
+          ...(event.componentId ? { componentId: event.componentId } : {}),
+          ...(event.fiberId ? { fiberId: event.fiberId } : {}),
+        };
+        try {
+          // Pre-assign the id so hooks can derive intents that commit atomically with the event (spec §13.1).
+          // streamSequence is the run-wide ordering coordinate (both streams' events so far), never restarting.
+          const lifecycleEnvelope: NewEvent | undefined = lifecycle && { ...envelope, eventType: lifecycle.eventType, payload: lifecycle.payload, metadata: caseContext ? { ...lifecycle.metadata, caseContext } : lifecycle.metadata };
+          const lcEvent = lifecycleEnvelope && { ...lifecycleEnvelope, eventId: crypto.randomUUID() };
+          const pending = { ...envelope, eventId: crypto.randomUUID(), streamId, recordedAt: envelope.occurredAt, streamSequence: version + lifecycleLength + (lcEvent ? 2 : 1) };
+          const outcome = await core.store.commit({
+            appends: [
+              ...(bound && !lifecycle ? [{ streamId: lifecycleStream, expectedVersion: lifecycleLength, events: [] }] : []),
+              ...(lcEvent && lifecycle ? [{ streamId: lifecycleStream, expectedVersion: lifecycle.expectedVersion, events: [lcEvent] }] : []),
+              {
+                streamId,
+                expectedVersion: version,
+                events: [{ ...envelope, eventId: pending.eventId }],
+                ...(ownership ? { runOwnership: { runId, ownerId: ownership.ownerId, generation: ownership.generation } } : {}),
+              },
+            ],
+            outbox: [
+              ...(lcEvent ? core.outboxFor({ ...lcEvent, streamId: lifecycleStream, recordedAt: lcEvent.occurredAt, streamSequence: version + lifecycleLength + 1 }) : []),
+              ...core.outboxFor(pending),
+            ],
+          });
+          const stored = outcome.events.find((e) => e.eventId === pending.eventId)!;
+          version += 1;
+          lastEventId = stored.eventId;
+          return stored;
+        } catch (error) {
+          if (error instanceof ConcurrencyError) {
+            if (error.streamId === lifecycleStream) {
+              if (!lifecycle) continue;
+              throw new LifecycleConflict();
+            }
+            halt(true);
+          }
+          // Ownership was reclaimed or released: this worker is stale and must never retry the pass.
+          if (error instanceof StaleRunOwnerError) halt(false);
+          throw error;
         }
-        // Ownership was reclaimed or released: this worker is stale and must never retry the pass.
-        if (error instanceof StaleRunOwnerError) halt(false);
-        throw error;
       }
     });
     writes = run.catch(() => {});
@@ -197,7 +225,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
         return field(done.payload, "result") as T;
       }
       const before = { ...counters };
-      await durableGuard();
+      await fence();
       const result = toJson(await fn());
       const drift = { emit: counters.emit - before.emit, invoke: counters.invoke - before.invoke, artifact: counters.artifact - before.artifact };
       await append({ eventType: "run.step.completed", payload: { result }, metadata: { stepId, counters: drift } });
@@ -224,7 +252,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       if (!done) {
         // Refresh the ownership lease before any external effect: a lost lease must be discovered
         // before dispatch, not after (docs/contracts/run-write-ownership.md).
-        await durableGuard();
+        await fence();
         if (ownership && !(await ownership.renew())) halt(false);
         const priorProgress = (recorded.get(stepId) ?? []).filter((e) => e.eventType === "run.invocation.progress");
         // A previous owner's generation started this invocation and never recorded its outcome.
@@ -550,7 +578,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       const assignmentView = bound ? foldAssignment(runId, lifecycle.events, lifecycle.control) : undefined;
       if (assignmentView?.status === "interrupted") return "done"; // paused: resume re-runs the pass and replays its steps
       if (assignmentView?.status === "failed" && assignmentView.budgetExceeded) {
-        await finalizeStoppedRun(core, runId, { id: "assignment-budget", kind: "system" });
+        await finalizeStoppedRun(core, runId);
         return "done";
       }
       let terminal: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } } | undefined;

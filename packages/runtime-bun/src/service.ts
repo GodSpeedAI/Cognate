@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
+import { acceptLifecycleEvent, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { assignmentControlStream, foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -166,11 +166,18 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
     async cancelRun(caller, request) {
       await authorize(caller, "run.cancel", request.runId);
-      for (let attempt = 0; attempt < 5; attempt++) {
+      // Bounded retries with the same jittered backoff as the assignment controls (DEBT-033); a cancel that cannot commit
+      // is refused, never reported as done, and leaves the run (and its executing pass) untouched.
+      let committed = false;
+      for (let attempt = 0; attempt < APPEND_MAX_ATTEMPTS; attempt++) {
         await readRun(caller, request.runId);
         const { events, control } = await readLifecycle(core, request.runId);
         const view = foldRun(request.runId, events)!;
-        if (isTerminal(view)) return view;
+        // Already ended (possibly by the executor or a breach, or after losing a race here): abort the stale pass and report.
+        if (isTerminal(view)) {
+          core.controllers.get(request.runId)?.abort(new Error("run ended"));
+          return view;
+        }
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();
         const assignmentView = foldAssignment(request.runId, events, control);
@@ -214,12 +221,17 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
             result: { runId: request.runId },
           });
         } catch (error) {
-          if (error instanceof ConcurrencyError) continue;
+          if (error instanceof ConcurrencyError) {
+            if (attempt < APPEND_MAX_ATTEMPTS - 1) await Bun.sleep(appendBackoffMs(attempt));
+            continue;
+          }
           if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
           throw error;
         }
+        committed = true;
         break;
       }
+      if (!committed) throw new ServiceError("unavailable", `too much contention cancelling run ${request.runId}`);
       core.controllers.get(request.runId)?.abort(new Error("run cancelled"));
       for (const c of await core.continuations.list({ runId: request.runId, status: "OPEN" })) {
         await core.continuations.cancel(c.id, { actor: caller.actor, idempotencyKey: `run.cancel:${request.idempotencyKey}:${c.id}`, reason: request.reason });

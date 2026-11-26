@@ -73,7 +73,8 @@ export function foldAssignment(runId: string, runEvents: readonly StoredEvent[],
       const name = field<string>(md, "assignmentEvent");
       if (typeof name !== "string") continue;
       // Every lifecycle event carries the accepted spend at the time it was recorded, which is the running total here.
-      sequence.push({ assignment_id: assignment.assignment_id, episode_ref: assignment.episode_ref, event: name as AssignmentEventName, at: event.occurredAt, spend: acceptedSpend });    }
+      sequence.push({ assignment_id: assignment.assignment_id, episode_ref: assignment.episode_ref, event: name as AssignmentEventName, at: event.occurredAt, spend: acceptedSpend });
+    }
   }
   const linkExpiresAt = field<string>(meta(started), "linkExpiresAt");
   const last = sequence.at(-1);
@@ -90,17 +91,32 @@ export function foldAssignment(runId: string, runEvents: readonly StoredEvent[],
 }
 
 /**
- * Both streams of a run read at one consistent point. A commit that touches both (the executor's terminal decision,
- * `cancelRun`) must not be seen on one side only, so the run stream is read again after the lifecycle stream and the
- * pair is accepted only when the run stream did not move in between.
+ * A pair of streams is torn when one side shows a terminal decision the other does not: the executor's terminal commit
+ * and `cancelRun` write both streams atomically, so `assignment.completed|cancelled` without a terminal run (or a
+ * terminal run without a terminal assignment) can only be a read that straddled such a commit. A budget `failed` with a
+ * run still running is not torn: that stop is durable first and the run's `run.failed` follows.
+ */
+function torn(runId: string, events: readonly StoredEvent[], control: readonly StoredEvent[]): boolean {
+  const run = foldRun(runId, events);
+  const view = foldAssignment(runId, events, control);
+  if (!run || !view) return false;
+  const ended = view.status === "completed" || view.status === "cancelled" || view.status === "failed";
+  if (isTerminal(run)) return !ended;
+  return view.status === "completed" || view.status === "cancelled";
+}
+
+/**
+ * Both streams of a run read as one consistent pair. Ordinary progress does not matter; only a pair whose terminal
+ * states disagree is re-read (with a short pause). Never returns a torn pair: exhaustion throws.
  */
 export async function readLifecycle(core: Core, runId: string): Promise<{ readonly events: readonly StoredEvent[]; readonly control: readonly StoredEvent[] }> {
-  for (let attempt = 0; ; attempt++) {
+  for (let attempt = 0; attempt < 50; attempt++) {
     const events = await core.store.readStream(runStream(runId));
     const control = await core.store.readStream(assignmentControlStream(runId));
-    const again = await core.store.readStream(runStream(runId), { afterSequence: events.length, limit: 1 });
-    if (again.length === 0 || attempt >= 20) return { events, control };
+    if (!torn(runId, events, control)) return { events, control };
+    await Bun.sleep(Math.min(20, 1 + attempt));
   }
+  throw new ServiceError("unavailable", `run ${runId} and its assignment could not be read consistently`);
 }
 
 /** The assignment view of a run (consistent pair of streams); `undefined` when the run has no assignment. */
@@ -159,35 +175,37 @@ const budgetError = (view: AssignmentView): string | undefined => {
  * all run it. The breach itself is committed under the lifecycle revision, so this only mirrors a decision that is
  * already durable; a lost run-stream race (the executor is stopping) is retried with backoff.
  */
-export async function finalizeStoppedRun(core: Core, runId: string, actor: Caller["actor"], pacing: AppendPacing = {}): Promise<void> {
+export async function finalizeStoppedRun(core: Core, runId: string, actor: Caller["actor"] = core.system, pacing: AppendPacing = {}): Promise<void> {
   const sleep = pacing.sleep ?? ((ms: number) => Bun.sleep(ms));
   const random = pacing.random ?? Math.random;
-  for (let attempt = 0; attempt < 40; attempt++) {
+  let done = false;
+  for (let attempt = 0; attempt < 40 && !done; attempt++) {
     const { events, control } = await readLifecycle(core, runId);
     const run = foldRun(runId, events);
     const view = foldAssignment(runId, events, control);
     const error = view ? budgetError(view) : undefined;
     if (!run || !view || error === undefined) return;
-    if (isTerminal(run)) break;
+    if (isTerminal(run)) {
+      done = true;
+      break;
+    }
     const first = events[0]!;
     const caseContext = field<Json>(meta(first), "caseContext");
     const at = new Date().toISOString();
+    const id = `asg_budget_stop_${runId}`;
+    const event = { eventId: id, eventType: "run.failed", schemaVersion: 1, occurredAt: at, tenant: first.tenant, correlationId: first.correlationId, causationId: events.at(-1)!.eventId, runId, scopeId: first.scopeId, payload: { error }, metadata: { agent: field<string>(meta(first), "agent") ?? "", ...(caseContext ? { caseContext } : {}) } };
     try {
-      const id = `asg_budget_stop_${runId}`;
       await core.store.commit({
-        appends: [{
-          streamId: runStream(runId),
-          expectedVersion: events.length,
-          events: [{ eventId: id, eventType: "run.failed", schemaVersion: 1, occurredAt: at, tenant: first.tenant, correlationId: first.correlationId, causationId: events.at(-1)!.eventId, runId, scopeId: first.scopeId, payload: { error }, metadata: { agent: field<string>(meta(first), "agent") ?? "", ...(caseContext ? { caseContext } : {}) } }],
-        }],
-        outbox: core.outboxFor({ eventId: id, eventType: "run.failed", schemaVersion: 1, occurredAt: at, tenant: first.tenant, correlationId: first.correlationId, causationId: events.at(-1)!.eventId, runId, scopeId: first.scopeId, payload: { error }, metadata: { agent: field<string>(meta(first), "agent") ?? "", ...(caseContext ? { caseContext } : {}) }, streamId: runStream(runId), recordedAt: at, streamSequence: events.length + control.length + 1 }),
+        appends: [{ streamId: runStream(runId), expectedVersion: events.length, events: [event] }],
+        outbox: core.outboxFor({ ...event, streamId: runStream(runId), recordedAt: at, streamSequence: events.length + control.length + 1 }),
       });
-      break;
+      done = true;
     } catch (e) {
       if (!(e instanceof ConcurrencyError)) throw e;
       await sleep(appendBackoffMs(Math.min(attempt, 5), random));
     }
   }
+  if (!done) throw new ServiceError("unavailable", `run ${runId} could not be finished after its assignment was stopped`);
   for (const c of await core.continuations.list({ runId, status: "OPEN" })) {
     try {
       await core.continuations.cancel(c.id, { actor, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason: "ASSIGNMENT_BUDGET_EXCEEDED" });
@@ -246,10 +264,10 @@ export function createAssignmentService(core: Core, pacing: AppendPacing = {}): 
           ],
           result: { runId },
         });
-        const after = (await load(caller, runId)).view;
-        if (!after.events.some((e) => e.event === (built.control[0]!.payload as unknown as AssignmentEvent).event) && built.control[0]!.eventType !== ASSIGNMENT_SPEND_EVENT) {
-          throw new ServiceError("unavailable", `control on run ${runId} was committed but is not part of the assignment view`);
-        }
+        const reloaded = await load(caller, runId);
+        // Success is reported only when this request's own event is in what the fold read back.
+        if (!reloaded.control.some((e) => e.eventId === `asg_${base}_0`)) throw new ServiceError("unavailable", `control on run ${runId} was committed but is not part of the assignment view`);
+        const after = reloaded.view;
         return after;
       } catch (error) {
         if (error instanceof ConcurrencyError) {

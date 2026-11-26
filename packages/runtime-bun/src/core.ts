@@ -23,6 +23,8 @@ export interface Core {
   readonly governor: Governor;
   readonly agents: ReadonlyMap<string, AgentDefinition>;
   readonly scopeId: string;
+  /** The runtime's own principal (RuntimeOptions.system): attributed for work the runtime does on its own account. */
+  readonly system: Principal;
   readonly recall: (query: { readonly text: string; readonly k: number; readonly actor: Principal; readonly tenant: string }) => Promise<RecallResultJson>;
   /** Extra outbox intents committed with each run event (RuntimeOptions.outboxFor). */
   readonly outboxFor: (event: PendingEvent) => readonly OutboxIntent[];

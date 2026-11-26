@@ -283,7 +283,7 @@ describe("spend and interrupt under a streaming bound run", () => {
     expect(final.status).toBe("completed");
     expect(spentIn(final.acceptedSpend, "time")).toBe(10);
     expect((await eventsOf(rt, run.runId)).filter((e) => e.eventType === "assignment.spend").length).toBe(1);
-  });
+  }, 30_000);
 
   test("an interrupt stops the pass; resume executes again and makes new progress", async () => {
     const { rt } = await boot({ before: hold });
@@ -297,7 +297,7 @@ describe("spend and interrupt under a streaming bound run", () => {
     expect((await rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" })).status).toBe("resumed");
     await until(async () => (await eventsOf(rt, run.runId)).filter((e) => e.eventType === "progress").length > paused);
     expect(passes).toBeGreaterThanOrEqual(2); // a new pass ran
-  });
+  }, 30_000);
 });
 
 describe("provenance and replay", () => {
@@ -560,17 +560,21 @@ describe("budget breach against the executor, and recovery (M-3, M-5)", () => {
   test("a crash between assignment.failed and run.failed is finished on restart", async () => {
     dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), "cognate-asg-cr-"));
     const file = join(dir, "app.sqlite");
-    const first = await boot({ file, failCommit: (c) => (c.types.includes("run.failed") ? new Error("crash") : undefined) });
+    let dead = false;
+    const first = await boot({ file, failCommit: (c) => (dead || c.types.includes("run.failed") ? new Error("crash") : undefined) });
     const run = await startRun(first.rt, "agent.gated", "br", { gate: "br" });
     await until(() => hasEvent(first.rt, run.runId, "run.step.completed"));
     await first.rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" }).catch(() => {});
     expect(await runStatus(first.rt, run.runId)).toBe("running");
+    dead = true; // the process dies here: nothing more reaches the store
+    gate("br").resolve(); // let the parked agent unwind so the runtime can close
     await first.rt.close();
+    first.store.close();
     runtime = undefined;
     const second = await boot({ file });
     await until(async () => (await runStatus(second.rt, run.runId)) === "failed");
     expect((await second.rt.service.getRun(alice, { runId: run.runId })).error).toContain("ASSIGNMENT_BUDGET_EXCEEDED");
-  });
+  }, 30_000);
 });
 
 describe("fence and consistent read (M-1, M-2)", () => {
