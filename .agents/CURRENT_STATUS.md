@@ -1,8 +1,10 @@
 # Current status
 
-**Status revision:** 84
+**Status revision:** 85
 
-**Summary:** A live suite serves Cognate's RuntimeService with the production provider against a real sea-forge-server process that SEA's own harness seeds, starts and drives; the exact delegate's assigned start completes one run bound to the live binding and every other start is denied. The journey exposed a producer defect in SEA's read verb, fixed in SEA.
+**Stage:** WP-23 joined SEA-Cognate journey verified; lane hosted-green
+
+**Summary:** Hosted verify run 45538335916 passed on lane head 88a6399 (live SEA admission suite 03fe68c and status 88a6399). The joined journey against a real sea-forge-server cell (sea-rs ac506217, hosted CI 45538331379) proves admission of the exact delegate; delegation itself, same-uid separation and SEA's AuthenticatedConnection channel remain out of scope.
 
 **Verified:**
 
@@ -13,6 +15,7 @@
 - bun run typecheck clean; protocol-connect, protocol-connect-bun and runtime-api: 153 pass, 0 fail, 7 skip (the two live suites need an external binary or cell)
 - Store suites on an isolated pg0 instance: store-postgres, store-sqlite and store-memory 118 pass, 0 fail
 - just verify: the check, typecheck, docs, proof-routing and release-publication stages pass; the gate stage is 70/81, identical to revision 83. The 11 unmet gates are the nine AK fixture gates, CG-RT-002 and CG-E2E-001; the last two need the pinned RealityTrace CLI (just setup-realitytrace)
+- Hosted verify 45538335916 on 88a6399: success (workflow_dispatch 375474909)
 
 **Limits:**
 
@@ -20,6 +23,15 @@
 - The live suite uses an in-memory store, a permissive Cognate run policy and a test principal map; durable idempotency and Cognate governance are not exercised there
 - SEA's driver stops at admission: its cell declares no agent endpoint, so SEA's delegate verb does not execute a delegation against Cognate; Cognate has no SEA-facing delegation endpoint yet
 - The local full gate still requires separately installed Phase 0 package trees and the pinned RealityTrace CLI (pre-existing, unchanged by this work)
-- Hosted verify has not run on this commit yet
 
 **Next:** Push and confirm hosted verify; then the Workbench operator journey (PR #40).
+
+**Evidence:**
+
+- packages/protocol-connect-bun/test/sea-admission.live.test.ts
+- packages/protocol-connect-bun/src/sea-admission.ts
+- https://github.com/GodSpeedAI/SEA-Forge/commit/431e1fc7
+
+**Spec:** .agents/specs/software-design-spec-cognate.-frameworkmd
+
+**Ledger:** .agents/DEBT.md
