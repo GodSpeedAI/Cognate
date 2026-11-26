@@ -42,13 +42,14 @@ const facts: ProviderFacts = {
 };
 
 /** A provider whose invoke spawns (counted) and then hangs until the runtime shuts down; inspect answers `after`. */
-function hangingProvider(after: () => InvocationView["status"], tied: boolean) {
+function hangingProvider(after: () => InvocationView["status"], tied: boolean, emits = 0) {
   const counts = { invokes: 0, inspects: 0 };
   const provider: RlmProvider = {
     id: "test-provider",
     probe: async () => facts,
     async invoke(_req: RlmInvokeRequest, _spawn, ctx: RunContext) {
       counts.invokes += 1;
+      for (let i = 0; i < emits; i++) await ctx.emit("rlm.progress", { pct: 10 * (i + 1) });
       await new Promise<void>((resolve) => (ctx.signal.aborted ? resolve() : ctx.signal.addEventListener("abort", () => resolve(), { once: true })));
       throw new Error("provider interrupted by runtime shutdown");
     },
@@ -62,13 +63,13 @@ function hangingProvider(after: () => InvocationView["status"], tied: boolean) {
   return { provider, counts };
 }
 
-async function restartScenario(name: string, after: InvocationView["status"], tied: boolean, check: (runtime: Runtime, childRunId: string, counts: { invokes: number; inspects: number }) => Promise<void>) {
+async function restartScenario(name: string, after: InvocationView["status"], tied: boolean, emits: number, check: (runtime: Runtime, childRunId: string, counts: { invokes: number; inspects: number }) => Promise<void>) {
   const database = await openPostgresStore({
     url: process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres",
     schema: `cognate_rlm_recovery_${crypto.randomUUID().replaceAll("-", "")}`,
     pollMs: 0,
   });
-  const { provider, counts } = hangingProvider(() => after, tied);
+  const { provider, counts } = hangingProvider(() => after, tied, emits);
   const parent: AgentDefinition = {
     id: "agent.parent",
     version: "1.0.0",
@@ -122,7 +123,7 @@ async function restartScenario(name: string, after: InvocationView["status"], ti
 }
 
 test("restart between intent and result with an unverifiable provider keeps the invocation ambiguous (one invoke in total)", async () => {
-  await restartScenario("unknown", "unknown", true, async (rt, childRunId, counts) => {
+  await restartScenario("unknown", "unknown", true, 0, async (rt, childRunId, counts) => {
     const wait = await until(() => rt.service.listContinuations(caller, { runId: childRunId, status: "OPEN" }), (c) => c.some((x) => x.type === "ambiguous-invocation"), "the recovered child did not park on the ambiguous-invocation wait");
     expect(wait.length).toBe(1);
     await until(() => rt.service.getRun(caller, { runId: childRunId }), (v) => v.status === "waiting", "the recovered child did not report waiting");
@@ -138,23 +139,35 @@ test("restart between intent and result with an unverifiable provider keeps the 
 }, 30_000);
 
 test("restart between intent and result completes from a result tied to the original invocation, without a second invoke", async () => {
-  await restartScenario("completed", "completed", true, async (rt, childRunId) => {
+  await restartScenario("completed", "completed", true, 0, async (rt, childRunId) => {
     const done = await until(() => rt.service.getRun(caller, { runId: childRunId }), (v) => v.status === "completed", "the recovered child did not complete");
     expect(done.output).toMatchObject({ status: "completed" });
   });
 }, 30_000);
 
 test("restart between intent and result with a completed view that is not tied to the invocation stays ambiguous", async () => {
-  await restartScenario("untied", "completed", false, async (rt, childRunId) => {
+  await restartScenario("untied", "completed", false, 0, async (rt, childRunId) => {
     await until(() => rt.service.listContinuations(caller, { runId: childRunId, status: "OPEN" }), (c) => c.some((x) => x.type === "ambiguous-invocation"), "an untied result must not be trusted");
   });
 }, 30_000);
 
 test("restart between intent and result with a known failure closes the invocation failed", async () => {
-  await restartScenario("failed", "failed", true, async (rt, childRunId) => {
+  await restartScenario("failed", "failed", true, 0, async (rt, childRunId) => {
     const done = await until(() => rt.service.getRun(caller, { runId: childRunId }), (v) => v.status === "completed", "the recovered child did not close");
     expect(done.output).toMatchObject({ status: "failed" });
     expect(await rt.service.listContinuations(caller, { runId: childRunId, status: "OPEN" })).toEqual([]);
+  });
+}, 30_000);
+
+test("a provider that emitted before the interruption still leaves exactly one rlm.outcome after recovery", async () => {
+  await restartScenario("emitted", "completed", true, 2, async (rt, childRunId) => {
+    await until(() => rt.service.getRun(caller, { runId: childRunId }), (v) => v.status === "completed", "the recovered child did not complete");
+    let outcomes = 0;
+    for await (const event of rt.service.events(caller, { runId: childRunId })) {
+      if (event.eventType === "rlm.outcome") outcomes += 1;
+      if (event.eventType === "run.step.completed" && (event.payload as { result?: { rlmOutcome?: unknown } } | null)?.result?.rlmOutcome) outcomes += 1;
+    }
+    expect(outcomes).toBe(1);
   });
 }, 30_000);
 
