@@ -208,6 +208,12 @@ export interface RlmInvokeInput {
   readonly task: RlmTask;
   readonly authority: RlmAuthority;
   readonly budget: RlmBudget;
+  /**
+   * Additive (#113). The attempt identity recorded with the dispatch intent; default 1. One (invocationId,
+   * attempt) is dispatched to a provider at most once. Reusing an `invocationId` with a different attempt is
+   * refused: a retry needs a new `invocationId` (D4.8) with its own grant and `reservationRef`.
+   */
+  readonly attempt?: number;
   /** Mirrors the published `CaseContext` exactly; no new field is added to it (D1). */
   readonly caseContext?: CaseContext;
 }
@@ -242,6 +248,8 @@ export interface RlmInspectOutput {
   /** What was *actually* used, never what was requested. */
   readonly isolation: RlmIsolation;
   readonly lastEventAt: string;
+  /** Additive (#113). Present and true when an operator reconciled an ambiguous invocation: the result is not plain provider success. */
+  readonly reconciled?: boolean;
 }
 
 export interface RlmCancelInput {
@@ -253,6 +261,10 @@ export interface RlmCancelInput {
 
 export interface RlmCancelOutput {
   readonly status: "cancelled" | "already-terminal";
+  /** Additive (#113), present on `cancelled`: whether a dispatch intent existed and what the provider's own cancel did. */
+  readonly dispatched?: boolean;
+  readonly providerCancel?: "not-dispatched" | "cancelled" | "failed";
+  readonly error?: string;
 }
 
 // ── Internal provider port (never a cross-product contract; design D2/D7) ───────
@@ -269,12 +281,20 @@ export interface RlmInvokeRequest {
   readonly task: RlmTask;
   readonly authority: RlmAuthority;
   readonly budget: RlmBudget;
+  /** Additive (#113): the attempt identity of this dispatch; default 1. */
+  readonly attempt?: number;
   readonly caseContext?: CaseContext;
 }
 
 /** A provider's own view of one invocation (design D2 `InvocationView`). */
 export interface InvocationView {
   readonly status: RlmInvocationStatus;
+  /**
+   * Additive (#113). The invocation this view describes. After an interruption the runtime never calls `invoke`
+   * again: it trusts a terminal view only when this equals the original `invocationId`; a view without it (or
+   * with another id) is unverifiable and parks the invocation on the ambiguous-invocation wait.
+   */
+  readonly invocationId?: string;
   readonly resultRef?: string;
   readonly evidence: readonly string[];
   readonly payment: RlmPayment;
@@ -347,6 +367,17 @@ export interface RlmInvocationBinding {
   /** The governing limit; `unknown` makes the recorded spend authoritative-unknown (D4.5). */
   readonly budgetLimit: number | "unknown";
   readonly reservationRef?: string;
+  /** Additive (#113): the attempt identity recorded with the dispatch intent; absent means 1. */
+  readonly attempt?: number;
+  /** Additive (#113): the outcome of `rlm.cancel`, recorded durably. */
+  readonly cancellation?: {
+    readonly requestedAt: string;
+    readonly reason: string;
+    /** Whether a dispatch intent had been recorded; a provider is only asked to cancel after one. */
+    readonly dispatched: boolean;
+    readonly providerCancel: "not-dispatched" | "cancelled" | "failed";
+    readonly error?: string;
+  };
 }
 
 /** Where an invocation binding lives in a run's state. */
@@ -363,4 +394,21 @@ export function readInvocationBinding(state: Json | null | undefined, invocation
   const binding = (invocations as { readonly [key: string]: Json })[invocationId];
   if (!binding || typeof binding !== "object" || Array.isArray(binding)) return undefined;
   return binding as unknown as RlmInvocationBinding;
+}
+
+/**
+ * Additive (#113). A parent's authority is withdrawn for one invocation (or all of them, key `*`) by recording a
+ * reason at `rlm.revoked.<invocationId>` in the parent run's state. A withdrawn grant refuses a new dispatch.
+ */
+export const RLM_REVOKED_KEY = "revoked";
+
+export function readGrantRevocation(state: Json | null | undefined, invocationId: string): string | undefined {
+  if (!state || typeof state !== "object" || Array.isArray(state)) return undefined;
+  const root = (state as { readonly [key: string]: Json })[RLM_STATE_ROOT];
+  if (!root || typeof root !== "object" || Array.isArray(root)) return undefined;
+  const revoked = (root as { readonly [key: string]: Json })[RLM_REVOKED_KEY];
+  if (!revoked || typeof revoked !== "object" || Array.isArray(revoked)) return undefined;
+  const entry = (revoked as { readonly [key: string]: Json })[invocationId] ?? (revoked as { readonly [key: string]: Json })["*"];
+  if (entry === undefined || entry === null || entry === false) return undefined;
+  return typeof entry === "string" ? entry : "revoked";
 }
