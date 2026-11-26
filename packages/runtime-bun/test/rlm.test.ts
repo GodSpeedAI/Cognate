@@ -19,9 +19,12 @@ import type {
   RlmProvidersOutput,
   RunContext,
   RunView,
+  RuntimeService,
 } from "@godspeedai/cognate-runtime-api";
-import { foldState, readInvocationBinding, RLM_AGENT_ID, RLM_CAPABILITIES } from "@godspeedai/cognate-runtime-api";
-import { createRlmAgent, createRlmComponent, createRlmRegistry, createRuntime, type RlmProviderRegistration, type RlmRegistry, type Runtime } from "../src/index.ts";
+import { foldState, readInvocationBinding, RLM_AGENT_ID, RLM_CAPABILITIES, RlmProviderRefusal } from "@godspeedai/cognate-runtime-api";
+import { ConcurrencyError } from "@godspeedai/cognate-events";
+import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
+import { createRlmAgent, createRlmComponent, createRlmRegistry, createRuntime, revokeRlmGrant, type RlmProviderRegistration, type RlmRegistry, type Runtime } from "../src/index.ts";
 
 const alice: Caller = { actor: { id: "alice", kind: "user" }, tenant: "tenant-a" };
 const policy: Policy = { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) };
@@ -46,7 +49,7 @@ const deferred = (): Deferred => {
  * `lostCompleted|lostFailed|lostUnknown` name an invocation-tied view; `lostUntied` is a completed view that does not
  * say which invocation it belongs to; `lostNothing` recorded no view at all.
  */
-type ProviderMode = "complete" | "fail" | "timedOut" | "unknown" | "lostCompleted" | "lostFailed" | "lostUnknown" | "lostUntied" | "lostNothing";
+type ProviderMode = "complete" | "fail" | "failThrow" | "timedOut" | "unknown" | "lostCompleted" | "lostFailed" | "lostUnknown" | "lostUntied" | "lostNothing";
 
 interface ProviderOptions {
   readonly capabilities?: Partial<ProviderFacts["capabilities"]>;
@@ -58,6 +61,10 @@ interface ProviderOptions {
   readonly progress?: boolean;
   /** Awaited before the provider records its outcome: the invocation stays "running". */
   readonly gateBeforeOutcome?: Promise<void>;
+  /** After the first `inspect`, later ones report this status (tied to the invocation). */
+  readonly laterStatus?: InvocationView["status"];
+  /** The first N `cancel` calls throw. */
+  readonly cancelFailures?: number;
 }
 
 interface TestProvider extends RlmProvider {
@@ -109,6 +116,12 @@ function testProvider(id: string, mode: ProviderMode, options: ProviderOptions =
         throw new Error("provider response lost");
       }
       if (mode === "fail") {
+        // A definite refusal: the provider declares it did nothing. Its view names no invocation (the original fixture).
+        views.set(ctx.runId, view("failed"));
+        throw new RlmProviderRefusal("provider failed the investigation");
+      }
+      if (mode === "failThrow") {
+        // An undeclared throw with a failed view tied to the invocation: a lost response that is inspected.
         views.set(ctx.runId, view("failed", req.invocationId));
         throw new Error("provider failed the investigation");
       }
@@ -117,10 +130,12 @@ function testProvider(id: string, mode: ProviderMode, options: ProviderOptions =
     },
     async inspect(runId: string): Promise<InvocationView> {
       counts.inspects += 1;
+      if (options.laterStatus && counts.inspects > 1) return view(options.laterStatus, [...counts.requests].at(-1)?.invocationId);
       return views.get(runId) ?? [...views.values()].at(-1) ?? view("failed");
     },
     async cancel(): Promise<void> {
       counts.cancels += 1;
+      if (counts.cancels <= (options.cancelFailures ?? 0)) throw new Error("cancel channel lost");
     },
   };
   Object.defineProperties(provider, {
@@ -159,11 +174,27 @@ const refusingParent = (call: (ctx: RunContext) => Promise<Json>): AgentDefiniti
 describe("RLM component (I1)", () => {
   let runtime: Runtime | undefined;
   let rtRef: Runtime | undefined;
+  /** Wraps the service the component and agent see (to fail or interleave specific calls); reset after every test. */
+  let wrap: ((service: RuntimeService) => RuntimeService) | undefined;
+  /** When false the child agent is built without `getService`. */
+  let agentSeesService = true;
+  let wrapped: RuntimeService | undefined;
+  /** An injected store (default `:memory:`). */
+  let injectedStore: ReturnType<typeof openSqliteStore> | undefined;
+  const seen = (): RuntimeService => {
+    if (!rtRef) throw new Error("runtime not ready");
+    if (!wrap) return rtRef.service;
+    return (wrapped ??= wrap(rtRef.service));
+  };
 
   afterEach(async () => {
     await runtime?.close();
     runtime = undefined;
     rtRef = undefined;
+    wrap = undefined;
+    wrapped = undefined;
+    agentSeesService = true;
+    injectedStore = undefined;
   });
 
   async function open(registrations: readonly RlmProviderRegistration[], parent: AgentDefinition, admission?: { governance: "on" | "off"; posture: "contained" | "uncontained-local" }): Promise<Runtime> {
@@ -171,20 +202,11 @@ describe("RLM component (I1)", () => {
     for (const registration of registrations) registry.register(registration);
     const component: Component = createRlmComponent({
       registry,
-      getService: () => {
-        if (!rtRef) throw new Error("runtime not ready");
-        return rtRef.service;
-      },
+      getService: seen,
       ...(admission ? { admission } : {}),
     });
-    const agent = createRlmAgent({
-      registry,
-      getService: () => {
-        if (!rtRef) throw new Error("runtime not ready");
-        return rtRef.service;
-      },
-    });
-    const rt = await createRuntime({ store: ":memory:", policy, actions, agents: [parent, agent], components: [component] });
+    const agent = createRlmAgent({ registry, ...(agentSeesService ? { getService: seen } : {}) });
+    const rt = await createRuntime({ store: injectedStore ? { store: injectedStore } : ":memory:", policy, actions, agents: [parent, agent], components: [component] });
     runtime = rt;
     rtRef = rt;
     return rt;
@@ -217,13 +239,10 @@ describe("RLM component (I1)", () => {
   async function inspectUntil(rt: Runtime, parentRunId: string, invocationId: string, status: string, ms = 5_000): Promise<RlmInspectOutput> {
     const deadline = Date.now() + ms;
     for (;;) {
-      // The parent records the binding just after the child starts; until then the invocation is not yet known.
-      const view = await inspect(rt, parentRunId, invocationId).catch((error: Error) => {
-        if (/rlm-invocation-unknown/.test(error.message)) return undefined;
-        throw error;
-      });
-      if (view?.status === status) return view;
-      if (Date.now() > deadline) throw new Error(`invocation ${invocationId} did not reach ${status} (last ${view?.status})`);
+      // The binding is durable before the child starts (pending-start), so the invocation is always known.
+      const view = await inspect(rt, parentRunId, invocationId);
+      if (view.status === status) return view;
+      if (Date.now() > deadline) throw new Error(`invocation ${invocationId} did not reach ${status} (last ${view.status})`);
       await Bun.sleep(5);
     }
   }
@@ -291,14 +310,15 @@ describe("RLM component (I1)", () => {
   test("a running invocation is cancelled, then reported already-terminal", async () => {
     const gate = deferred();
     const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: gate.promise });
-    const rt = await open([{ provider, label: "held" }], parentAgent(async (ctx) => ({ inv: await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx)) })));
+    const rt = await open([{ provider, label: "held" }], waitingParent());
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancel" });
-    await until(rt, run.runId, "completed");
+    const probe = await continuation(rt, run.runId, "rlm-probe");
     expect((await inspect(rt, run.runId, INV)).status).toBe("admitted");
     const cancelled = (await rt.service.invoke(alice, { capability: RLM_CAPABILITIES.cancel, input: { parentRunId: run.runId, invocationId: INV, reason: "stop" } })) as unknown as RlmCancelOutput;
     expect(cancelled.status).toBe("cancelled");
     await inspectUntil(rt, run.runId, INV, "cancelled");
     expect((await rt.service.invoke(alice, { capability: RLM_CAPABILITIES.cancel, input: { parentRunId: run.runId, invocationId: INV, reason: "again" } })) as unknown as RlmCancelOutput).toMatchObject({ status: "already-terminal" });
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
   });
 
   test("replaying a completed invocationId returns the same run id and never spawns a second child", async () => {
@@ -463,6 +483,7 @@ describe("RLM component (I1)", () => {
     const provider = testProvider("test-provider", "complete");
     const rt = await open([{ provider, label: "intent" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx, { invocationId: "inv-intent" }))) as unknown as Json));
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "intent" });
+    await until(rt, run.runId, "completed");
     await inspectUntil(rt, run.runId, "inv-intent", "completed");
     const child = await childOf(rt, run.runId, "inv-intent");
     const types = await eventTypes(rt, child.runId);
@@ -482,6 +503,7 @@ describe("RLM component (I1)", () => {
     const provider = testProvider("test-provider", "lostCompleted");
     const rt = await open([{ provider, label: "lost" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "lost-completed" });
+    await until(rt, run.runId, "completed");
     const view = await inspectUntil(rt, run.runId, INV, "completed");
     expect(provider.spawns).toBe(1);
     expect(view.reconciled).toBeUndefined();
@@ -491,6 +513,7 @@ describe("RLM component (I1)", () => {
     const provider = testProvider("test-provider", "lostFailed");
     const rt = await open([{ provider, label: "lost" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "lost-failed" });
+    await until(rt, run.runId, "completed");
     await inspectUntil(rt, run.runId, INV, "failed");
     expect(provider.spawns).toBe(1);
     expect(await rt.service.listContinuations(alice, { runId: (await childOf(rt, run.runId)).runId, status: "OPEN" })).toEqual([]);
@@ -502,6 +525,7 @@ describe("RLM component (I1)", () => {
       const provider = testProvider("test-provider", mode);
       const rt = await open([{ provider, label: mode }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx, { invocationId: id }))) as unknown as Json));
       const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: `lost-${mode}` });
+      await until(rt, run.runId, "completed");
       await inspectUntil(rt, run.runId, id, "unknown");
       const child = await childOf(rt, run.runId, id);
       const ambiguous = await continuation(rt, child.runId, "ambiguous-invocation");
@@ -520,6 +544,7 @@ describe("RLM component (I1)", () => {
     const provider = testProvider("test-provider", "lostUnknown");
     const rt = await open([{ provider, label: "lost" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "reconcile-failure" });
+    await until(rt, run.runId, "completed");
     await inspectUntil(rt, run.runId, INV, "unknown");
     const ambiguous = await continuation(rt, (await childOf(rt, run.runId)).runId, "ambiguous-invocation");
     await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: { failure: { reason: "operator saw no effect" } }, idempotencyKey: "reconcile-failure-go" });
@@ -600,29 +625,468 @@ describe("RLM component (I1)", () => {
     expect(provider.spawns).toBe(0);
   });
 
-  test("a retry under an existing attempt identity is refused; a new invocationId is a new attempt", async () => {
+  test("a retry under an existing attempt identity is refused; a new invocationId waits until the prior attempt is resolved", async () => {
     const provider = testProvider("test-provider", "unknown");
     const rt = await open([{ provider, label: "attempts" }], parentAgent(async (ctx) => {
       await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx));
       await ctx.waitFor("probe", { type: "rlm-probe", condition: { kind: "rlm_probe" }, payload: {} });
       const sameId = await refusingParent((c) => ctx.invoke(RLM_CAPABILITIES.invoke, { ...(invokeArgs(c) as Record<string, Json>), attempt: 2 }) as Promise<Json>).run({}, ctx);
+      const unresolved = await refusingParent((c) => ctx.invoke(RLM_CAPABILITIES.invoke, { ...(invokeArgs(c, { invocationId: "inv-2" }) as Record<string, Json>), attempt: 2 }) as Promise<Json>).run({}, ctx);
+      await ctx.waitFor("probe-2", { type: "rlm-probe", condition: { kind: "rlm_probe_2" }, payload: {} });
       const fresh = (await ctx.invoke(RLM_CAPABILITIES.invoke, { ...(invokeArgs(ctx, { invocationId: "inv-2" }) as Record<string, Json>), attempt: 2 })) as unknown as RlmInvokeOutput;
-      return { sameId, fresh } as unknown as Json;
+      return { sameId, unresolved, fresh } as unknown as Json;
     }));
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "attempts" });
     const probe = await continuation(rt, run.runId, "rlm-probe");
     await inspectUntil(rt, run.runId, INV, "unknown");
     await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+    const probe2 = await continuation(rt, run.runId, "rlm-probe");
+    // The old attempt stays recorded as ambiguous until an operator reconciles it; then (and only then) a new attempt is admitted.
+    expect((await inspect(rt, run.runId, INV)).status).toBe("unknown");
+    expect(provider.spawns).toBe(1);
+    const ambiguous = await continuation(rt, (await childOf(rt, run.runId)).runId, "ambiguous-invocation");
+    await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: { result: { by: "operator" } }, idempotencyKey: "attempts-reconcile" });
+    await inspectUntil(rt, run.runId, INV, "completed");
+    await rt.service.resolveContinuation(alice, { continuationId: probe2.id, action: "resume", input: {}, idempotencyKey: "probe2-go" });
     const done = await until(rt, run.runId, "completed");
-    const out = done.output as unknown as { sameId: { refusal: string }; fresh: RlmInvokeOutput };
+    const out = done.output as unknown as { sameId: { refusal: string }; unresolved: { refusal: string }; fresh: RlmInvokeOutput };
     expect(out.sameId.refusal).toMatch(/rlm-invocation-ambiguous.*attempt 1.*new invocationId/);
+    expect(out.unresolved.refusal).toMatch(/rlm-attempt-refused.*unresolved/);
     expect(out.fresh.invocationId).toBe("inv-2");
     expect(provider.spawns).toBe(2);
-    // The old attempt stays recorded as ambiguous.
-    expect((await inspect(rt, run.runId, INV)).status).toBe("unknown");
     const state = await parentState(rt, run.runId);
     expect(readInvocationBinding(state, "inv-2")!.attempt).toBe(2);
     expect(readInvocationBinding(state, INV)!.attempt).toBe(1);
+  });
+
+  // ── review pass 1: durability, cancellation, refusal, reconciliation ───────────
+
+  type Hooks = { [K in keyof RuntimeService]?: (original: (...args: never[]) => unknown) => (...args: never[]) => unknown };
+  const hooked = (hooks: Hooks) => (service: RuntimeService): RuntimeService =>
+    new Proxy(service, {
+      get(target, prop) {
+        const value = Reflect.get(target, prop, target);
+        if (typeof value !== "function") return value;
+        const hook = hooks[prop as keyof RuntimeService];
+        return hook ? hook(value.bind(target)) : value.bind(target);
+      },
+    });
+  const outcomeOf = async (rt: Runtime, runId: string): Promise<Record<string, Json>> => {
+    let outcome: Record<string, Json> = {};
+    for await (const event of rt.service.events(alice, { runId })) if (event.eventType === "rlm.outcome") outcome = event.payload as Record<string, Json>;
+    return outcome;
+  };
+  const cancelCap = (rt: Runtime, parentRunId: string, reason = "stop"): Promise<RlmCancelOutput> =>
+    rt.service.invoke(alice, { capability: RLM_CAPABILITIES.cancel, input: { parentRunId, invocationId: INV, reason } }) as unknown as Promise<RlmCancelOutput>;
+  const spawned = async (provider: TestProvider, n = 1): Promise<void> => {
+    const deadline = Date.now() + 5_000;
+    while (provider.spawns < n && Date.now() < deadline) await Bun.sleep(5);
+    expect(provider.spawns).toBeGreaterThanOrEqual(n);
+  };
+  const reinvokingParent = (retry: boolean) =>
+    parentAgent(async (ctx) => {
+      const first = await refusingParent((c) => ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(c)) as Promise<Json>).run({}, ctx);
+      await ctx.waitFor("probe", { type: "rlm-probe", condition: { kind: "rlm_probe" }, payload: {} });
+      const again = retry ? await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx)) : null;
+      return { first, again } as unknown as Json;
+    });
+  const lostBindingWrite = (): { hooks: Hooks; armed: { value: boolean } } => {
+    const armed = { value: true };
+    return {
+      armed,
+      hooks: {
+        updateState: (original) => async (caller: never, request: never) => {
+          if (armed.value && /^rlm-mapping:inv-1:v\d+$/.test((request as { idempotencyKey: string }).idempotencyKey)) {
+            armed.value = false;
+            throw new Error("binding write lost");
+          }
+          return original(caller, request);
+        },
+      },
+    };
+  };
+
+  test("a binding write lost after the child started leaves a pending binding: inspect and cancel still resolve the dispatched child", async () => {
+    const gate = deferred();
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: gate.promise });
+    wrap = hooked(lostBindingWrite().hooks);
+    const rt = await open([{ provider, label: "pending" }], reinvokingParent(false));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "pending-cancel" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider);
+    const binding = readInvocationBinding(await parentState(rt, run.runId), INV)!;
+    expect(binding.state).toBe("pending-start");
+    expect(binding.runId).toBe("");
+    // The dispatched child is found by its correlation id: inspect works and cancel reaches the provider.
+    expect(["admitted", "running"]).toContain((await inspect(rt, run.runId, INV)).status);
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "cancelled" });
+    expect(provider.cancels).toBe(1);
+    await inspectUntil(rt, run.runId, INV, "cancelled");
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a parent that re-invokes after a lost binding write completes the pending binding without a second child", async () => {
+    const provider = testProvider("test-provider", "complete");
+    wrap = hooked(lostBindingWrite().hooks);
+    const rt = await open([{ provider, label: "pending" }], reinvokingParent(true));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "pending-retry" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    expect(readInvocationBinding(await parentState(rt, run.runId), INV)!.state).toBe("pending-start");
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+    const done = await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    expect((done.output as unknown as { again: RlmInvokeOutput }).again.runId).toBe(child.runId);
+    expect((await rt.service.listRuns(alice, { correlationId: `rlm:${run.runId}:${INV}` })).length).toBe(1);
+    const completed = readInvocationBinding(await parentState(rt, run.runId), INV)!;
+    expect(completed).toMatchObject({ state: "started", runId: child.runId });
+    expect(provider.spawns).toBe(1);
+  });
+
+  test("cancelling the child before the cancel handler reads dispatch: a child blocked before its intent never dispatches", async () => {
+    const provider = testProvider("test-provider", "complete");
+    const gate = deferred();
+    const blocked = deferred();
+    let armed = false;
+    let gatedOnce = false;
+    wrap = hooked({
+      startRun: (original) => async (caller: never, request: never) => {
+        if ((request as { agent: string }).agent === RLM_AGENT_ID) armed = true;
+        return original(caller, request);
+      },
+      getRun: (original) => async (caller: never, request: never) => {
+        if (armed && !gatedOnce) {
+          gatedOnce = true;
+          blocked.resolve();
+          await gate.promise; // the child is inside its pre-dispatch check
+        }
+        return original(caller, request);
+      },
+      cancelRun: (original) => async (caller: never, request: never) => {
+        const result = await original(caller, request);
+        gate.resolve(); // released only after the child is cancelled
+        return result;
+      },
+    });
+    const rt = await open([{ provider, label: "race" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancel-before-dispatch" });
+    await continuation(rt, run.runId, "rlm-probe");
+    await blocked.promise;
+    const out = await cancelCap(rt, run.runId);
+    expect(out).toMatchObject({ status: "cancelled", dispatched: false, providerCancel: "not-dispatched" });
+    await Bun.sleep(100);
+    expect(provider.spawns).toBe(0);
+    expect(provider.cancels).toBe(0);
+    expect((await childOf(rt, run.runId)).status).toBe("cancelled");
+  });
+
+  test("a dispatch that lands in the window before the cancel takes effect is seen as dispatched and cancelled at the provider", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise });
+    const gate = deferred();
+    let armed = false;
+    let gatedOnce = false;
+    wrap = hooked({
+      startRun: (original) => async (caller: never, request: never) => {
+        if ((request as { agent: string }).agent === RLM_AGENT_ID) armed = true;
+        return original(caller, request);
+      },
+      getRun: (original) => async (caller: never, request: never) => {
+        if (armed && !gatedOnce) {
+          gatedOnce = true;
+          await gate.promise;
+        }
+        return original(caller, request);
+      },
+      cancelRun: (original) => async (caller: never, request: never) => {
+        gate.resolve(); // let the child dispatch first ...
+        await spawned(provider); // ... and only then cancel it
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "race" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancel-after-dispatch-window" });
+    await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider, 0);
+    // The cancel handler reads the child's status first; make sure the child exists and is blocked in its check.
+    await Bun.sleep(50);
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "cancelled" });
+    expect(provider.cancels).toBe(1);
+    expect(provider.spawns).toBe(1);
+  });
+
+  test("a failed provider cancel is retried by a second rlm.cancel, even though the child is already terminal", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise, cancelFailures: 1 });
+    const rt = await open([{ provider, label: "retry" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancel-retry" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider);
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", providerCancel: "failed", error: "cancel channel lost" });
+    await inspectUntil(rt, run.runId, INV, "cancelled");
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "cancelled" });
+    expect(provider.cancels).toBe(2);
+    expect(readInvocationBinding(await parentState(rt, run.runId), INV)!.cancellation).toMatchObject({ providerCancel: "cancelled" });
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "already-terminal" });
+    expect(provider.cancels).toBe(2);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a provider cancel is retried after a terminal parent too, where the record cannot be written", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise, cancelFailures: 1 });
+    const rt = await open([{ provider, label: "retry" }], parentAgent(async (ctx) => ({ inv: await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx)) })));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancel-retry-terminal" });
+    await until(rt, run.runId, "completed");
+    await spawned(provider);
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", providerCancel: "failed" });
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", providerCancel: "cancelled" });
+    expect(provider.cancels).toBe(2);
+  });
+
+  test("a cancellation record that cannot be written for a reason other than a terminal parent surfaces", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise });
+    wrap = hooked({
+      updateState: (original) => async (caller: never, request: never) => {
+        if (/^rlm-cancel-record/.test((request as { idempotencyKey: string }).idempotencyKey)) throw new Error("boom: state store down");
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "surface" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancel-surface" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider);
+    await expect(cancelCap(rt, run.runId)).rejects.toThrow(/boom: state store down/);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  // ── a provider that declares a definite refusal still fails the child; every other throw is a lost response ──
+
+  test("a provider's definite refusal fails the child with its reason and records it in the outcome", async () => {
+    const provider = testProvider("test-provider", "fail");
+    const rt = await open([{ provider, label: "refuses" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "definite-refusal" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    expect((await until(rt, child.runId, "failed")).error).toBe("provider failed the investigation");
+    expect((await inspect(rt, run.runId, INV)).status).toBe("failed");
+    expect(((await outcomeOf(rt, child.runId)).evidence as string[])[0]).toMatch(/^provider-refused: provider failed the investigation/);
+    expect(await rt.service.listContinuations(alice, { runId: child.runId, status: "OPEN" })).toEqual([]);
+    expect(provider.spawns).toBe(1);
+  });
+
+  test("an undeclared throw is a lost response: a tied failed view closes failed and carries only the error class", async () => {
+    const provider = testProvider("test-provider", "failThrow");
+    const rt = await open([{ provider, label: "throws" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "undeclared-throw" });
+    await until(rt, run.runId, "completed");
+    await inspectUntil(rt, run.runId, INV, "failed");
+    const evidence = (await outcomeOf(rt, (await childOf(rt, run.runId)).runId)).evidence as string[];
+    expect(evidence).toContain("provider-invoke-threw:Error");
+    expect(evidence.join(" ")).not.toContain("investigation");
+    expect(provider.spawns).toBe(1);
+  });
+
+  // ── revocation: patches, never a whole-object rewrite ───────────────────────
+
+  test("a revocation that lands between a binding write's read and its commit is not erased", async () => {
+    const provider = testProvider("test-provider", "complete");
+    let raced = false;
+    wrap = hooked({
+      updateState: (original) => async (caller: never, request: never) => {
+        const req = request as { runId: string; idempotencyKey: string };
+        if (!raced && /^rlm-mapping:inv-1:pending/.test(req.idempotencyKey)) {
+          raced = true;
+          await revokeRlmGrant(rtRef!.service, alice, req.runId, "someone-else", "withdrawn mid-write");
+        }
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "race" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "revoke-race" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    expect(raced).toBe(true);
+    const state = await parentState(rt, run.runId);
+    expect(readInvocationBinding(state, INV)).toBeDefined();
+    expect((state as { rlm: { revoked: Record<string, string> } }).rlm.revoked["someone-else"]).toBe("withdrawn mid-write");
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a revocation written after a binding exists leaves the binding, and a wildcard revocation refuses every new dispatch", async () => {
+    const provider = testProvider("test-provider", "complete");
+    const rt = await open([{ provider, label: "wildcard" }], parentAgent(async (ctx) => {
+      const first = await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx));
+      await ctx.waitFor("probe", { type: "rlm-probe", condition: { kind: "rlm_probe" }, payload: {} });
+      const second = await refusingParent((c) => ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(c, { invocationId: "inv-new" })) as Promise<Json>).run({}, ctx);
+      return { first, second } as unknown as Json;
+    }));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "wildcard" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    await inspectUntil(rt, run.runId, INV, "completed");
+    await revokeRlmGrant(rt.service, alice, run.runId, "*", "grant withdrawn");
+    const state = await parentState(rt, run.runId);
+    expect(readInvocationBinding(state, INV)).toBeDefined();
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+    const done = await until(rt, run.runId, "completed");
+    expect((done.output as unknown as { second: { refusal: string } }).second.refusal).toMatch(/rlm-authority-exceeds-parent.*grant withdrawn/);
+    expect(provider.spawns).toBe(1);
+  });
+
+  // ── fail closed, and fenced immediately before invoke ────────────────────────
+
+  const childInputFor = (parentRunId: string): Json =>
+    ({ invocationId: INV, providerId: "test-provider", runId: parentRunId, depth: 1, maxDepth: 2, attempt: 1, task: { purpose: "p", acceptance: [], contextRefs: [], contextDigest: DIGEST }, authority: { tools: ["read"], mode: "read-only" }, budget: { currency: "time", limit: "unknown" } }) as unknown as Json;
+
+  test("an agent built without getService fails closed: it cannot verify the parent and never dispatches", async () => {
+    agentSeesService = false;
+    const provider = testProvider("test-provider", "complete");
+    const rt = await open([{ provider, label: "blind" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "blind" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    const child = await childOf(rt, run.runId);
+    expect((await until(rt, child.runId, "failed")).error).toMatch(/cannot be verified/);
+    expect(provider.spawns).toBe(0);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a revocation that lands after the intent but before invoke is caught by the check inside the dispatch step", async () => {
+    const provider = testProvider("test-provider", "complete");
+    let armed = false;
+    let calls = 0;
+    wrap = hooked({
+      startRun: (original) => async (caller: never, request: never) => {
+        if ((request as { agent: string }).agent === RLM_AGENT_ID) armed = true;
+        return original(caller, request);
+      },
+      getRun: (original) => async (caller: never, request: never) => {
+        if (armed && ++calls === 2) await revokeRlmGrant(rtRef!.service, alice, (request as { runId: string }).runId, INV, "late revocation");
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "late" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "late-revoke" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    const child = await childOf(rt, run.runId);
+    expect((await until(rt, child.runId, "failed")).error).toMatch(/late revocation/);
+    expect(provider.spawns).toBe(0);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a child started under a cancelled parent never dispatches", async () => {
+    const provider = testProvider("test-provider", "complete");
+    const rt = await open([{ provider, label: "cancelled-parent" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancelled-parent" });
+    await continuation(rt, run.runId, "rlm-probe");
+    await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "cancel-parent" });
+    const orphan = await rt.service.startRun(alice, { agent: RLM_AGENT_ID, input: childInputFor(run.runId), idempotencyKey: "orphan-child" });
+    expect((await until(rt, orphan.runId, "failed")).error).toMatch(/was cancelled/);
+    expect(provider.spawns).toBe(1); // only the original invocation, made before the parent was cancelled
+  });
+
+  // Known debt (DEBT-034): nothing cascades a parent's cancellation to a dispatched child's provider.
+  test.failing("cancelling the parent after dispatch reaches provider.cancel for its child (DEBT-034: not implemented)", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise });
+    const rt = await open([{ provider, label: "cascade" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cascade" });
+    await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider);
+    await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "cascade-cancel" });
+    await Bun.sleep(200);
+    expect(provider.cancels).toBe(1);
+  });
+
+  // ── the executor's conflict-halt retry path ──────────────────────────────────
+
+  test("a lost write race on the result-step append re-runs the pass without a second provider invoke", async () => {
+    const inner = openSqliteStore({ path: ":memory:" });
+    let losses = 0;
+    injectedStore = new Proxy(inner, {
+      get(target, prop) {
+        const value = Reflect.get(target, prop, target);
+        if (prop !== "commit") return typeof value === "function" ? value.bind(target) : value;
+        return async (...args: unknown[]) => {
+          const appends = ((args[0] as { appends?: { events: { metadata?: { stepId?: string } }[] }[] }).appends ?? []).flatMap((a) => a.events);
+          if (losses === 0 && appends.some((event) => event.metadata?.stepId === "step:rlm.dispatch.result")) {
+            losses += 1;
+            throw new ConcurrencyError("run", 0, 1); // the write after invoke returned is lost to a race
+          }
+          return (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+        };
+      },
+    });
+    const provider = testProvider("test-provider", "complete");
+    const rt = await open([{ provider, label: "race" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "conflict-retry" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    // The retried pass finds the intent and no result: it inspects (tied to the invocation, so it completes) and never invokes again.
+    await until(rt, child.runId, "completed");
+    expect(losses).toBe(1);
+    expect(provider.spawns).toBe(1);
+    expect((await inspect(rt, run.runId, INV)).status).toBe("completed");
+  });
+
+  // ── reconciliation ──────────────────────────────────────────────────────────
+
+  test("a reconciled invocation says so in the child's output and ignores a foreign view's spend and evidence", async () => {
+    const provider = testProvider("test-provider", "lostUntied");
+    const rt = await open([{ provider, label: "foreign" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "foreign" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    const ambiguous = await continuation(rt, child.runId, "ambiguous-invocation");
+    await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: { result: { by: "operator" } }, idempotencyKey: "foreign-go" });
+    const done = await until(rt, child.runId, "completed");
+    expect(done.output).toMatchObject({ status: "completed", reconciled: true });
+    const outcome = await outcomeOf(rt, child.runId);
+    expect(outcome.evidence).toEqual(["foreign view ignored", "provider-invoke-threw:Error"]);
+    expect(outcome.payment).toMatchObject({ spent: "unknown" });
+    expect(outcome.resultRef).toBeNull();
+  });
+
+  test("reconciliation asks the provider again and records what it says now", async () => {
+    const provider = testProvider("test-provider", "lostUnknown", { laterStatus: "completed" });
+    const rt = await open([{ provider, label: "fresh" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "fresh-view" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    const ambiguous = await continuation(rt, child.runId, "ambiguous-invocation");
+    expect(provider.inspects).toBe(1);
+    await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: { result: { by: "operator" } }, idempotencyKey: "fresh-go" });
+    await until(rt, child.runId, "completed");
+    expect(provider.inspects).toBe(2);
+    const outcome = await outcomeOf(rt, child.runId);
+    expect(outcome.evidence as string[]).toContain("provider-view:completed");
+    expect(outcome.payment).toMatchObject({ spent: 3 });
+    expect(provider.spawns).toBe(1);
+  });
+
+  test("a resume that states no outcome is refused: the invocation closes failed, reconciled, with the refusal recorded", async () => {
+    const provider = testProvider("test-provider", "lostUnknown");
+    const rt = await open([{ provider, label: "silent" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "silent" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    const ambiguous = await continuation(rt, child.runId, "ambiguous-invocation");
+    await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: {}, idempotencyKey: "silent-go" });
+    expect((await until(rt, child.runId, "failed")).error).toMatch(/explicit result or failure/);
+    const view = await inspect(rt, run.runId, INV);
+    expect(view).toMatchObject({ status: "failed", reconciled: true });
+    expect(view.evidence).toContain("reconciliation stated no outcome");
+    expect(provider.spawns).toBe(1);
+  });
+
+  test("an attempt that is not a positive integer is refused with no child and no dispatch", async () => {
+    const provider = testProvider("test-provider", "complete");
+    const rt = await open([{ provider, label: "attempt" }], parentAgent(async (ctx) => {
+      const refusals: string[] = [];
+      for (const [i, attempt] of [0, -1, 1.5, "2", null].entries()) {
+        const out = (await refusingParent((c) => ctx.invoke(RLM_CAPABILITIES.invoke, { ...(invokeArgs(c, { invocationId: `inv-bad-${i}` }) as Record<string, Json>), attempt: attempt as Json }) as Promise<Json>).run({}, ctx)) as { refusal: string };
+        refusals.push(out.refusal);
+      }
+      return { refusals } as unknown as Json;
+    }));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "bad-attempts" });
+    const done = await until(rt, run.runId, "completed");
+    for (const refusal of (done.output as unknown as { refusals: string[] }).refusals) expect(refusal).toMatch(/rlm-attempt-refused.*positive integer/);
+    expect(provider.spawns).toBe(0);
+    expect((await rt.service.listRuns(alice, { correlationId: `rlm:${run.runId}:inv-bad-0` })).length).toBe(0);
   });
 });
 
