@@ -29,22 +29,28 @@ const allow = { policy: { authorize: () => ({ allow: true, policyId: "p", reason
 test("an interrupt committed through one runtime stops the executor running in the other", async () => {
   const schema = `cognate_asg_rt_${Date.now().toString(36)}`;
   let executor: string | undefined;
-  let passes = 0;
-  let exits = 0;
+  let emitted = 0;
+  const deferred = () => { let resolve!: () => void; const promise = new Promise<void>((r) => (resolve = r)); return { promise, resolve }; };
+  const atHold = deferred(); // the executor has committed three progress events and waits
+  const hold = deferred(); // released after the other runtime committed the interrupt
+  const exited = deferred();
   const agentFor = (tag: string): AgentDefinition => ({
     id: "agent.streaming",
     version: "1",
     run: async (_input, ctx) => {
       executor ??= tag;
-      passes++;
       try {
-        for (let i = 0; i < 600; i++) {
+        for (let i = 0; i < 6; i++) {
+          if (i === 3) {
+            atHold.resolve();
+            await hold.promise;
+          }
           await ctx.emit("progress", { i });
-          await Bun.sleep(2);
+          emitted++;
         }
         return { done: true };
       } finally {
-        exits++;
+        exited.resolve();
       }
     },
   });
@@ -56,28 +62,16 @@ test("an interrupt committed through one runtime stops the executor running in t
       agent: "agent.streaming", input: {}, idempotencyKey: "mr-1", assignment,
       caseContext: { worldRef: `world:fde-sop@sha256:${"a".repeat(64)}`, semanticRef: "fde-sop.work::Task", caseId: assignment.case_id, planItemId: assignment.step_id, role: "executor", kind: "evaluated" },
     });
-    const count = async () => {
-      let n = 0;
-      for await (const e of a.service.events(alice, { runId: run.runId })) if (e.eventType === "progress") n++;
-      return n;
-    };
-    const until = async (cond: () => Promise<boolean> | boolean) => {
-      const end = Date.now() + 20_000;
-      while (Date.now() < end) {
-        if (await cond()) return;
-        await Bun.sleep(10);
-      }
-      throw new Error("condition not reached");
-    };
-    await until(async () => (await count()) > 3);
+    await atHold.promise;
     const interrupter = executor === "A" ? b : a; // the runtime that is NOT executing
     const view = await interrupter.assignments.interruptAssignment(alice, { runId: run.runId, reason: "other process", idempotencyKey: "mr-i1" });
     expect(view.status).toBe("interrupted");
-    await until(() => exits === passes); // the executing worker observed it and stopped
-    const stopped = await count();
-    expect(stopped).toBeLessThan(600);
-    await Bun.sleep(100);
-    expect(await count()).toBe(stopped);
+    hold.resolve(); // the executing worker's next boundary must observe the committed interrupt
+    await exited.promise;
+    expect(emitted).toBe(3); // the fourth emit was refused by the durable guard, never committed
+    let progress = 0;
+    for await (const e of a.service.events(alice, { runId: run.runId })) if (e.eventType === "progress") progress++;
+    expect(progress).toBe(3);
     expect((await a.service.getRun(alice, { runId: run.runId })).status).toBe("running");
   } finally {
     await a.close().catch(() => {});

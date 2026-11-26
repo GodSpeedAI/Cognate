@@ -70,6 +70,70 @@ const agents: AgentDefinition[] = [
     },
   },
   {
+    id: "agent.parallel",
+    version: "1",
+    run: async (_input, ctx) => {
+      passes++;
+      try {
+        await Promise.all([ctx.step("s", () => 1), ctx.emit("progress", { parallel: true })]);
+        return { done: true };
+      } finally {
+        exits++;
+      }
+    },
+  },
+  {
+    id: "agent.step-once",
+    version: "1",
+    run: async (_input, ctx) => {
+      passes++;
+      try {
+        await ctx.step("work", () => (effects.push("step"), 1));
+        return { done: true };
+      } finally {
+        exits++;
+      }
+    },
+  },
+  {
+    id: "agent.invoker",
+    version: "1",
+    run: async (_input, ctx) => {
+      passes++;
+      try {
+        return { out: await ctx.invoke("tool.echo", {}) };
+      } finally {
+        exits++;
+      }
+    },
+  },
+  {
+    id: "agent.artifacter",
+    version: "1",
+    run: async (_input, ctx) => {
+      passes++;
+      try {
+        await ctx.artifact({ name: "a.md", mediaType: "text/markdown", bytes: new TextEncoder().encode("x"), readers: ["alice"] });
+        return { done: true };
+      } finally {
+        exits++;
+      }
+    },
+  },
+  {
+    id: "agent.waiter",
+    version: "1",
+    run: async (_input, ctx) => {
+      passes++;
+      try {
+        await ctx.waitFor("w", { type: "wait", condition: { kind: "human_approval" }, payload: {} });
+        return { done: true };
+      } finally {
+        exits++;
+      }
+    },
+  },
+  {
     id: "agent.forger",
     version: "1",
     run: async (_input, ctx) => {
@@ -85,6 +149,16 @@ const agents: AgentDefinition[] = [
   },
 ];
 
+/** A capability whose calls are counted: a dispatched external effect. */
+const calls: string[] = [];
+const echoTool = {
+  id: "echo-provider",
+  provides: [{ id: "tool.echo", version: "1.0.0" }],
+  activate: (fiber: { provide: (contract: { id: string; version: string }, handler: (input: unknown) => Promise<unknown>) => void }) => {
+    fiber.provide({ id: "tool.echo", version: "1.0.0" }, async () => (calls.push("echo"), { ok: true }));
+  },
+};
+
 type Commit = { readonly types: readonly string[]; readonly streams: readonly string[] };
 let runtime: Runtime | undefined;
 let dir: string | undefined;
@@ -99,6 +173,7 @@ afterEach(async () => {
   progressWaiters = [];
   emitErrors.length = 0;
   effects.length = 0;
+  calls.length = 0;
 });
 
 /** Resolves when a progress event has been committed after this call (a barrier on the executor, not a sleep). */
@@ -118,6 +193,7 @@ type BootOptions = {
   /** Observe a stream read (before it is served). */
   onRead?: (streamId: string, rest: unknown[]) => void;
   file?: string;
+  components?: never[];
   outboxFor?: (e: { eventType: string; runId: string | null; streamSequence: number }) => [];
 };
 /** A runtime on an in-memory (or file) store whose commits pass through `before`, which may park them. */
@@ -142,7 +218,7 @@ async function boot(opts: BootOptions = {}) {
       };
     },
   });
-  runtime = await createRuntime({ store: { store }, agents, policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) }, ...(opts.outboxFor ? { outboxFor: opts.outboxFor as never } : {}) });
+  runtime = await createRuntime({ store: { store }, agents, policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) }, ...(opts.outboxFor ? { outboxFor: opts.outboxFor as never } : {}), components: [echoTool as never] });
   return { rt: runtime, store: inner };
 }
 const startRun = (rt: Runtime, agent: string, key: string, input: { readonly gate: string } | Record<string, never> = {}) => rt.service.startRun(alice, { agent, input, idempotencyKey: key, caseContext, assignment });
@@ -624,12 +700,126 @@ describe("legacy history through the new terminal commit (M-5)", () => {
   });
 });
 
+describe("legacy crash states: the assignment ended on the run stream, the run did not", () => {
+  const legacyTerminal = (store: ReturnType<typeof openSqliteStore>, run: { runId: string }, stream: StoredEvent[], event: "completed" | "failed", reason?: string) => {
+    const at = new Date().toISOString();
+    return store.commit({ appends: [{ streamId: `run-${run.runId}`, expectedVersion: stream.length, events: [{ eventId: `legacy-${event}`, eventType: `assignment.${event}`, schemaVersion: 1, occurredAt: at, tenant: "t", correlationId: stream[0]!.correlationId, causationId: stream.at(-1)!.eventId, runId: run.runId, scopeId: stream[0]!.scopeId, payload: { assignment_id: assignment.assignment_id, episode_ref: assignment.episode_ref, event, at, spend: zeroSpend(0), ...(reason ? { reason } : {}) } as never, metadata: { assignmentEvent: event } }] }] });
+  };
+
+  for (const kind of ["completed", "failed"] as const) {
+    test(`a legacy assignment.${kind} without a run terminal is readable, refuses controls, and the next pass finishes the run`, async () => {
+      const { rt, store } = await boot();
+      const run = await startRun(rt, "agent.gated", `lg-${kind}`, { gate: `lg-${kind}` });
+      await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+      await legacyTerminal(store, run, await store.readStream(`run-${run.runId}`), kind, kind === "failed" ? "legacy boom" : undefined);
+      const view = await rt.assignments.getAssignment(alice, { runId: run.runId }); // readable, not "unavailable"
+      expect(view.status).toBe(kind);
+      expect(await refusal(rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" }))).toBe("ASSIGNMENT_TRANSITION_INVALID");
+      gate(`lg-${kind}`).resolve();
+      await until(async () => (await runStatus(rt, run.runId)) === kind);
+      if (kind === "failed") expect((await rt.service.getRun(alice, { runId: run.runId })).error).toBe("legacy boom");
+      expect((await rt.assignments.getAssignment(alice, { runId: run.runId })).status).toBe(kind);
+    }, 20_000);
+
+    test(`a legacy assignment.${kind} without a run terminal is finished by a cancel as ${kind}, not cancelled`, async () => {
+      const { rt, store } = await boot();
+      const run = await startRun(rt, "agent.gated", `lc-${kind}`, { gate: `lc-${kind}` });
+      await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+      await legacyTerminal(store, run, await store.readStream(`run-${run.runId}`), kind, "legacy boom");
+      const result = await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "c1" });
+      expect(result.status).toBe(kind);
+    }, 20_000);
+  }
+
+  test("a legacy assignment.completed without a run terminal is finished on restart", async () => {
+    dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), "cognate-asg-lg-"));
+    const file = join(dir, "app.sqlite");
+    let dead = false;
+    const first = await boot({ file, failCommit: () => (dead ? new Error("crash") : undefined) });
+    const run = await startRun(first.rt, "agent.gated", "lgr", { gate: "lgr" });
+    await until(() => hasEvent(first.rt, run.runId, "run.step.completed"));
+    await legacyTerminal(first.store, run, await first.store.readStream(`run-${run.runId}`), "completed");
+    dead = true;
+    gate("lgr").resolve();
+    await first.rt.close();
+    first.store.close();
+    runtime = undefined;
+    const second = await boot({ file });
+    await until(async () => (await runStatus(second.rt, run.runId)) === "completed");
+  }, 30_000);
+});
+
+describe("the fence at every effect boundary (pass 3)", () => {
+  /** A guard-only commit: an append with no events (the fence), as opposed to a progress or lifecycle commit. */
+  const guardOnly = (c: Commit) => c.types.length === 0 && c.streams.some((x) => x.startsWith("run-assignment-"));
+
+  test("a parallel step and emit are each fenced at the version they validated, not at a shared one", async () => {
+    const parkFence = parkFirst(guardOnly);
+    const parkProgress = parkFirst((c) => c.types.includes("progress"));
+    const { rt } = await boot({ before: async (c) => { await parkFence.before(c); await parkProgress.before(c); } });
+    const run = await startRun(rt, "agent.parallel", "pl");
+    await Promise.all([parkFence.reached, parkProgress.reached]); // both validated N; neither has committed
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "between", idempotencyKey: "i1" });
+    parkFence.release(); // the step's fence conflicts, re-guards against the interrupt and halts the pass
+    await until(() => exits === passes);
+    parkProgress.release(); // the emit validated the old version: it must conflict too, not land at the new one
+    await until(async () => (await rt.assignments.getAssignment(alice, { runId: run.runId })).status === "interrupted");
+    const events = await eventsOf(rt, run.runId);
+    const interrupted = events.find((e) => e.eventType === "assignment.interrupted")!;
+    expect(events.some((e) => e.eventType === "progress" && e.position > interrupted.position)).toBe(false);
+  });
+
+  test("a step callback is fenced: an interrupt between its guard and its commit stops it before the callback", async () => {
+    const park = parkFirst(guardOnly);
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.step-once", "fs");
+    await park.reached;
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" });
+    park.release();
+    await until(() => exits === passes);
+    expect(effects).toEqual([]);
+  });
+
+  test("an external dispatch is fenced: an interrupt between its guard and its commit stops it before dispatch", async () => {
+    const park = parkFirst(guardOnly);
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.invoker", "fi");
+    await park.reached;
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" });
+    park.release();
+    await until(() => exits === passes);
+    expect(calls).toEqual([]);
+  });
+
+  test("an artifact is fenced: none is written after a stop", async () => {
+    const park = parkFirst(guardOnly);
+    const { rt, store } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.artifacter", "fa");
+    await park.reached;
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" });
+    park.release();
+    await until(() => exits === passes);
+    expect(await store.getRecord("artifacts", `${run.runId}.artifact.1`)).toBeUndefined();
+  });
+
+  test("a continuation is fenced: none is opened after a budget stop", async () => {
+    const park = parkFirst(guardOnly);
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.waiter", "fw");
+    await park.reached;
+    await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" });
+    park.release();
+    await until(() => exits === passes);
+    expect(await rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).toEqual([]);
+  });
+});
+
 describe("known gaps", () => {
   // DEBT-034: an interrupt that wins over completion (or lands mid-step) discards the finished result, and resume re-runs
   // the agent body, so a side effect inside a step callback that was running (and any effect outside a step) repeats.
-  // This asserts the exact double effect, so it turns red the day the gap is closed and must then be rewritten to
-  // expect a single effect.
-  test("H5 (DEBT-034): resuming after an interrupt mid-step runs the step's effect a second time", async () => {
+  // `test.failing` asserts the single-effect contract: it passes while the gap is open and turns red ("expected to fail")
+  // the day DEBT-034 is fixed, when `.failing` is simply removed. The flow reaches the assertion today (no earlier throw).
+  test.failing("H5 (DEBT-034): resuming after an interrupt mid-step runs the step's effect once", async () => {
     const { rt } = await boot();
     const run = await startRun(rt, "agent.stepper", "h5");
     await started.promise;
@@ -638,6 +828,8 @@ describe("known gaps", () => {
     await until(() => effects.length === 1);
     await rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" });
     await until(async () => (await runStatus(rt, run.runId)) === "completed");
-    expect(effects).toEqual(["work", "work"]);
+    // The flow above is unconditional and completes today; the assertion below is the single-effect contract that
+    // DEBT-034 will satisfy (the run re-executes the step now, so this fails with effects == ["work","work"]).
+    expect(effects).toEqual(["work"]);
   });
 });
