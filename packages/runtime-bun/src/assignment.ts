@@ -103,7 +103,20 @@ export function acceptLifecycleEvent(view: AssignmentView | undefined, assignmen
 /** Metadata every assignment event carries besides the frozen case context. */
 export const assignmentMetadata = (name: string, extra: { readonly [key: string]: Json } = {}): { readonly [key: string]: Json } => ({ assignmentEvent: name, ...extra });
 
-export function createAssignmentService(core: Core): AssignmentService {
+/** A lost stream-version race on the run stream is retried this many times in all, pausing between attempts. */
+export const APPEND_MAX_ATTEMPTS = 8;
+/** Pause before retry `attempt` (0-based): 5 ms doubling to a 40 ms cap, jittered to 50-100%; worst case about 195 ms in all. */
+export const appendBackoffMs = (attempt: number, random: () => number = Math.random): number => Math.min(40, 5 * 2 ** attempt) * (0.5 + random() / 2);
+
+/** Pause and jitter source for the append retry; tests inject doubles, production uses `Bun.sleep` and `Math.random`. */
+export interface AppendPacing {
+  readonly sleep?: (ms: number) => Promise<unknown>;
+  readonly random?: () => number;
+}
+
+export function createAssignmentService(core: Core, pacing: AppendPacing = {}): AssignmentService {
+  const sleep = pacing.sleep ?? ((ms: number) => Bun.sleep(ms));
+  const random = pacing.random ?? Math.random;
   const { store } = core;
 
   const authorize = async (caller: Caller, action: "assignment.interrupt" | "assignment.resume" | "assignment.spend", resource: string): Promise<void> => {
@@ -124,7 +137,7 @@ export function createAssignmentService(core: Core): AssignmentService {
   async function append(caller: Caller, action: string, idempotencyKey: string, requestFingerprint: Json, runId: string, build: (events: readonly StoredEvent[], view: AssignmentView, ids: readonly string[]) => readonly NewEvent[]): Promise<AssignmentView> {
     const scope = `${caller.tenant}:${caller.actor.id}:${action}`;
     const base = fingerprint({ scope, key: idempotencyKey, request: requestFingerprint });
-    for (let attempt = 0; attempt < 5; attempt++) {
+    for (let attempt = 0; attempt < APPEND_MAX_ATTEMPTS; attempt++) {
       const { events, view } = await load(caller, runId);
       // A redelivered request finds its own first event (the id derives from the scope, key and request) and is a no-op.
       if (events.some((e) => e.eventId === `asg_${base}_0`)) return view;
@@ -139,7 +152,10 @@ export function createAssignmentService(core: Core): AssignmentService {
         });
         return (await load(caller, runId)).view;
       } catch (error) {
-        if (error instanceof ConcurrencyError) continue;
+        if (error instanceof ConcurrencyError) {
+          if (attempt < APPEND_MAX_ATTEMPTS - 1) await sleep(appendBackoffMs(attempt, random));
+          continue;
+        }
         if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${idempotencyKey} was used for a different request`);
         throw error;
       }
