@@ -400,6 +400,19 @@ describe("RLM component (I1)", () => {
     await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: { result: { reconciled: true } }, idempotencyKey: `ambiguous:${ambiguous.id}` });
     await inspectUntil(rt, run.runId, INV, "completed");
   });
+
+  test("resuming a reconciled ambiguous invocation never invokes the provider a second time", async () => {
+    const provider = testProvider("test-provider", "unknown");
+    const rt = await open([{ provider, label: "loser" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "resume-once" });
+    await until(rt, run.runId, "completed");
+    await inspectUntil(rt, run.runId, INV, "unknown");
+    const child = (await rt.service.listRuns(alice, { correlationId: `rlm:${run.runId}:${INV}` }))[0]!;
+    const ambiguous = await continuation(rt, child.runId, "ambiguous-invocation");
+    await rt.service.resolveContinuation(alice, { continuationId: ambiguous.id, action: "resume", input: { result: { reconciled: true } }, idempotencyKey: "reconcile-once" });
+    await until(rt, child.runId, "completed");
+    expect(provider.spawns).toBe(1);
+  });
 });
 
 function invokeAtRun(runId: string): Json {
