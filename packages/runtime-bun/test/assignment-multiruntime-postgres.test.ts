@@ -87,3 +87,62 @@ test("an interrupt committed through one runtime stops the executor running in t
     await cleaner.close();
   }
 }, 60_000);
+
+test("PostgreSQL: an interrupt that lands before the executor's terminal commit wins, and a cancel after it is recorded", async () => {
+  const schema = `cognate_asg_lc_${Date.now().toString(36)}`;
+  const opened = await openPostgresStore({ url, schema, pollMs: 0 });
+  let release!: () => void;
+  const released = new Promise<void>((r) => (release = r));
+  let reachedResolve!: () => void;
+  const reached = new Promise<void>((r) => (reachedResolve = r));
+  let parked = false;
+  const store = new Proxy(opened.store, {
+    get(target, prop) {
+      const value = Reflect.get(target, prop, target);
+      if (prop !== "commit") return typeof value === "function" ? value.bind(target) : value;
+      return async (...args: unknown[]) => {
+        const appends = (args[0] as { appends?: { events: { eventType: string }[] }[] }).appends ?? [];
+        if (!parked && appends.some((a) => a.events.some((e) => e.eventType === "run.completed"))) {
+          parked = true;
+          reachedResolve();
+          await released; // the executor decided to complete; hold it before it commits
+        }
+        return (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+      };
+    },
+  });
+  let open!: () => void;
+  const opening = new Promise<void>((r) => (open = r));
+  const agent: AgentDefinition = { id: "agent.once", version: "1", run: async (_i, ctx) => { await ctx.step("a", () => 1); await opening; return { done: true }; } };
+  const rt = await createRuntime({ store: { store }, agents: [agent], ...allow });
+  try {
+    const run = await rt.service.startRun(alice, {
+      agent: "agent.once", input: {}, idempotencyKey: "pg-lc", assignment,
+      caseContext: { worldRef: `world:fde-sop@sha256:${"a".repeat(64)}`, semanticRef: "fde-sop.work::Task", caseId: assignment.case_id, planItemId: assignment.step_id, role: "executor", kind: "evaluated" },
+    });
+    const until = async (cond: () => Promise<boolean>) => {
+      const end = Date.now() + 20_000;
+      while (Date.now() < end) { if (await cond()) return; await Bun.sleep(10); }
+      throw new Error("condition not reached");
+    };
+    open();
+    await reached;
+    expect((await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "wins", idempotencyKey: "pg-i1" })).status).toBe("interrupted");
+    release();
+    // the executor re-decides against the interrupt: it never completes the run
+    await until(async () => (await rt.assignments.getAssignment(alice, { runId: run.runId })).status === "interrupted");
+    const cancelled = await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "pg-c1" });
+    expect(cancelled.status).toBe("cancelled");
+    const view = await rt.assignments.getAssignment(alice, { runId: run.runId });
+    expect(view.events.map((e) => e.event)).toEqual(["issued", "started", "interrupted", "cancelled"]);
+    const types: string[] = [];
+    for await (const e of rt.service.events(alice, { runId: run.runId })) types.push(e.eventType);
+    expect(types).not.toContain("run.completed");
+  } finally {
+    await rt.close().catch(() => {});
+    const cleaner = await openPostgresStore({ url, schema, pollMs: 0 });
+    await cleaner.dropSchema();
+    await cleaner.close();
+    await opened.close().catch(() => {});
+  }
+}, 60_000);

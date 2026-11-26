@@ -37,7 +37,10 @@ afterEach(async () => {
   passes = 0;
 });
 
-const CONTROLS = new Set(["assignment.interrupted", "assignment.resumed", "assignment.spend"]);
+const CONTROLS = new Set(["assignment.interrupted", "assignment.spend"]);
+// A control commit waits for one more executor progress commit (a barrier, not a sleep), so it always races a live executor.
+let waiters: (() => void)[] = [];
+const nextProgress = () => new Promise<void>((resolve) => waiters.push(resolve));
 async function streaming() {
   const inner = openSqliteStore({ path: ":memory:" });
   const store = new Proxy(inner, {
@@ -46,8 +49,14 @@ async function streaming() {
       if (prop !== "commit") return typeof value === "function" ? value.bind(target) : value;
       return async (...args: unknown[]) => {
         const appends = (args[0] as { appends: { events: { eventType: string }[] }[] }).appends;
-        if (appends.some((a) => a.events.some((e) => CONTROLS.has(e.eventType)))) await Bun.sleep(8);
-        return (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+        if (appends.some((a) => a.events.some((e) => CONTROLS.has(e.eventType)))) await nextProgress();
+        const result = await (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+        if (appends.some((a) => a.events.some((e) => e.eventType === "progress"))) {
+          const ready = waiters;
+          waiters = [];
+          for (const w of ready) w();
+        }
+        return result;
       };
     },
   });

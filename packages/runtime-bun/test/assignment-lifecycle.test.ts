@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fingerprint, type StoredEvent } from "@godspeedai/cognate-events";
+import { ConcurrencyError, fingerprint, type StoredEvent } from "@godspeedai/cognate-events";
 import { type AgentDefinition, type Assignment, AssignmentRefusedError, type AssignmentView, type Caller, formatAssignmentId, ServiceError, type SpendEntry, spendOf as zeroSpend } from "@godspeedai/cognate-runtime-api";
 import { openSqliteStore } from "@godspeedai/cognate-store-sqlite";
 import { createRuntime, type Runtime } from "../src/index.ts";
@@ -96,21 +96,49 @@ afterEach(async () => {
   if (dir) rmSync(dir, { recursive: true, force: true });
   dir = undefined;
   passes = exits = 0;
+  progressWaiters = [];
   emitErrors.length = 0;
   effects.length = 0;
 });
 
+/** Resolves when a progress event has been committed after this call (a barrier on the executor, not a sleep). */
+let progressCommits = 0;
+let progressWaiters: (() => void)[] = [];
+const nextProgress = () => new Promise<void>((resolve) => progressWaiters.push(resolve));
+const progressNotify = () => {
+  progressCommits++;
+  const waiting = progressWaiters;
+  progressWaiters = [];
+  for (const w of waiting) w();
+};
+type BootOptions = {
+  before?: (commit: Commit) => Promise<void> | undefined;
+  /** Fail a commit (before it is applied) with this error. */
+  failCommit?: (commit: Commit) => Error | undefined;
+  /** Observe a stream read (before it is served). */
+  onRead?: (streamId: string, rest: unknown[]) => void;
+  file?: string;
+  outboxFor?: (e: { eventType: string; runId: string | null; streamSequence: number }) => [];
+};
 /** A runtime on an in-memory (or file) store whose commits pass through `before`, which may park them. */
-async function boot(opts: { before?: (commit: Commit) => Promise<void> | undefined; file?: string; outboxFor?: (e: { eventType: string; runId: string | null; streamSequence: number }) => [] } = {}) {
+async function boot(opts: BootOptions = {}) {
   const inner = openSqliteStore({ path: opts.file ?? ":memory:" });
   const store = new Proxy(inner, {
     get(target, prop) {
       const value = Reflect.get(target, prop, target);
+      if (prop === "readStream") {
+        return (streamId: string, ...rest: unknown[]) => (opts.onRead?.(streamId, rest), (value as (...a: unknown[]) => Promise<unknown>).apply(target, [streamId, ...rest]));
+      }
       if (prop !== "commit") return typeof value === "function" ? value.bind(target) : value;
       return async (...args: unknown[]) => {
         const appends = (args[0] as { appends: { streamId: string; events: { eventType: string }[] }[] }).appends;
-        await opts.before?.({ types: appends.flatMap((a) => a.events.map((e) => e.eventType)), streams: appends.map((a) => a.streamId) });
-        return (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+        const commit: Commit = { types: appends.flatMap((a) => a.events.map((e) => e.eventType)), streams: appends.map((a) => a.streamId) };
+        await opts.before?.(commit);
+        const failure = opts.failCommit?.(commit);
+        if (failure) throw failure;
+        const result = await (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+        if (commit.types.includes("progress")) progressNotify();
+        return result;
       };
     },
   });
@@ -180,7 +208,6 @@ describe("lifecycle revision guards every lifecycle write", () => {
     await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "wins", idempotencyKey: "i1" });
     park.release();
     await until(async () => (await rt.assignments.getAssignment(alice, { runId: run.runId })).status === "interrupted");
-    await Bun.sleep(30);
     expect(await hasEvent(rt, run.runId, "run.completed")).toBe(false);
     const types = (await eventsOf(rt, run.runId)).map((e) => e.eventType);
     expect(types).not.toContain("assignment.completed");
@@ -220,7 +247,7 @@ describe("lifecycle revision guards every lifecycle write", () => {
   });
 
   test("H3: a breach is recorded on the first call under a streaming executor and stops the run durably", async () => {
-    const { rt } = await boot({ before: async (c) => { if (c.types.includes("assignment.spend")) await Bun.sleep(8); } });
+    const { rt } = await boot({ before: async (c) => { if (c.types.includes("assignment.spend")) await nextProgress(); } });
     const run = await startRun(rt, "agent.streaming", "h3");
     await until(() => hasEvent(rt, run.runId, "progress"));
     const view = await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" });
@@ -241,7 +268,8 @@ describe("lifecycle revision guards every lifecycle write", () => {
 });
 
 describe("spend and interrupt under a streaming bound run", () => {
-  const hold = async (c: Commit) => { if (c.types.includes("assignment.spend") || c.types.includes("assignment.interrupted") || c.types.includes("assignment.resumed")) await Bun.sleep(8); };
+  // Each control commit waits for the executor to commit one more progress event first, so it always races a live executor.
+  const hold = async (c: Commit) => { if (c.types.includes("assignment.spend") || c.types.includes("assignment.interrupted")) await nextProgress(); };
 
   test("a spend succeeds first call, is durable, the executor is not halted and the terminal total includes it", async () => {
     const { rt } = await boot({ before: hold });
@@ -399,21 +427,213 @@ describe("consistent read", () => {
   });
 });
 
+describe("cancel against the other lifecycle writes (H-1, M-5)", () => {
+  const cancel = (rt: Runtime, runId: string, key = "c1") => rt.service.cancelRun(alice, { runId, reason: "stop", idempotencyKey: key });
+  const sequence = async (rt: Runtime, runId: string) => (await rt.assignments.getAssignment(alice, { runId })).events.map((e) => e.event);
+
+  test("cancelling a streaming run succeeds after losing a race to executor progress, and only then stops the pass", async () => {
+    const park = parkFirst((c) => c.types.includes("run.cancelled"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.streaming", "cs");
+    await until(() => hasEvent(rt, run.runId, "progress"));
+    const cancelled = cancel(rt, run.runId);
+    await park.reached;
+    await nextProgress(); // the executor commits while the cancel is parked: its first attempt must lose
+    park.release();
+    expect((await cancelled).status).toBe("cancelled");
+    expect(await sequence(rt, run.runId)).toEqual(["issued", "started", "cancelled"]);
+    await until(() => exits === passes);
+  });
+
+  test("a cancel that cannot commit throws unavailable, leaves the run untouched and does not abort the executor", async () => {
+    const { rt } = await boot({ failCommit: (c) => (c.types.includes("run.cancelled") ? new ConcurrencyError(`run-x`, 0, 1) : undefined) });
+    const run = await startRun(rt, "agent.streaming", "cx");
+    await until(() => hasEvent(rt, run.runId, "progress"));
+    const outcome = await cancel(rt, run.runId).then(() => "ok", (e) => e);
+    expect(outcome).toBeInstanceOf(ServiceError);
+    expect(outcome.code).toBe("unavailable");
+    expect(await runStatus(rt, run.runId)).toBe("running");
+    const before = (await eventsOf(rt, run.runId)).filter((e) => e.eventType === "progress").length;
+    await nextProgress();
+    await until(async () => (await eventsOf(rt, run.runId)).filter((e) => e.eventType === "progress").length > before); // still executing
+    expect(exits).toBe(0);
+  });
+
+  test("cancel against interrupt: the interrupt that won is kept, then the cancel is recorded after it", async () => {
+    const park = parkFirst((c) => c.types.includes("run.cancelled"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.gated", "ci", { gate: "ci" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    const cancelled = cancel(rt, run.runId);
+    await park.reached;
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "first", idempotencyKey: "i1" });
+    park.release();
+    expect((await cancelled).status).toBe("cancelled");
+    expect(await sequence(rt, run.runId)).toEqual(["issued", "started", "interrupted", "cancelled"]);
+  });
+
+  test("cancel against spend: the cancelled event carries the spend that won", async () => {
+    const park = parkFirst((c) => c.types.includes("run.cancelled"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.gated", "cp", { gate: "cp" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    const cancelled = cancel(rt, run.runId);
+    await park.reached;
+    await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "time", amount: 5, idempotencyKey: "s1" });
+    park.release();
+    await cancelled;
+    const view = await rt.assignments.getAssignment(alice, { runId: run.runId });
+    expect(view.status).toBe("cancelled");
+    expect(spentIn(view.events.at(-1)!.spend, "time")).toBe(5);
+  });
+
+  test("cancel against the executor's terminal commit: whichever is second sees the first and no event is duplicated", async () => {
+    const park = parkFirst((c) => c.types.includes("run.cancelled"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.gated", "ct", { gate: "ct" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    const cancelled = cancel(rt, run.runId);
+    await park.reached;
+    gate("ct").resolve();
+    await until(async () => (await runStatus(rt, run.runId)) === "completed");
+    park.release();
+    expect((await cancelled).status).toBe("completed"); // the run had already ended: the cancel is a no-op, not a second terminal
+    expect(await sequence(rt, run.runId)).toEqual(["issued", "started", "completed"]);
+    expect((await eventsOf(rt, run.runId)).filter((e) => e.eventType === "run.cancelled").length).toBe(0);
+  });
+
+  test("resume against cancel: a resume that lost to the cancel is refused and leaves no event behind it", async () => {
+    const park = parkFirst((c) => c.types.includes("assignment.resumed"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.gated", "rc", { gate: "rc" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "x", idempotencyKey: "i1" });
+    const resumed = rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" }).then(() => "ok", (e) => e);
+    await park.reached;
+    await cancel(rt, run.runId);
+    park.release();
+    expect(await resumed).toBeInstanceOf(AssignmentRefusedError);
+    expect(await sequence(rt, run.runId)).toEqual(["issued", "started", "interrupted", "cancelled"]);
+  });
+});
+
+describe("budget breach against the executor, and recovery (M-3, M-5)", () => {
+  test("a breach that lands before the executor's terminal commit wins: the run fails with the budget error, never completes", async () => {
+    const park = parkFirst((c) => c.types.includes("run.completed"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.gated", "bt", { gate: "bt" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    gate("bt").resolve();
+    await park.reached;
+    const view = await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" });
+    expect(view.status).toBe("failed");
+    park.release();
+    await until(async () => (await runStatus(rt, run.runId)) === "failed");
+    expect((await rt.service.getRun(alice, { runId: run.runId })).error).toContain("ASSIGNMENT_BUDGET_EXCEEDED");
+    expect(await hasEvent(rt, run.runId, "run.completed")).toBe(false);
+  });
+
+  test("finalizing a stopped run that cannot commit throws instead of returning quietly", async () => {
+    const { rt } = await boot({ failCommit: (c) => (c.types.includes("run.failed") ? new ConcurrencyError("run-x", 0, 1) : undefined) });
+    const run = await startRun(rt, "agent.gated", "bx", { gate: "bx" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    const outcome = await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" }).then(() => "ok", (e) => e);
+    expect(outcome).toBeInstanceOf(ServiceError);
+    expect(outcome.code).toBe("unavailable");
+    // the breach itself is durable
+    expect((await rt.assignments.getAssignment(alice, { runId: run.runId })).status).toBe("failed");
+  });
+
+  test("a crash between assignment.failed and run.failed is finished by the next pass", async () => {
+    let crash = true;
+    const { rt } = await boot({ failCommit: (c) => (crash && c.types.includes("run.failed") ? new Error("crash") : undefined) });
+    const run = await startRun(rt, "agent.gated", "bn", { gate: "bn" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" }).catch(() => {});
+    expect(await runStatus(rt, run.runId)).toBe("running"); // the crash left the run unfinished
+    crash = false;
+    gate("bn").resolve(); // the run.execute intent committed with the breach (or the guard) drives the pass that finishes it
+    await until(async () => (await runStatus(rt, run.runId)) === "failed");
+    expect((await rt.service.getRun(alice, { runId: run.runId })).error).toContain("ASSIGNMENT_BUDGET_EXCEEDED");
+  });
+
+  test("a crash between assignment.failed and run.failed is finished on restart", async () => {
+    dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), "cognate-asg-cr-"));
+    const file = join(dir, "app.sqlite");
+    const first = await boot({ file, failCommit: (c) => (c.types.includes("run.failed") ? new Error("crash") : undefined) });
+    const run = await startRun(first.rt, "agent.gated", "br", { gate: "br" });
+    await until(() => hasEvent(first.rt, run.runId, "run.step.completed"));
+    await first.rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" }).catch(() => {});
+    expect(await runStatus(first.rt, run.runId)).toBe("running");
+    await first.rt.close();
+    runtime = undefined;
+    const second = await boot({ file });
+    await until(async () => (await runStatus(second.rt, run.runId)) === "failed");
+    expect((await second.rt.service.getRun(alice, { runId: run.runId })).error).toContain("ASSIGNMENT_BUDGET_EXCEEDED");
+  });
+});
+
+describe("fence and consistent read (M-1, M-2)", () => {
+  test("M-2: a progress commit parked after its guard cannot land after an interrupt: the interrupt fences it", async () => {
+    const park = parkFirst((c) => c.types.includes("progress"));
+    const { rt } = await boot({ before: park.before });
+    const run = await startRun(rt, "agent.streaming", "fe");
+    await park.reached; // an executor progress commit, past its durable guard, is about to land
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "fence", idempotencyKey: "i1" });
+    park.release();
+    await until(() => exits === passes);
+    const events = await eventsOf(rt, run.runId);
+    const interrupted = events.find((e) => e.eventType === "assignment.interrupted")!;
+    expect(events.some((e) => e.eventType === "progress" && e.position > interrupted.position)).toBe(false);
+  });
+
+  test("M-1: ordinary run progress never makes the assignment read re-read the run stream", async () => {
+    let runReads = 0;
+    let counting = false;
+    const { rt } = await boot({ onRead: (id) => { if (counting && id.startsWith("run-") && !id.startsWith("run-assignment-") && !id.startsWith("run-state-")) runReads++; } });
+    const run = await startRun(rt, "agent.streaming", "rd");
+    await until(() => hasEvent(rt, run.runId, "progress"));
+    counting = true;
+    await rt.assignments.getAssignment(alice, { runId: run.runId });
+    counting = false;
+    // one read for the load's lifecycle pair; the tenant check in `load` is the same read
+    expect(runReads).toBe(1);
+  });
+});
+
+describe("legacy history through the new terminal commit (M-5)", () => {
+  test("a run whose interrupt and resume are on the run stream completes with the assignment terminal on the lifecycle stream", async () => {
+    const { rt, store } = await boot();
+    const run = await startRun(rt, "agent.gated", "lg", { gate: "lg" });
+    await until(() => hasEvent(rt, run.runId, "run.step.completed"));
+    const stream = await store.readStream(`run-${run.runId}`);
+    const mk = (event: "interrupted" | "resumed", id: string, prior: string) => {
+      const at = new Date().toISOString();
+      return { eventId: id, eventType: `assignment.${event}`, schemaVersion: 1, occurredAt: at, tenant: "t", correlationId: stream[0]!.correlationId, causationId: prior, runId: run.runId, scopeId: stream[0]!.scopeId, payload: { assignment_id: assignment.assignment_id, episode_ref: assignment.episode_ref, event, at, spend: zeroSpend(0) } as never, metadata: { assignmentEvent: event, by: "alice" } };
+    };
+    await store.commit({ appends: [{ streamId: `run-${run.runId}`, expectedVersion: stream.length, events: [mk("interrupted", "legacy-i", stream.at(-1)!.eventId), mk("resumed", "legacy-r", "legacy-i")] }] });
+    gate("lg").resolve();
+    await until(async () => (await runStatus(rt, run.runId)) === "completed");
+    const view = await rt.assignments.getAssignment(alice, { runId: run.runId });
+    expect(view.events.map((e) => e.event)).toEqual(["issued", "started", "interrupted", "resumed", "completed"]);
+    expect((await eventsOf(rt, run.runId)).find((e) => e.eventType === "assignment.completed")!.streamId).toBe(`run-assignment-${run.runId}`);
+  });
+});
+
 describe("known gaps", () => {
-  // DEBT-034: ctx.step runs its callback before persisting anything, so an interrupt that lands while the callback is
-  // running drops the result at the append guard and resume runs the callback again. Fixing it needs a durable step
-  // start marker and ambiguity handling (the invocation reconciliation path); `test.failing` turns green-by-failure
-  // into a red signal the day it is fixed, at which point this must become a plain test.
-  test.failing("H5 (DEBT-034): resuming after an interrupt mid-step does not run the step's effect twice", async () => {
+  // DEBT-034: an interrupt that wins over completion (or lands mid-step) discards the finished result, and resume re-runs
+  // the agent body, so a side effect inside a step callback that was running (and any effect outside a step) repeats.
+  // This asserts the exact double effect, so it turns red the day the gap is closed and must then be rewritten to
+  // expect a single effect.
+  test("H5 (DEBT-034): resuming after an interrupt mid-step runs the step's effect a second time", async () => {
     const { rt } = await boot();
     const run = await startRun(rt, "agent.stepper", "h5");
     await started.promise;
     await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "mid-step", idempotencyKey: "i1" });
     gate("h5").resolve();
     await until(() => effects.length === 1);
-    await Bun.sleep(20);
     await rt.assignments.resumeAssignment(alice, { runId: run.runId, idempotencyKey: "r1" });
     await until(async () => (await runStatus(rt, run.runId)) === "completed");
-    expect(effects).toEqual(["work"]);
+    expect(effects).toEqual(["work", "work"]);
   });
 });
