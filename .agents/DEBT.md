@@ -297,3 +297,14 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed (2026-11-26):** `AssignmentService.append` (`packages/runtime-bun/src/assignment.ts`) retried a lost stream-version race (`ConcurrencyError`) exactly five times with no pause, then refused with `ServiceError("unavailable", "too much contention on run <id>")`. Reproduced by Cognate Workbench tests `test/J-CASE-ASSIGNMENT-handoff.test.ts` and `test/E2E-case-assignment-handoff.test.ts` (branch `feat/wp23-assignment-binding`), which retry only this refusal.
 **Consequence:** An operator control (interrupt, resume, spend) landing while the bound run streams events could be refused; interrupting a streaming run is the control's main purpose.
 **Exit criterion:** Met in source: eight attempts with a jittered exponential pause (worst case about 195 ms), the same refusal when the bound is exhausted, non-race errors unretried, idempotency unchanged; proven by `control append under stream contention (DEBT-033)` in `packages/runtime-bun/test/assignment.test.ts`. Remaining: release Cognate and bump the dependency in Workbench, then drop the retry in its two tests.
+
+---
+
+## DEBT-034 — Cancelling a parent run does not cancel its dispatched RLM children's providers
+
+**Status:** Open 2026-11-26 — found in review of PR #94 (ticket #113, Cognate half).
+**Requirement(s):** None.
+**Observed (2026-11-26):** A parent run that invoked `rlm.invoke` can be cancelled through `RuntimeService.cancelRun`. The child `agent.rlm` run and its provider are not touched: no cancellation cascades, so `provider.cancel` is never reached for a dispatched child unless someone calls `rlm.cancel`. A child that has not dispatched yet is stopped by the parent-cancelled check; one already in flight is not.
+**Consequence:** A cancelled parent can leave a provider process running and spending.
+**Exit criterion:** Cancelling a parent cancels every non-terminal child through the `rlm.cancel` path (provider cancel recorded, retry on failure). Proven by flipping `test.failing` to `test` for `cancelling the parent after dispatch reaches provider.cancel for its child` in `packages/runtime-bun/test/rlm.test.ts`.
+
