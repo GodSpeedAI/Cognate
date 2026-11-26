@@ -27,6 +27,9 @@ The Bun reference runtime composes kernel, durable store, runs, continuations, c
 - A run opened from an assignment records `assignment.issued` and `assignment.started` with `run.started`; interrupt, resume, spend and the terminal event are further events on the run stream, never a stored copy `[assignment.ts:foldAssignment]` `[service.ts:startRun]`
 - An assignment id is issued to one run; a resume uses `resumeAssignment` on that run and is refused after the delegation link expired `[assignment.ts:createAssignmentService]`
 - A spend above a numeric limit records the overrun, then fails the run with `ASSIGNMENT_BUDGET_EXCEEDED` `[assignment.ts:createAssignmentService]`
+- `agent.rlm` records `rlm.dispatch.intended` and a replay-safe intent step before `provider.invoke`, and calls it at most once per (invocationId, attempt); a re-entry with an intent and no recorded result (resume, restart, lost response) inspects the original invocation instead: a terminal view tied to the original `invocationId` closes the run, anything else parks on the `ambiguous-invocation` wait and reconciliation is recorded `reconciled` `[rlm.ts:createRlmAgent]`
+- A cancelled child or a withdrawn parent grant (`rlm.revoked.<invocationId>` in parent state, or a cancelled parent) prevents a new dispatch; `rlm.cancel` asks the provider to cancel only after an intent exists and records the outcome `[rlm.ts:createRlmComponent]`
+- A retry needs a new `invocationId` (attempt identity, grant, `reservationRef`); the same `invocationId` with another `attempt` is refused and the old attempt stays recorded `[rlm.ts:createRlmComponent]`
 
 ## Side Effects
 - Opens a SQLite file or a PostgreSQL connection, or starts a pg0-managed instance, depending on `RuntimeStoreConfig` [src/runtime.ts:startRuntime]
