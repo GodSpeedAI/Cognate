@@ -78,6 +78,8 @@ export const RLM_REFUSAL_CODES = [
   "rlm-invocation-unknown",
   "rlm-invocation-ambiguous",
   "rlm-top-level-invocation",
+  /** Additive (#113): an attempt that is invalid, already holds its identity, or follows an unresolved attempt of the same task. */
+  "rlm-attempt-refused",
 ] as const;
 export type RlmRefusalCode = (typeof RLM_REFUSAL_CODES)[number];
 
@@ -369,6 +371,11 @@ export interface RlmInvocationBinding {
   readonly reservationRef?: string;
   /** Additive (#113): the attempt identity recorded with the dispatch intent; absent means 1. */
   readonly attempt?: number;
+  /**
+   * Additive (#113). `pending-start` is written before the child run is started (`runId` is then `""` and the child is
+   * found by its correlation id `rlm:<parentRunId>:<invocationId>`); `started` once `runId` is known. Absent means `started`.
+   */
+  readonly state?: "pending-start" | "started";
   /** Additive (#113): the outcome of `rlm.cancel`, recorded durably. */
   readonly cancellation?: {
     readonly requestedAt: string;
@@ -391,6 +398,7 @@ export function readInvocationBinding(state: Json | null | undefined, invocation
   if (!root || typeof root !== "object" || Array.isArray(root)) return undefined;
   const invocations = (root as { readonly [key: string]: Json })[RLM_INVOCATIONS_KEY];
   if (!invocations || typeof invocations !== "object" || Array.isArray(invocations)) return undefined;
+  if (!Object.hasOwn(invocations, invocationId)) return undefined;
   const binding = (invocations as { readonly [key: string]: Json })[invocationId];
   if (!binding || typeof binding !== "object" || Array.isArray(binding)) return undefined;
   return binding as unknown as RlmInvocationBinding;
@@ -408,7 +416,20 @@ export function readGrantRevocation(state: Json | null | undefined, invocationId
   if (!root || typeof root !== "object" || Array.isArray(root)) return undefined;
   const revoked = (root as { readonly [key: string]: Json })[RLM_REVOKED_KEY];
   if (!revoked || typeof revoked !== "object" || Array.isArray(revoked)) return undefined;
-  const entry = (revoked as { readonly [key: string]: Json })[invocationId] ?? (revoked as { readonly [key: string]: Json })["*"];
+  const table = revoked as { readonly [key: string]: Json };
+  const entry = Object.hasOwn(table, invocationId) ? table[invocationId] : Object.hasOwn(table, "*") ? table["*"] : undefined;
   if (entry === undefined || entry === null || entry === false) return undefined;
   return typeof entry === "string" ? entry : "revoked";
 }
+
+/**
+ * Additive (#113). A provider throws this from `invoke` to say it DEFINITELY did nothing (it refused before any
+ * side effect). The child run then fails with the reason, as it always did. Any other throw from `invoke` is a lost
+ * response: the provider may have acted, so the original invocation is inspected or parked, never re-invoked.
+ */
+export class RlmProviderRefusal extends Error {
+  override readonly name = "RlmProviderRefusal";
+  readonly definite = true as const;
+}
+
+export const isDefiniteProviderRefusal = (error: unknown): boolean => error instanceof RlmProviderRefusal || (typeof error === "object" && error !== null && (error as { definite?: unknown }).definite === true);

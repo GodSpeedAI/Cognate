@@ -8,7 +8,7 @@ import { startRuntime } from "./runtime.ts";
 
 export { LIST_RESPONSE_LIMIT, SeaForgeAuthority, buildAuthorityRequest, buildTransitionRequest, interpretDecision, interpretSettlement, parseApprovalStanding, type ApprovalListResult, type ApprovalResolution, type ApprovalStanding, type AuthorityFailure, type CarriedWork, type ClosureResult, type EvidenceReceipt, type RecordedTransition, type SeaForgeActor, type SeaForgeAuthorityOptions, type SeaForgeDelegation, type SettlementReceipt, type WorldTransitionRequest } from "./sea-forge-authority.ts";
 export { ENV_ACTOR, ENV_MODE, ENV_SOCKET, ENV_WORLD, governanceFromEnv } from "./governance-env.ts";
-export { createRlmAgent, createRlmComponent, createRlmRegistry, RlmRefusedError } from "./rlm.ts";
+export { createRlmAgent, createRlmComponent, createRlmRegistry, revokeRlmGrant, RlmRefusedError } from "./rlm.ts";
 export type { RlmComponentOptions, RlmProviderAvailability, RlmProviderRegistration, RlmRegistry } from "./rlm.ts";
 export { Governor, MAX_AUTHORITY_CLAIMS, MAX_AUTHORITY_CLAIM_LENGTH, assertAuthorityClaims, isSystemRead, isWorldRef, parseTimeoutSeconds, timeoutSecsEnforcer, validateGovernance } from "./governed-operation.ts";
 export type { ApprovalReference, AuthorityClaims, AuthorityReference, ApprovalState, CapabilityHooks, ConstraintEnforcer, GovernanceEscalation, Disposition, GovernanceAuthority, GovernanceConstraint, GovernanceDecision, GovernanceMode, GovernanceOptions, GovernedOperation, GovernedResult } from "./governed-operation.ts";
