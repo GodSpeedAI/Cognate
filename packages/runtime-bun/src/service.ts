@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
+import { acceptLifecycleEvent, finalizeStoppedRun, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { assignmentControlStream, foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -177,6 +177,14 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         if (isTerminal(view)) {
           core.controllers.get(request.runId)?.abort(new Error("run ended"));
           return view;
+        }
+        // The assignment already ended without the run (a budget stop not yet finalized, or a legacy crash state): the run
+        // finishes the way the assignment did, it is not overridden by this cancel.
+        const ended = foldAssignment(request.runId, events, control);
+        if (ended && (ended.status === "failed" || ended.status === "completed")) {
+          core.controllers.get(request.runId)?.abort(new Error("assignment ended"));
+          await finalizeStoppedRun(core, request.runId, caller.actor);
+          return (await readRun(caller, request.runId)).view;
         }
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();

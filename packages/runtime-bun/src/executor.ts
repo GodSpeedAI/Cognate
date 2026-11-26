@@ -87,20 +87,19 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
 
   const caseContext = field<Json>(meta(started), "caseContext") ?? undefined;
   const lifecycleStream = assignmentControlStream(runId);
-  /** Events on the lifecycle stream as last read: the run-wide ordering coordinate of an observation adds this. */
-  let lifecycleLength = 0;
   /**
    * An interrupt or a stop committed by another call, possibly in another process, is observed here, at every
    * execution boundary, from the durable lifecycle stream; the local abort signal alone cannot reach another worker.
    */
-  const durableGuard = async (): Promise<void> => {
-    if (!bound) return;
+  const durableGuard = async (): Promise<number> => {
+    if (!bound) return 0;
     const lifecycle = await core.store.readStream(lifecycleStream);
-    lifecycleLength = lifecycle.length;
     const last = lifecycle.findLast((e) => e.eventType.startsWith("assignment.") && e.eventType !== "assignment.spend");
     // A budget stop is durable before the run's own terminal is: finish the run here rather than only stopping.
     if (last?.eventType === "assignment.failed") await finalizeStoppedRun(core, runId);
     if (last && last.eventType !== "assignment.resumed") halt(false);
+    // The version this guard validated: every commit it authorizes is fenced at exactly this, never at a shared variable.
+    return lifecycle.length;
   };
   /**
    * The guard as a fence, for an effect about to start (a step callback, an external dispatch): read the durable
@@ -111,9 +110,9 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
   const fence = async (): Promise<void> => {
     if (!bound) return;
     for (;;) {
-      await durableGuard();
+      const validated = await durableGuard();
       try {
-        await core.store.commit({ appends: [{ streamId: lifecycleStream, expectedVersion: lifecycleLength, events: [] }] });
+        await core.store.commit({ appends: [{ streamId: lifecycleStream, expectedVersion: validated, events: [] }] });
         return;
       } catch (error) {
         if (!(error instanceof ConcurrencyError)) throw error;
@@ -130,8 +129,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       for (;;) {
         guard();
         // A terminal commit decides against the lifecycle revision it carries; every other write checks the durable state.
-        if (!lifecycle) await durableGuard();
-        else lifecycleLength = lifecycle.expectedVersion;
+        const lifecycleLength = lifecycle ? lifecycle.expectedVersion : await durableGuard();
         guard();
         const envelope: NewEvent = {
           eventType: event.eventType,
@@ -327,6 +325,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
             payload: { capability, approvalId },
             ...(typeof expiresAt === "number" ? { expiresAt } : {}),
           });
+          await fence();
           outcome = await call({ approvalId });
           guard();
         }
@@ -364,6 +363,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       const artifactId = `${runId}.artifact.${n}`;
       // Idempotent across a crash between the artifact commit and the run event.
       if (!(await core.store.getRecord("artifacts", artifactId))) {
+        await fence();
         await core.artifacts.put({
           id: artifactId,
           name: input.name,
@@ -391,6 +391,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       const continuationId = `${runId}.wait.${id}`;
       if (!find(stepId, "run.waiting")) {
         if (!(await core.continuations.get(continuationId))) {
+          await fence();
           await core.continuations.open({
             id: continuationId,
             type: spec.type,
@@ -581,6 +582,11 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
         await finalizeStoppedRun(core, runId);
         return "done";
       }
+      // A legacy history may already hold the assignment's terminal on the run stream (the old executor committed it and
+      // the run's terminal separately): only the missing run terminal is appended, consistent with it.
+      let runTerminal = finish.event;
+      if (assignmentView?.status === "completed") runTerminal = { eventType: "run.completed", payload: { output: outcome.ok ? outcome.value : null }, metadata: { agent: view.agent } };
+      else if (assignmentView?.status === "failed") runTerminal = { eventType: "run.failed", payload: { error: assignmentView.events.at(-1)?.reason ?? messageOf(outcome.ok ? "assignment failed" : outcome.error) }, metadata: { agent: view.agent } };
       let terminal: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } } | undefined;
       if (assignmentView && ["started", "resumed"].includes(assignmentView.status)) {
         const payload = lifecycleEvent(assignmentView.assignment, finish.name, new Date().toISOString(), assignmentView.acceptedSpend, finish.reason);
@@ -588,7 +594,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
         terminal = { expectedVersion: lifecycle.control.length, eventType: `assignment.${finish.name}`, payload: payload as unknown as Json, metadata: assignmentMetadata(finish.name) };
       }
       try {
-        await append(finish.event, terminal);
+        await append(runTerminal, terminal);
         return "done";
       } catch (error) {
         if (error instanceof LifecycleConflict) continue;
