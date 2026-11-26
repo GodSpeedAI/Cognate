@@ -66,6 +66,8 @@ export interface RuntimeOptions {
    * intents. Receives the event before commit: `eventId` is pre-assigned; `recordedAt` is provisional (= occurredAt).
    */
   readonly outboxFor?: (event: PendingEvent) => readonly OutboxIntent[];
+  /** Test seam: the pause and jitter source for assignment control append retries (default `Bun.sleep`, `Math.random`). */
+  readonly assignmentPacing?: { readonly sleep?: (ms: number) => Promise<unknown>; readonly random?: () => number };
   /**
    * Background loop safety-net interval (ms) for run execution, resume delivery, outbox retries and
    * continuation expiry. Store commits wake the loop immediately; this interval only covers missed

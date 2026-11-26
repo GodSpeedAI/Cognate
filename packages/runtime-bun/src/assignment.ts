@@ -108,7 +108,15 @@ export const APPEND_MAX_ATTEMPTS = 8;
 /** Pause before retry `attempt` (0-based): 5 ms doubling to a 40 ms cap, jittered to 50-100%; worst case about 195 ms in all. */
 export const appendBackoffMs = (attempt: number, random: () => number = Math.random): number => Math.min(40, 5 * 2 ** attempt) * (0.5 + random() / 2);
 
-export function createAssignmentService(core: Core): AssignmentService {
+/** Pause and jitter source for the append retry; tests inject doubles, production uses `Bun.sleep` and `Math.random`. */
+export interface AppendPacing {
+  readonly sleep?: (ms: number) => Promise<unknown>;
+  readonly random?: () => number;
+}
+
+export function createAssignmentService(core: Core, pacing: AppendPacing = {}): AssignmentService {
+  const sleep = pacing.sleep ?? ((ms: number) => Bun.sleep(ms));
+  const random = pacing.random ?? Math.random;
   const { store } = core;
 
   const authorize = async (caller: Caller, action: "assignment.interrupt" | "assignment.resume" | "assignment.spend", resource: string): Promise<void> => {
@@ -145,7 +153,7 @@ export function createAssignmentService(core: Core): AssignmentService {
         return (await load(caller, runId)).view;
       } catch (error) {
         if (error instanceof ConcurrencyError) {
-          if (attempt < APPEND_MAX_ATTEMPTS - 1) await Bun.sleep(appendBackoffMs(attempt));
+          if (attempt < APPEND_MAX_ATTEMPTS - 1) await sleep(appendBackoffMs(attempt, random));
           continue;
         }
         if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${idempotencyKey} was used for a different request`);

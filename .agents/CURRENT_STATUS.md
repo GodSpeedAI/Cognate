@@ -1,13 +1,15 @@
 # Current status
 
-**Status revision:** 79
+**Status revision:** 80
 
-**Stage:** DEBT-033 resolved in source: assignment control append backs off under stream contention
+**Stage:** DEBT-033 backoff now asserted: the control tests record the pauses the append path requests
 
-**Summary:** AssignmentService.append (packages/runtime-bun/src/assignment.ts) retried a lost stream-version race exactly five times with no pause and then refused with unavailable, so an operator interrupt, resume or spend landing while the bound run streamed events could be refused. It now makes up to eight attempts with a jittered exponential pause (5 ms doubling to a 40 ms cap, worst case about 195 ms in all) and keeps the same refusal (code unavailable, message 'too much contention on run <id>') when the bound is exhausted. Non-ConcurrencyError errors still propagate immediately and IdempotencyMismatchError and replayed-token behavior are unchanged. A deterministic regression suite wraps the store so the first N commits raise ConcurrencyError: fewer than the bound succeeds with exactly one assignment.interrupted event, at or over the bound is refused with no event recorded, and a non-race error fails after one attempt. The success case was observed failing against the old five-attempt loop before passing. Workbench benefits only after a Cognate release and a dependency bump. Earlier snapshot facts are carried forward in verified and limits.
+**Summary:** AssignmentService.append (packages/runtime-bun/src/assignment.ts) retried a lost stream-version race exactly five times with no pause and then refused with unavailable, so an operator interrupt, resume or spend landing while the bound run streamed events could be refused. It now makes up to eight attempts with a jittered exponential pause (5 ms doubling to a 40 ms cap, worst case about 195 ms in all) and keeps the same refusal (code unavailable, message 'too much contention on run <id>') when the bound is exhausted. Non-ConcurrencyError errors still propagate immediately and IdempotencyMismatchError and replayed-token behavior are unchanged. A deterministic regression suite wraps the store so the first N commits raise ConcurrencyError: fewer than the bound succeeds with exactly one assignment.interrupted event, at or over the bound is refused with no event recorded, and a non-race error fails after one attempt. The success case was observed failing against the old five-attempt loop before passing. Workbench benefits only after a Cognate release and a dependency bump. Earlier snapshot facts are carried forward in verified and limits. Review follow-up: the control tests would have passed with the sleep removed, so the backoff is now injectable (RuntimeOptions.assignmentPacing { sleep, random }, defaulting to Bun.sleep and Math.random) and the tests record the requested delays with fixed randomness. Success on the 8th attempt shows exactly the 7-step schedule (5, 10, 20, 40, 40, 40, 40 ms), exhaustion shows the same 7 delays and none after the final failure, and a non-race error shows none. No elapsed-time assertions.
 
 ## Verified
 
+- With the sleep call removed from append, the DEBT-033 tests gave 2 pass, 2 fail (success and exhaustion cases failed); restored, assignment.test.ts 25 pass, 0 fail
+- bun run typecheck clean; runtime-bun service.test.ts 53/53 and rlm.test.ts 15/15; bun run check substrate 81/81
 - bun test packages/runtime-bun/test/assignment.test.ts: 25 pass, 0 fail (4 new DEBT-033 tests); against the old five-attempt loop the DEBT-033 tests gave 2 pass, 2 fail (success case and attempt-count case)
 - bun run typecheck: clean (tsc -p tsconfig.json, no errors)
 - bun test of packages/runtime-bun/test/rlm.test.ts 15/15, service.test.ts 53/53, packages/protocol-connect assignment-wire 2/2, packages/runtime-api assignment 74/74, packages/realitytrace assignment-at17 4/4 and interaction-event 14/14, each run alone
@@ -29,6 +31,8 @@ Review and merge the fix/assignment-append-backoff branch, release Cognate, bump
 
 ## Evidence
 
+- packages/runtime-bun/src/assignment.ts (AppendPacing, injectable sleep and random)
+- packages/runtime-bun/src/index.ts and runtime.ts (assignmentPacing option)
 - packages/runtime-bun/src/assignment.ts (APPEND_MAX_ATTEMPTS, appendBackoffMs, append loop)
 - packages/runtime-bun/test/assignment.test.ts (control append under stream contention (DEBT-033))
 - .agents/DEBT.md DEBT-033

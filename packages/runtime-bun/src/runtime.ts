@@ -578,7 +578,7 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
   }
 
   return {
-    assignments: createAssignmentService(core),
+    assignments: createAssignmentService(core, options.assignmentPacing),
     service: createService(core, new Set((options.projections ?? []).filter((p) => p.public).map((p) => p.projection.name))),
     kernel,
     store,

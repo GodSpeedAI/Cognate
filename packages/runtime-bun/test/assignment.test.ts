@@ -419,6 +419,7 @@ describe("spend and budget", () => {
 describe("control append under stream contention (DEBT-033)", () => {
   /** A store whose first `n` commits lose the stream-version race; `fail` raises a different error instead. */
   async function contended(n: number, fail?: Error) {
+    const delays: number[] = [];
     const inner = openSqliteStore({ path: ":memory:" });
     let commits = 0;
     const store = new Proxy(inner, {
@@ -432,36 +433,43 @@ describe("control append under stream contention (DEBT-033)", () => {
       },
     });
     let armed = false;
-    runtime = await createRuntime({ store: { store }, agents, policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) } });
+    runtime = await createRuntime({ store: { store }, assignmentPacing: { sleep: async (ms) => void delays.push(ms), random: () => 1 }, agents, policy: { authorize: () => ({ allow: true, policyId: "test", reason: "ok" }) }, actions: { authorize: () => ({ allow: true, reason: "ok" }) } });
     const run = await start(runtime, "agent.gated", assignmentFor(1), "k", { input: { gate: "contention" } });
     await until(async () => (await eventsOf(runtime!, run.runId)).some((e) => e.eventType === "run.step.completed"));
     armed = true;
-    return { rt: runtime, run, attempts: () => commits };
+    return { rt: runtime, run, delays, attempts: () => commits };
   }
+  /** With random() = 1 the jitter factor is 1, so each delay is the bare exponential step, capped at 40 ms. */
+  const SCHEDULE = Array.from({ length: APPEND_MAX_ATTEMPTS - 1 }, (_, i) => Math.min(40, 5 * 2 ** i));
   const interrupt = (rt: Runtime, runId: string) => rt.assignments.interruptAssignment(alice, { runId, reason: "operator", idempotencyKey: "i1" });
   const interrupts = async (rt: Runtime, runId: string) => (await eventsOf(rt, runId)).filter((e) => e.eventType === "assignment.interrupted").length;
 
   test("a control that loses fewer races than the bound succeeds and records exactly one event", async () => {
-    const { rt, run, attempts } = await contended(APPEND_MAX_ATTEMPTS - 1);
+    const { rt, run, delays, attempts } = await contended(APPEND_MAX_ATTEMPTS - 1);
     expect((await interrupt(rt, run.runId)).status).toBe("interrupted");
+    expect(delays).toEqual(SCHEDULE); // 7 positive pauses, each at most 40 ms
+    expect(delays.length).toBe(7);
+    expect(delays.every((d) => d > 0 && d <= 40)).toBe(true);
     expect(attempts()).toBe(APPEND_MAX_ATTEMPTS);
     expect(await interrupts(rt, run.runId)).toBe(1);
   });
 
   test("a control that loses every attempt is refused as unavailable and records nothing", async () => {
-    const { rt, run, attempts } = await contended(APPEND_MAX_ATTEMPTS);
+    const { rt, run, delays, attempts } = await contended(APPEND_MAX_ATTEMPTS);
     const error = await interrupt(rt, run.runId).then(() => undefined, (e) => e);
     expect(error).toBeInstanceOf(ServiceError);
     expect(error.code).toBe("unavailable");
     expect(error.message).toBe(`too much contention on run ${run.runId}`);
     expect(attempts()).toBe(APPEND_MAX_ATTEMPTS);
+    expect(delays).toEqual(SCHEDULE); // one pause between attempts, none after the final failure
     expect(await interrupts(rt, run.runId)).toBe(0);
   });
 
   test("an error that is not a lost race fails at once without retrying", async () => {
-    const { rt, run, attempts } = await contended(APPEND_MAX_ATTEMPTS, new Error("disk gone"));
+    const { rt, run, delays, attempts } = await contended(APPEND_MAX_ATTEMPTS, new Error("disk gone"));
     await expect(interrupt(rt, run.runId)).rejects.toThrow("disk gone");
     expect(attempts()).toBe(1);
+    expect(delays).toEqual([]);
     expect(await interrupts(rt, run.runId)).toBe(0);
   });
 
