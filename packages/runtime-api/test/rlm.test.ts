@@ -12,6 +12,7 @@ import {
   PROVIDER_FACTS,
   readGrantRevocation,
   readInvocationBinding,
+  RLM_REFUSAL_CODE_PATTERN,
   RlmProviderRefusal,
   RESULT_DELIVERIES,
   RLM_AGENT_ID,
@@ -116,6 +117,8 @@ describe("a provider's definite refusal is typed (#113)", () => {
     expect(isDefiniteProviderRefusal(branded("quota"))).toBe(true);
     expect(isDefiniteProviderRefusal(branded("sk-live-SECRET token"))).toBe(false); // an unbounded code is not a refusal
     expect(isDefiniteProviderRefusal(branded(5))).toBe(false);
+    expect(RLM_REFUSAL_CODE_PATTERN.test("quota")).toBe(true);
+    expect(RLM_REFUSAL_CODE_PATTERN.test("sk-live-SECRET token")).toBe(false);
     expect(isDefiniteProviderRefusal("string")).toBe(false);
     expect(isDefiniteProviderRefusal(undefined)).toBe(false);
   });

@@ -423,7 +423,7 @@ export function readGrantRevocation(state: Json | null | undefined, invocationId
 }
 
 const REFUSAL_BRAND = Symbol.for("cognate.rlm.providerRefusal");
-const REFUSAL_CODE = /^[a-z0-9._-]{1,48}$/;
+export const RLM_REFUSAL_CODE_PATTERN = /^[a-z0-9._-]{1,48}$/;
 
 /**
  * Additive (#113). A provider throws this from `invoke` to say it DEFINITELY did nothing (it refused before any side
@@ -438,9 +438,9 @@ export class RlmProviderRefusal extends Error {
   readonly code: string;
   constructor(message: string, code = "refused") {
     super(message);
-    this.code = REFUSAL_CODE.test(code) ? code : "refused";
+    this.code = RLM_REFUSAL_CODE_PATTERN.test(code) ? code : "refused";
   }
 }
 
 export const isDefiniteProviderRefusal = (error: unknown): error is RlmProviderRefusal =>
-  error instanceof RlmProviderRefusal || (typeof error === "object" && error !== null && (error as Record<symbol, unknown>)[REFUSAL_BRAND] === true && typeof (error as { code?: unknown }).code === "string" && REFUSAL_CODE.test((error as { code: string }).code));
+  error instanceof RlmProviderRefusal || (typeof error === "object" && error !== null && (error as Record<symbol, unknown>)[REFUSAL_BRAND] === true && typeof (error as { code?: unknown }).code === "string" && RLM_REFUSAL_CODE_PATTERN.test((error as { code: string }).code));

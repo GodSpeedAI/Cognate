@@ -52,7 +52,7 @@ const deferred = (): Deferred => {
 /** A definite refusal carrying a bounded `code` (the verbatim message is never recorded). */
 const refusal = (message: string, code: string): Error => new (RlmProviderRefusal as unknown as new (message: string, code?: string) => Error)(message, code);
 
-type ProviderMode = "complete" | "fail" | "failThrow" | "duckRefusal" | "badCodeRefusal" | "emitThenLost" | "timedOut" | "unknown" | "lostCompleted" | "lostFailed" | "lostUnknown" | "lostUntied" | "lostNothing";
+type ProviderMode = "complete" | "fail" | "failThrow" | "duckRefusal" | "badCodeRefusal" | "mutatedRefusal" | "emitThenLost" | "timedOut" | "unknown" | "lostCompleted" | "lostFailed" | "lostUnknown" | "lostUntied" | "lostNothing";
 
 interface ProviderOptions {
   readonly capabilities?: Partial<ProviderFacts["capabilities"]>;
@@ -134,6 +134,11 @@ function testProvider(id: string, mode: ProviderMode, options: ProviderOptions =
         // A transport error that merely claims it is definite must NOT count as "nothing ran".
         views.set(ctx.runId, view("completed"));
         throw Object.assign(new Error("wrapped transport error"), { definite: true });
+      }
+      if (mode === "mutatedRefusal") {
+        // A real RlmProviderRefusal whose code was overwritten after construction with a secret-looking string.
+        views.set(ctx.runId, view("failed"));
+        throw Object.assign(refusal("nothing ran", "quota"), { code: "sk-live-SECRET token" });
       }
       if (mode === "badCodeRefusal") {
         // Carries the refusal brand but a secret-looking code: not a valid bounded code, so not a definite refusal.
@@ -1174,6 +1179,73 @@ describe("RLM component (I1)", () => {
     const child = await childOf(rt, run.runId);
     await continuation(rt, child.runId, "ambiguous-invocation"); // untied view: parked, not failed
     for await (const event of rt.service.events(alice, { runId: child.runId })) expect(JSON.stringify(event.payload)).not.toContain("SECRET");
+  });
+
+  test("a real refusal whose code was mutated to a secret is recorded with the fixed code refused", async () => {
+    const provider = testProvider("test-provider", "mutatedRefusal");
+    const rt = await open([{ provider, label: "mutated" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "mutated" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    expect((await until(rt, child.runId, "failed")).error).toBe("provider refused the invocation (refused)");
+    for await (const event of rt.service.events(alice, { runId: child.runId })) expect(JSON.stringify(event.payload)).not.toContain("SECRET");
+  });
+
+  test("inspect reports an invocation cancelled before any child existed as cancelled, the same as the attempt scan", async () => {
+    const provider = testProvider("test-provider", "complete");
+    let crashed = false;
+    wrap = hooked({
+      startRun: (original) => async (caller: never, request: never) => {
+        if (!crashed && (request as { agent: string }).agent === RLM_AGENT_ID) {
+          crashed = true;
+          await cancelCap(rtRef!, (request as { input: { runId: string } }).input.runId);
+          throw new Error("crash before the child was created");
+        }
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "pre-start-inspect" }], reinvokingParent(false));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "pre-start-inspect" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    expect((await inspect(rt, run.runId, INV)).status).toBe("cancelled");
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "already-terminal" });
+    expect(provider.spawns).toBe(0);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a crash between cancelRun and the final cancel record leaves the provider cancel to be retried", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise });
+    let forceEmpty = false;
+    let crashRecord = true;
+    const lost = lostBindingWrite();
+    wrap = hooked({
+      updateState: (original) => async (caller: never, request: never) => {
+        const key = (request as { idempotencyKey: string }).idempotencyKey;
+        if (crashRecord && forceEmpty === false && /^rlm-cancel-record:inv-1:(first|retry)/.test(key)) {
+          crashRecord = false;
+          throw new Error("process died after cancelRun");
+        }
+        return (lost.hooks.updateState as unknown as (o: unknown) => (c: never, r: never) => Promise<unknown>)(original)(caller, request);
+      },
+      listRuns: (original) => async (caller: never, request: never) => {
+        if (forceEmpty && /^rlm:/.test((request as { correlationId?: string }).correlationId ?? "")) {
+          forceEmpty = false;
+          return [];
+        }
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "crash-record" }], reinvokingParent(false));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "crash-record" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider);
+    forceEmpty = true; // the pending record is written, the child then appears, cancelRun succeeds, the final record dies
+    await expect(cancelCap(rt, run.runId)).rejects.toThrow(/process died/);
+    await inspectUntil(rt, run.runId, INV, "cancelled");
+    expect(provider.cancels).toBe(1); // the first attempt reached the provider before the record write died
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "cancelled" }); // retried, not "already-terminal"
+    expect(provider.cancels).toBe(2);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
   });
 
   test("a cancel before any child exists does not block a new attempt of the same task", async () => {
