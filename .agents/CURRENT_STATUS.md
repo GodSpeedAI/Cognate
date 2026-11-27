@@ -1,13 +1,15 @@
 # Current status
 
-**Status revision:** 87
+**Status revision:** 88
 
-**Stage:** PR 93 delta-6 review addressed
+**Stage:** Owner-approved GodSpeed vocabulary consolidation
 
-**Summary:** Final delta check of cbb3857 found 3 low. A continuation cancel that fails after a bound run's terminal committed is now retried: settleTerminalRun (idempotent, only for runs with an assignment) runs from the executor's terminal early return, cancelRun's terminal early return and startup recovery. A cancel of a legacy-failed run finishes it as run.failed with the recorded reason instead of overwriting it with run.cancelled (comments and EGM.md corrected); a legacy-completed one stays cancellable. finalizeStoppedRun lost its unused actor parameter and falls back to the principal recorded on a legacy run-stream failure for attribution. Earlier snapshot facts are carried forward.
+**Summary:** Reconciled the owning glossary against the review patch and authoritative sources. The owner approved the conceptual distinctions. Runtime, frozen specifications, and identifiers retain their existing contracts. Merged with main after revision 87; earlier snapshot facts are carried forward.
 
 ## Verified
 
+- Cross-checked glossary targets, source links and the eleven semantic scenarios.
+- Merged origin/main into the vocabulary branch; only the status files conflicted, and main's history is kept.
 - assignment-lifecycle 48/48 (4 failed against cbb3857 sources), assignment 25, assignment-streaming 2, assignment-multiruntime-postgres 3, service-postgres alone 28/28, runtime-api assignment 74, protocol-connect assignment-wire 2, realitytrace interaction-event 14 and assignment-at17 4; typecheck clean; check 81/81; the one-command runtime-bun suite was not run on this head (left to a quiet window)
 - New packages/runtime-bun/test/assignment-lifecycle.test.ts (14 tests, 1 test.failing known gap) and assignment-multiruntime-postgres.test.ts: against b4f2195 sources 8 of 12 lifecycle tests and the multi-runtime test failed; after the change all pass
 - bun run typecheck clean; bun run check substrate 81/81
@@ -27,6 +29,7 @@ Re-review PR 93, merge, release Cognate, bump the dependency in Workbench and dr
 
 ## Evidence
 
+- GLOSSARY.md
 - packages/runtime-bun/src/assignment.ts (readLifecycle, foldAssignment, append, finalizeStoppedRun)
 - packages/runtime-bun/src/executor.ts (durableGuard, terminal commit loop)
 - packages/runtime-bun/src/service.ts (cancelRun)
