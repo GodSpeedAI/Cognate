@@ -182,15 +182,15 @@ function missingRunTerminal(view: AssignmentView): { readonly eventType: "run.fa
  * crash between the two commits the old executor made): record the matching `run.failed`/`run.completed` on the run
  * stream and cancel the run's open continuations. Idempotent, so the breaching call, a cancel, the executor's next pass
  * and a restart can all run it. The decision is already durable, so this only mirrors it; a lost run-stream race (the
- * executor is stopping) is retried with backoff and exhaustion throws. Continuations are cancelled under the principal
- * that caused the breach when the lifecycle event recorded it, else `actor`, else the runtime's.
+ * executor is stopping) is retried with backoff and exhaustion throws. Continuations are cancelled as the runtime
+ * (`core.system`), which authorizes the work; the principal that caused the breach is named in the cancel reason only.
  */
 export async function finalizeStoppedRun(core: Core, runId: string, actor: Caller["actor"] = core.system, pacing: AppendPacing = {}): Promise<void> {
   const sleep = pacing.sleep ?? ((ms: number) => Bun.sleep(ms));
   const random = pacing.random ?? Math.random;
   let done = false;
-  let cancelAs = actor;
   let reason = "ASSIGNMENT_STOPPED";
+  let attributedTo = `${actor.kind}:${actor.id}`;
   for (let attempt = 0; attempt < 40 && !done; attempt++) {
     const { events, control } = await readLifecycle(core, runId);
     const run = foldRun(runId, events);
@@ -201,7 +201,7 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
     const by = field<string>(meta(breachedBy ?? events[0]!), "by");
     const byKind = field<string>(meta(breachedBy ?? events[0]!), "byKind");
     if (budgetError(view) !== undefined) reason = "ASSIGNMENT_BUDGET_EXCEEDED";
-    if (breachedBy && by) cancelAs = { id: by, kind: (byKind ?? "user") as Caller["actor"]["kind"] };
+    if (breachedBy && by) attributedTo = `${byKind ?? "user"}:${by}`;
     if (isTerminal(run)) {
       done = true;
       break;
@@ -225,7 +225,7 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
   if (!done) throw new ServiceError("unavailable", `run ${runId} could not be finished after its assignment ended`);
   for (const c of await core.continuations.list({ runId, status: "OPEN" })) {
     try {
-      await core.continuations.cancel(c.id, { actor: cancelAs, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason });
+      await core.continuations.cancel(c.id, { actor: core.system, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason: `${reason} (caused by ${attributedTo})` });
     } catch (error) {
       // Another call may have cancelled it first; only a continuation that is still open is a failure.
       if ((await core.continuations.list({ runId, status: "OPEN" })).some((o) => o.id === c.id)) throw error;

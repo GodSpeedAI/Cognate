@@ -181,10 +181,20 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         // The assignment already ended without the run (a budget stop not yet finalized, or a legacy crash state): the run
         // finishes the way the assignment did, it is not overridden by this cancel.
         const ended = foldAssignment(request.runId, events, control);
-        if (ended && (ended.status === "failed" || ended.status === "completed")) {
-          core.controllers.get(request.runId)?.abort(new Error("assignment ended"));
+        if (ended && ended.status === "failed" && ended.budgetExceeded) {
+          // Finish the run as the budget stop; abort the local pass only once that is durable, so a finalization that
+          // cannot commit (it throws unavailable) leaves the pass running and the cancel retryable.
           await finalizeStoppedRun(core, request.runId, caller.actor);
+          core.controllers.get(request.runId)?.abort(new Error("assignment ended"));
           return (await readRun(caller, request.runId)).view;
+        }
+        if (ended && (ended.status === "failed" || ended.status === "completed")) {
+          // A legacy crash state: the assignment ended on the run stream, the run did not. The run is finished by its own
+          // pass (it recomputes the real output, or fails honestly), not forced from here: the cancel is refused as
+          // terminal and the pass is nudged so recovery does not wait for a restart.
+          void core.execute(request.runId).catch(() => {});
+          core.kick();
+          throw new ServiceError("failed_precondition", `assignment ${ended.assignment.assignment_id} already ${ended.status}; run ${request.runId} is being finished`);
         }
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();

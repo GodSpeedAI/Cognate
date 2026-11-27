@@ -531,6 +531,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       // continuation even after a browser has disconnected or its offer has expired.
       let offer: RemoteCapabilityOffer | undefined;
       if (!find(waitStep, "run.waiting")) {
+        await fence();
         offer = core.remoteOffers.take({ tenant: view.tenant, actor: context.actor }, view.agent, offerId);
         if (!offer) throw new FrontendCapabilityError(`remote offer ${offerId} is unavailable`);
         const decision = await core.governor.govern({ kind: "action", caller: { tenant: view.tenant, actor: context.actor }, action: "remote.offer.invoke", resource: offer.id });
@@ -584,8 +585,9 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       }
       // A legacy history may already hold the assignment's terminal on the run stream (the old executor committed it and
       // the run's terminal separately): only the missing run terminal is appended, consistent with it.
+      // A failed re-run is never masked as success, whatever the legacy assignment says.
       let runTerminal = finish.event;
-      if (assignmentView?.status === "completed") runTerminal = { eventType: "run.completed", payload: { output: outcome.ok ? outcome.value : null }, metadata: { agent: view.agent } };
+      if (assignmentView?.status === "completed" && outcome.ok) runTerminal = { eventType: "run.completed", payload: { output: outcome.value }, metadata: { agent: view.agent } };
       else if (assignmentView?.status === "failed") runTerminal = { eventType: "run.failed", payload: { error: assignmentView.events.at(-1)?.reason ?? messageOf(outcome.ok ? "assignment failed" : outcome.error) }, metadata: { agent: view.agent } };
       let terminal: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } } | undefined;
       if (assignmentView && ["started", "resumed"].includes(assignmentView.status)) {
