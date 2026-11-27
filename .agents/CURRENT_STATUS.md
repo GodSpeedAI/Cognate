@@ -1,43 +1,36 @@
 # Current status
 
-**Status revision:** 80
+**Status revision:** 87
 
-**Stage:** DEBT-033 backoff now asserted: the control tests record the pauses the append path requests
+**Stage:** PR 93 delta-6 review addressed
 
-**Summary:** AssignmentService.append (packages/runtime-bun/src/assignment.ts) retried a lost stream-version race exactly five times with no pause and then refused with unavailable, so an operator interrupt, resume or spend landing while the bound run streamed events could be refused. It now makes up to eight attempts with a jittered exponential pause (5 ms doubling to a 40 ms cap, worst case about 195 ms in all) and keeps the same refusal (code unavailable, message 'too much contention on run <id>') when the bound is exhausted. Non-ConcurrencyError errors still propagate immediately and IdempotencyMismatchError and replayed-token behavior are unchanged. A deterministic regression suite wraps the store so the first N commits raise ConcurrencyError: fewer than the bound succeeds with exactly one assignment.interrupted event, at or over the bound is refused with no event recorded, and a non-race error fails after one attempt. The success case was observed failing against the old five-attempt loop before passing. Workbench benefits only after a Cognate release and a dependency bump. Earlier snapshot facts are carried forward in verified and limits. Review follow-up: the control tests would have passed with the sleep removed, so the backoff is now injectable (RuntimeOptions.assignmentPacing { sleep, random }, defaulting to Bun.sleep and Math.random) and the tests record the requested delays with fixed randomness. Success on the 8th attempt shows exactly the 7-step schedule (5, 10, 20, 40, 40, 40, 40 ms), exhaustion shows the same 7 delays and none after the final failure, and a non-race error shows none. No elapsed-time assertions.
+**Summary:** Final delta check of cbb3857 found 3 low. A continuation cancel that fails after a bound run's terminal committed is now retried: settleTerminalRun (idempotent, only for runs with an assignment) runs from the executor's terminal early return, cancelRun's terminal early return and startup recovery. A cancel of a legacy-failed run finishes it as run.failed with the recorded reason instead of overwriting it with run.cancelled (comments and EGM.md corrected); a legacy-completed one stays cancellable. finalizeStoppedRun lost its unused actor parameter and falls back to the principal recorded on a legacy run-stream failure for attribution. Earlier snapshot facts are carried forward.
 
 ## Verified
 
-- With the sleep call removed from append, the DEBT-033 tests gave 2 pass, 2 fail (success and exhaustion cases failed); restored, assignment.test.ts 25 pass, 0 fail
-- bun run typecheck clean; runtime-bun service.test.ts 53/53 and rlm.test.ts 15/15; bun run check substrate 81/81
-- bun test packages/runtime-bun/test/assignment.test.ts: 25 pass, 0 fail (4 new DEBT-033 tests); against the old five-attempt loop the DEBT-033 tests gave 2 pass, 2 fail (success case and attempt-count case)
-- bun run typecheck: clean (tsc -p tsconfig.json, no errors)
-- bun test of packages/runtime-bun/test/rlm.test.ts 15/15, service.test.ts 53/53, packages/protocol-connect assignment-wire 2/2, packages/runtime-api assignment 74/74, packages/realitytrace assignment-at17 4/4 and interaction-event 14/14, each run alone
-- Pre-push: PR branch tree byte-identical across the rewrite; 0 residual path/username commits across all refs in the apply clone; main subject diff exactly the one became-empty commit
-- Post-push fresh clone: 0 residual /home/<user>/ and 0 residual username across all reachable history; heads=5 and tags=1189 matching pre-rewrite; Gitleaks 12 findings all the known synthetic fixture files
+- assignment-lifecycle 48/48 (4 failed against cbb3857 sources), assignment 25, assignment-streaming 2, assignment-multiruntime-postgres 3, service-postgres alone 28/28, runtime-api assignment 74, protocol-connect assignment-wire 2, realitytrace interaction-event 14 and assignment-at17 4; typecheck clean; check 81/81; the one-command runtime-bun suite was not run on this head (left to a quiet window)
+- New packages/runtime-bun/test/assignment-lifecycle.test.ts (14 tests, 1 test.failing known gap) and assignment-multiruntime-postgres.test.ts: against b4f2195 sources 8 of 12 lifecycle tests and the multi-runtime test failed; after the change all pass
+- bun run typecheck clean; bun run check substrate 81/81
+- Each run alone: runtime-bun assignment 25, assignment-streaming 2, assignment-lifecycle 14, service 53, rlm 15, observation 11, cognition 2; with isolated PostgreSQL (pg0 port 5438): shutdown-recovery 2, run-ownership 3, concurrency 11, service-postgres 28, assignment-multiruntime-postgres 1; runtime-api assignment 74; protocol-connect assignment-wire 2; realitytrace interaction-event 14, assignment-at17 4
 
 ## Limits
 
-- Full `bun test packages/runtime-bun` was started and hung without output, so it was killed; only the files named in verified were run (the hang was not investigated and is not shown to predate this change)
-- The fix reaches Workbench only after a Cognate release and a dependency bump; its two handoff tests still retry this refusal until then
-- Downstream clones and the second local worktree still hold pre-rewrite history and must re-clone or fetch+reset
-- GitHub's cached PR refs and any forks retain pre-rewrite objects outside this repository's control
-- The pre-rewrite objects remain recoverable locally (original store un-gc'd; audit workspace clones); purging them is an operator decision
-- The Protect Main bypass window existed for under a minute and the restore was diff-verified, but the window itself is recorded here rather than hidden
+- The observation ordering coordinate of a progress event reads the lifecycle length at its guard; a control committing between that read and the commit can tie with it (not decreasing across controls read consistently)
+- Not run against Cognate Workbench's browser journey; the fix reaches it only after a release and dependency bump
+- Full bun test packages/runtime-bun not run as one command; files were run individually
+- DEBT-034: resume re-runs the agent body, so effects outside a completed step repeat (known gap, exact double-effect test)
+- Mixed-version fleets are unsupported for assignment runs (drain, then upgrade); no version fence
 
 ## Next
 
-Review and merge the fix/assignment-append-backoff branch, release Cognate, bump the dependency in Workbench and drop the refusal retry in its J-CASE-ASSIGNMENT and E2E case-assignment handoff tests; then the operator items carried from revision 78 (PR #74, re-clone downstream).
+Re-review PR 93, merge, release Cognate, bump the dependency in Workbench and drop the refusal retry in its handoff tests; then DEBT-034.
 
 ## Evidence
 
-- packages/runtime-bun/src/assignment.ts (AppendPacing, injectable sleep and random)
-- packages/runtime-bun/src/index.ts and runtime.ts (assignmentPacing option)
-- packages/runtime-bun/src/assignment.ts (APPEND_MAX_ATTEMPTS, appendBackoffMs, append loop)
-- packages/runtime-bun/test/assignment.test.ts (control append under stream contention (DEBT-033))
-- .agents/DEBT.md DEBT-033
-- docs/security/repository-hygiene.md (history status section updated to applied)
-- audit workspace /tmp/cognate-secaudit: APPLY-HISTORY-REWRITE.md (marked applied), ruleset-original.json, rewrite-apply clone, postverify clone scan outputs
-- force-push transcript: main 6635684->d6e669f, branch 0a885c4->1b50702, 696 tags rewritten
-
-Spec: `.agents/specs/software-design-spec-cognate.-frameworkmd`. Ledger: `requirements/ledger.yaml`.
+- packages/runtime-bun/src/assignment.ts (readLifecycle, foldAssignment, append, finalizeStoppedRun)
+- packages/runtime-bun/src/executor.ts (durableGuard, terminal commit loop)
+- packages/runtime-bun/src/service.ts (cancelRun)
+- packages/runtime-bun/src/fold.ts (assignmentControlStream)
+- packages/runtime-bun/test/assignment-lifecycle.test.ts
+- packages/runtime-bun/test/assignment-multiruntime-postgres.test.ts
+- .agents/DEBT.md DEBT-033, DEBT-034
