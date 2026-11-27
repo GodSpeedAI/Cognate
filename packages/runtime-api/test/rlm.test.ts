@@ -112,6 +112,10 @@ describe("a provider's definite refusal is typed (#113)", () => {
     expect(new RlmProviderRefusal("secret detail", "quota").code).toBe("quota");
     expect(new RlmProviderRefusal("secret detail", "Has Spaces And Secrets sk-1").code).toBe("refused");
     expect(isDefiniteProviderRefusal(new Error("timeout"))).toBe(false);
+    const branded = (code: unknown) => Object.assign(new Error("x"), { [Symbol.for("cognate.rlm.providerRefusal")]: true, code });
+    expect(isDefiniteProviderRefusal(branded("quota"))).toBe(true);
+    expect(isDefiniteProviderRefusal(branded("sk-live-SECRET token"))).toBe(false); // an unbounded code is not a refusal
+    expect(isDefiniteProviderRefusal(branded(5))).toBe(false);
     expect(isDefiniteProviderRefusal("string")).toBe(false);
     expect(isDefiniteProviderRefusal(undefined)).toBe(false);
   });

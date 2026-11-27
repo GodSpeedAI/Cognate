@@ -52,7 +52,7 @@ const deferred = (): Deferred => {
 /** A definite refusal carrying a bounded `code` (the verbatim message is never recorded). */
 const refusal = (message: string, code: string): Error => new (RlmProviderRefusal as unknown as new (message: string, code?: string) => Error)(message, code);
 
-type ProviderMode = "complete" | "fail" | "failThrow" | "duckRefusal" | "emitThenLost" | "timedOut" | "unknown" | "lostCompleted" | "lostFailed" | "lostUnknown" | "lostUntied" | "lostNothing";
+type ProviderMode = "complete" | "fail" | "failThrow" | "duckRefusal" | "badCodeRefusal" | "emitThenLost" | "timedOut" | "unknown" | "lostCompleted" | "lostFailed" | "lostUnknown" | "lostUntied" | "lostNothing";
 
 interface ProviderOptions {
   readonly capabilities?: Partial<ProviderFacts["capabilities"]>;
@@ -107,6 +107,7 @@ function testProvider(id: string, mode: ProviderMode, options: ProviderOptions =
       counts.requests.push(req);
       if (options.tryReservedEmit) {
         for (const type of ["rlm.outcome", "rlm.dispatch.intended"]) await ctx.emit(type, { forged: true }).catch((error: Error) => void counts.reservedEmitErrors.push(error.message));
+        for (const id of ["rlm.outcome", "rlm.dispatch.view"]) await ctx.step(id, async () => ({ forged: true })).catch((error: Error) => void counts.reservedEmitErrors.push(error.message));
       }
       if (options.progress) {
         await wait(options.gateBeforeProgress, ctx);
@@ -133,6 +134,11 @@ function testProvider(id: string, mode: ProviderMode, options: ProviderOptions =
         // A transport error that merely claims it is definite must NOT count as "nothing ran".
         views.set(ctx.runId, view("completed"));
         throw Object.assign(new Error("wrapped transport error"), { definite: true });
+      }
+      if (mode === "badCodeRefusal") {
+        // Carries the refusal brand but a secret-looking code: not a valid bounded code, so not a definite refusal.
+        views.set(ctx.runId, view("completed"));
+        throw Object.assign(new Error("transport"), { [Symbol.for("cognate.rlm.providerRefusal")]: true, code: "sk-live-SECRET token" });
       }
       if (mode === "emitThenLost") {
         await ctx.emit("rlm.progress", { pct: 10 });
@@ -1155,8 +1161,71 @@ describe("RLM component (I1)", () => {
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "reserved" });
     await until(rt, run.runId, "completed");
     await inspectUntil(rt, run.runId, INV, "completed");
-    expect(provider.reservedEmitErrors.length).toBe(2);
+    expect(provider.reservedEmitErrors.length).toBe(4); // two emits and two steps
+    expect(provider.reservedEmitErrors.filter((m) => /step/.test(m)).length).toBe(2);
     expect(provider.reservedEmitErrors.join(" ")).toMatch(/reserved/);
+  });
+
+  test("a refusal carrying the brand but an unbounded code is a lost response and its code never reaches the stream", async () => {
+    const provider = testProvider("test-provider", "badCodeRefusal");
+    const rt = await open([{ provider, label: "bad-code" }], parentAgent(async (ctx) => (await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx))) as unknown as Json));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "bad-code" });
+    await until(rt, run.runId, "completed");
+    const child = await childOf(rt, run.runId);
+    await continuation(rt, child.runId, "ambiguous-invocation"); // untied view: parked, not failed
+    for await (const event of rt.service.events(alice, { runId: child.runId })) expect(JSON.stringify(event.payload)).not.toContain("SECRET");
+  });
+
+  test("a cancel before any child exists does not block a new attempt of the same task", async () => {
+    const provider = testProvider("test-provider", "complete");
+    let crashed = false;
+    wrap = hooked({
+      startRun: (original) => async (caller: never, request: never) => {
+        if (!crashed && (request as { agent: string }).agent === RLM_AGENT_ID) {
+          crashed = true;
+          await cancelCap(rtRef!, (request as { input: { runId: string } }).input.runId); // cancel lands, then the start never happens
+          throw new Error("crash before the child was created");
+        }
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "pre-start" }], parentAgent(async (ctx) => {
+      const first = await refusingParent((c) => ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(c)) as Promise<Json>).run({}, ctx);
+      const second = await ctx.invoke(RLM_CAPABILITIES.invoke, invokeArgs(ctx, { invocationId: "inv-2" }));
+      return { first, second } as unknown as Json;
+    }));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "pre-start-cancel" });
+    const done = await until(rt, run.runId, "completed");
+    expect((done.output as unknown as { first: { refusal: string } }).first.refusal).toMatch(/crash before the child/);
+    await inspectUntil(rt, run.runId, "inv-2", "completed");
+    expect(provider.spawns).toBe(1);
+  });
+
+  test("a not-dispatched cancel record is upgraded when the child turns up and its provider cancel is then settled or retried", async () => {
+    const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise, cancelFailures: 1 });
+    let forceEmpty = false;
+    wrap = hooked({
+      ...lostBindingWrite().hooks, // the binding stays pending-start, so the child is found only by correlation id
+      listRuns: (original) => async (caller: never, request: never) => {
+        // The cancel handler's first lookup finds no child (forced); its re-lookup after the record finds the real one.
+        if (forceEmpty && /^rlm:/.test((request as { correlationId?: string }).correlationId ?? "")) {
+          forceEmpty = false;
+          return [];
+        }
+        return original(caller, request);
+      },
+    });
+    const rt = await open([{ provider, label: "relookup" }], reinvokingParent(false));
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "relookup" });
+    const probe = await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider);
+    forceEmpty = true;
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "failed" });
+    const held = readInvocationBinding(await parentState(rt, run.runId), INV)!.cancellation!;
+    expect(held).toMatchObject({ dispatched: true, providerCancel: "failed" }); // not left as a not-dispatched lie
+    expect(await cancelCap(rt, run.runId)).toMatchObject({ status: "cancelled", providerCancel: "cancelled" });
+    expect(provider.cancels).toBe(2);
+    await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
   });
 
   test("a provider that emitted before the response was lost still leaves exactly one outcome", async () => {
@@ -1215,7 +1284,7 @@ describe("RLM component (I1)", () => {
         expect(done.output).toMatchObject({ status: "completed", reconciled: true });
         expect((await outcomeOf(rt, child.runId)).evidence as string[]).toContain("operator override of provider-view:failed");
       } else {
-        expect((await until(rt, child.runId, "failed")).error).toMatch(/contradicts the provider/);
+        expect((await until(rt, child.runId, "failed")).error).toMatch(/contradicts the provider.*original resolution/);
         const outcome = await outcomeOf(rt, child.runId);
         expect(outcome).toMatchObject({ status: "failed", reconciled: true });
         expect(outcome.evidence as string[]).toContain("operator result contradicts provider-view:failed");
