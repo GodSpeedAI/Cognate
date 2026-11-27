@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-protocol-connect-bun-v0.11.0...cognate-protocol-connect-bun-v0.12.0) (2026-11-27)
+
+
+### Miscellaneous Chores
+
+* **cognate-protocol-connect-bun:** Synchronize cognate SDK packages versions
+
 ## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-protocol-connect-bun-v0.10.0...cognate-protocol-connect-bun-v0.11.0) (2026-11-20)
 
 

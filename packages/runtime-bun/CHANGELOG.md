@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.11.0...cognate-runtime-bun-v0.12.0) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **runtime:** a mixed-version fleet is unsupported for assignment runs. An older node never reads the run-assignment-<id> lifecycle stream and can complete a run whose interrupt a newer node accepted. Drain assignment runs, then upgrade every node.
+
+### Bug Fixes
+
+* **runtime:** assignment controls go on a control stream, not the run stream (DEBT-033) ([#93](https://github.com/GodSpeedAI/Cognate/issues/93)) ([4d9b80c](https://github.com/GodSpeedAI/Cognate/commit/4d9b80c9cd3ad96b6c40fb8de3bd84737cae594e))
+* **runtime:** back off between assignment append retries (DEBT-033) ([#91](https://github.com/GodSpeedAI/Cognate/issues/91)) ([e33978a](https://github.com/GodSpeedAI/Cognate/commit/e33978a90c6f1643c773a35b6e3020c12dcf2a93))
+
 ## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-runtime-bun-v0.10.0...cognate-runtime-bun-v0.11.0) (2026-11-20)
 
 

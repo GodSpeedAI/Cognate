@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-api-v0.11.0...cognate-cognitive-api-v0.12.0) (2026-11-27)
+
+
+### Miscellaneous Chores
+
+* **cognate-cognitive-api:** Synchronize cognate SDK packages versions
+
 ## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-cognitive-api-v0.10.0...cognate-cognitive-api-v0.11.0) (2026-11-20)
 
 
