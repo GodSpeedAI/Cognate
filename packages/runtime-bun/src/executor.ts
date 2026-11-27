@@ -10,7 +10,7 @@ import { assertAuthorityClaims } from "./governed-operation.ts";
 import { field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 /** Internal control flow: the execution stops here (suspended, cancelled, or lost a write race). */
-class Halt {
+export class Halt {
   constructor(readonly retry: boolean) {}
 }
 

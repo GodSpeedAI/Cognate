@@ -422,14 +422,24 @@ export function readGrantRevocation(state: Json | null | undefined, invocationId
   return typeof entry === "string" ? entry : "revoked";
 }
 
+const REFUSAL_BRAND = Symbol.for("cognate.rlm.providerRefusal");
+
 /**
- * Additive (#113). A provider throws this from `invoke` to say it DEFINITELY did nothing (it refused before any
- * side effect). The child run then fails with the reason, as it always did. Any other throw from `invoke` is a lost
- * response: the provider may have acted, so the original invocation is inspected or parked, never re-invoked.
+ * Additive (#113). A provider throws this from `invoke` to say it DEFINITELY did nothing (it refused before any side
+ * effect). The child run then fails, recording only the bounded `code` (never the message, which may carry secrets).
+ * Any other throw from `invoke`, including an object that merely claims to be definite, is a lost response: the provider
+ * may have acted, so the original invocation is inspected or parked, never re-invoked.
  */
 export class RlmProviderRefusal extends Error {
   override readonly name = "RlmProviderRefusal";
-  readonly definite = true as const;
+  readonly [REFUSAL_BRAND] = true as const;
+  /** A bounded, non-secret reason code (`[a-z0-9._-]{1,48}`); anything else is recorded as `refused`. */
+  readonly code: string;
+  constructor(message: string, code = "refused") {
+    super(message);
+    this.code = /^[a-z0-9._-]{1,48}$/.test(code) ? code : "refused";
+  }
 }
 
-export const isDefiniteProviderRefusal = (error: unknown): boolean => error instanceof RlmProviderRefusal || (typeof error === "object" && error !== null && (error as { definite?: unknown }).definite === true);
+export const isDefiniteProviderRefusal = (error: unknown): error is RlmProviderRefusal =>
+  error instanceof RlmProviderRefusal || (typeof error === "object" && error !== null && (error as Record<symbol, unknown>)[REFUSAL_BRAND] === true && typeof (error as { code?: unknown }).code === "string");

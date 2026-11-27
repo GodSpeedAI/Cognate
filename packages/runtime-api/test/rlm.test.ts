@@ -106,9 +106,11 @@ describe("state readers never resolve inherited members (#113)", () => {
 });
 
 describe("a provider's definite refusal is typed (#113)", () => {
-  test("RlmProviderRefusal and any error carrying definite: true are definite; other errors are not", () => {
+  test("only a branded RlmProviderRefusal is definite", () => {
     expect(isDefiniteProviderRefusal(new RlmProviderRefusal("nothing ran"))).toBe(true);
-    expect(isDefiniteProviderRefusal(Object.assign(new Error("x"), { definite: true }))).toBe(true);
+    expect(isDefiniteProviderRefusal(Object.assign(new Error("x"), { definite: true }))).toBe(false); // duck typing is not a refusal
+    expect(new RlmProviderRefusal("secret detail", "quota").code).toBe("quota");
+    expect(new RlmProviderRefusal("secret detail", "Has Spaces And Secrets sk-1").code).toBe("refused");
     expect(isDefiniteProviderRefusal(new Error("timeout"))).toBe(false);
     expect(isDefiniteProviderRefusal("string")).toBe(false);
     expect(isDefiniteProviderRefusal(undefined)).toBe(false);
