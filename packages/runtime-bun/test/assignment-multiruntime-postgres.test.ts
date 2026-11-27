@@ -140,3 +140,50 @@ test("PostgreSQL: an interrupt that lands before the executor's terminal commit 
     await opened.close().catch(() => {});
   }
 }, 60_000);
+
+test("PostgreSQL: a progress commit parked after its guard cannot land after an interrupt (fence on the PostgreSQL store)", async () => {
+  const schema = `cognate_asg_fp_${Date.now().toString(36)}`;
+  const opened = await openPostgresStore({ url, schema, pollMs: 0 });
+  const deferred = () => { let resolve!: () => void; const promise = new Promise<void>((r) => (resolve = r)); return { promise, resolve }; };
+  const reached = deferred();
+  const release = deferred();
+  const exited = deferred();
+  let parked = false;
+  const store = new Proxy(opened.store, {
+    get(target, prop) {
+      const value = Reflect.get(target, prop, target);
+      if (prop !== "commit") return typeof value === "function" ? value.bind(target) : value;
+      return async (...args: unknown[]) => {
+        const appends = (args[0] as { appends?: { events: { eventType: string }[] }[] }).appends ?? [];
+        if (!parked && appends.some((a) => a.events.some((e) => e.eventType === "progress"))) {
+          parked = true;
+          reached.resolve();
+          await release.promise;
+        }
+        return (value as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+      };
+    },
+  });
+  const agent: AgentDefinition = { id: "agent.streaming", version: "1", run: async (_i, ctx) => { try { for (let i = 0; i < 5; i++) await ctx.emit("progress", { i }); return { done: true }; } finally { exited.resolve(); } } };
+  const rt = await createRuntime({ store: { store }, agents: [agent], ...allow });
+  try {
+    const run = await rt.service.startRun(alice, {
+      agent: "agent.streaming", input: {}, idempotencyKey: "pg-fp", assignment,
+      caseContext: { worldRef: `world:fde-sop@sha256:${"a".repeat(64)}`, semanticRef: "fde-sop.work::Task", caseId: assignment.case_id, planItemId: assignment.step_id, role: "executor", kind: "evaluated" },
+    });
+    await reached.promise; // a progress commit, past its durable guard, is about to land
+    await rt.assignments.interruptAssignment(alice, { runId: run.runId, reason: "fence", idempotencyKey: "pg-i1" });
+    release.resolve();
+    await exited.promise;
+    const events: { eventType: string; position: number }[] = [];
+    for await (const e of rt.service.events(alice, { runId: run.runId })) events.push(e);
+    const interrupted = events.find((e) => e.eventType === "assignment.interrupted")!;
+    expect(events.some((e) => e.eventType === "progress" && e.position > interrupted.position)).toBe(false);
+  } finally {
+    await rt.close().catch(() => {});
+    const cleaner = await openPostgresStore({ url, schema, pollMs: 0 });
+    await cleaner.dropSchema();
+    await cleaner.close();
+    await opened.close().catch(() => {});
+  }
+}, 60_000);
