@@ -18,7 +18,7 @@ import type { Runtime, RuntimeOptions } from "./index.ts";
 import { inspectCorrelation } from "./inspect.ts";
 import { Governor } from "./governed-operation.ts";
 import { Invoker } from "./invoker.ts";
-import { createAssignmentService } from "./assignment.ts";
+import { assignmentOf, createAssignmentService, settleTerminalRun } from "./assignment.ts";
 import { createService } from "./service.ts";
 import { RemoteOfferRegistry } from "./remote-offers.ts";
 
@@ -405,8 +405,14 @@ export async function startRuntime(options: RuntimeOptions): Promise<Runtime> {
 
   // Recovery: re-enter runs that were running at shutdown or whose wait closed without a delivery.
   for (const { id } of await store.listRecords(RUNS)) {
-    const view = foldRun(id, await store.readStream(runStream(id)));
-    if (!view || isTerminal(view)) continue;
+    const recoveredEvents = await store.readStream(runStream(id));
+    const view = foldRun(id, recoveredEvents);
+    if (view && isTerminal(view)) {
+      // A bound run that ended with a continuation still open (its cancel failed after the terminal) is closed here.
+      if (assignmentOf(recoveredEvents[0]) !== undefined) await settleTerminalRun(core, id).catch(() => {});
+      continue;
+    }
+    if (!view) continue;
     if (view.status === "running") pending.add(id);
     for (const continuationId of view.waitingOn) {
       const record = await continuations.get(continuationId);

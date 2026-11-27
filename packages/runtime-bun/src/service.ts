@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, finalizeStoppedRun, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
+import { acceptLifecycleEvent, settleTerminalRun, finalizeStoppedRun, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { assignmentControlStream, foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -176,15 +176,17 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         // Already ended (possibly by the executor or a breach, or after losing a race here): abort the stale pass and report.
         if (isTerminal(view)) {
           core.controllers.get(request.runId)?.abort(new Error("run ended"));
+          await settleTerminalRun(core, request.runId);
           return view;
         }
-        // The assignment already ended without the run (a budget stop not yet finalized, or a legacy crash state): the run
-        // finishes the way the assignment did, it is not overridden by this cancel.
+        // The assignment already failed without the run (a budget stop not yet finalized, or a legacy failed crash state):
+        // the run finishes as failed with the recorded reason; the cancel is a no-op on an already-failed outcome. A legacy
+        // completed assignment is cancellable like any run (only run.cancelled is written, the assignment state stands).
         const ended = foldAssignment(request.runId, events, control);
-        if (ended && ended.status === "failed" && ended.budgetExceeded) {
-          // Finish the run as the budget stop; abort the local pass only once that is durable, so a finalization that
+        if (ended && ended.status === "failed") {
+          // Finish the run as the recorded failure; abort the local pass only once that is durable, so a finalization that
           // cannot commit (it throws unavailable) leaves the pass running and the cancel retryable.
-          await finalizeStoppedRun(core, request.runId, caller.actor);
+          await finalizeStoppedRun(core, request.runId);
           core.controllers.get(request.runId)?.abort(new Error("assignment ended"));
           return (await readRun(caller, request.runId)).view;
         }

@@ -185,7 +185,7 @@ function missingRunTerminal(view: AssignmentView): { readonly eventType: "run.fa
  * executor is stopping) is retried with backoff and exhaustion throws. Continuations are cancelled as the runtime
  * (`core.system`), which authorizes the work; the principal that caused the breach is named in the cancel reason only.
  */
-export async function finalizeStoppedRun(core: Core, runId: string, actor: Caller["actor"] = core.system, pacing: AppendPacing = {}): Promise<void> {
+export async function finalizeStoppedRun(core: Core, runId: string, pacing: AppendPacing = {}): Promise<void> {
   const sleep = pacing.sleep ?? ((ms: number) => Bun.sleep(ms));
   const random = pacing.random ?? Math.random;
   let done = false;
@@ -198,11 +198,12 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
     const view = foldAssignment(runId, events, control);
     const terminal = view ? missingRunTerminal(view) : undefined;
     if (!run || !view || terminal === undefined) return;
-    const breachedBy = control.findLast((e) => e.eventType === "assignment.failed");
-    const by = field<string>(meta(breachedBy ?? events[0]!), "by");
-    const byKind = field<string>(meta(breachedBy ?? events[0]!), "byKind");
+    // The lifecycle stream first; a legacy failure recorded on the run stream may carry the principal too.
+    const stopped = control.findLast((e) => e.eventType === "assignment.failed") ?? events.findLast((e) => e.eventType === "assignment.failed");
+    const by = stopped ? field<string>(meta(stopped), "by") : null;
+    const byKind = stopped ? field<string>(meta(stopped), "byKind") : null;
     if (budgetError(view) !== undefined) reason = "ASSIGNMENT_BUDGET_EXCEEDED";
-    if (breachedBy && by) attributedTo = `${byKind ?? "user"}:${by}`;
+    if (by) attributedTo = `${byKind ?? "user"}:${by}`;
     if (isTerminal(run)) {
       done = true;
       break;
@@ -224,9 +225,14 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
     }
   }
   if (!done) throw new ServiceError("unavailable", `run ${runId} could not be finished after its assignment ended`);
+  await cancelOpenContinuations(core, runId, `${reason} (caused by ${attributedTo})`);
+}
+
+/** Cancel a run's open continuations as the runtime. Idempotent: a continuation another call already closed is fine. */
+async function cancelOpenContinuations(core: Core, runId: string, reason: string): Promise<void> {
   for (const c of await core.continuations.list({ runId, status: "OPEN" })) {
     try {
-      const outcome = await core.continuations.cancel(c.id, { actor: core.system, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason: `${reason} (caused by ${attributedTo})` });
+      const outcome = await core.continuations.cancel(c.id, { actor: core.system, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason });
       // A refusal is a failure of the stop, not a quiet success: the continuation is still open.
       if (outcome.kind === "denied") throw new ServiceError("permission_denied", `continuation ${c.id} could not be cancelled: ${outcome.reason}`);
     } catch (error) {
@@ -234,6 +240,19 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
       if ((await core.continuations.list({ runId, status: "OPEN" })).some((o) => o.id === c.id)) throw error;
     }
   }
+}
+
+/**
+ * A run that already ended must not keep an open continuation (a cancel that failed after the run's terminal committed
+ * would otherwise leave one forever): every path that meets a terminal bound run, the executor, `cancelRun` and recovery,
+ * calls this. Cheap and idempotent; a run without an assignment is left alone.
+ */
+export async function settleTerminalRun(core: Core, runId: string): Promise<void> {
+  const { events, control } = await readLifecycle(core, runId);
+  const run = foldRun(runId, events);
+  const view = foldAssignment(runId, events, control);
+  if (!run || !view || !isTerminal(run)) return;
+  await cancelOpenContinuations(core, runId, view.status === "failed" && view.budgetExceeded ? "ASSIGNMENT_BUDGET_EXCEEDED" : "ASSIGNMENT_STOPPED");
 }
 
 export function createAssignmentService(core: Core, pacing: AppendPacing = {}): AssignmentService {
@@ -389,7 +408,7 @@ export function createAssignmentService(core: Core, pacing: AppendPacing = {}): 
       // Derived from the committed state on every call (a retry, or a call after a failed cleanup, finishes it).
       if (view.status === "failed" && view.budgetExceeded) {
         stopExecution(request.runId, "assignment budget exceeded");
-        await finalizeStoppedRun(core, request.runId, caller.actor, { sleep, random });
+        await finalizeStoppedRun(core, request.runId, { sleep, random });
       }
       return view;
     },

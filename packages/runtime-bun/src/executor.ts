@@ -4,7 +4,7 @@
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, type Json, type NewEvent, StaleRunOwnerError, type StoredEvent } from "@godspeedai/cognate-events";
 import type { Principal, SemanticRef } from "@godspeedai/cognate-kernel-api";
 import { applyStateUpdate, type ArtifactInput, ContinuationClosedError, FrontendCapabilityError, foldState, InvocationFailedError, type RemoteCapabilityOffer, type RunContext, StatePatchError, type WaitSpec } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, assignmentMetadata, assignmentOf, finalizeStoppedRun, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
+import { acceptLifecycleEvent, assignmentMetadata, assignmentOf, finalizeStoppedRun, foldAssignment, settleTerminalRun, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core, RecallResultJson } from "./core.ts";
 import { assertAuthorityClaims } from "./governed-operation.ts";
 import { assignmentControlStream, field, foldRun, isTerminal, messageOf, meta, RESUME_HANDLER, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
@@ -50,7 +50,11 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
   const events = await core.store.readStream(streamId);
   if (controller.signal.aborted) return "done";
   const view = foldRun(runId, events);
-  if (!view || isTerminal(view)) return "done";
+  if (!view || isTerminal(view)) {
+    // A cancel that failed after the terminal committed must not leave a continuation open for good.
+    if (view && assignmentOf(events[0]) !== undefined) await settleTerminalRun(core, runId);
+    return "done";
+  }
   const agent = core.agents.get(view.agent);
   const started = events[0]!;
   // An interrupted assignment is paused: nothing runs until `resumeAssignment` records the resume (WP-23).
