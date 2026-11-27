@@ -167,7 +167,9 @@ function mergeBinding(current: RlmInvocationBinding | undefined, update: Partial
   const base = (current ?? update) as RlmInvocationBinding;
   const incoming = update.cancellation;
   const held = current?.cancellation;
-  const cancellation = incoming && (!held || held.providerCancel === "failed") ? { ...incoming, requestedAt: held?.requestedAt ?? incoming.requestedAt } : (held ?? incoming);
+  // A held record is replaced when its provider cancel failed, or when it said "not dispatched" and the child has since turned out to be.
+  const upgrade = !held || held.providerCancel === "failed" || (held.dispatched === false && incoming?.dispatched === true);
+  const cancellation = incoming && upgrade ? { ...incoming, requestedAt: held?.requestedAt ?? incoming.requestedAt } : (held ?? incoming);
   const runId = current?.runId || update.runId || "";
   const state = current?.state === "started" || update.state === "started" ? "started" : (current?.state ?? update.state);
   return { ...base, ...(current ? { ...update, ...current } : {}), runId, ...(state ? { state } : {}), ...(cancellation ? { cancellation } : {}) };
@@ -377,7 +379,8 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
         const other = prior as unknown as RlmInvocationBinding;
         if (other.parentRunId !== parentRunId || other.contextDigest !== input.task.contextDigest) continue;
         const otherRun = await childRunIdOf(svc, caller, other);
-        const otherStatus = otherRun ? await invocationStatus(svc, caller, otherRun) : "admitted";
+        // A binding cancelled before any child existed is finished (cancelled), not unresolved.
+        const otherStatus: RlmInvocationStatus = otherRun ? await invocationStatus(svc, caller, otherRun) : other.cancellation ? "cancelled" : "admitted";
         if (!isTerminalInvocationStatus(otherStatus)) throw new RlmRefusedError("rlm-attempt-refused", `attempt ${other.invocationId} for this task is unresolved (${otherStatus}); reconcile or cancel it before a new attempt`);
       }
       const withdrawn = await grantWithdrawn(svc, caller, parentRunId, input.invocationId);
@@ -626,6 +629,10 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
           if (RESERVED_EMIT.test(eventType)) throw new Error(`emit: event type ${eventType} is reserved for the rlm agent`);
           return ctx.emit(eventType, payload);
         },
+        step: async <T extends Json>(id: string, fn: () => T | Promise<T>): Promise<T> => {
+          if (id.startsWith("rlm.")) throw new Error(`step: id ${id} is reserved for the rlm agent`);
+          return ctx.step(id, fn);
+        },
       });
 
       // 1. Intent, durable before any provider call. `fresh` is true only in the pass that records it.
@@ -704,7 +711,7 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
         const contradicted = !failed && latestTied && ["failed", "timedOut", "cancelled"].includes(latest.status);
         if (contradicted && resolution?.override !== true) {
           await record(toOutcome({ status: "failed", evidence: [...evidence, `operator result contradicts provider-view:${latest.status}`], payment: latest.payment, isolation: latest.isolation, reconciled: true }));
-          throw new RlmRefusedError("rlm-invocation-ambiguous", `the operator result for ${child.invocationId} contradicts the provider's ${latest.status} view; resolve with override: true to accept it`);
+          throw new RlmRefusedError("rlm-invocation-ambiguous", `the operator result for ${child.invocationId} contradicts the provider's ${latest.status} view; override: true must be supplied in the original resolution (this invocation is now closed failed)`);
         }
         const status: RlmInvocationStatus = failed ? "failed" : "completed";
         const finalEvidence = contradicted ? [...evidence, `operator override of provider-view:${latest.status}`] : failed && latestTied && latest.status === "completed" ? [...evidence, "operator failure contradicts provider-view:completed"] : evidence;
