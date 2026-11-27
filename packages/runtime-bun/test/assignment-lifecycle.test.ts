@@ -734,16 +734,23 @@ describe("legacy crash states: the assignment ended on the run stream, the run d
       expect((await rt.assignments.getAssignment(alice, { runId: run.runId })).status).toBe(kind);
     }, 20_000);
 
-    test(`a cancel of a legacy assignment.${kind} run commits only run.cancelled and leaves the recorded assignment state`, async () => {
+    test(`a cancel of a legacy assignment.${kind} run ${kind === "failed" ? "keeps the recorded failure (a no-op on an already-failed outcome)" : "commits only run.cancelled and leaves the recorded assignment state"}`, async () => {
       const { rt, store } = await boot();
       const run = await startRun(rt, "agent.gated", `lc-${kind}`, { gate: `lc-${kind}` });
       await until(() => hasEvent(rt, run.runId, "run.step.completed"));
       await legacyTerminal(store, run, await store.readStream(`run-${run.runId}`), kind, "legacy boom");
-      expect((await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "c1" })).status).toBe("cancelled");
+      const result = await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "c1" });
       const types = (await eventsOf(rt, run.runId)).map((e) => e.eventType);
       expect(types).not.toContain("run.completed");
       expect(types).not.toContain("assignment.cancelled");
       expect((await rt.assignments.getAssignment(alice, { runId: run.runId })).status).toBe(kind);
+      if (kind === "failed") {
+        expect(result.status).toBe("failed");
+        expect(result.error).toBe("legacy boom");
+        expect(types).not.toContain("run.cancelled");
+      } else {
+        expect(result.status).toBe("cancelled");
+      }
     }, 20_000);
   }
 
@@ -928,6 +935,48 @@ describe("pass 4 review", () => {
     expect(resolved?.actorId).toBe("system");
     expect(resolved?.reason).toContain("caused by unknown");
     expect(resolved?.reason).not.toContain("alice");
+  });
+
+  test("a continuation cancel that failed after the run's terminal is closed by a later cancel", async () => {
+    let failOnce = true;
+    const { rt } = await boot({ failCommit: (c) => (failOnce && c.streams.some((x) => x.startsWith("continuation-")) && c.types.some((t) => t.toLowerCase().includes("cancel")) ? ((failOnce = false), new Error("store down")) : undefined) });
+    const run = await startRun(rt, "agent.waiter", "ct");
+    await until(async () => (await rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).length === 1);
+    const outcome = await rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" }).then(() => "ok", (e) => e);
+    expect(outcome).toBeInstanceOf(Error); // the cancel failed after run.failed committed
+    expect(await runStatus(rt, run.runId)).toBe("failed");
+    expect((await rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).length).toBe(1);
+    await rt.service.cancelRun(alice, { runId: run.runId, reason: "again", idempotencyKey: "c2" }); // terminal early return
+    expect(await rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).toEqual([]);
+  });
+
+  test("a continuation cancel that failed after the run's terminal is closed on restart", async () => {
+    dir = mkdtempSync(join(process.env.TMPDIR ?? tmpdir(), "cognate-asg-ct-"));
+    const file = join(dir, "app.sqlite");
+    let failing = true;
+    const first = await boot({ file, failCommit: (c) => (failing && c.streams.some((x) => x.startsWith("continuation-")) && c.types.some((t) => t.toLowerCase().includes("cancel")) ? new Error("store down") : undefined) });
+    const run = await startRun(first.rt, "agent.waiter", "ctr");
+    await until(async () => (await first.rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).length === 1);
+    await first.rt.assignments.recordSpend(alice, { runId: run.runId, currency: "money", amount: 6, idempotencyKey: "s1" }).catch(() => {});
+    expect(await runStatus(first.rt, run.runId)).toBe("failed");
+    failing = false;
+    await first.rt.close();
+    first.store.close();
+    runtime = undefined;
+    const second = await boot({ file });
+    await until(async () => (await second.rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).length === 0);
+  }, 20_000);
+
+  test("attribution falls back to the principal recorded on a legacy run-stream failure", async () => {
+    const { rt, store } = await boot();
+    const run = await startRun(rt, "agent.waiter", "lbf");
+    await until(async () => (await rt.service.listContinuations(alice, { runId: run.runId, status: "OPEN" })).length === 1);
+    const stream = await store.readStream(`run-${run.runId}`);
+    const at = new Date().toISOString();
+    await store.commit({ appends: [{ streamId: `run-${run.runId}`, expectedVersion: stream.length, events: [{ eventId: "legacy-by", eventType: "assignment.failed", schemaVersion: 1, occurredAt: at, tenant: "t", correlationId: stream[0]!.correlationId, causationId: stream.at(-1)!.eventId, runId: run.runId, scopeId: stream[0]!.scopeId, payload: { assignment_id: assignment.assignment_id, episode_ref: assignment.episode_ref, event: "failed", at, spend: zeroSpend(0), reason: "legacy boom" } as never, metadata: { assignmentEvent: "failed", by: "olivia" } }] }] });
+    await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "c1" });
+    const resolved = (await store.readStream(`continuation-${run.runId}.wait.w`)).map((e) => e.payload as { reason?: string } | null).find((p) => p?.reason);
+    expect(resolved?.reason).toContain("caused by user:olivia");
   });
 
   test("the approved second call is fenced: an interrupt between approval and the call stops it before dispatch", async () => {
