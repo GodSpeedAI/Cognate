@@ -246,6 +246,8 @@ describe("RLM component (I1)", () => {
 
   afterEach(async () => {
     await runtime?.close();
+    // A store handed to the runtime belongs to the test: close it after the runtime, whatever the assertions did.
+    (injectedStore as { close?: () => unknown } | undefined)?.close?.();
     runtime = undefined;
     rtRef = undefined;
     wrap = undefined;
@@ -646,7 +648,7 @@ describe("RLM component (I1)", () => {
     const deadline = Date.now() + 5_000;
     while (provider.spawns === 0 && Date.now() < deadline) await Bun.sleep(5);
     const out = (await rt.service.invoke(alice, { capability: RLM_CAPABILITIES.cancel, input: { parentRunId: run.runId, invocationId: INV, reason: "stop" } })) as unknown as RlmCancelOutput;
-    expect(out).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "failed", error: "cancel channel lost" });
+    expect(out).toMatchObject({ status: "cancelled", dispatched: true, providerCancel: "failed", error: "Error" });
   });
 
   test("a child cancelled before it dispatches never calls the provider", async () => {
@@ -762,7 +764,7 @@ describe("RLM component (I1)", () => {
       armed,
       hooks: {
         updateState: (original) => async (caller: never, request: never) => {
-          if (armed.value && /^rlm-mapping:inv-1:v\d+$/.test((request as { idempotencyKey: string }).idempotencyKey)) {
+          if (armed.value && /^rlm-mapping:inv-1:v\d+:/.test((request as { idempotencyKey: string }).idempotencyKey)) {
             armed.value = false;
             throw new Error("binding write lost");
           }
@@ -1028,14 +1030,18 @@ describe("RLM component (I1)", () => {
     const provider = testProvider("test-provider", "complete");
     let armed = false;
     let calls = 0;
+    let parentRun = "";
     wrap = hooked({
       startRun: (original) => async (caller: never, request: never) => {
-        if ((request as { agent: string }).agent === RLM_AGENT_ID) armed = true;
+        if ((request as { agent: string }).agent === RLM_AGENT_ID) {
+          armed = true;
+          parentRun = (request as { input: { runId: string } }).input.runId;
+        }
         return original(caller, request);
       },
       getRun: (original) => async (caller: never, request: never) => {
-        // getRun calls by the child: intent fence (parent), its last look (own run), then the dispatch-step fence (parent).
-        if (armed && ++calls === 3) await revokeRlmGrant(rtRef!.service, alice, (request as { runId: string }).runId, INV, "late revocation");
+        // getRun calls by the child: intent check (own run #1, parent #2), then the check before invoke (own run #3, parent #4); inject before #3.
+        if (armed && ++calls === 3) await revokeRlmGrant(rtRef!.service, alice, parentRun, INV, "late revocation");
         return original(caller, request);
       },
     });
@@ -1062,8 +1068,8 @@ describe("RLM component (I1)", () => {
       getRun: (original) => async (caller: never, request: never) => {
         const run = (request as { runId: string }).runId;
         const view = (await original(caller, request)) as RunView;
-        // child getRun calls: 1 in the intent fence, 2 in the dispatch fence, 3 the final look immediately before invoke
-        if (armed && view.agent === RLM_AGENT_ID && ++childLooks === 3) {
+        // the child's own-status reads: 1 in the intent check, 2 in the check immediately before invoke
+        if (armed && view.agent === RLM_AGENT_ID && ++childLooks === 2) {
           injected = true;
           await rtRef!.service.cancelRun(alice, { runId: run, reason: "late cancel", idempotencyKey: "late-cancel" });
           return original(caller, request); // re-read after the cancel committed
@@ -1084,6 +1090,7 @@ describe("RLM component (I1)", () => {
     const rt = await open([{ provider, label: "cancelled-parent" }], waitingParent());
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cancelled-parent" });
     await continuation(rt, run.runId, "rlm-probe");
+    await spawned(provider); // the original invocation reached its provider before the parent is cancelled
     await rt.service.cancelRun(alice, { runId: run.runId, reason: "stop", idempotencyKey: "cancel-parent" });
     const orphan = await rt.service.startRun(alice, { agent: RLM_AGENT_ID, input: childInputFor(run.runId), idempotencyKey: "orphan-child" });
     expect((await until(rt, orphan.runId, "failed")).error).toMatch(/was cancelled/);
@@ -1395,10 +1402,12 @@ describe("RLM component (I1)", () => {
 
   test("the agent re-reads its own run status as the last step before invoke: a cancel the local signal never saw stops it", async () => {
     const calls: string[] = [];
+    let childReads = 0;
     const registry = createRlmRegistry();
     registry.register({ provider: { ...testProvider("test-provider", "complete"), invoke: async () => { calls.push("invoke"); return { runId: "x" }; } } as RlmProvider, label: "last-look" });
     const service = {
-      getRun: async (_caller: Caller, request: { runId: string }) => ({ status: request.runId === "child-run" ? "cancelled" : "running", startedBy: "alice" }),
+      // The child's own status reads running at its intent check and cancelled afterwards: only the check right before invoke can stop it.
+      getRun: async (_caller: Caller, request: { runId: string }) => ({ status: request.runId === "child-run" && ++childReads > 1 ? "cancelled" : "running", startedBy: "alice" }),
       events: async function* () {},
     } as unknown as RuntimeService;
     const agent = createRlmAgent({ registry, getService: () => service });

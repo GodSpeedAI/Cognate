@@ -76,7 +76,8 @@ function put(doc: Json, pointer: string, mode: "add" | "replace" | "remove", val
   } else if (isObject(parent)) {
     if (mode !== "add" && !Object.hasOwn(parent, last)) throw new StatePatchError(`path ${pointer} does not exist`);
     if (mode === "remove") delete parent[last];
-    else parent[last] = structuredClone(value);
+    // defineProperty, not assignment: assigning `__proto__` would change the prototype and silently drop the leaf.
+    else Object.defineProperty(parent, last, { value: structuredClone(value), writable: true, enumerable: true, configurable: true });
   } else {
     throw new StatePatchError(`path ${pointer} does not exist`);
   }

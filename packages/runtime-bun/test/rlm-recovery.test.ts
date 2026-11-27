@@ -39,9 +39,25 @@ const POSTGRES_URL = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgr
 
 /** Opens the schema, or fails fast and clearly when no PostgreSQL is reachable (this suite is never skipped). */
 async function openSchema(schema: string) {
-  const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timed out after 5 s")), 5_000).unref());
+  let timedOut = false;
+  const opening = openPostgresStore({ url: POSTGRES_URL, schema, pollMs: 0 });
+  // A store that finishes opening after the deadline has no caller: drop its schema and close it so nothing leaks.
+  opening.then(
+    async (late) => {
+      if (!timedOut) return;
+      await late.dropSchema().catch(() => {});
+      await late.close().catch(() => {});
+    },
+    () => {},
+  );
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => {
+      timedOut = true;
+      reject(new Error("timed out after 5 s"));
+    }, 5_000).unref(),
+  );
   try {
-    return await Promise.race([openPostgresStore({ url: POSTGRES_URL, schema, pollMs: 0 }), timeout]);
+    return await Promise.race([opening, timeout]);
   } catch (cause) {
     throw new Error(`rlm-recovery.test.ts needs a reachable PostgreSQL (COGNATE_TEST_POSTGRES_URL, default postgres://postgres:postgres@127.0.0.1:5432/postgres): ${(cause as Error).message}. Start one with pg0; see the commands in this file's header.`);
   }
@@ -200,15 +216,22 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
   const decoder = new TextDecoder();
   let text = "";
   const deadline = Date.now() + 20_000;
-  while (!(sawMarker && parentRunId) && Date.now() < deadline) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    text += decoder.decode(value);
-    parentRunId = /PARENT (\S+)/.exec(text)?.[1] ?? "";
-    sawMarker = text.includes(marker);
+  try {
+    while (!(sawMarker && parentRunId)) {
+      // The read is raced against the remaining deadline: a fixture that stays silent cannot hang the handshake.
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      const next = await Promise.race([reader.read(), Bun.sleep(remaining).then(() => "deadline" as const)]);
+      if (next === "deadline" || next.done) break;
+      text += decoder.decode(next.value);
+      parentRunId = /PARENT (\S+)/.exec(text)?.[1] ?? "";
+      sawMarker = text.includes(marker);
+    }
+  } finally {
+    // The crash itself (and the cleanup when the handshake fails): SIGKILL, never a graceful stop, then reap.
+    proc.kill("SIGKILL");
+    await proc.exited;
   }
-  proc.kill("SIGKILL");
-  await proc.exited;
   expect(sawMarker).toBe(true);
   const invokesBefore = existsSync(counterFile) ? readFileSync(counterFile, "utf8").split("\n").filter(Boolean).length : 0;
 

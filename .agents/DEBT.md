@@ -316,3 +316,14 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed (2026-11-26):** A parent run that invoked `rlm.invoke` can be cancelled through `RuntimeService.cancelRun`. The child `agent.rlm` run and its provider are not touched: no cancellation cascades, so `provider.cancel` is never reached for a dispatched child unless someone calls `rlm.cancel`. A child that has not dispatched yet is stopped by the parent-cancelled check; one already in flight is not.
 **Consequence:** A cancelled parent can leave a provider process running and spending.
 **Exit criterion:** Cancelling a parent cancels every non-terminal child through the `rlm.cancel` path (provider cancel recorded, retry on failure). Proven by flipping `test.failing` to `test` for `cancelling the parent after dispatch reaches provider.cancel for its child` in `packages/runtime-bun/test/rlm.test.ts`.
+
+---
+
+## DEBT-036 — `rlm.dispatch.intended` keeps its identity only in the erasable payload
+
+**Status:** Open 2026-11-27 — found by CodeRabbit on PR #94 (ticket #113).
+**Requirement(s):** None.
+**Observed (2026-11-27):** The child agent emits `rlm.dispatch.intended` with `{invocationId, providerId, attempt, parentRunId}` as its payload. `RunContext.emit(eventType, payload)` has no metadata channel, so the identifiers cannot go in event metadata, and payload erasure leaves the event unattributable (the recorded intent step and the parent binding keep the same identifiers, also in payloads).
+**Consequence:** After a payload erasure the intent event no longer says which invocation it belonged to; the parent binding and the run's correlation id (`rlm:<parent>:<invocation>`) still do.
+**Exit criterion:** `RunContext.emit` (or a sibling) accepts non-sensitive metadata, and the rlm agent records its identifiers there; proven by a test that erases the payload and still attributes the event.
+

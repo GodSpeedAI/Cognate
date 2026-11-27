@@ -120,19 +120,21 @@ function ensureTable(state: Json, table: "invocations" | "revoked"): PatchOp[] {
 
 /**
  * Guarded read-modify-write of one leaf of the parent's `/rlm` state. `decide` sees the current leaf (and the whole
- * state) and returns the value to write, or `"keep"` to leave it; it runs against the state at version V and the commit
+ * state) and returns the value to write, or `KEEP` to leave it; it runs against the state at version V and the commit
  * carries `expectedVersion: V`, so anything that changed the state since (this leaf or any other) makes the commit fail
  * and the whole decision is retried on fresh state. No concurrent binding, revocation or cancellation is overwritten, and
  * a scan inside `decide` is atomic with the write. Returns the leaf as it stands afterwards. Only a terminal parent's
  * refusal is the caller's to swallow; every other failure surfaces.
  */
+const KEEP = Symbol("keep");
+
 async function commitRlmLeaf(
   service: RuntimeService,
   caller: Caller,
   parentRunId: string,
   table: "invocations" | "revoked",
   key: string,
-  decide: (held: Json | undefined, state: Json) => Promise<Json | "keep">,
+  decide: (held: Json | undefined, state: Json) => Promise<Json | typeof KEEP>,
   idempotencyKey: string,
 ): Promise<Json | undefined> {
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -142,13 +144,14 @@ async function commitRlmLeaf(
     const root = isObject(state) ? state.rlm : undefined;
     const held = isObject(root) && isObject(root[table]) && Object.hasOwn(root[table], key) ? root[table][key] : undefined;
     const decision = await decide(held, state);
-    if (decision === "keep" || (held !== undefined && JSON.stringify(held) === JSON.stringify(decision))) return held;
+    if (decision === KEEP || (held !== undefined && JSON.stringify(held) === JSON.stringify(decision))) return held;
     const version = events.filter((event) => event.streamId === runStateStream(parentRunId)).length;
     try {
       await service.updateState(caller, {
         runId: parentRunId,
         update: { patch: [...ensureTable(state, table), { op: "add", path: `/rlm/${table}/${pointer(key)}`, value: decision }] },
-        idempotencyKey: `${idempotencyKey}:v${version}`,
+        // Version AND content: two writers that decided different things at the same version must not share a key.
+        idempotencyKey: `${idempotencyKey}:v${version}:${Bun.hash(JSON.stringify(decision)).toString(36)}`,
         expectedVersion: version,
       });
       return decision;
@@ -169,7 +172,9 @@ export function mergeBinding(current: RlmInvocationBinding | undefined, update: 
   const incoming = update.cancellation;
   const held = current?.cancellation;
   // A held record is replaced when its provider cancel failed, or when it said "not dispatched" and the child has since turned out to be.
-  const upgrade = !held || held.providerCancel === "failed" || (held.dispatched === false && incoming?.dispatched === true);
+  // A record that says the child was dispatched is never replaced by a stale one that does not: dispatch evidence only grows.
+  const stale = held?.dispatched === true && incoming?.dispatched === false;
+  const upgrade = !stale && (!held || held.providerCancel === "failed" || (held.dispatched === false && incoming?.dispatched === true));
   const cancellation = incoming && upgrade ? { ...incoming, requestedAt: held?.requestedAt ?? incoming.requestedAt } : (held ?? incoming);
   const runId = current?.runId || update.runId || "";
   const state = current?.state === "started" || update.state === "started" ? "started" : (current?.state ?? update.state);
@@ -229,7 +234,12 @@ async function parentFor(service: RuntimeService, caller: Caller, input: { reado
 /** The child run of a binding: its `runId`, or (while the binding is still `pending-start`) the run found by correlation id. */
 async function childRunIdOf(service: RuntimeService, caller: Caller, binding: RlmInvocationBinding): Promise<string | undefined> {
   if (binding.runId) return binding.runId;
-  return (await service.listRuns(caller, { correlationId: `rlm:${binding.parentRunId}:${binding.invocationId}` }))[0]?.runId;
+  // The correlation id is caller-suppliable, so a match counts only if it really is this invocation's rlm child.
+  for (const run of await service.listRuns(caller, { correlationId: `rlm:${binding.parentRunId}:${binding.invocationId}` })) {
+    const input = isObject(run.input) ? run.input : {};
+    if (run.agent === RLM_AGENT_ID && input.invocationId === binding.invocationId && input.runId === binding.parentRunId) return run.runId;
+  }
+  return undefined;
 }
 
 async function bindingFor(service: RuntimeService, caller: Caller, input: { readonly invocationId: string; readonly parentRunId?: string }, ctxRunId: string | undefined, what: string): Promise<RlmInvocationBinding> {
@@ -253,7 +263,8 @@ async function childSummary(service: RuntimeService, caller: Caller, childRunId:
     lastEventAt = event.occurredAt;
     if (event.eventType === "rlm.outcome") outcome = event.payload;
     // The agent records its outcome as a named step (a provider's ctx.emit cannot collide with a step id).
-    const result = event.eventType === "run.step.completed" && isObject(event.payload) && isObject(event.payload.result) ? event.payload.result : undefined;
+    const named = (event.metadata as { stepId?: unknown } | null | undefined)?.stepId === "step:rlm.outcome";
+    const result = named && event.eventType === "run.step.completed" && isObject(event.payload) && isObject(event.payload.result) ? event.payload.result : undefined;
     if (result && isObject(result.rlmOutcome)) outcome = result.rlmOutcome;
   }
   return { ...(outcome !== undefined ? { outcome } : {}), ...(lastEventAt !== undefined ? { lastEventAt } : {}) };
@@ -280,10 +291,14 @@ async function invocationStatus(service: RuntimeService, caller: Caller, childRu
  * The invocation status of a binding: the child's own state, or, before any child exists, `cancelled` once a cancellation
  * is recorded (it will never start) and `admitted` otherwise. One definition for inspect, cancel and the attempt scan.
  */
-async function bindingStatus(service: RuntimeService, caller: Caller, binding: RlmInvocationBinding): Promise<RlmInvocationStatus> {
-  const runId = await childRunIdOf(service, caller, binding);
+async function bindingStatus(service: RuntimeService, caller: Caller, binding: RlmInvocationBinding, resolved?: string): Promise<RlmInvocationStatus> {
+  const runId = resolved ?? (await childRunIdOf(service, caller, binding));
   return runId ? invocationStatus(service, caller, runId) : binding.cancellation ? "cancelled" : "admitted";
 }
+
+/** A cancellation is settled when the provider confirmed it, or nothing was ever dispatched to cancel. */
+const cancelSettled = (cancellation: NonNullable<RlmInvocationBinding["cancellation"]>): boolean =>
+  cancellation.providerCancel === "cancelled" || (cancellation.providerCancel === "not-dispatched" && cancellation.dispatched === false);
 
 const DEFAULT_PAYMENT: RlmPayment = { currency: "time", spent: "unknown", basis: "unmeasured" };
 
@@ -349,12 +364,13 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     const svc = service();
     const caller: Caller = { actor: ctx.actor, tenant: ctx.tenant };
     if (input.attempt !== undefined && !(Number.isInteger(input.attempt) && input.attempt >= 1)) throw new RlmRefusedError("rlm-attempt-refused", `attempt must be a positive integer, got ${String(input.attempt)}`);
+    const attempt = input.attempt ?? 1; // the contract default, applied before anything is compared
     // Reuse of an invocationId resolves to the existing binding; it never starts a second child (D4.8).
     const state = await foldRunState(svc, caller, parentRunId);
     const existing = readInvocationBinding(state, input.invocationId);
     if (existing) {
       // One attempt identity is dispatched once. A retry is a new invocationId with its own grant and reservation (D4.8).
-      if (input.attempt !== undefined && input.attempt !== (existing.attempt ?? 1)) {
+      if (attempt !== (existing.attempt ?? 1)) {
         throw new RlmRefusedError("rlm-invocation-ambiguous", `invocation ${input.invocationId} already holds attempt ${existing.attempt ?? 1}; a retry needs a new invocationId, grant and reservationRef`);
       }
       if (existing.state !== "pending-start") {
@@ -375,7 +391,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       providerId: input.providerId,
       parentRunId,
       depth: input.parent.depth + 1,
-      attempt: input.attempt ?? 1,
+      attempt,
       contextDigest: input.task.contextDigest,
       admittedAt: new Date().toISOString(),
       budgetLimit: input.budget.limit,
@@ -383,13 +399,19 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       ...(input.budget.reservationRef ? { reservationRef: input.budget.reservationRef } : {}),
     };
     const written = await updateBinding(svc, caller, parentRunId, pending, `rlm-mapping:${input.invocationId}:pending`, async (held, current) => {
-      if (held) return; // already bound (a re-entry): nothing new is admitted
+      if (held) {
+        // Already bound (a re-entry): nothing new is admitted, and only for the attempt it holds.
+        if (attempt !== (held.attempt ?? 1)) throw new RlmRefusedError("rlm-invocation-ambiguous", `invocation ${input.invocationId} already holds attempt ${held.attempt ?? 1}; a retry needs a new invocationId, grant and reservationRef`);
+        return;
+      }
       const priors = isObject(current) && isObject(current.rlm) && isObject(current.rlm.invocations) ? (current.rlm.invocations as Record<string, Json>) : {};
       for (const prior of Object.values(priors)) {
         const other = prior as unknown as RlmInvocationBinding;
         if (other.parentRunId !== parentRunId || other.contextDigest !== input.task.contextDigest) continue;
         const otherStatus = await bindingStatus(svc, caller, other); // a binding cancelled before any child existed is finished
-        if (!isTerminalInvocationStatus(otherStatus)) throw new RlmRefusedError("rlm-attempt-refused", `attempt ${other.invocationId} for this task is unresolved (${otherStatus}); reconcile or cancel it before a new attempt`);
+        // A cancelled child whose provider cancel never settled may still be running at the provider: not resolved.
+        const providerMayRun = isTerminalInvocationStatus(otherStatus) && other.cancellation !== undefined && !cancelSettled(other.cancellation);
+        if (!isTerminalInvocationStatus(otherStatus) || providerMayRun) throw new RlmRefusedError("rlm-attempt-refused", `attempt ${other.invocationId} for this task is unresolved (${providerMayRun ? "provider cancel not settled" : otherStatus}); reconcile or cancel it before a new attempt`);
       }
       const withdrawn = await grantWithdrawn(svc, caller, parentRunId, input.invocationId);
       if (withdrawn) throw new RlmRefusedError("rlm-authority-exceeds-parent", `${withdrawn}; no new dispatch`);
@@ -406,7 +428,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       runId: parentRunId,
       depth: input.parent.depth + 1,
       maxDepth: input.parent.maxDepth,
-      attempt: input.attempt ?? 1,
+      attempt: written.attempt ?? attempt,
       task: input.task,
       authority: input.authority,
       budget: input.budget,
@@ -431,7 +453,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     const caller: Caller = { actor: ctx.actor, tenant: ctx.tenant };
     const binding = await bindingFor(svc, caller, input, ctx.runId, "inspection");
     const runId = await childRunIdOf(svc, caller, binding);
-    const status = await bindingStatus(svc, caller, binding);
+    const status = await bindingStatus(svc, caller, binding, runId);
     const summary = runId ? await childSummary(svc, caller, runId) : {};
     const outcome = summary.outcome && typeof summary.outcome === "object" && !Array.isArray(summary.outcome) ? (summary.outcome as Record<string, Json>) : {};
     const reported = (outcome.payment as unknown as RlmPayment | undefined) ?? DEFAULT_PAYMENT;
@@ -459,7 +481,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     const binding = await bindingFor(svc, caller, input, ctx.runId, "cancellation");
     const reason = input.reason || "rlm.cancel";
     let runId = await childRunIdOf(svc, caller, binding);
-    const status = await bindingStatus(svc, caller, binding);
+    const status = await bindingStatus(svc, caller, binding, runId);
     const terminal = isTerminalInvocationStatus(status);
     // A child that is already terminal is final, except one our own cancel closed whose provider cancel never settled:
     // that retry asks the provider again (a failed or missing record), and only that.
@@ -496,7 +518,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
         providerCancel = "cancelled";
       } catch (cause) {
         providerCancel = "failed";
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = safeErrorClass(cause); // the class only: a transport message can carry credentials and this is persisted
       }
     }
     const cancellation = { requestedAt: new Date().toISOString(), reason, dispatched, providerCancel, ...(error ? { error } : {}) };
@@ -571,6 +593,10 @@ interface DispatchRecord {
 const unverifiedView = (note: string): Json =>
   toJson({ status: "unknown", evidence: [note], payment: DEFAULT_PAYMENT, isolation: "none", lastEventAt: new Date().toISOString() });
 
+const ERROR_CLASSES = new Set(["Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "TimeoutError", "AbortError"]);
+/** A provider-supplied `Error.name` is writable text: only an allowlisted class, else a fixed fallback, is ever persisted. */
+const safeErrorClass = (error: unknown): string => (error instanceof Error ? (ERROR_CLASSES.has(error.name) ? error.name : "Error") : "non-error");
+
 const RESERVED_EMIT = /^rlm\.(outcome|dispatch\.)/;
 
 /**
@@ -617,20 +643,14 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
         const getService = options.getService;
         if (!getService) throw new RlmRefusedError("rlm-authority-exceeds-parent", "the parent's authority cannot be verified (no service); no dispatch");
         const service = getService();
+        // This run's own status first (a cancel the local signal never saw, e.g. from another process) ...
+        const own = await service.getRun(caller, { runId: ctx.runId });
+        if (own.status === "cancelled") throw new Error("cancelled before dispatch (this run was cancelled)");
+        // ... and the parent's grant and the binding's recorded cancellation LAST, the reads closest to the provider call.
         const withdrawn = await grantWithdrawn(service, caller, child.runId, child.invocationId);
         if (withdrawn) throw new RlmRefusedError("rlm-authority-exceeds-parent", `${withdrawn}; no new dispatch`);
         const recorded = readInvocationBinding(await foldRunState(service, caller, child.runId), child.invocationId)?.cancellation;
         if (recorded) throw new Error(`cancelled before dispatch (${recorded.reason})`);
-        await lastLook();
-      };
-      // The last thing before the provider is reached: this run's own status (a cancel the local signal never saw, e.g.
-      // from another process) and its signal.
-      const lastLook = async (): Promise<void> => {
-        const service = options.getService?.();
-        if (service) {
-          const own = await service.getRun(caller, { runId: ctx.runId });
-          if (own.status === "cancelled") throw new Error("cancelled before dispatch (this run was cancelled)");
-        }
         if (ctx.signal.aborted) throw new Error("cancelled before dispatch");
       };
       // The outcome is a named step, never an emit: an emit id is a counter a provider's own emits can shift.
@@ -651,6 +671,10 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
       let fresh = false;
       const identity = { invocationId: child.invocationId, providerId: child.providerId, attempt, parentRunId: child.runId };
       await ctx.step("rlm.dispatch.intent", async () => {
+        // A child that dispatched on the code before the intent existed has events beyond run.started (provider emits, a wait)
+        // but no recorded intent. It must never invoke again: treat it as a re-entry, not a first pass.
+        const service = options.getService?.();
+        if (service) for await (const event of service.events(caller, { runId: ctx.runId })) if (event.eventType !== "run.started" && !event.eventType.startsWith("assignment.")) return toJson({ ...identity, legacy: true });
         await assertDispatchable();
         fresh = true;
         return toJson({ ...identity, intendedAt: new Date().toISOString() });
@@ -664,17 +688,19 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
       try {
         dispatch = (await ctx.step("rlm.dispatch.result", async (): Promise<Json> => {
           if (!fresh) throw new ReentryWithoutResult();
-          await assertDispatchable(); // fenced immediately before the provider is reached
-          await lastLook(); // and looked at once more as the very last step
+          await assertDispatchable(); // the last reads before the provider is reached (own status, parent grant, recorded cancellation)
           try {
             await entry.provider.invoke(request, spawn, providerCtx);
             return toJson({ returned: true });
           } catch (error) {
             // Runtime control flow (cancel, shutdown, a lost write race) is not the provider's answer.
             if (ctx.signal.aborted || error instanceof Halt) throw error;
-            if (isDefiniteProviderRefusal(error)) return toJson({ returned: false, refused: true, refusalCode: RLM_REFUSAL_CODE_PATTERN.test(error.code) ? error.code : "refused" });
+            if (isDefiniteProviderRefusal(error)) {
+              const code = error.code; // read once: a getter or a later reassignment cannot change what is validated
+              return toJson({ returned: false, refused: true, refusalCode: RLM_REFUSAL_CODE_PATTERN.test(code) ? code : "refused" });
+            }
             // Any other throw after the provider may have acted is a lost response: inspected, never retried.
-            return toJson({ returned: false, errorClass: error instanceof Error ? error.name : "non-error" });
+            return toJson({ returned: false, errorClass: safeErrorClass(error) });
           }
         })) as unknown as DispatchRecord;
       } catch (error) {
@@ -687,19 +713,25 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
       }
 
       // 3. Inspect the original invocation (recorded, so a replay never re-asks the provider).
-      const askProvider = async (): Promise<Json> => {
+      // Only a view that is accepted as this invocation's is ever written to the child's step history; a foreign one (another
+      // invocation, or an unnamed one where none is accepted) is replaced by a bare note, so its evidence and spend never persist.
+      const askProvider = (acceptUnnamed: boolean) => async (): Promise<Json> => {
         try {
-          return toJson(await entry.provider.inspect(ctx.runId));
+          const raw = await entry.provider.inspect(ctx.runId);
+          if (raw.invocationId === child.invocationId || (acceptUnnamed && raw.invocationId === undefined)) return toJson(raw);
+          return unverifiedView("foreign view ignored");
         } catch (error) {
-          return unverifiedView(`inspect failed: ${error instanceof Error ? error.name : "non-error"}`);
+          return unverifiedView(`inspect failed: ${safeErrorClass(error)}`);
         }
       };
-      const view = (await ctx.step("rlm.dispatch.view", askProvider)) as unknown as InvocationView;
+      // "Returned cleanly in THIS execution": a recorded return that a recovered pass merely replays is not an uninterrupted invocation.
+      const invokedNow = fresh && dispatch.returned;
+      const view = (await ctx.step("rlm.dispatch.view", askProvider(invokedNow))) as unknown as InvocationView;
 
-      // A view is verified when it is tied to the original invocation. Right after a clean `invoke` return a view
-      // that names no invocation is accepted (the provider is keyed by this child run); on every recovery path it is not.
-      const tied = view.invocationId === child.invocationId || (dispatch.returned && view.invocationId === undefined);
-      const closed = tied && view.status !== "unknown" && (dispatch.returned || isTerminalInvocationStatus(view.status));
+      // A view closes the child only when it is accepted as this invocation's AND terminal. Right after a clean `invoke` in this
+      // execution a view that names no invocation is accepted (the provider is keyed by this child run); on every recovery path not.
+      const tied = view.invocationId === child.invocationId || (invokedNow && view.invocationId === undefined);
+      const closed = tied && isTerminalInvocationStatus(view.status);
       const threw = dispatch.errorClass ? [`provider-invoke-threw:${dispatch.errorClass}`] : [];
       if (!closed) {
         const resolution = (await ctx.waitFor(`ambiguous:${child.invocationId}`, {
@@ -708,7 +740,7 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
           payload: toJson({ invocationId: child.invocationId, providerId: child.providerId, runId: ctx.runId }),
         })) as { readonly failure?: unknown; readonly result?: unknown; readonly override?: unknown } | null;
         // Reconcile against what the provider says now, not the snapshot taken before the wait (recorded for replay).
-        const latest = (await ctx.step("rlm.reconcile.view", askProvider)) as unknown as InvocationView;
+        const latest = (await ctx.step("rlm.reconcile.view", askProvider(false))) as unknown as InvocationView;
         const latestTied = latest.invocationId === child.invocationId;
         const failed = !!resolution?.failure;
         const explicit = failed || (resolution?.result !== undefined && resolution.result !== null);

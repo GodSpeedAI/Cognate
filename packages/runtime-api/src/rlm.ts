@@ -315,11 +315,20 @@ export interface RlmProvider {
   readonly id: string;
   /** Capabilities + executable + tool policy + isolation, reported not inferred (D1). */
   probe(): Promise<ProviderFacts>;
-  /** Run the investigation for `req`, using `spawn` for any child process and `ctx` for durable effects. */
+  /** Run the investigation for `req`, using `spawn` for any child process and `ctx` for durable effects. `ctx.runId` is the child run's id and the key `inspect` and `cancel` receive. */
   invoke(req: RlmInvokeRequest, spawn: StdioSpawnPort, ctx: RunContext): Promise<{ readonly runId: string }>;
-  /** The provider's current view of one invocation, by the run id `invoke` returned. */
+  /**
+   * The provider's current view of one invocation. `runId` is ALWAYS the child run's id (`ctx.runId` inside `invoke`), the
+   * stable recovery key: it is what the runtime passes after a lost response, a throw before `invoke` returned anything, a
+   * restart or a reconciliation. A provider must record its state under `ctx.runId` (not only under any id of its own) so
+   * that `inspect(ctx.runId)` can answer after `invoke` threw. Return `invocationId` so the view can be verified.
+   */
   inspect(runId: string): Promise<InvocationView>;
-  /** Stop the invocation; idempotent. */
+  /**
+   * Stop the invocation; idempotent. `runId` is the child run's id, as for `inspect`. A cancel for a run the provider has not
+   * started yet must be sticky: a later `invoke` for that run must not start (the runtime narrows but cannot close the window
+   * between its last check and the `invoke` call).
+   */
   cancel(runId: string, reason: string): Promise<void>;
   /** Optional: decide a lost effect's outcome after interruption. */
   reconcile?(runId: string): Promise<RlmInvocationOutcome>;
@@ -417,8 +426,10 @@ export function readGrantRevocation(state: Json | null | undefined, invocationId
   const revoked = (root as { readonly [key: string]: Json })[RLM_REVOKED_KEY];
   if (!revoked || typeof revoked !== "object" || Array.isArray(revoked)) return undefined;
   const table = revoked as { readonly [key: string]: Json };
-  const entry = Object.hasOwn(table, invocationId) ? table[invocationId] : Object.hasOwn(table, "*") ? table["*"] : undefined;
-  if (entry === undefined || entry === null || entry === false) return undefined;
+  // A null or false entry is "not revoked": it must not mask a wildcard withdrawal, while a present specific reason wins.
+  const present = (key: string): Json | undefined => (Object.hasOwn(table, key) && table[key] !== null && table[key] !== false && table[key] !== undefined ? table[key] : undefined);
+  const entry = present(invocationId) ?? present("*");
+  if (entry === undefined) return undefined;
   return typeof entry === "string" ? entry : "revoked";
 }
 
