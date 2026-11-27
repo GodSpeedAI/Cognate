@@ -3,10 +3,10 @@ import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
 import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
-import { acceptLifecycleEvent, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent } from "./assignment.ts";
+import { acceptLifecycleEvent, settleTerminalRun, finalizeStoppedRun, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core } from "./core.ts";
 import type { ActionName } from "./governed-operation.ts";
-import { foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
+import { assignmentControlStream, foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
 const PAGE = 500;
 
@@ -166,12 +166,36 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
 
     async cancelRun(caller, request) {
       await authorize(caller, "run.cancel", request.runId);
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const { view, events } = await readRun(caller, request.runId);
-        if (isTerminal(view)) return view;
+      // Bounded retries with the same jittered backoff as the assignment controls (DEBT-033); a cancel that cannot commit
+      // is refused, never reported as done, and leaves the run (and its executing pass) untouched.
+      let committed = false;
+      for (let attempt = 0; attempt < APPEND_MAX_ATTEMPTS; attempt++) {
+        await readRun(caller, request.runId);
+        const { events, control } = await readLifecycle(core, request.runId);
+        const view = foldRun(request.runId, events)!;
+        // Already ended (possibly by the executor or a breach, or after losing a race here): abort the stale pass and report.
+        if (isTerminal(view)) {
+          core.controllers.get(request.runId)?.abort(new Error("run ended"));
+          await settleTerminalRun(core, request.runId);
+          return view;
+        }
+        // The assignment already failed without the run (a budget stop not yet finalized, or a legacy failed crash state):
+        // the run finishes as failed with the recorded reason; the cancel is a no-op on an already-failed outcome. A legacy
+        // completed assignment is cancellable like any run (only run.cancelled is written, the assignment state stands).
+        const ended = foldAssignment(request.runId, events, control);
+        if (ended && ended.status === "failed") {
+          // Finish the run as the recorded failure; abort the local pass only once that is durable, so a finalization that
+          // cannot commit (it throws unavailable) leaves the pass running and the cancel retryable.
+          await finalizeStoppedRun(core, request.runId);
+          core.controllers.get(request.runId)?.abort(new Error("assignment ended"));
+          return (await readRun(caller, request.runId)).view;
+        }
+        // A legacy crash state (the assignment ended on the run stream, the run did not) is cancellable like any run: the
+        // commit below writes only `run.cancelled` (there is no assignment event left to write), so the recorded
+        // assignment state stands and a re-run that parks or hangs can still be ended. Nothing here writes run.completed.
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();
-        const assignmentView = foldAssignment(request.runId, events);
+        const assignmentView = foldAssignment(request.runId, events, control);
         const cancelledAssignment = assignmentView && !["completed", "failed", "cancelled"].includes(assignmentView.status)
           ? (() => {
               const payload = lifecycleEvent(assignmentView.assignment, "cancelled", new Date().toISOString(), assignmentView.acceptedSpend, request.reason);
@@ -185,7 +209,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
           occurredAt: new Date().toISOString(),
           tenant: view.tenant,
           correlationId: view.correlationId,
-          causationId: cancelledAssignment?.eventId ?? events.at(-1)!.eventId,
+          causationId: events.at(-1)!.eventId,
           runId: request.runId,
           scopeId: events[0]!.scopeId,
           payload: { reason: request.reason },
@@ -194,26 +218,35 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         try {
           await store.commit({
             idempotency: { scope: `${caller.tenant}:${caller.actor.id}:run.cancel`, key: request.idempotencyKey, fingerprint: fingerprint({ runId: request.runId, reason: request.reason }) },
+            // The assignment's terminal event commits with the run's, guarded by the lifecycle revision: a control that
+            // won the race is seen on the next attempt, and a control can never land after this.
             appends: [
+              ...(cancelledAssignment ? [{ streamId: assignmentControlStream(request.runId), expectedVersion: control.length, events: [cancelledAssignment] }] : []),
               {
                 streamId: runStream(request.runId),
                 expectedVersion: events.length,
-                events: [...(cancelledAssignment ? [cancelledAssignment] : []), { ...cancelledEvent, eventId: cancelledId }],
+                events: [{ ...cancelledEvent, eventId: cancelledId }],
               },
             ],
             outbox: [
-              ...(cancelledAssignment ? core.outboxFor({ ...cancelledAssignment, streamId: runStream(request.runId), recordedAt: cancelledAssignment.occurredAt, streamSequence: events.length + 1 }) : []),
-              ...core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + (cancelledAssignment ? 2 : 1) }),
+              // Observation ordering coordinate: run-wide (both streams' events so far plus this commit's).
+              ...(cancelledAssignment ? core.outboxFor({ ...cancelledAssignment, streamId: assignmentControlStream(request.runId), recordedAt: cancelledAssignment.occurredAt, streamSequence: events.length + control.length + 1 }) : []),
+              ...core.outboxFor({ ...cancelledEvent, eventId: cancelledId, streamId: runStream(request.runId), recordedAt: cancelledEvent.occurredAt, streamSequence: events.length + control.length + (cancelledAssignment ? 2 : 1) }),
             ],
             result: { runId: request.runId },
           });
         } catch (error) {
-          if (error instanceof ConcurrencyError) continue;
+          if (error instanceof ConcurrencyError) {
+            if (attempt < APPEND_MAX_ATTEMPTS - 1) await Bun.sleep(appendBackoffMs(attempt));
+            continue;
+          }
           if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
           throw error;
         }
+        committed = true;
         break;
       }
+      if (!committed) throw new ServiceError("unavailable", `too much contention cancelling run ${request.runId}`);
       core.controllers.get(request.runId)?.abort(new Error("run cancelled"));
       for (const c of await core.continuations.list({ runId: request.runId, status: "OPEN" })) {
         await core.continuations.cancel(c.id, { actor: caller.actor, idempotencyKey: `run.cancel:${request.idempotencyKey}:${c.id}`, reason: request.reason });
