@@ -12,6 +12,7 @@ import {
   foldState,
   INVOCATION_STATUSES,
   isDefiniteProviderRefusal,
+  RLM_REFUSAL_CODE_PATTERN,
   isTerminalInvocationStatus,
   RLM_AGENT_ID,
   RLM_CAPABILITIES,
@@ -275,6 +276,15 @@ async function invocationStatus(service: RuntimeService, caller: Caller, childRu
   return "admitted";
 }
 
+/**
+ * The invocation status of a binding: the child's own state, or, before any child exists, `cancelled` once a cancellation
+ * is recorded (it will never start) and `admitted` otherwise. One definition for inspect, cancel and the attempt scan.
+ */
+async function bindingStatus(service: RuntimeService, caller: Caller, binding: RlmInvocationBinding): Promise<RlmInvocationStatus> {
+  const runId = await childRunIdOf(service, caller, binding);
+  return runId ? invocationStatus(service, caller, runId) : binding.cancellation ? "cancelled" : "admitted";
+}
+
 const DEFAULT_PAYMENT: RlmPayment = { currency: "time", spent: "unknown", basis: "unmeasured" };
 
 // ── the component ───────────────────────────────────────────────────────────────
@@ -378,9 +388,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       for (const prior of Object.values(priors)) {
         const other = prior as unknown as RlmInvocationBinding;
         if (other.parentRunId !== parentRunId || other.contextDigest !== input.task.contextDigest) continue;
-        const otherRun = await childRunIdOf(svc, caller, other);
-        // A binding cancelled before any child existed is finished (cancelled), not unresolved.
-        const otherStatus: RlmInvocationStatus = otherRun ? await invocationStatus(svc, caller, otherRun) : other.cancellation ? "cancelled" : "admitted";
+        const otherStatus = await bindingStatus(svc, caller, other); // a binding cancelled before any child existed is finished
         if (!isTerminalInvocationStatus(otherStatus)) throw new RlmRefusedError("rlm-attempt-refused", `attempt ${other.invocationId} for this task is unresolved (${otherStatus}); reconcile or cancel it before a new attempt`);
       }
       const withdrawn = await grantWithdrawn(svc, caller, parentRunId, input.invocationId);
@@ -423,7 +431,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     const caller: Caller = { actor: ctx.actor, tenant: ctx.tenant };
     const binding = await bindingFor(svc, caller, input, ctx.runId, "inspection");
     const runId = await childRunIdOf(svc, caller, binding);
-    const status = runId ? await invocationStatus(svc, caller, runId) : "admitted";
+    const status = await bindingStatus(svc, caller, binding);
     const summary = runId ? await childSummary(svc, caller, runId) : {};
     const outcome = summary.outcome && typeof summary.outcome === "object" && !Array.isArray(summary.outcome) ? (summary.outcome as Record<string, Json>) : {};
     const reported = (outcome.payment as unknown as RlmPayment | undefined) ?? DEFAULT_PAYMENT;
@@ -451,12 +459,16 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     const binding = await bindingFor(svc, caller, input, ctx.runId, "cancellation");
     const reason = input.reason || "rlm.cancel";
     let runId = await childRunIdOf(svc, caller, binding);
-    const status: RlmInvocationStatus = runId ? await invocationStatus(svc, caller, runId) : "admitted";
+    const status = await bindingStatus(svc, caller, binding);
     const terminal = isTerminalInvocationStatus(status);
     // A child that is already terminal is final, except one our own cancel closed whose provider cancel never settled:
     // that retry asks the provider again (a failed or missing record), and only that.
     const prior = binding.cancellation;
-    const settled = prior !== undefined && prior.providerCancel !== "failed";
+    // Settled only when the provider cancel is recorded done, or nothing was ever dispatched (no intent on the child). A
+    // pending "not-dispatched" record written before the child appeared, then a crash, is not settled if the child did dispatch.
+    let intended = false;
+    if (runId) for await (const event of svc.events(caller, { runId })) if (event.eventType === DISPATCH_INTENDED) intended = true;
+    const settled = prior !== undefined && (prior.providerCancel === "cancelled" || (prior.providerCancel === "not-dispatched" && !prior.dispatched && !intended));
     if (terminal && !(status === "cancelled" && !settled)) return { status: "already-terminal" } as unknown as Json;
 
     // No child yet (pending start): record the cancellation first, durably and merge-only; the start refuses to proceed
@@ -660,7 +672,7 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
           } catch (error) {
             // Runtime control flow (cancel, shutdown, a lost write race) is not the provider's answer.
             if (ctx.signal.aborted || error instanceof Halt) throw error;
-            if (isDefiniteProviderRefusal(error)) return toJson({ returned: false, refused: true, refusalCode: error.code });
+            if (isDefiniteProviderRefusal(error)) return toJson({ returned: false, refused: true, refusalCode: RLM_REFUSAL_CODE_PATTERN.test(error.code) ? error.code : "refused" });
             // Any other throw after the provider may have acted is a lost response: inspected, never retried.
             return toJson({ returned: false, errorClass: error instanceof Error ? error.name : "non-error" });
           }
