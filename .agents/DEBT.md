@@ -300,7 +300,7 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 
 ---
 
-## DEBT-034 — Cancelling a parent run does not cancel its dispatched RLM children's providers
+## DEBT-035 — Cancelling a parent run does not cancel its dispatched RLM children's providers
 
 **Status:** Open 2026-11-26 — found in review of PR #94 (ticket #113, Cognate half).
 **Requirement(s):** None.
