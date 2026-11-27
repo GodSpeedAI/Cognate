@@ -190,7 +190,8 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
   const random = pacing.random ?? Math.random;
   let done = false;
   let reason = "ASSIGNMENT_STOPPED";
-  let attributedTo = `${actor.kind}:${actor.id}`;
+  // The principal that caused the stop, when the lifecycle event recorded it; never the canceller or the runtime.
+  let attributedTo = "unknown";
   for (let attempt = 0; attempt < 40 && !done; attempt++) {
     const { events, control } = await readLifecycle(core, runId);
     const run = foldRun(runId, events);
@@ -225,7 +226,9 @@ export async function finalizeStoppedRun(core: Core, runId: string, actor: Calle
   if (!done) throw new ServiceError("unavailable", `run ${runId} could not be finished after its assignment ended`);
   for (const c of await core.continuations.list({ runId, status: "OPEN" })) {
     try {
-      await core.continuations.cancel(c.id, { actor: core.system, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason: `${reason} (caused by ${attributedTo})` });
+      const outcome = await core.continuations.cancel(c.id, { actor: core.system, idempotencyKey: `assignment.budget:${runId}:${c.id}`, reason: `${reason} (caused by ${attributedTo})` });
+      // A refusal is a failure of the stop, not a quiet success: the continuation is still open.
+      if (outcome.kind === "denied") throw new ServiceError("permission_denied", `continuation ${c.id} could not be cancelled: ${outcome.reason}`);
     } catch (error) {
       // Another call may have cancelled it first; only a continuation that is still open is a failure.
       if ((await core.continuations.list({ runId, status: "OPEN" })).some((o) => o.id === c.id)) throw error;

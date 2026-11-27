@@ -188,14 +188,9 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
           core.controllers.get(request.runId)?.abort(new Error("assignment ended"));
           return (await readRun(caller, request.runId)).view;
         }
-        if (ended && (ended.status === "failed" || ended.status === "completed")) {
-          // A legacy crash state: the assignment ended on the run stream, the run did not. The run is finished by its own
-          // pass (it recomputes the real output, or fails honestly), not forced from here: the cancel is refused as
-          // terminal and the pass is nudged so recovery does not wait for a restart.
-          void core.execute(request.runId).catch(() => {});
-          core.kick();
-          throw new ServiceError("failed_precondition", `assignment ${ended.assignment.assignment_id} already ${ended.status}; run ${request.runId} is being finished`);
-        }
+        // A legacy crash state (the assignment ended on the run stream, the run did not) is cancellable like any run: the
+        // commit below writes only `run.cancelled` (there is no assignment event left to write), so the recorded
+        // assignment state stands and a re-run that parks or hangs can still be ended. Nothing here writes run.completed.
         const caseContext = (events[0]!.metadata as { [key: string]: Json } | null | undefined)?.caseContext;
         const cancelledId = randomUUID();
         const assignmentView = foldAssignment(request.runId, events, control);

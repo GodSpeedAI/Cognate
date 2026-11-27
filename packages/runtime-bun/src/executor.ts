@@ -64,6 +64,13 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       await finalizeStoppedRun(core, runId);
       return "done";
     }
+    // A legacy failed assignment (ended on the run stream, run not terminal): finish the run as failed with its recorded
+    // reason without re-running the agent body, whose effects would repeat. A legacy completed one is re-run (its output
+    // must be recomputed); see EGM.md for the effects that repeat.
+    if (assignmentView?.status === "failed") {
+      await finalizeStoppedRun(core, runId);
+      return "done";
+    }
   }
 
   let version = events.length;
@@ -588,6 +595,7 @@ async function executeRegistered(core: Core, runId: string, controller: AbortCon
       // A failed re-run is never masked as success, whatever the legacy assignment says.
       let runTerminal = finish.event;
       if (assignmentView?.status === "completed" && outcome.ok) runTerminal = { eventType: "run.completed", payload: { output: outcome.value }, metadata: { agent: view.agent } };
+      else if (assignmentView?.status === "completed") runTerminal = { eventType: "run.failed", payload: { error: `the assignment completed before the crash (legacy record); its re-run failed: ${outcome.ok ? "unknown" : messageOf(outcome.error)}` }, metadata: { agent: view.agent } };
       else if (assignmentView?.status === "failed") runTerminal = { eventType: "run.failed", payload: { error: assignmentView.events.at(-1)?.reason ?? messageOf(outcome.ok ? "assignment failed" : outcome.error) }, metadata: { agent: view.agent } };
       let terminal: { readonly expectedVersion: number; readonly eventType: string; readonly payload: Json; readonly metadata: { [key: string]: Json } } | undefined;
       if (assignmentView && ["started", "resumed"].includes(assignmentView.status)) {
