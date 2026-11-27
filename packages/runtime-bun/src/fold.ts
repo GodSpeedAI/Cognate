@@ -11,6 +11,14 @@ export const runStream = (runId: string) => `run-${runId}`;
 /** Caller-sourced state writes land here, never on the run stream (spec §29.1): a foreign append to the run
  * stream would race the executor's own `expectedVersion` and cause spurious ConcurrencyError/halt churn. */
 export const runStateStream = (runId: string) => `run-state-${runId}`;
+/**
+ * The lifecycle stream of a bound assignment: operator interrupt, resume and spend, a budget breach and its stop, and
+ * the terminal `assignment.completed|failed|cancelled`. Its version is the lifecycle revision that guards every one of
+ * those writes (see assignment.ts). They never go on the run stream alone (spec §29.1 rule above): the executor owns
+ * that stream's version and halts on a lost race. The terminal commits (executor completion, `cancelRun`) write both
+ * streams atomically; everything else writes only this one.
+ */
+export const assignmentControlStream = (runId: string) => `run-assignment-${runId}`;
 /** Tenant-qualified durable state shared by every run whose correlation id is this thread id. */
 export const threadStateStream = (tenant: string, threadId: string) => `thread-state:${encodeURIComponent(tenant)}:${encodeURIComponent(threadId)}`;
 /**

@@ -1,32 +1,39 @@
 # Current status
 
-**Status revision:** 79
+**Status revision:** 88
 
 **Stage:** Owner-approved GodSpeed vocabulary consolidation
 
-**Summary:** Reconciled the owning glossary against the review patch and authoritative sources. The owner approved the conceptual distinctions. Runtime, frozen specifications, and identifiers retain their existing contracts.
+**Summary:** Reconciled the owning glossary against the review patch and authoritative sources. The owner approved the conceptual distinctions. Runtime, frozen specifications, and identifiers retain their existing contracts. Merged with main after revision 87; earlier snapshot facts are carried forward.
+
+## Verified
 
 - Cross-checked glossary targets, source links and the eleven semantic scenarios.
+- Merged origin/main into the vocabulary branch; only the status files conflicted, and main's history is kept.
+- assignment-lifecycle 48/48 (4 failed against cbb3857 sources), assignment 25, assignment-streaming 2, assignment-multiruntime-postgres 3, service-postgres alone 28/28, runtime-api assignment 74, protocol-connect assignment-wire 2, realitytrace interaction-event 14 and assignment-at17 4; typecheck clean; check 81/81; the one-command runtime-bun suite was not run on this head (left to a quiet window)
+- New packages/runtime-bun/test/assignment-lifecycle.test.ts (14 tests, 1 test.failing known gap) and assignment-multiruntime-postgres.test.ts: against b4f2195 sources 8 of 12 lifecycle tests and the multi-runtime test failed; after the change all pass
+- bun run typecheck clean; bun run check substrate 81/81
+- Each run alone: runtime-bun assignment 25, assignment-streaming 2, assignment-lifecycle 14, service 53, rlm 15, observation 11, cognition 2; with isolated PostgreSQL (pg0 port 5438): shutdown-recovery 2, run-ownership 3, concurrency 11, service-postgres 28, assignment-multiruntime-postgres 1; runtime-api assignment 74; protocol-connect assignment-wire 2; realitytrace interaction-event 14, assignment-at17 4
 
-## Active work carried forward
+## Limits
 
-history rewrite applied with operator approval: origin clean of private paths and the username across all refs; PR #74 mergeable on rewritten head
+- The observation ordering coordinate of a progress event reads the lifecycle length at its guard; a control committing between that read and the commit can tie with it (not decreasing across controls read consistently)
+- Not run against Cognate Workbench's browser journey; the fix reaches it only after a release and dependency bump
+- Full bun test packages/runtime-bun not run as one command; files were run individually
+- DEBT-034: resume re-runs the agent body, so effects outside a completed step repeat (known gap, exact double-effect test)
+- Mixed-version fleets are unsupported for assignment runs (drain, then upgrade); no version fence
 
-The rehearsed git-filter-repo rewrite was applied to origin. Pre-push verification on the isolated apply clone: the PR branch's tree was byte-identical across the rewrite, zero residual /home/<user>/ paths and zero residual username occurrences across every ref, and main's subject history complete except one commit that became empty under the rewrite (its only change was a path substitution the rewrite supersedes). Because main is protected by the Protect Main ruleset with no bypass actors, the force-push temporarily added the operator's admin account as a bypass actor; the ruleset was restored to a verified-identical state immediately after the push. All 5 heads and 696 tags were force-pushed. Post-push verification from a fresh clone: zero residual private paths and zero residual username occurrences across all origin-reachable history; Gitleaks reports only the 12 known synthetic fixture findings; head and tag counts match pre-rewrite. PR #74 re-pointed at its rewritten head and remains OPEN and MERGEABLE; CI runs on rewritten main. The mechanical rewrite also surfaced a tracking gap: one symlink (the harness tests' node_modules link) carried an absolute home path in its TARGET, invisible to content scanners because rg does not read symlink targets; the rewrite mechanically turned it into an unresolvable ~ target, and a follow-up commit replaced it with the behavior-preserving relative target ../../../../node_modules. Local refs were reset to the rewritten history; the old objects remain in the local store (deliberately not gc'd) and in the audit workspace as the recovery path.
+## Next
 
-**Status revision:** 78
+Re-review PR 93, merge, release Cognate, bump the dependency in Workbench and drop the refusal retry in its handoff tests; then DEBT-034.
 
-**Summary:** The rehearsed git-filter-repo rewrite was applied to origin. Pre-push verification on the isolated apply clone: the PR branch's tree was byte-identical across the rewrite, zero residual /home/<user>/ paths and zero residual username occurrences across every ref, and main's subject history complete except one commit that became empty under the rewrite (its only change was a path substitution the rewrite supersedes). Because main is protected by the Protect Main ruleset with no bypass actors, the force-push temporarily added the operator's admin account as a bypass actor; the ruleset was restored to a verified-identical state immediately after the push. All 5 heads and 696 tags were force-pushed. Post-push verification from a fresh clone: zero residual private paths and zero residual username occurrences across all origin-reachable history; Gitleaks reports only the 12 known synthetic fixture findings; head and tag counts match pre-rewrite. PR #74 re-pointed at its rewritten head and remains OPEN and MERGEABLE; CI runs on rewritten main. The mechanical rewrite also surfaced a tracking gap: one symlink (the harness tests' node_modules link) carried an absolute home path in its TARGET, invisible to content scanners because rg does not read symlink targets; the rewrite mechanically turned it into an unresolvable ~ target, and a follow-up commit replaced it with the behavior-preserving relative target ../../../../node_modules. Local refs were reset to the rewritten history; the old objects remain in the local store (deliberately not gc'd) and in the audit workspace as the recovery path.
+## Evidence
 
-
-
-
-The real exposure was machine identity, not credentials. Tracked content contained 277 `/home/<user>/` occurrences across 49 files (developer home layout, toolchain binary locations, references to unrelated private local projects), 14 bare developer-username mentions in 11 files (npm session records, machine temp-dir names, now a neutral `<operator>` placeholder), 370 of 408 commits carried such paths across 52 files, and 49 local-only `refs/cline/checkpoints/*` refs hold pre-remediation snapshots. Remediation made the affected files portable without changing behavior: functional scripts (capture/compare drivers, the mock runner, the Bun-discovery list, the DomainForge adapter check, the fidelity-QA script) now resolve paths from their own location or existing env overrides; the reference manifests use `<repo-root>`/repository-relative values; evidence records and logs use `~/` notation. `just verify` passes 81/81 gates with these changes, `just typecheck` exits 0, and the touched reconstruction gates pass standalone.
-
-Prevention is operational and was validated adversarially. `.githooks/pre-commit` — activated per clone with `just hooks-install` (sets `core.hooksPath`) — runs a dependency-free private-path guard (`scripts/check-private-paths.sh`, `--staged` mode) and Gitleaks over a temp export of the staged index, so partially staged files are scanned exactly as committed and unstaged edits cannot mask findings. It fails closed on a missing gitleaks, scanner errors, and any finding including unverified ones; it is offline and takes ~0.5 s on a small staged set. `.github/workflows/security.yml` scans the commits a PR or main push introduces (TruffleHog, pinned action SHA) plus the same private-path guard in `--range` mode, with a separate manual full-history audit job and least-privilege permissions. An isolated-repository adversarial suite passes 15/15, including staged-only secret detection, missing-scanner and scanner-crash fail-closed behavior, redacted output, space-containing filenames, Windows-escaped and `file://`-URI paths, and idempotent re-setup.
-
-History: `git-filter-repo 2.47.0 --replace-text` (two literal rules, `/home/<user>/projects/<repo>` → `~/projects/<repo>` and the remaining `/home/<user>` → `~`) was rehearsed on an isolated mirror clone covering every ref. 407/408 commits rewrote with zero residual private paths and zero residual username occurrences by `git grep` over all rewritten commits, and independent TruffleHog and Gitleaks re-scans return only the known synthetic/false-positive findings; the one pruned commit was a local-only checkpoint commit whose entire change became redundant under the rewrite. **Applying the rewrite to origin and force-pushing was not done and requires explicit operator approval**; the procedure, consequences (every commit hash changes, open PRs, the second local worktree, 700+ tags) and rollback are recorded in the audit workspace outside the repository. The sanitized report is `docs/security/repository-hygiene.md`.
-
-What this does not claim: origin still contains private paths in its history until the rewrite is approved and applied; GitHub secret scanning and push protection remain disabled on this public repository and were not changed (remote settings need authorization); CI enforcement is YAML-valid but unobserved until the first PR runs it; TruffleHog ran without network credential verification, and GitHub-hosted artifacts not fetched locally (cached PR refs, releases, forks) were not scanned. TruffleHog's auto-updater fails in this environment and aborts scans silently, so all tooling passes `--no-update` — a stale local binary is a standing limitation.
-
-Next: commit the remediation and prevention changes (the working tree holds all of it; nothing was committed, per repository git policy); approve or decline the history rewrite; authorize enabling GitHub-native secret scanning and push protection; observe the `security` workflow enforcing on the first PR; optionally delete the 49 local-only cline checkpoint refs once the rewrite lands.
+- GLOSSARY.md
+- packages/runtime-bun/src/assignment.ts (readLifecycle, foldAssignment, append, finalizeStoppedRun)
+- packages/runtime-bun/src/executor.ts (durableGuard, terminal commit loop)
+- packages/runtime-bun/src/service.ts (cancelRun)
+- packages/runtime-bun/src/fold.ts (assignmentControlStream)
+- packages/runtime-bun/test/assignment-lifecycle.test.ts
+- packages/runtime-bun/test/assignment-multiruntime-postgres.test.ts
+- .agents/DEBT.md DEBT-033, DEBT-034

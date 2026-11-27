@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-local-v0.10.0...cognate-provider-local-v0.11.0) (2026-11-20)
+
+
+### Miscellaneous Chores
+
+* **cognate-provider-local:** Synchronize cognate SDK packages versions
+
 ## [0.10.0](https://github.com/GodSpeedAI/Cognate/compare/cognate-provider-local-v0.9.2...cognate-provider-local-v0.10.0) (2026-11-16)
 
 
