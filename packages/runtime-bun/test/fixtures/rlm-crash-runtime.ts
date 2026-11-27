@@ -50,7 +50,7 @@ const database = await openPostgresStore({ url, schema, pollMs: 0 });
 const registry = createRlmRegistry();
 registry.register({ provider, label: "crash" });
 let runtime: Runtime | undefined;
-// before-invoke: the child checks the parent twice (intent step, then inside the dispatch step); die on the second.
+// before-invoke: the child's getRun calls are: intent fence (parent), its last look (own run), then the dispatch-step fence (parent); die on the third.
 let childChecks = 0;
 let armed = false;
 const service = () => {
@@ -63,7 +63,7 @@ const service = () => {
       if (prop !== "startRun" && prop !== "getRun") return value.bind(target);
       return async (...args: unknown[]) => {
         if (prop === "startRun" && (args[1] as { agent?: string }).agent === RLM_AGENT_ID) armed = true;
-        if (prop === "getRun" && armed && ++childChecks === 2) {
+        if (prop === "getRun" && armed && ++childChecks === 3) {
           console.log("INTENT-DURABLE");
           process.kill(process.pid, "SIGKILL");
         }

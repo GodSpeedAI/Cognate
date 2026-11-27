@@ -511,8 +511,9 @@ describe("RLM component (I1)", () => {
     await inspectUntil(rt, run.runId, "inv-intent", "completed");
     const child = await childOf(rt, run.runId, "inv-intent");
     const types = await eventTypes(rt, child.runId);
+    const outcomeAt = types.lastIndexOf("run.step.completed"); // the outcome is a recorded step, after the provider ran
     expect(types.indexOf("rlm.dispatch.intended")).toBeGreaterThan(-1);
-    expect(types.indexOf("rlm.dispatch.intended")).toBeLessThan(types.indexOf("rlm.outcome"));
+    expect(types.indexOf("rlm.dispatch.intended")).toBeLessThan(outcomeAt);
     for await (const event of rt.service.events(alice, { runId: child.runId })) {
       if (event.eventType !== "rlm.dispatch.intended") continue;
       expect(event.payload).toMatchObject({ invocationId: "inv-intent", providerId: "test-provider", attempt: 1, parentRunId: run.runId });
@@ -996,7 +997,8 @@ describe("RLM component (I1)", () => {
         return original(caller, request);
       },
       getRun: (original) => async (caller: never, request: never) => {
-        if (armed && ++calls === 2) await revokeRlmGrant(rtRef!.service, alice, (request as { runId: string }).runId, INV, "late revocation");
+        // getRun calls by the child: intent fence (parent), its last look (own run), then the dispatch-step fence (parent).
+        if (armed && ++calls === 3) await revokeRlmGrant(rtRef!.service, alice, (request as { runId: string }).runId, INV, "late revocation");
         return original(caller, request);
       },
     });
@@ -1007,6 +1009,37 @@ describe("RLM component (I1)", () => {
     expect((await until(rt, child.runId, "failed")).error).toMatch(/late revocation/);
     expect(provider.spawns).toBe(0);
     await rt.service.resolveContinuation(alice, { continuationId: probe.id, action: "resume", input: {}, idempotencyKey: "probe-go" });
+  });
+
+  test("a cancel that lands between the dispatch fence and invoke (at the child's last look) stops the dispatch", async () => {
+    const provider = testProvider("test-provider", "complete");
+    let armed = false;
+    let childLooks = 0;
+    let injected = false;
+    wrap = hooked({
+      startRun: (original) => async (caller: never, request: never) => {
+        const started = (await original(caller, request)) as { runId: string };
+        if ((request as { agent: string }).agent === RLM_AGENT_ID) armed = true;
+        return started;
+      },
+      getRun: (original) => async (caller: never, request: never) => {
+        const run = (request as { runId: string }).runId;
+        const view = (await original(caller, request)) as RunView;
+        // child getRun calls: 1 in the intent fence, 2 in the dispatch fence, 3 the final look immediately before invoke
+        if (armed && view.agent === RLM_AGENT_ID && ++childLooks === 3) {
+          injected = true;
+          await rtRef!.service.cancelRun(alice, { runId: run, reason: "late cancel", idempotencyKey: "late-cancel" });
+          return original(caller, request); // re-read after the cancel committed
+        }
+        return view;
+      },
+    });
+    const rt = await open([{ provider, label: "last-look" }], waitingParent());
+    const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "last-look-barrier" });
+    await Bun.sleep(400);
+    expect(injected).toBe(true);
+    expect(provider.spawns).toBe(0);
+    expect((await childOf(rt, run.runId)).status).toBe("cancelled");
   });
 
   test("a child started under a cancelled parent never dispatches", async () => {
@@ -1020,8 +1053,8 @@ describe("RLM component (I1)", () => {
     expect(provider.spawns).toBe(1); // only the original invocation, made before the parent was cancelled
   });
 
-  // Known debt (DEBT-034): nothing cascades a parent's cancellation to a dispatched child's provider.
-  test.failing("cancelling the parent after dispatch reaches provider.cancel for its child (DEBT-034: not implemented)", async () => {
+  // Known debt (DEBT-035): nothing cascades a parent's cancellation to a dispatched child's provider.
+  test.failing("cancelling the parent after dispatch reaches provider.cancel for its child (DEBT-035: not implemented)", async () => {
     const provider = testProvider("test-provider", "complete", { gateBeforeOutcome: deferred().promise });
     const rt = await open([{ provider, label: "cascade" }], waitingParent());
     const run = await rt.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "cascade" });

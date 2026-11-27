@@ -35,6 +35,18 @@ async function until<T>(read: () => Promise<T>, done: (value: T) => boolean, mes
   throw new Error(message);
 }
 
+const POSTGRES_URL = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres";
+
+/** Opens the schema, or fails fast and clearly when no PostgreSQL is reachable (this suite is never skipped). */
+async function openSchema(schema: string) {
+  const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timed out after 5 s")), 5_000).unref());
+  try {
+    return await Promise.race([openPostgresStore({ url: POSTGRES_URL, schema, pollMs: 0 }), timeout]);
+  } catch (cause) {
+    throw new Error(`rlm-recovery.test.ts needs a reachable PostgreSQL (COGNATE_TEST_POSTGRES_URL, default postgres://postgres:postgres@127.0.0.1:5432/postgres): ${(cause as Error).message}. Start one with pg0; see the commands in this file's header.`);
+  }
+}
+
 const facts: ProviderFacts = {
   capabilities: { maxDepth: 2, contextDecomposition: true, providerInternalSubagents: false, streaming: true, isolation: "process", resultDelivery: "return", cancellation: "process", paymentMetering: "reported" },
   toolPolicy: "contained",
@@ -64,11 +76,7 @@ function hangingProvider(after: () => InvocationView["status"], tied: boolean, e
 }
 
 async function restartScenario(name: string, after: InvocationView["status"], tied: boolean, emits: number, check: (runtime: Runtime, childRunId: string, counts: { invokes: number; inspects: number }) => Promise<void>) {
-  const database = await openPostgresStore({
-    url: process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres",
-    schema: `cognate_rlm_recovery_${crypto.randomUUID().replaceAll("-", "")}`,
-    pollMs: 0,
-  });
+  const database = await openSchema(`cognate_rlm_recovery_${crypto.randomUUID().replaceAll("-", "")}`);
   const { provider, counts } = hangingProvider(() => after, tied, emits);
   const parent: AgentDefinition = {
     id: "agent.parent",
@@ -133,7 +141,10 @@ test("restart between intent and result with an unverifiable provider keeps the 
     const done = await until(() => rt.service.getRun(caller, { runId: childRunId }), (v) => v.status === "completed", "the reconciled child did not complete");
     expect(done.output).toMatchObject({ status: "completed" });
     const outcome: Json[] = [];
-    for await (const event of rt.service.events(caller, { runId: childRunId })) if (event.eventType === "rlm.outcome") outcome.push(event.payload);
+    for await (const event of rt.service.events(caller, { runId: childRunId })) {
+      const recorded = event.eventType === "run.step.completed" ? (event.payload as { result?: { rlmOutcome?: Json } } | null)?.result?.rlmOutcome : undefined;
+      if (recorded) outcome.push(recorded);
+    }
     expect(outcome[0]).toMatchObject({ reconciled: true });
   });
 }, 30_000);
@@ -175,8 +186,11 @@ test("a provider that emitted before the interruption still leaves exactly one r
 
 /** Spawns the fixture, waits for `marker`, SIGKILLs it, then recovers on the same schema in this process. */
 async function crashScenario(mode: "after-invoke" | "before-invoke", marker: string, after: InvocationView["status"], check: (rt: Runtime, childRunId: string, invokesInRecovery: () => number) => Promise<void>) {
-  const url = process.env.COGNATE_TEST_POSTGRES_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres";
+  const url = POSTGRES_URL;
   const schema = `cognate_rlm_crash_${crypto.randomUUID().replaceAll("-", "")}`;
+  const preflight = await openSchema(`${schema}_preflight`); // fail fast and clearly before spawning anything
+  await preflight.dropSchema();
+  await preflight.close();
   const dir = mkdtempSync(join(tmpdir(), "rlm-crash-"));
   const counterFile = join(dir, "invokes");
   const proc = Bun.spawn(["bun", join(import.meta.dir, "fixtures", "rlm-crash-runtime.ts"), url, schema, counterFile, mode], { stdout: "pipe", stderr: "inherit", env: process.env });
@@ -198,7 +212,7 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
   expect(sawMarker).toBe(true);
   const invokesBefore = existsSync(counterFile) ? readFileSync(counterFile, "utf8").split("\n").filter(Boolean).length : 0;
 
-  const database = await openPostgresStore({ url, schema, pollMs: 0 });
+  const database = await openSchema(schema);
   let recoveredInvokes = 0;
   const provider: RlmProvider = {
     id: "test-provider",
