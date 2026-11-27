@@ -164,7 +164,7 @@ async function commitRlmLeaf(
  * Merge an update into a binding: never a replacement. `cancellation` is set once and never dropped (a failed provider
  * cancel may be settled by a later one, keeping the first `requestedAt`); `runId` and `state` never regress.
  */
-function mergeBinding(current: RlmInvocationBinding | undefined, update: Partial<RlmInvocationBinding> & Pick<RlmInvocationBinding, "invocationId">): RlmInvocationBinding {
+export function mergeBinding(current: RlmInvocationBinding | undefined, update: Partial<RlmInvocationBinding> & Pick<RlmInvocationBinding, "invocationId">): RlmInvocationBinding {
   const base = (current ?? update) as RlmInvocationBinding;
   const incoming = update.cancellation;
   const held = current?.cancellation;

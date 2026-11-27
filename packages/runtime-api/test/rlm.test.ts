@@ -14,6 +14,7 @@ import {
   readInvocationBinding,
   RLM_REFUSAL_CODE_PATTERN,
   RlmProviderRefusal,
+  applyJsonPatch,
   RESULT_DELIVERIES,
   RLM_AGENT_ID,
   RLM_CAPABILITIES,
@@ -121,5 +122,19 @@ describe("a provider's definite refusal is typed (#113)", () => {
     expect(RLM_REFUSAL_CODE_PATTERN.test("sk-live-SECRET token")).toBe(false);
     expect(isDefiniteProviderRefusal("string")).toBe(false);
     expect(isDefiniteProviderRefusal(undefined)).toBe(false);
+  });
+});
+
+describe("wildcard and prototype-named keys (CodeRabbit on #94)", () => {
+  test("a null or false specific revocation does not mask a wildcard withdrawal; a present one wins", () => {
+    expect(readGrantRevocation({ rlm: { revoked: { "inv-1": null, "*": "all" } } }, "inv-1")).toBe("all");
+    expect(readGrantRevocation({ rlm: { revoked: { "inv-1": false, "*": "all" } } }, "inv-1")).toBe("all");
+    expect(readGrantRevocation({ rlm: { revoked: { "inv-1": "just this", "*": "all" } } }, "inv-1")).toBe("just this");
+  });
+  test("a JSON patch can add a leaf named __proto__ and it survives as an own key", () => {
+    const patched = applyJsonPatch({ rlm: { revoked: {} } }, [{ op: "add", path: "/rlm/revoked/__proto__", value: "withdrawn" }]);
+    const roundTrip = JSON.parse(JSON.stringify(patched));
+    expect(Object.hasOwn(roundTrip.rlm.revoked, "__proto__")).toBe(true);
+    expect(readGrantRevocation(roundTrip, "__proto__")).toBe("withdrawn");
   });
 });
