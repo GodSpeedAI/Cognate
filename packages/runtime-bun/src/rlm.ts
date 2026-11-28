@@ -42,7 +42,7 @@ import {
   type StdioSpawnPort,
 } from "@godspeedai/cognate-runtime-api";
 
-import { ConcurrencyError } from "@godspeedai/cognate-events";
+import { ConcurrencyError, fingerprint } from "@godspeedai/cognate-events";
 import { Halt } from "./executor.ts";
 import { runStream, toJson } from "./fold.ts";
 import { appendControl, childInputOf, decideControl, readControl, requestFingerprint, RLM_EVENTS, RLM_PROTOCOL, structuredKey, taskKeyOf, withdrawnReason, type RlmControlState, type RlmInvocationFold } from "./rlm-control.ts";
@@ -164,6 +164,7 @@ async function invocationFor(store: DurableStore, service: RuntimeService, calle
     invocationId: binding.invocationId, attempt: binding.attempt ?? 1, childRunId, parentRunId, providerId: binding.providerId, depth: binding.depth,
     taskKey: "legacy", requestFingerprint: "legacy", budgetLimit: binding.budgetLimit, admittedAt: binding.admittedAt, protocolVersion: 1,
     started: !!childRunId, dispatchIntended: true,
+    ...(binding.cancellation ? { cancel: { requestedAt: binding.cancellation.requestedAt, reason: binding.cancellation.reason, ...(binding.cancellation.providerCancel === "cancelled" || binding.cancellation.providerCancel === "not-dispatched" ? { settled: { outcome: binding.cancellation.providerCancel, at: binding.cancellation.requestedAt } } : {}) } } : {}),
   };
   return { parentRunId, inv: legacyFold, legacy: true };
 }
@@ -234,8 +235,26 @@ async function attemptResolved(service: RuntimeService, caller: Caller, inv: Rlm
   if (inv.accepted) return true;
   const settled = inv.cancel?.settled;
   if (settled && (settled.outcome === "cancelled" || settled.outcome === "not-dispatched")) return true;
-  if (inv.started && !inv.dispatchIntended) return isTerminalInvocationStatus(await invocationStatus(service, caller, inv.childRunId));
-  return false;
+  if (!inv.started) return false;
+  const status = await invocationStatus(service, caller, inv.childRunId);
+  if (!isTerminalInvocationStatus(status)) return false;
+  // A terminal child that never dispatched, or whose dispatch step refused before the provider was called, is finished.
+  if (!inv.dispatchIntended || inv.neverInvoked) return true;
+  // A terminal child that recorded its outcome (even if the acceptance write after it failed) is finished.
+  const recorded = (await childSummary(service, caller, inv.childRunId)).outcome;
+  return isObject(recorded) && recorded.unsettled !== true && typeof recorded.status === "string" && (INVOCATION_STATUSES as readonly string[]).includes(recorded.status) && isTerminalInvocationStatus(recorded.status as RlmInvocationStatus);
+}
+
+/**
+ * Records the settlement of a cancellation. A confirmed settlement (the provider cancelled, or nothing was dispatched) is never
+ * replaced by a later failure: two callers that both asked the provider cannot undo each other's confirmation.
+ */
+export async function settleCancellation(store: DurableStore, parentRunId: string, invocationId: string, attempt: number, outcome: "cancelled" | "not-dispatched" | "failed", errorClass?: string): Promise<void> {
+  await decideControl(store, parentRunId, (state) => {
+    const held = state.invocations.get(invocationId)?.cancel?.settled;
+    if (outcome === "failed" && held && (held.outcome === "cancelled" || held.outcome === "not-dispatched")) return { events: [], result: undefined };
+    return { events: [{ eventType: RLM_EVENTS.cancelSettled, payload: { invocationId, attempt, outcome, ...(errorClass ? { errorClass } : {}) }, metadata: { invocationId, attempt } }], result: undefined };
+  });
 }
 
 const DEFAULT_PAYMENT: RlmPayment = { currency: "time", spent: "unknown", basis: "unmeasured" };
@@ -304,9 +323,13 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     if (input.attempt !== undefined && !(Number.isInteger(input.attempt) && input.attempt >= 1)) throw new RlmRefusedError("rlm-attempt-refused", `attempt must be a positive integer, got ${String(input.attempt)}`);
     const attempt = input.attempt ?? 1; // the contract default, applied before anything is compared
 
+    if (typeof input.invocationId !== "string" || input.invocationId === "") throw new RlmRefusedError("rlm-invocation-unknown", "invocationId must be a non-empty string");
+
     const svc = service();
     const db = store();
     const caller: Caller = { actor: ctx.actor, tenant: ctx.tenant };
+    const parentOwner = (await svc.getRun(caller, { runId: parentRunId })).startedBy;
+    const childPrincipal: Principal = { id: parentOwner || RLM_AGENT_ID, kind: "agent" };
     const childInput = childInputOf({ invocationId: input.invocationId, providerId: input.providerId, parent: input.parent, attempt, task: input.task as unknown as Json, authority: input.authority as unknown as Json, budget: input.budget as unknown as Json, ...(input.caseContext ? { caseContext: input.caseContext as unknown as Json } : {}) });
     const fingerprintOfRequest = requestFingerprint(childInput);
     const taskKey = taskKeyOf(input.task);
@@ -341,7 +364,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       return {
         events: [{
           eventType: RLM_EVENTS.admitted,
-          payload: { invocationId: input.invocationId, attempt, childRunId, parentRunId, providerId: input.providerId, depth: fold.depth, taskKey, requestFingerprint: fingerprintOfRequest, budgetLimit: input.budget.limit, ...(input.budget.reservationRef ? { reservationRef: input.budget.reservationRef } : {}), admittedAt: fold.admittedAt, protocolVersion: RLM_PROTOCOL },
+          payload: { invocationId: input.invocationId, attempt, childRunId, parentRunId, providerId: input.providerId, depth: fold.depth, taskKey, requestFingerprint: fingerprintOfRequest, budgetLimit: input.budget.limit, ...(input.budget.reservationRef ? { reservationRef: input.budget.reservationRef } : {}), admittedAt: fold.admittedAt, protocolVersion: RLM_PROTOCOL, principalId: childPrincipal.id, caseContextFingerprint: fingerprint((input.caseContext ?? null) as unknown as Json) },
           metadata: { invocationId: input.invocationId, attempt, childRunId },
         }],
         result: fold,
@@ -354,21 +377,30 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
     }
     if (admitted.cancel) throw new RlmRefusedError("rlm-attempt-refused", `invocation ${input.invocationId} was cancelled before it started`);
 
-    // The child principal is derived from the parent run's starter; a provider never supplies one (D4.2). The start is validated
-    // against the admission by the service itself, which also binds the child to it in the same commit as `run.started`.
-    const parentView = await svc.getRun(caller, { runId: parentRunId });
-    const childPrincipal: Principal = { id: parentView.startedBy || RLM_AGENT_ID, kind: "agent" };
-    try {
-      await svc.startRun(
-        { actor: childPrincipal, tenant: ctx.tenant },
-        { agent: RLM_AGENT_ID, input: childInput, idempotencyKey: structuredKey("rlm.start", parentRunId, input.invocationId, String(attempt), admitted.childRunId), correlationId: `rlm:${parentRunId}:${input.invocationId}`, ...(input.caseContext ? { caseContext: input.caseContext } : {}) },
-      );
-    } catch (error) {
-      // A cancel or revocation that won the race on the control stream refuses the start: report it as such.
-      const now = (await readControl(db, parentRunId)).invocations.get(input.invocationId);
-      if (now?.cancel) throw new RlmRefusedError("rlm-attempt-refused", `invocation ${input.invocationId} was cancelled before it started`);
-      throw error;
+    // The child principal is derived from the parent run's starter (recorded in the admission); a provider never supplies one (D4.2).
+    // The start is validated against the admission by the service itself, which also binds the child to it in the same commit as
+    // `run.started`. A start that loses a compare-and-set to an UNRELATED control event (another invocation's revocation, say)
+    // is decided again: it is retried while this invocation is still admitted.
+    let startError: unknown;
+    for (let tries = 0; tries < 8; tries++) {
+      try {
+        await svc.startRun(
+          { actor: childPrincipal, tenant: ctx.tenant },
+          { agent: RLM_AGENT_ID, input: childInput, idempotencyKey: structuredKey("rlm.start", parentRunId, input.invocationId, String(attempt), admitted.childRunId), correlationId: `rlm:${parentRunId}:${input.invocationId}`, ...(input.caseContext ? { caseContext: input.caseContext } : {}) },
+        );
+        startError = undefined;
+        break;
+      } catch (error) {
+        startError = error;
+        const control = await readControl(db, parentRunId);
+        const now = control.invocations.get(input.invocationId);
+        if (now?.cancel) throw new RlmRefusedError("rlm-attempt-refused", `invocation ${input.invocationId} was cancelled before it started`);
+        if (now?.started) { startError = undefined; break; }
+        // Only a lost compare-and-set (the service says so) is decided again; any other failure is the caller's to see.
+        if (withdrawnReason(control, input.invocationId) || !/changed while it was starting/.test(error instanceof Error ? error.message : String(error))) throw error;
+      }
     }
+    if (startError) throw startError;
     return { invocationId: input.invocationId, runId: admitted.childRunId, status: "admitted" };
   };
 
@@ -420,7 +452,9 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       let providerCancel: "cancelled" | "failed" = "cancelled";
       let error: string | undefined;
       try {
-        await options.registry.get(inv.providerId)?.provider.cancel(inv.childRunId, reason);
+        const registered = options.registry.get(inv.providerId);
+        if (!registered) throw new Error("provider is not registered");
+        await registered.provider.cancel(inv.childRunId, reason);
       } catch (cause) {
         providerCancel = "failed";
         error = safeErrorClass(cause);
@@ -453,7 +487,7 @@ export function createRlmComponent(options: RlmComponentOptions): Component {
       }
     }
     // 4. The settlement (a later retry appends its own; the last one counts).
-    await decideControl(db, parentRunId, () => ({ events: [{ eventType: RLM_EVENTS.cancelSettled, payload: { invocationId: input.invocationId, attempt: inv.attempt, outcome, ...(errorClass ? { errorClass } : {}) }, metadata: { invocationId: input.invocationId, attempt: inv.attempt } }], result: undefined }));
+    await settleCancellation(db, parentRunId, inv.invocationId, inv.attempt, outcome, errorClass);
     return { status: "cancelled", dispatched: inv.dispatchIntended, providerCancel: outcome, ...(errorClass ? { error: errorClass } : {}) } as unknown as Json;
   };
 
@@ -491,6 +525,8 @@ const toOutcome = (payload: {
   payment?: RlmPayment;
   isolation?: string;
   reconciled?: boolean;
+  /** The outcome was recorded but the provider is not confirmed stopped: it is not evidence that the attempt is finished. */
+  unsettled?: boolean;
 }): Json =>
   toJson({
     status: payload.status,
@@ -499,6 +535,7 @@ const toOutcome = (payload: {
     payment: payload.payment ?? DEFAULT_PAYMENT,
     isolation: payload.isolation ?? "none",
     ...(payload.reconciled ? { reconciled: true } : {}),
+    ...(payload.unsettled ? { unsettled: true } : {}),
   });
 
 /** Thrown inside the dispatch-result step on re-entry, where the provider must not be invoked again. */
@@ -574,6 +611,15 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
         if (inv.cancel) throw new Error(`cancelled before dispatch (${inv.cancel.reason})`);
         if (ctx.signal.aborted) throw new Error("cancelled before dispatch");
         return control;
+      };
+      const markNeverInvoked = async (): Promise<void> => {
+        const store = options.getStore?.();
+        if (!store || legacy) return;
+        await decideControl(store, child.runId, (state) => {
+          const inv = state.invocations.get(child.invocationId);
+          if (!inv || inv.neverInvoked) return { events: [], result: undefined };
+          return { events: [{ eventType: RLM_EVENTS.dispatchAborted, payload: { invocationId: child.invocationId, attempt }, metadata: { invocationId: child.invocationId, attempt } }], result: undefined };
+        }).catch(() => undefined);
       };
       // The outcome is a named step, never an emit: an emit id is a counter a provider's own emits can shift.
       const record = (outcome: Json): Promise<Json> => ctx.step("rlm.outcome", async () => toJson({ rlmOutcome: outcome }));
@@ -653,7 +699,13 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
       try {
         dispatch = (await ctx.step("rlm.dispatch.result", async (): Promise<Json> => {
           if (!fresh) throw new ReentryWithoutResult();
-          await assertDispatchable(); // the last reads before the provider is reached
+          try {
+            await assertDispatchable(); // the last reads before the provider is reached
+          } catch (error) {
+            // Refused before the provider was called: record that positive evidence (an intent alone is not proof of a call).
+            if (!(error instanceof Halt)) await markNeverInvoked();
+            throw error;
+          }
           try {
             await entry.provider.invoke(request, spawn, providerCtx);
             return toJson({ returned: true });
@@ -713,8 +765,11 @@ export function createRlmAgent(options: { readonly registry: RlmRegistry; readon
         // A view that does not name this invocation is foreign: none of its spend or evidence is recorded against it.
         const evidence = latestTied ? [...latest.evidence, `provider-view:${latest.status}`, ...threw] : ["foreign view ignored", ...threw];
         if (!explicit) {
-          await record(toOutcome({ status: "failed", evidence: [...evidence, "reconciliation stated no outcome"], reconciled: true }));
-          await accept("failed");
+          // Invalid input is not proof the provider stopped: the attempt is finished only when the provider is confirmed terminal (or is
+          // stopped now); otherwise the outcome is recorded as unsettled and the attempt stays unresolved (it blocks a new attempt).
+          const stopped = (latestTied && isTerminalInvocationStatus(latest.status)) || (await entry.provider.cancel(ctx.runId, "reconciliation stated no outcome").then(() => true, () => false));
+          await record(toOutcome({ status: "failed", evidence: [...evidence, "reconciliation stated no outcome"], reconciled: true, ...(stopped ? {} : { unsettled: true }) }));
+          if (stopped) await accept("failed");
           throw new RlmRefusedError("rlm-invocation-ambiguous", `reconciliation of ${child.invocationId} must state an explicit result or failure`);
         }
         // An operator's claim of success never overrides a tied provider view that says it did not succeed, unless the

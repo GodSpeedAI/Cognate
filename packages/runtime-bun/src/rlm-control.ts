@@ -18,6 +18,7 @@ export const RLM_EVENTS = {
   admitted: "rlm.admitted",
   childStarted: "rlm.child.started",
   dispatchIntended: "rlm.dispatch.intended",
+  dispatchAborted: "rlm.dispatch.aborted",
   cancelRequested: "rlm.cancel.requested",
   cancelSettled: "rlm.cancel.settled",
   revoked: "rlm.revoked",
@@ -43,6 +44,11 @@ export interface RlmInvocationFold {
   readonly protocolVersion: number;
   started: boolean;
   dispatchIntended: boolean;
+  /** The dispatch step refused (a withdrawn grant or a cancel after the intent) before the provider was ever called. */
+  neverInvoked?: boolean;
+  /** The principal the child runs as, and the canonical case context, as admitted: a start must present exactly these. */
+  principalId?: string;
+  caseContextFingerprint?: string;
   cancel?: { requestedAt: string; reason: string; settled?: { outcome: CancelOutcome; errorClass?: string; at: string } };
   accepted?: { status: string; at: string };
 }
@@ -60,21 +66,26 @@ const obj = (value: Json | undefined): Record<string, Json> => (value && typeof 
 export function foldControl(events: readonly StoredEvent[]): RlmControlState {
   const state: RlmControlState = { version: events.length, invocations: new Map(), revoked: new Map() };
   for (const event of events) {
+    // Identifiers live in metadata too, so the stream stays attributable when a payload is erased; payload wins when present.
+    const m = obj((event.metadata ?? {}) as Json);
     const p = obj(event.payload);
-    const id = typeof p.invocationId === "string" ? p.invocationId : undefined;
-    const inv = id ? state.invocations.get(id) : undefined;
+    const id = typeof p.invocationId === "string" ? p.invocationId : typeof m.invocationId === "string" ? m.invocationId : undefined;
+    const inv = id !== undefined ? state.invocations.get(id) : undefined;
     switch (event.eventType) {
       case RLM_EVENTS.admitted: {
-        if (!id || inv) break; // the first admission of an invocationId is the only one
+        if (id === undefined || inv) break; // the first admission of an invocationId is the only one
         state.invocations.set(id, {
           invocationId: id,
-          attempt: Number(p.attempt ?? 1),
-          childRunId: String(p.childRunId),
-          parentRunId: String(p.parentRunId),
-          providerId: String(p.providerId),
+          attempt: Number(p.attempt ?? m.attempt ?? 1),
+          childRunId: String(p.childRunId ?? m.childRunId),
+          parentRunId: String(p.parentRunId ?? m.parentRunId),
+          // An erased admission payload leaves a fold that can never match a request (fail closed), but still counts as an attempt.
+          providerId: String(p.providerId ?? "erased"),
           depth: Number(p.depth ?? 1),
-          taskKey: String(p.taskKey),
-          requestFingerprint: String(p.requestFingerprint),
+          taskKey: String(p.taskKey ?? `erased:${id}`),
+          requestFingerprint: String(p.requestFingerprint ?? "erased"),
+          ...(typeof p.principalId === "string" ? { principalId: p.principalId } : {}),
+          ...(typeof p.caseContextFingerprint === "string" ? { caseContextFingerprint: p.caseContextFingerprint } : {}),
           budgetLimit: p.budgetLimit === "unknown" ? "unknown" : Number(p.budgetLimit),
           ...(typeof p.reservationRef === "string" ? { reservationRef: p.reservationRef } : {}),
           admittedAt: String(p.admittedAt ?? event.occurredAt),
@@ -85,10 +96,13 @@ export function foldControl(events: readonly StoredEvent[]): RlmControlState {
         break;
       }
       case RLM_EVENTS.childStarted:
-        if (inv && p.childRunId === inv.childRunId) inv.started = true;
+        if (inv && (p.childRunId ?? m.childRunId) === inv.childRunId) inv.started = true;
         break;
       case RLM_EVENTS.dispatchIntended:
         if (inv) inv.dispatchIntended = true;
+        break;
+      case RLM_EVENTS.dispatchAborted:
+        if (inv) inv.neverInvoked = true;
         break;
       case RLM_EVENTS.cancelRequested:
         if (inv && !inv.cancel) inv.cancel = { requestedAt: String(p.at ?? event.occurredAt), reason: String(p.reason ?? "rlm.cancel") };
@@ -97,7 +111,10 @@ export function foldControl(events: readonly StoredEvent[]): RlmControlState {
         if (inv?.cancel) inv.cancel.settled = { outcome: p.outcome as CancelOutcome, ...(typeof p.errorClass === "string" ? { errorClass: p.errorClass } : {}), at: String(p.at ?? event.occurredAt) };
         break;
       case RLM_EVENTS.revoked:
-        if (typeof p.key === "string") state.revoked.set(p.key, String(p.reason ?? "revoked"));
+        {
+          const key = typeof p.key === "string" ? p.key : typeof m.key === "string" ? m.key : undefined;
+          if (key !== undefined) state.revoked.set(key, typeof p.reason === "string" ? p.reason : "revoked");
+        }
         break;
       case RLM_EVENTS.parentCancelled:
         state.parentCancelled ??= String(p.reason ?? "parent cancelled");
@@ -135,7 +152,7 @@ export interface ControlEventInput {
   readonly metadata: Record<string, Json>;
 }
 
-export function controlEvent(envelope: { tenant: string; correlationId: string; scopeId: string }, parentRunId: string, input: ControlEventInput): NewEvent {
+export function controlEvent(envelope: { tenant: string; correlationId: string; scopeId: string }, parentRunId: string, input: ControlEventInput, causationId: string | null = null): NewEvent {
   return {
     eventId: crypto.randomUUID(),
     eventType: input.eventType,
@@ -143,7 +160,7 @@ export function controlEvent(envelope: { tenant: string; correlationId: string; 
     occurredAt: new Date().toISOString(),
     tenant: envelope.tenant,
     correlationId: envelope.correlationId,
-    causationId: null,
+    causationId,
     runId: parentRunId,
     scopeId: envelope.scopeId,
     payload: { ...input.payload, at: new Date().toISOString() },
@@ -154,7 +171,25 @@ export function controlEvent(envelope: { tenant: string; correlationId: string; 
 /** Append control events with a compare-and-set on the version they were decided against; `ConcurrencyError` means decide again. */
 export async function appendControl(store: DurableStore, parentRunId: string, expectedVersion: number, events: readonly ControlEventInput[]): Promise<void> {
   const envelope = await controlEnvelope(store, parentRunId);
-  await store.commit({ appends: [{ streamId: rlmControlStream(parentRunId), expectedVersion, events: events.map((event) => controlEvent(envelope, parentRunId, event)) }] });
+  await store.commit({ appends: [{ streamId: rlmControlStream(parentRunId), expectedVersion, events: chainControl(envelope, parentRunId, events, (await store.readStream(rlmControlStream(parentRunId))).at(-1)?.eventId ?? null) }] });
+}
+
+/** Control events of one commit, each caused by the one before it (the first by the stream's last event). */
+export function chainControl(envelope: { tenant: string; correlationId: string; scopeId: string }, parentRunId: string, events: readonly ControlEventInput[], lastEventId: string | null): NewEvent[] {
+  const out: NewEvent[] = [];
+  let cause = lastEventId;
+  for (const input of events) {
+    const event = controlEvent(envelope, parentRunId, input, cause);
+    out.push(event);
+    cause = event.eventId!;
+  }
+  return out;
+}
+
+/** The stream's version and its last event id: what a guarded commit that touches the stream decides against. */
+export async function controlTail(store: DurableStore, parentRunId: string): Promise<{ version: number; lastEventId: string | null }> {
+  const events = await store.readStream(rlmControlStream(parentRunId));
+  return { version: events.length, lastEventId: events.at(-1)?.eventId ?? null };
 }
 
 /**
@@ -220,6 +255,9 @@ export const structuredKey = (kind: string, ...parts: readonly string[]): string
 // ── the service boundary: a child exists only for an admitted invocation ────────
 
 export interface AdmittedChild {
+  /** The principal and case context the admission recorded: the start must be made by exactly this principal with exactly this context. */
+  readonly principalId: string | undefined;
+  readonly caseContextFingerprint: string | undefined;
   readonly childRunId: string;
   readonly parentRunId: string;
   /** The control version the start commits against (it appends `rlm.child.started` there, atomically with `run.started`). */
@@ -249,5 +287,5 @@ export async function admitChildStart(store: DurableStore, caller: { readonly te
   if (inv.cancel) return refuse(`invocation ${invocationId} was cancelled`);
   const withdrawn = withdrawnReason(control, invocationId);
   if (withdrawn) return refuse(withdrawn);
-  return { childRunId: inv.childRunId, parentRunId, version: control.version, started: inv.started };
+  return { childRunId: inv.childRunId, parentRunId, version: control.version, started: inv.started, principalId: inv.principalId, caseContextFingerprint: inv.caseContextFingerprint };
 }

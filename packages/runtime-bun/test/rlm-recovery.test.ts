@@ -210,6 +210,10 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
   await preflight.close();
   const dir = mkdtempSync(join(tmpdir(), "rlm-crash-"));
   const counterFile = join(dir, "invokes");
+  let rt: Runtime | undefined;
+  let database: Awaited<ReturnType<typeof openSchema>> | undefined;
+  // Everything the scenario creates (the fixture's schema, the directory, the runtime) is cleaned up whatever fails, including the handshake.
+  try {
   const proc = Bun.spawn(["bun", join(import.meta.dir, "fixtures", "rlm-crash-runtime.ts"), url, schema, counterFile, mode], { stdout: "pipe", stderr: "inherit", env: process.env });
   let parentRunId = "";
   let sawMarker = false;
@@ -236,7 +240,7 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
   expect(sawMarker).toBe(true);
   const invokesBefore = existsSync(counterFile) ? readFileSync(counterFile, "utf8").split("\n").filter(Boolean).length : 0;
 
-  const database = await openSchema(schema);
+  database = await openSchema(schema);
   let recoveredInvokes = 0;
   const provider: RlmProvider = {
     id: "test-provider",
@@ -252,11 +256,10 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
   };
   const registry = createRlmRegistry();
   registry.register({ provider, label: "recovered" });
-  let rt: Runtime | undefined;
   const getService = () => rt!.service;
   const getStore = () => rt!.store;
   const parent: AgentDefinition = { id: "agent.parent", version: "1.0.0", run: async (): Promise<Json> => ({ unused: true }) };
-  try {
+  {
     rt = await createRuntime({
       store: { store: database.store },
       agents: [parent, createRlmAgent({ registry, getService, getStore })],
@@ -269,10 +272,12 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
     const child = await until(async () => (await rt!.service.listRuns(caller, { correlationId: `rlm:${parentRunId}:${INV_CRASH}` }))[0], (c) => c !== undefined, "the crashed child run was not in the store");
     await check(rt, child!.runId, () => recoveredInvokes);
     expect(invokesBefore + recoveredInvokes).toBe(mode === "after-invoke" ? 1 : 0);
+  }
   } finally {
     await rt?.close();
-    await database.dropSchema();
-    await database.close();
+    const db = database ?? (await openSchema(schema).catch(() => undefined));
+    await db?.dropSchema().catch(() => undefined);
+    await db?.close().catch(() => undefined);
     rmSync(dir, { recursive: true, force: true });
   }
 }
