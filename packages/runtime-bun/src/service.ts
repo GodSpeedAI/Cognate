@@ -2,9 +2,10 @@
 import { randomUUID } from "node:crypto";
 import type { ContinuationRecord, TransitionOutcome } from "@godspeedai/cognate-continuations";
 import { ConcurrencyError, fingerprint, IdempotencyMismatchError, readProjectionSnapshot, RecordConflictError, type Json, type StoredEvent } from "@godspeedai/cognate-events";
-import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
+import { applyStateUpdate, AssignmentRefusedError, caseContextIssues, type Caller, spendOf, validateAssignment, type ContinuationView, foldState, type ObservationInput, type ObservationView, RLM_AGENT_ID, type RunView, type RuntimeService, ServiceError, type ServiceErrorCode, StatePatchError } from "@godspeedai/cognate-runtime-api";
 import { acceptLifecycleEvent, settleTerminalRun, finalizeStoppedRun, APPEND_MAX_ATTEMPTS, appendBackoffMs, assignmentMetadata, ASSIGNMENTS, foldAssignment, lifecycleEvent, readLifecycle } from "./assignment.ts";
 import type { Core } from "./core.ts";
+import { admitChildStart, chainControl, controlTail, RLM_EVENTS, RLM_PROTOCOL, rlmControlStream, type AdmittedChild } from "./rlm-control.ts";
 import type { ActionName } from "./governed-operation.ts";
 import { assignmentControlStream, foldRun, isTerminal, observationStream, RUN_EXECUTE_TOPIC, RUNS, runStateStream, runStream, threadStateStream, toJson } from "./fold.ts";
 
@@ -57,11 +58,22 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         const issues = caseContextIssues(caseContext);
         if (issues.length) throw new ServiceError("invalid_argument", `invalid caseContext: ${issues.join("; ")}`);
       }
-      const runId = randomUUID();
-      const correlationId = request.correlationId ?? randomUUID();
+      // An rlm child exists only for an admitted invocation (PR #94 delta-5, D2): its run id is the one the admission names.
+      const rlmAdmission: AdmittedChild | undefined = request.agent === RLM_AGENT_ID ? await admitChildStart(store, caller, request.input) : undefined;
+      if (rlmAdmission) {
+        // The start must be made by the principal the admission recorded, with its case context and the invocation's own
+        // correlation id: a caller holding only `run.start` cannot start an admitted child as itself or under a context of its own.
+        if (rlmAdmission.principalId !== undefined && caller.actor.id !== rlmAdmission.principalId) throw new ServiceError("failed_precondition", "agent.rlm is started only for an admitted invocation: the start is not made by the principal the admission recorded");
+        if (rlmAdmission.caseContextFingerprint !== undefined && fingerprint((request.caseContext ?? null) as unknown as Json) !== rlmAdmission.caseContextFingerprint) throw new ServiceError("failed_precondition", "agent.rlm is started only for an admitted invocation: the case context is not the one the admission recorded");
+        const expected = `rlm:${rlmAdmission.parentRunId}:${(request.input as { invocationId: string }).invocationId}`;
+        if (request.correlationId !== undefined && request.correlationId !== expected) throw new ServiceError("failed_precondition", "agent.rlm is started only for an admitted invocation: the correlation id is not the invocation's");
+      }
+      const runId = rlmAdmission?.childRunId ?? randomUUID();
+      const correlationId = request.correlationId ?? (rlmAdmission ? `rlm:${rlmAdmission.parentRunId}:${(request.input as { invocationId: string }).invocationId}` : randomUUID());
       const occurredAt = new Date().toISOString();
       const startedMetadata = {
         agent: agent.id, agentVersion: agent.version, startedBy: caller.actor.id, startedByKind: caller.actor.kind,
+        ...(rlmAdmission ? { rlmProtocol: RLM_PROTOCOL } : {}),
         ...(caseContext ? { caseContext: { ...caseContext, principal: caller.actor.id } as unknown as Json } : {}),
         // The brief is content: it goes in the erasable `run.started` payload, never metadata (see assignmentOf).
         ...(assignment ? { assignment: (({ brief: _brief, ...binding }) => binding)(assignment) as unknown as Json, ...(request.linkExpiresAt !== undefined ? { linkExpiresAt: request.linkExpiresAt } : {}) } : {}),
@@ -113,6 +125,14 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
               expectedVersion: 0,
               events: [{ ...startedEvent, eventId: startedId }, ...lifecycle],
             },
+            // The binding of the child to its admission, committed atomically with the run it names.
+            ...(rlmAdmission && !rlmAdmission.started
+              ? [{
+                  streamId: rlmControlStream(rlmAdmission.parentRunId),
+                  expectedVersion: rlmAdmission.version,
+                  events: chainControl({ tenant: caller.tenant, correlationId: ((await store.readStream(runStream(rlmAdmission.parentRunId)))[0]!).correlationId, scopeId: core.scopeId }, rlmAdmission.parentRunId, [{ eventType: RLM_EVENTS.childStarted, payload: { invocationId: (request.input as { invocationId: string }).invocationId, childRunId: runId }, metadata: { invocationId: (request.input as { invocationId: string }).invocationId, childRunId: runId } }], (await controlTail(store, rlmAdmission.parentRunId)).lastEventId),
+                }]
+              : []),
             // Caller-seeded state, committed atomically with `run.started` on the state stream so the
             // agent's first `ctx.state()` read (even before suspending) always sees it (spec §29.1).
             ...(request.state !== undefined
@@ -155,6 +175,7 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
         return (await readRun(caller, (outcome.result as { runId: string }).runId)).view;
       } catch (error) {
         if (error instanceof IdempotencyMismatchError) throw new ServiceError("already_exists", `idempotency key ${request.idempotencyKey} was used for a different request`);
+        if (rlmAdmission && error instanceof ConcurrencyError) throw new ServiceError("failed_precondition", `agent.rlm start refused: the admission or the run changed while it was starting (${error.message})`);
         if (assignment && error instanceof RecordConflictError) throw new AssignmentRefusedError("ASSIGNMENT_ID_INVALID", `${assignment.assignment_id} was already issued to a run; resume it, or take a new k`);
         throw error;
       }
@@ -215,12 +236,19 @@ export function createService(core: Core, publicProjections: ReadonlySet<string>
           payload: { reason: request.reason },
           metadata: { cancelledBy: caller.actor.id, ...(caseContext ? { caseContext } : {}) },
         };
+        // A parent with an rlm control stream records its cancellation there in the same commit, so a child's dispatch fence
+        // (a compare-and-set on that stream) and this cancel are totally ordered (PR #94 delta-5, D7).
+        // The guard is unconditional: on an empty stream it is an empty append at version 0, so an admission that commits after this
+        // read makes the cancel conflict and decide again (it can never slip between the read and the commit).
+        const rlmTail = await controlTail(store, request.runId);
+        const rlmCancel = rlmTail.version > 0 ? chainControl({ tenant: view.tenant, correlationId: view.correlationId, scopeId: events[0]!.scopeId }, request.runId, [{ eventType: RLM_EVENTS.parentCancelled, payload: { reason: request.reason }, metadata: {} }], rlmTail.lastEventId) : [];
         try {
           await store.commit({
             idempotency: { scope: `${caller.tenant}:${caller.actor.id}:run.cancel`, key: request.idempotencyKey, fingerprint: fingerprint({ runId: request.runId, reason: request.reason }) },
             // The assignment's terminal event commits with the run's, guarded by the lifecycle revision: a control that
             // won the race is seen on the next attempt, and a control can never land after this.
             appends: [
+              { streamId: rlmControlStream(request.runId), expectedVersion: rlmTail.version, events: rlmCancel },
               ...(cancelledAssignment ? [{ streamId: assignmentControlStream(request.runId), expectedVersion: control.length, events: [cancelledAssignment] }] : []),
               {
                 streamId: runStream(request.runId),

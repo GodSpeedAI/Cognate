@@ -306,3 +306,29 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 **Observed (2026-11-26):** `ctx.step` runs its callback before persisting anything (`executor.ts`), and resume replays the agent body from the top, answering only recorded steps from the stream. An interrupt that lands while a callback is running drops the result at the guard; an interrupt that wins over completion (the executor re-decides and discards the finished result) makes resume run the whole body again. Any side effect inside an unrecorded step, and any side effect outside a step, repeats.
 **Consequence:** Interrupt followed by resume can repeat a non-idempotent side effect.
 **Exit criterion:** Persist a step start marker before the callback and treat a started-but-unresolved step on resume as ambiguous through the existing reconciliation path (`ambiguousSteps`), and require effects outside steps to be idempotent or declared; then turn the known-gap test into one that expects a single effect. Not done here: it adds an event per step and changes the stream shape, which warrants its own change.
+
+---
+
+## DEBT-035 — Cancelling a parent run does not call `provider.cancel` for a child that already dispatched
+
+**Status:** Open 2026-11-26, narrowed 2026-11-28 by the delta-5 structural fix — found in review of PR #94 (ticket #113, Cognate half).
+**Requirement(s):** None.
+**Observed (2026-11-28):** `RuntimeService.cancelRun` on a parent now appends `rlm.parent.cancelled` to the parent's RLM control stream in the same commit, so a child that has not recorded its dispatch intent refuses to dispatch. A child whose intent is already committed is not cancelled and its provider is not asked to cancel: nothing reaches `provider.cancel` unless someone calls `rlm.cancel`.
+**Consequence:** A cancelled parent can leave a provider process running and spending.
+**Exit criterion:** Cancelling a parent cancels every non-terminal dispatched child through the `rlm.cancel` path (request, settlement, retry). Proven by flipping `test.failing` to `test` for `cancelling the parent after dispatch reaches provider.cancel for its child` in `packages/runtime-bun/test/rlm.test.ts`.
+
+---
+
+## DEBT-036 — `rlm.dispatch.intended` keeps its identity only in the erasable payload
+
+**Status:** Resolved 2026-11-28 by the delta-5 structural fix: the RLM control events are built by the runtime and carry `invocationId`, `attempt`, `childRunId` and `parentRunId` in event metadata, so they stay attributable after a payload erasure (`packages/runtime-bun/src/rlm-control.ts`, proven by `the dispatch intent is a compare-and-set event on the control stream` in `packages/runtime-bun/test/rlm.test.ts`).
+
+---
+
+## DEBT-037 — The runtime cannot verify a declared `contextDigest`
+
+**Status:** Open 2026-11-28 — delta-5 review of PR #94 (M10) and its structural design (D3).
+**Requirement(s):** None.
+**Observed (2026-11-28):** `RlmTask.contextRefs` are opaque strings and nothing in the runtime resolves them, so the runtime cannot recompute the digest of the resolved context the caller declares in `RlmTask.contextDigest` (the contract comment claimed it was re-computed at child start; no such code exists). Attempt exclusion therefore uses a task key the runtime computes itself from purpose, acceptance and context references, and ignores the declared digest.
+**Consequence:** Two invocations that differ only in the content their references resolve to (same references, same text) are treated as the same task; a caller that wants a different task must change the references or the text. A wrong declared digest is stored but never checked.
+**Exit criterion:** A context-resolver port the host implements, so the runtime computes the digest from the resolved artifacts at admission and at child start and refuses a mismatch; the task key then uses that verified digest.

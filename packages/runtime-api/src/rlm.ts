@@ -78,6 +78,8 @@ export const RLM_REFUSAL_CODES = [
   "rlm-invocation-unknown",
   "rlm-invocation-ambiguous",
   "rlm-top-level-invocation",
+  /** Additive (#113): an attempt that is invalid, already holds its identity, or follows an unresolved attempt of the same task. */
+  "rlm-attempt-refused",
 ] as const;
 export type RlmRefusalCode = (typeof RLM_REFUSAL_CODES)[number];
 
@@ -183,7 +185,10 @@ export interface RlmTask {
   readonly purpose: string;
   readonly acceptance: readonly string[];
   readonly contextRefs: readonly string[];
-  /** sha256 over the canonical *resolved* artifacts, re-computed at child start (D4.10). */
+  /**
+   * sha256 over the canonical *resolved* artifacts. DECLARED by the caller: the runtime has no resolver for `contextRefs`, so it does
+   * not verify this value and does not use it to decide whether two invocations are the same job (DEBT-037).
+   */
   readonly contextDigest: string;
 }
 
@@ -208,6 +213,12 @@ export interface RlmInvokeInput {
   readonly task: RlmTask;
   readonly authority: RlmAuthority;
   readonly budget: RlmBudget;
+  /**
+   * Additive (#113). The attempt identity recorded with the dispatch intent; default 1. One (invocationId,
+   * attempt) is dispatched to a provider at most once. Reusing an `invocationId` with a different attempt is
+   * refused: a retry needs a new `invocationId` (D4.8) with its own grant and `reservationRef`.
+   */
+  readonly attempt?: number;
   /** Mirrors the published `CaseContext` exactly; no new field is added to it (D1). */
   readonly caseContext?: CaseContext;
 }
@@ -242,6 +253,8 @@ export interface RlmInspectOutput {
   /** What was *actually* used, never what was requested. */
   readonly isolation: RlmIsolation;
   readonly lastEventAt: string;
+  /** Additive (#113). Present and true when an operator reconciled an ambiguous invocation: the result is not plain provider success. */
+  readonly reconciled?: boolean;
 }
 
 export interface RlmCancelInput {
@@ -253,6 +266,10 @@ export interface RlmCancelInput {
 
 export interface RlmCancelOutput {
   readonly status: "cancelled" | "already-terminal";
+  /** Additive (#113), present on `cancelled`: whether a dispatch intent existed and what the provider's own cancel did. */
+  readonly dispatched?: boolean;
+  readonly providerCancel?: "not-dispatched" | "cancelled" | "failed";
+  readonly error?: string;
 }
 
 // ── Internal provider port (never a cross-product contract; design D2/D7) ───────
@@ -269,12 +286,20 @@ export interface RlmInvokeRequest {
   readonly task: RlmTask;
   readonly authority: RlmAuthority;
   readonly budget: RlmBudget;
+  /** Additive (#113): the attempt identity of this dispatch; default 1. */
+  readonly attempt?: number;
   readonly caseContext?: CaseContext;
 }
 
 /** A provider's own view of one invocation (design D2 `InvocationView`). */
 export interface InvocationView {
   readonly status: RlmInvocationStatus;
+  /**
+   * Additive (#113). The invocation this view describes. After an interruption the runtime never calls `invoke`
+   * again: it trusts a terminal view only when this equals the original `invocationId`; a view without it (or
+   * with another id) is unverifiable and parks the invocation on the ambiguous-invocation wait.
+   */
+  readonly invocationId?: string;
   readonly resultRef?: string;
   readonly evidence: readonly string[];
   readonly payment: RlmPayment;
@@ -293,11 +318,20 @@ export interface RlmProvider {
   readonly id: string;
   /** Capabilities + executable + tool policy + isolation, reported not inferred (D1). */
   probe(): Promise<ProviderFacts>;
-  /** Run the investigation for `req`, using `spawn` for any child process and `ctx` for durable effects. */
+  /** Run the investigation for `req`, using `spawn` for any child process and `ctx` for durable effects. `ctx.runId` is the child run's id and the key `inspect` and `cancel` receive. */
   invoke(req: RlmInvokeRequest, spawn: StdioSpawnPort, ctx: RunContext): Promise<{ readonly runId: string }>;
-  /** The provider's current view of one invocation, by the run id `invoke` returned. */
+  /**
+   * The provider's current view of one invocation. `runId` is ALWAYS the child run's id (`ctx.runId` inside `invoke`), the
+   * stable recovery key: it is what the runtime passes after a lost response, a throw before `invoke` returned anything, a
+   * restart or a reconciliation. A provider must record its state under `ctx.runId` (not only under any id of its own) so
+   * that `inspect(ctx.runId)` can answer after `invoke` threw. Return `invocationId` so the view can be verified.
+   */
   inspect(runId: string): Promise<InvocationView>;
-  /** Stop the invocation; idempotent. */
+  /**
+   * Stop the invocation; idempotent. `runId` is the child run's id, as for `inspect`. A cancel for a run the provider has not
+   * started yet must be sticky: a later `invoke` for that run must not start (the runtime narrows but cannot close the window
+   * between its last check and the `invoke` call).
+   */
   cancel(runId: string, reason: string): Promise<void>;
   /** Optional: decide a lost effect's outcome after interruption. */
   reconcile?(runId: string): Promise<RlmInvocationOutcome>;
@@ -335,7 +369,11 @@ export function unavailableSpawnPort(): StdioSpawnPort {
   return { spawn: refuse, write: refuse, readLines: refuse, kill: refuse };
 }
 
-/** The invocation binding written to the parent run's state, so inspect/cancel survive restart (D4.2). */
+/**
+ * The invocation binding as it was written to the parent run's state before the RLM control stream existed (D4.2). It is
+ * read-only history now: the runtime-owned `rlm-control/<parentRunId>` stream is authoritative, and an invocation that
+ * only has this binding is inspected and cancelled but never admitted or dispatched again.
+ */
 export interface RlmInvocationBinding {
   readonly invocationId: string;
   readonly runId: string;
@@ -347,6 +385,22 @@ export interface RlmInvocationBinding {
   /** The governing limit; `unknown` makes the recorded spend authoritative-unknown (D4.5). */
   readonly budgetLimit: number | "unknown";
   readonly reservationRef?: string;
+  /** Additive (#113): the attempt identity recorded with the dispatch intent; absent means 1. */
+  readonly attempt?: number;
+  /**
+   * Additive (#113). `pending-start` is written before the child run is started (`runId` is then `""` and the child is
+   * found by its correlation id `rlm:<parentRunId>:<invocationId>`); `started` once `runId` is known. Absent means `started`.
+   */
+  readonly state?: "pending-start" | "started";
+  /** Additive (#113): the outcome of `rlm.cancel`, recorded durably. */
+  readonly cancellation?: {
+    readonly requestedAt: string;
+    readonly reason: string;
+    /** Whether a dispatch intent had been recorded; a provider is only asked to cancel after one. */
+    readonly dispatched: boolean;
+    readonly providerCancel: "not-dispatched" | "cancelled" | "failed";
+    readonly error?: string;
+  };
 }
 
 /** Where an invocation binding lives in a run's state. */
@@ -360,7 +414,51 @@ export function readInvocationBinding(state: Json | null | undefined, invocation
   if (!root || typeof root !== "object" || Array.isArray(root)) return undefined;
   const invocations = (root as { readonly [key: string]: Json })[RLM_INVOCATIONS_KEY];
   if (!invocations || typeof invocations !== "object" || Array.isArray(invocations)) return undefined;
+  if (!Object.hasOwn(invocations, invocationId)) return undefined;
   const binding = (invocations as { readonly [key: string]: Json })[invocationId];
   if (!binding || typeof binding !== "object" || Array.isArray(binding)) return undefined;
   return binding as unknown as RlmInvocationBinding;
 }
+
+/**
+ * Additive (#113). A parent's authority is withdrawn for one invocation (or all of them, key `*`) by recording a
+ * reason at `rlm.revoked.<invocationId>` in the parent run's state. A withdrawn grant refuses a new dispatch.
+ */
+export const RLM_REVOKED_KEY = "revoked";
+
+export function readGrantRevocation(state: Json | null | undefined, invocationId: string): string | undefined {
+  if (!state || typeof state !== "object" || Array.isArray(state)) return undefined;
+  const root = (state as { readonly [key: string]: Json })[RLM_STATE_ROOT];
+  if (!root || typeof root !== "object" || Array.isArray(root)) return undefined;
+  const revoked = (root as { readonly [key: string]: Json })[RLM_REVOKED_KEY];
+  if (!revoked || typeof revoked !== "object" || Array.isArray(revoked)) return undefined;
+  const table = revoked as { readonly [key: string]: Json };
+  // A null or false entry is "not revoked": it must not mask a wildcard withdrawal, while a present specific reason wins.
+  const present = (key: string): Json | undefined => (Object.hasOwn(table, key) && table[key] !== null && table[key] !== false && table[key] !== undefined ? table[key] : undefined);
+  const entry = present(invocationId) ?? present("*");
+  if (entry === undefined) return undefined;
+  return typeof entry === "string" ? entry : "revoked";
+}
+
+const REFUSAL_BRAND = Symbol.for("cognate.rlm.providerRefusal");
+export const RLM_REFUSAL_CODE_PATTERN = /^[a-z0-9._-]{1,48}$/;
+
+/**
+ * Additive (#113). A provider throws this from `invoke` to say it DEFINITELY did nothing (it refused before any side
+ * effect). The child run then fails, recording only the bounded `code` (never the message, which may carry secrets).
+ * Any other throw from `invoke`, including an object that merely claims to be definite, is a lost response: the provider
+ * may have acted, so the original invocation is inspected or parked, never re-invoked.
+ */
+export class RlmProviderRefusal extends Error {
+  override readonly name = "RlmProviderRefusal";
+  readonly [REFUSAL_BRAND] = true as const;
+  /** A bounded, non-secret reason code (`[a-z0-9._-]{1,48}`); anything else is recorded as `refused`. */
+  readonly code: string;
+  constructor(message: string, code = "refused") {
+    super(message);
+    this.code = RLM_REFUSAL_CODE_PATTERN.test(code) ? code : "refused";
+  }
+}
+
+export const isDefiniteProviderRefusal = (error: unknown): error is RlmProviderRefusal =>
+  error instanceof RlmProviderRefusal || (typeof error === "object" && error !== null && (error as Record<symbol, unknown>)[REFUSAL_BRAND] === true && typeof (error as { code?: unknown }).code === "string" && RLM_REFUSAL_CODE_PATTERN.test((error as { code: string }).code));

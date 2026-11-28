@@ -7,8 +7,14 @@ import { join } from "node:path";
 import {
   INVOCATION_STATUSES,
   ISOLATION_LEVELS,
+  isDefiniteProviderRefusal,
   isTerminalInvocationStatus,
   PROVIDER_FACTS,
+  readGrantRevocation,
+  readInvocationBinding,
+  RLM_REFUSAL_CODE_PATTERN,
+  RlmProviderRefusal,
+  applyJsonPatch,
   RESULT_DELIVERIES,
   RLM_AGENT_ID,
   RLM_CAPABILITIES,
@@ -62,7 +68,7 @@ describe("RLM capability-fact vocabulary parity with the Gauntlet port", () => {
     expect([...RLM_REFUSAL_CODES]).toEqual([
       "rlm-provider-unknown", "rlm-provider-unavailable", "rlm-posture-refused", "rlm-authority-exceeds-parent", "rlm-depth-exceeded", "rlm-budget-unverifiable",
       "rlm-containment-unavailable", "rlm-port-unavailable", "rlm-egress-uncontrolled", "rlm-context-digest-mismatch", "rlm-invocation-unknown",
-      "rlm-invocation-ambiguous", "rlm-top-level-invocation",
+      "rlm-invocation-ambiguous", "rlm-top-level-invocation", "rlm-attempt-refused",
     ]);
   });
 });
@@ -78,5 +84,57 @@ describe("no provider or vendor identifier leaks into the provider-neutral contr
       .filter((name) => name.endsWith(".ts"))
       .filter((name) => /prime/i.test(readFileSync(join(SRC, name), "utf8")));
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("state readers never resolve inherited members (#113)", () => {
+  const binding = { invocationId: "real", runId: "r", providerId: "p", parentRunId: "x", depth: 1, contextDigest: "d", admittedAt: "t", budgetLimit: "unknown" };
+  const state = JSON.parse(`{"rlm":{"invocations":{"real":${JSON.stringify(binding)}},"revoked":{"real":"withdrawn"}}}`);
+  test.each(["__proto__", "constructor", "toString", "hasOwnProperty", "valueOf"])("%s is neither a binding nor a revocation", (id) => {
+    expect(readInvocationBinding(state, id)).toBeUndefined();
+    expect(readGrantRevocation(state, id)).toBeUndefined();
+  });
+  test("an own key named like an inherited member still resolves", () => {
+    const own = JSON.parse(`{"rlm":{"invocations":{"__proto__":${JSON.stringify(binding)}},"revoked":{"constructor":"gone"}}}`);
+    expect(readInvocationBinding(own, "__proto__")).toMatchObject({ invocationId: "real" });
+    expect(readGrantRevocation(own, "constructor")).toBe("gone");
+    expect(readGrantRevocation(own, "toString")).toBeUndefined();
+  });
+  test("the wildcard and the specific key both revoke; nothing else does", () => {
+    expect(readGrantRevocation(state, "real")).toBe("withdrawn");
+    expect(readGrantRevocation({ rlm: { revoked: { "*": "all" } } }, "anything")).toBe("all");
+    expect(readGrantRevocation({ rlm: {} }, "anything")).toBeUndefined();
+  });
+});
+
+describe("a provider's definite refusal is typed (#113)", () => {
+  test("only a branded RlmProviderRefusal is definite", () => {
+    expect(isDefiniteProviderRefusal(new RlmProviderRefusal("nothing ran"))).toBe(true);
+    expect(isDefiniteProviderRefusal(Object.assign(new Error("x"), { definite: true }))).toBe(false); // duck typing is not a refusal
+    expect(new RlmProviderRefusal("secret detail", "quota").code).toBe("quota");
+    expect(new RlmProviderRefusal("secret detail", "Has Spaces And Secrets sk-1").code).toBe("refused");
+    expect(isDefiniteProviderRefusal(new Error("timeout"))).toBe(false);
+    const branded = (code: unknown) => Object.assign(new Error("x"), { [Symbol.for("cognate.rlm.providerRefusal")]: true, code });
+    expect(isDefiniteProviderRefusal(branded("quota"))).toBe(true);
+    expect(isDefiniteProviderRefusal(branded("sk-live-SECRET token"))).toBe(false); // an unbounded code is not a refusal
+    expect(isDefiniteProviderRefusal(branded(5))).toBe(false);
+    expect(RLM_REFUSAL_CODE_PATTERN.test("quota")).toBe(true);
+    expect(RLM_REFUSAL_CODE_PATTERN.test("sk-live-SECRET token")).toBe(false);
+    expect(isDefiniteProviderRefusal("string")).toBe(false);
+    expect(isDefiniteProviderRefusal(undefined)).toBe(false);
+  });
+});
+
+describe("wildcard and prototype-named keys (CodeRabbit on #94)", () => {
+  test("a null or false specific revocation does not mask a wildcard withdrawal; a present one wins", () => {
+    expect(readGrantRevocation({ rlm: { revoked: { "inv-1": null, "*": "all" } } }, "inv-1")).toBe("all");
+    expect(readGrantRevocation({ rlm: { revoked: { "inv-1": false, "*": "all" } } }, "inv-1")).toBe("all");
+    expect(readGrantRevocation({ rlm: { revoked: { "inv-1": "just this", "*": "all" } } }, "inv-1")).toBe("just this");
+  });
+  test("a JSON patch can add a leaf named __proto__ and it survives as an own key", () => {
+    const patched = applyJsonPatch({ rlm: { revoked: {} } }, [{ op: "add", path: "/rlm/revoked/__proto__", value: "withdrawn" }]);
+    const roundTrip = JSON.parse(JSON.stringify(patched));
+    expect(Object.hasOwn(roundTrip.rlm.revoked, "__proto__")).toBe(true);
+    expect(readGrantRevocation(roundTrip, "__proto__")).toBe("withdrawn");
   });
 });
