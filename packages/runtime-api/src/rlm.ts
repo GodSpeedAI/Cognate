@@ -185,7 +185,10 @@ export interface RlmTask {
   readonly purpose: string;
   readonly acceptance: readonly string[];
   readonly contextRefs: readonly string[];
-  /** sha256 over the canonical *resolved* artifacts, re-computed at child start (D4.10). */
+  /**
+   * sha256 over the canonical *resolved* artifacts. DECLARED by the caller: the runtime has no resolver for `contextRefs`, so it does
+   * not verify this value and does not use it to decide whether two invocations are the same job (DEBT-037).
+   */
   readonly contextDigest: string;
 }
 
@@ -366,7 +369,11 @@ export function unavailableSpawnPort(): StdioSpawnPort {
   return { spawn: refuse, write: refuse, readLines: refuse, kill: refuse };
 }
 
-/** The invocation binding written to the parent run's state, so inspect/cancel survive restart (D4.2). */
+/**
+ * The invocation binding as it was written to the parent run's state before the RLM control stream existed (D4.2). It is
+ * read-only history now: the runtime-owned `rlm-control/<parentRunId>` stream is authoritative, and an invocation that
+ * only has this binding is inspected and cancelled but never admitted or dispatched again.
+ */
 export interface RlmInvocationBinding {
   readonly invocationId: string;
   readonly runId: string;
