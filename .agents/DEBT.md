@@ -309,21 +309,26 @@ Format: `## DEBT-NNN — title`, then **Status**, **Requirement(s)**, **Observed
 
 ---
 
-## DEBT-035 — Cancelling a parent run does not cancel its dispatched RLM children's providers
+## DEBT-035 — Cancelling a parent run does not call `provider.cancel` for a child that already dispatched
 
-**Status:** Open 2026-11-26 — found in review of PR #94 (ticket #113, Cognate half).
+**Status:** Open 2026-11-26, narrowed 2026-11-28 by the delta-5 structural fix — found in review of PR #94 (ticket #113, Cognate half).
 **Requirement(s):** None.
-**Observed (2026-11-26):** A parent run that invoked `rlm.invoke` can be cancelled through `RuntimeService.cancelRun`. The child `agent.rlm` run and its provider are not touched: no cancellation cascades, so `provider.cancel` is never reached for a dispatched child unless someone calls `rlm.cancel`. A child that has not dispatched yet is stopped by the parent-cancelled check; one already in flight is not.
+**Observed (2026-11-28):** `RuntimeService.cancelRun` on a parent now appends `rlm.parent.cancelled` to the parent's RLM control stream in the same commit, so a child that has not recorded its dispatch intent refuses to dispatch. A child whose intent is already committed is not cancelled and its provider is not asked to cancel: nothing reaches `provider.cancel` unless someone calls `rlm.cancel`.
 **Consequence:** A cancelled parent can leave a provider process running and spending.
-**Exit criterion:** Cancelling a parent cancels every non-terminal child through the `rlm.cancel` path (provider cancel recorded, retry on failure). Proven by flipping `test.failing` to `test` for `cancelling the parent after dispatch reaches provider.cancel for its child` in `packages/runtime-bun/test/rlm.test.ts`.
+**Exit criterion:** Cancelling a parent cancels every non-terminal dispatched child through the `rlm.cancel` path (request, settlement, retry). Proven by flipping `test.failing` to `test` for `cancelling the parent after dispatch reaches provider.cancel for its child` in `packages/runtime-bun/test/rlm.test.ts`.
 
 ---
 
 ## DEBT-036 — `rlm.dispatch.intended` keeps its identity only in the erasable payload
 
-**Status:** Open 2026-11-27 — found by CodeRabbit on PR #94 (ticket #113).
-**Requirement(s):** None.
-**Observed (2026-11-27):** The child agent emits `rlm.dispatch.intended` with `{invocationId, providerId, attempt, parentRunId}` as its payload. `RunContext.emit(eventType, payload)` has no metadata channel, so the identifiers cannot go in event metadata, and payload erasure leaves the event unattributable (the recorded intent step and the parent binding keep the same identifiers, also in payloads).
-**Consequence:** After a payload erasure the intent event no longer says which invocation it belonged to; the parent binding and the run's correlation id (`rlm:<parent>:<invocation>`) still do.
-**Exit criterion:** `RunContext.emit` (or a sibling) accepts non-sensitive metadata, and the rlm agent records its identifiers there; proven by a test that erases the payload and still attributes the event.
+**Status:** Resolved 2026-11-28 by the delta-5 structural fix: the RLM control events are built by the runtime and carry `invocationId`, `attempt`, `childRunId` and `parentRunId` in event metadata, so they stay attributable after a payload erasure (`packages/runtime-bun/src/rlm-control.ts`, proven by `the dispatch intent is a compare-and-set event on the control stream` in `packages/runtime-bun/test/rlm.test.ts`).
 
+---
+
+## DEBT-037 — The runtime cannot verify a declared `contextDigest`
+
+**Status:** Open 2026-11-28 — delta-5 review of PR #94 (M10) and its structural design (D3).
+**Requirement(s):** None.
+**Observed (2026-11-28):** `RlmTask.contextRefs` are opaque strings and nothing in the runtime resolves them, so the runtime cannot recompute the digest of the resolved context the caller declares in `RlmTask.contextDigest` (the contract comment claimed it was re-computed at child start; no such code exists). Attempt exclusion therefore uses a task key the runtime computes itself from purpose, acceptance and context references, and ignores the declared digest.
+**Consequence:** Two invocations that differ only in the content their references resolve to (same references, same text) are treated as the same task; a caller that wants a different task must change the references or the text. A wrong declared digest is stored but never checked.
+**Exit criterion:** A context-resolver port the host implements, so the runtime computes the digest from the resolved artifacts at admission and at child start and refuses a mismatch; the task key then uses that verified digest.
