@@ -112,12 +112,13 @@ async function restartScenario(name: string, after: InvocationView["status"], ti
     registry.register({ provider, label: "restart" });
     let ref: Runtime | undefined;
     const getService = () => ref!.service;
+    const getStore = () => ref!.store;
     const runtime = await createRuntime({
       store: { store: database.store },
-      agents: [parent, createRlmAgent({ registry, getService })],
+      agents: [parent, createRlmAgent({ registry, getService, getStore })],
       policy,
       actions,
-      components: [createRlmComponent({ registry, getService })],
+      components: [createRlmComponent({ registry, getService, getStore })],
       execution: { maxConcurrentRuns: 2, resourceKeys: () => [] },
     });
     ref = runtime;
@@ -253,14 +254,15 @@ async function crashScenario(mode: "after-invoke" | "before-invoke", marker: str
   registry.register({ provider, label: "recovered" });
   let rt: Runtime | undefined;
   const getService = () => rt!.service;
+  const getStore = () => rt!.store;
   const parent: AgentDefinition = { id: "agent.parent", version: "1.0.0", run: async (): Promise<Json> => ({ unused: true }) };
   try {
     rt = await createRuntime({
       store: { store: database.store },
-      agents: [parent, createRlmAgent({ registry, getService })],
+      agents: [parent, createRlmAgent({ registry, getService, getStore })],
       policy,
       actions,
-      components: [createRlmComponent({ registry, getService })],
+      components: [createRlmComponent({ registry, getService, getStore })],
       // A SIGKILLed owner never releases its lease: recovery proceeds when the lease lapses.
       execution: { maxConcurrentRuns: 2, resourceKeys: () => [], runOwnership: { leaseMs: 500 } },
     });

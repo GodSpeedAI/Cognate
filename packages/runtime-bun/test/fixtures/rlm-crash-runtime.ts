@@ -74,10 +74,10 @@ const service = () => {
 };
 runtime = await createRuntime({
   store: { store: database.store },
-  agents: [parent, createRlmAgent({ registry, getService: service })],
+  agents: [parent, createRlmAgent({ registry, getService: service, getStore: () => runtime!.store })],
   policy: { authorize: () => ({ allow: true as const, policyId: "test", reason: "test" }) },
   actions: { authorize: () => ({ allow: true as const, reason: "test" }) },
-  components: [createRlmComponent({ registry, getService: service })],
+  components: [createRlmComponent({ registry, getService: service, getStore: () => runtime!.store })],
   execution: { maxConcurrentRuns: 2, resourceKeys: () => [], runOwnership: { leaseMs: 500 } },
 });
 const run = await runtime.service.startRun(alice, { agent: "agent.parent", input: {}, idempotencyKey: "crash-parent" });
